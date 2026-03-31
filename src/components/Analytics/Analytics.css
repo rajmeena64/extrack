@@ -1,0 +1,219 @@
+/* DARK MODE SUPPORT */
+/* .main-content.dark {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+} */
+
+/* ===== MAIN CONTENT LAYOUT ===== */
+/* 
+
+
+/* ===== HEADER ===== */
+.analytics-topbar {
+  height: 60px;
+  padding: 0 20px;
+  flex-shrink: 0; /* Prevent header from shrinking */
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  border-bottom: 1px solid var(--border-light);
+  background: var(--bg-secondary);
+
+  backdrop-filter: blur(6px);
+}
+
+/* TITLE */
+.analytics-title {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+/* ===== TABS ===== */
+.analytics-tabs {
+  display: flex;
+  gap: 10px;
+}
+
+.analytics-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  padding: 7px 14px;
+  font-size: 13px;
+
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
+
+  background: transparent;
+  color: var(--text-secondary);
+
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* HOVER */
+.analytics-tab:hover {
+  background: var(--hover-bg);
+  transform: translateY(-1px);
+}
+
+/* ACTIVE TAB */
+.analytics-tab.active {
+  background: var(--button-bg);
+  color: white;
+  border-color: transparent;
+
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+/* ===== CONTENT ===== */
+.analytics-content {
+  flex: 1; /* Take remaining space */
+  padding: 14px;
+  min-height: 0; /* Important for flex children to scroll properly */
+  overflow: auto; /* Add scroll if content overflows */
+
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+ 
+}
+
+/* ===== CALENDAR PANEL ===== */
+.analytics-panel {
+  width: 100%;
+  flex: 1; /* Take full height of parent */
+  min-height: 0; /* Important for iframe containment */
+  
+  border-radius: 12px;
+  overflow: hidden;
+
+  border: 1px solid var(--border-light);
+  background: var(--bg-secondary);
+}
+
+/* Ensure iframe fills the panel */
+.analytics-panel iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+}
+
+/* ===== HEATMAP GRID ===== */
+.heatmap-grid {
+  display: grid;
+  grid-template-rows: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 14px;
+  min-height: 100%;
+}
+
+/* CARD */
+.heatmap-card {
+  height: 100%;
+  min-height: 350px;
+
+  border-radius: 12px;
+  overflow: hidden;
+
+  border: 1px solid var(--border-light);
+  background: var(--bg-secondary);
+
+  transition: transform 0.2s ease;
+}
+
+.heatmap-card:hover {
+  transform: translateY(-2px);
+}
+
+/* ===== HEATMAP CONTAINER ===== */
+.heatmap-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  background: var(--bg-primary);
+  min-height: 0; /* Important for flex children */
+}
+
+/* HEADER */
+.heatmap-header {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+  flex-shrink: 0; /* Prevent header from shrinking */
+
+  border-bottom: 1px solid var(--border-light);
+  background: var(--bg-secondary);
+  z-index: 5;
+}
+
+/* TAB */
+.heatmap-tab {
+  padding: 6px 14px;
+  font-size: 13px;
+
+  border-radius: 6px;
+  border: 1px solid var(--border-light);
+
+  background: transparent;
+  color: var(--text-secondary);
+
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.heatmap-tab:hover {
+  background: var(--hover-bg);
+}
+
+/* ACTIVE */
+.heatmap-tab.active {
+  background: var(--button-bg);
+  color: white;
+  border-color: transparent;
+}
+
+/* ===== BODY ===== */
+.heatmap-body {
+  position: relative;
+  flex: 1; /* Take remaining space */
+  min-height: 0; /* Important for iframe containment */
+  overflow: hidden;
+}
+
+/* IFRAME FIX */
+.heatmap-body iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .analytics-topbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    height: auto;
+    padding: 10px 15px;
+  }
+
+  .analytics-tabs {
+    width: 100%;
+  }
+
+  .analytics-tab {
+    flex: 1;
+    justify-content: center;
+  }
+  
+  .analytics-content {
+    padding: 10px;
+  }
+}

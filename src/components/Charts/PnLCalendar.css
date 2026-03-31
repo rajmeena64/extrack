@@ -1,0 +1,799 @@
+
+
+/* Analytics Header */
+.analytics-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+ 
+    border-bottom: 1px solid var(--border-light);
+    height: 60px;
+   
+        margin-left: 12px;
+}
+
+.analytics-header h3 {
+   
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 1px;
+ 
+  
+}
+
+.analytics-header h3::before {
+    content: '';
+    width: 4px;
+    height: 20px;
+
+    border-radius: var(--radius-sm);
+}
+
+
+.header-left{
+    display: flex;
+     gap: 16px;
+
+}
+
+.month-navigation {
+    display: flex;
+    align-items: center;
+    position: relative;
+    padding: 1px 1px;
+
+    transition: var(--transition);
+    padding-right: 10px;
+}
+
+
+.month-navigation:hover {
+    box-shadow: var(--shadow-sm);
+    border-color: #da0303;
+}
+
+.months-btn-right,
+.months-btn-left {
+    
+height: 22px;
+background: none;
+border: transparent;
+color: var(--text-primary);
+border-radius: 4px;
+font-size: small;
+}
+
+
+
+
+.months-btn:hover {
+
+    border-color: var(--primary);
+   background-color: var(--button-bg);
+    transform: scale(1.01);
+}
+
+.current-month {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 14px;
+    min-width: 10px;
+    text-align: center;
+
+    
+
+}
+
+
+/* ==================== MAIN FIX HERE ==================== */
+.analytics-calendar {
+    width: 98%;
+    border-collapse: separate;
+    border-spacing: 6px;
+    margin: 0 auto;
+    table-layout: fixed;    
+    padding-left: 12px;
+    padding-bottom: 10px;
+    
+      /* <-- EQUAL COLUMN FIX */
+}
+
+/* Weekday Headers */
+.analytics-calendar th {
+    text-align: center;
+    padding: 2px 2px;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-light);
+    width: 40px;                /* <-- EQUAL WIDTH */
+}
+
+/* Calendar Cells */
+.analytics-calendar td {
+    text-align: center;
+    padding: 0;
+             /* <-- EQUAL HEIGHT */
+    width: 100%;                /* <-- FIXED WIDTH */
+    font-weight: 500;
+    font-size: 14px;
+    transition: var(--transition);
+    position: relative;
+    cursor: pointer;
+    border: 1px solid transparent;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    vertical-align: top;
+    border-radius: var(--radius-md);
+    table-layout: fixed;
+
+      aspect-ratio: 1 / 1;   /* 🔥 auto square */
+  height: auto;
+  width: auto;
+  min-height: 42px;
+  overflow: hidden;
+}
+
+.analytics-calendar td:not(.empty):hover {
+    transform: scale(1.02);
+    box-shadow: var(--shadow-sm);
+}
+
+.analytics-calendar td.positive {
+    background: rgba(204, 255, 238, 0.555);
+    color: var(--text-primary);
+    border: 1px solid rgb(16, 185, 129);
+    font-weight: 600;
+    border-radius: 5px;
+}
+
+.analytics-calendar td.negative {
+    background: rgb(252, 239, 239);
+    color: var(--text-primary);
+    border: 1px solid rgb(243, 147, 147);
+    font-weight: 600;
+    border-radius: 5px;
+}
+
+
+.analytics-calendar td.no-data {
+   
+    color: var(--text-muted);
+    border: 1px solid var(--border-light);
+}
+
+
+
+
+.analytics-calendar td.no-data:hover {
+    background: var(--primary-light);
+    color: white;
+}
+
+.analytics-calendar td.today {
+    border: 2px solid var(--primary);
+    box-shadow: 0 0 0 2px rgb(208, 209, 211);
+}
+
+.analytics-calendar td.empty {
+    background: transparent;
+    border: none;
+    cursor: default;
+}
+
+/* Date + PNL */
+.date-number {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-secondary);
+}
+
+/* ==================== MAIN FIX – PNL TEXT COLOR ==================== */
+
+/* Default (Light Mode) */
+.pnl-amount {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: right;
+  font-size: clamp(9px, 1vw, 12px);
+  font-weight: 700;
+  pointer-events: none;
+  top: 32px;
+
+
+}
+
+/* total month pnl&*/
+
+.month-pnl {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 1px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 900;
+
+
+ 
+}
+
+/* POSITIVE */
+.month-pnl.positive {
+    background: #2bb46dc9;
+}
+.month-pnl.positive .month-pnl-value {
+color: var(--text-primary);
+}
+
+/* NEGATIVE */
+.month-pnl.negative {
+background: #da8f8f96;
+}
+
+.month-pnl.negative .month-pnl-value {
+ color: var(--text-primary);
+}
+
+/* LABEL */
+.month-pnl-label {
+  font-size: 11px;
+  color: var(--text-primary);
+}
+
+
+
+
+
+/* Analytics Summary */
+.analytics-summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-top: 24px;
+}
+
+.summary-item {
+    background: var(--bg-card);
+    padding: 16px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-light);
+    text-align: center;
+    transition: var(--transition);
+    box-shadow: var(--shadow-sm);
+}
+
+.summary-item:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.summary-item .label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.summary-item .value {
+    display: block;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+/* Dark Mode */
+.dark-mode .analytics-calendar td.no-data {
+    background: #0a0a0a;
+    color: #666666;
+    border-color: #222222;
+}
+
+.dark-mode .analytics-calendar td.no-data:hover {
+    background: #111111;
+    color: #b0b0b0;
+}
+
+.dark-mode .analytics-calendar th {
+    background: #000000;
+    color: #b0b0b0;
+    border-color: #222222;
+}
+
+.dark-mode .analytics-calendar td {
+    background: #0a0a0a;
+    color: #ffffff;
+}
+
+.dark-mode .analytics-calendar td.positive {
+ background-color:  #0a3119;  
+    border: 1px solid rgb(9, 167, 101);
+    border-radius: 5px;
+}
+
+
+
+.dark-mode .analytics-calendar td.negative {
+    background: rgb(63, 2, 2);
+    border: 1px solid rgba(255, 0, 0, 0.795);
+    border-radius: 5px;
+}    
+
+
+
+
+
+
+/* =================  STYLE WEEKLY STATS ================= */
+
+.calendar-layout {
+    display: flex;
+ 
+}
+/* Right column */
+.weekly-stats {
+     width: clamp(90px, 18vw, 140px);
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+      padding: clamp(6px, 1vw, 12px);
+
+
+     height: 475px;             /* 🔒 FIXED HEIGHT (5 cards ke liye) */
+    overflow-y: auto;       /* 👉 extra weeks = scroll */
+}
+
+
+
+/* Card */
+.week-card {
+
+      padding: clamp(6px, 1vw, 10px);
+    border-radius: 10px;
+    border: 1px solid var(--border-light);
+    background: var(--bg-secondary);
+    text-align: left;
+
+  
+}
+
+/* Week title (small top text) */
+.week-title {
+      font-size: clamp(9px, 0.9vw, 11px);
+    font-weight: 400;
+    color: var(--text-muted);
+    display: block;
+    margin-bottom: 4px;
+}
+
+/* Main PnL number */
+.week-pnl {
+  font-size: clamp(11px, 1.1vw, 13px);
+    font-weight: 600;
+    line-height: 1.5;
+    display: block;
+    
+}
+
+/* Days text */
+.week-days {
+  font-size: clamp(8px, 0.8vw, 10px);
+     color: var(--text-secondary);
+    margin-top: 5px;
+    border-radius: 50px;
+    padding-left: 2px;
+    padding-right: 2px;
+    padding-bottom: 3px;
+    white-space: nowrap;
+    padding-top: 2px;
+    
+    
+}
+
+/* ===== COLORS (MATCH CALENDAR) ===== */
+
+
+.week-card.profit .week-pnl {
+    color: var(--pnl-positive);
+}
+
+
+.week-card.loss .week-pnl {
+  color: var(--pnl-negative);
+}
+
+.week-card.neutral {
+    background: var(--bg-secondary);
+}
+
+.week-card.neutral .week-pnl {
+    color: var(--text-muted);
+}
+
+/* ===== DARK MODE ===== */
+
+.dark-mode .week-card {
+    background: #0a0a0a;
+    border-color: #222;
+}
+
+
+
+
+.dark-mode .week-title {
+    color: #8b8b8b;
+}
+
+.dark-mode .week-days {
+    color: #9a9a9a;
+}                                                    
+
+
+
+
+
+
+
+/* DAY CELL CONTENT */
+.day-cell-content {
+  position: relative;
+  height: 100%;
+  padding: clamp(4px, 1.2vw, 10px);
+  margin-right: 5px;
+  
+}
+
+
+.date-number {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  font-size: clamp(9px, 1vw, 12px);
+  font-weight: 600;
+  color: var(--text-secondary);
+  z-index: 3;
+}
+
+
+/* Trades count styling - छोटा और compact */
+.trades-count {
+  position: absolute;
+  margin-top: 32px;
+  right: 4px;
+  font-size: clamp(8px, 0.9vw, 10px);
+  color: var(--text-muted);
+  z-index: 3;
+}
+
+
+
+
+
+
+.month-trades {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding-right: 7px;
+    padding-left: 8px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 300;
+    background: var(--value-bg);
+    border: 1px solid var(--border-light);
+   
+    margin-left: 12px;
+}
+
+.trades-label {
+    font-size: 11px;
+  color: #ffffff;
+}
+
+.trades-value {
+  color: #ffffff;
+    font-weight: 400;
+    font-size: smaller;
+}
+
+
+
+
+
+@media (min-width: 769px) and (max-width: 1023px) {
+
+
+
+
+
+
+
+
+
+
+.analytics-calendar {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 6px;
+    margin: 0 auto;
+    table-layout: fixed;    
+  
+    padding-left: 10px;
+    padding-bottom: 10px;
+    
+      /* <-- EQUAL COLUMN FIX */
+}
+
+
+
+/* =================  STYLE WEEKLY STATS ================= */
+
+.calendar-layout {
+    display: flex;
+    gap: 0px;
+    width: 100%;
+}
+/* Right column */
+.weekly-stats {
+     width: clamp(90px, 18vw, 140px);
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: clamp(6px, 1vw, 12px);
+
+     padding-left: 1%;
+     height: 475px;             /* 🔒 FIXED HEIGHT (5 cards ke liye) */
+    overflow-y: auto;       /* 👉 extra weeks = scroll */
+}
+
+
+
+/* Card */
+.week-card {
+
+     padding: clamp(6px, 1vw, 10px);
+    border-radius: 10px;
+    border: 1px solid var(--border-light);
+    background: var(--bg-secondary);
+    text-align: center;
+    position: relative;
+    white-space: normal;
+     min-width: 45px;
+    padding-left: 4px;
+     width: 100%
+     
+    
+
+}
+
+/* Week title (small top text) */
+.week-title {
+      font-size: clamp(9px, 0.9vw, 11px);
+    font-weight: 400;
+    color: var(--text-muted);
+    display: block;
+    position: relative;
+   
+
+
+
+}
+
+/* Main PnL number */
+.week-pnl {
+  font-size: clamp(9px, 1.1vw, 13px);
+    font-weight: 600;
+    line-height: 1.5;
+    display: block;
+    position: relative;
+
+ 
+  
+
+    
+}
+
+/* Days text */
+.week-days {
+  font-size: clamp(8px, 0.8vw, 10px);
+  color: var(--text-secondary);
+  white-space: normal;
+  position: relative;
+  bottom: 11px;
+
+
+
+
+    
+}
+
+.one{
+    white-space: nowrap;
+}
+
+
+
+
+
+/* Analytics Header */
+.analytics-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-light);
+
+    height: auto; /* 🔥 fixed height hata */
+    padding: clamp(6px, 1vw, 12px);
+    margin-left: clamp(4px, 1vw, 12px);
+
+    gap: clamp(6px, 1vw, 14px);
+}
+
+/* Header title */
+.analytics-header h3 {
+    font-size: clamp(11px, 1.2vw, 13px);
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+}
+
+/* Left section */
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: clamp(6px, 1vw, 12px);
+
+}
+
+
+.month-navigation {
+    display: flex;
+    align-items: center;
+    padding: clamp(4px, 1vw, 8px) clamp(8px, 2vw, 16px);
+    margin-right: clamp(4px, 1vw, 20px);
+    right: auto;
+}
+
+
+/* Buttons */
+/* .current-month, */
+.months-btn-left,
+.months-btn-right{
+    height: clamp(18px, 2vw, 22px);
+    width: clamp(18px, 2vw, 22px);
+    font-size: clamp(10px, 1vw, 12px);
+    border-radius: 4px;
+    flex-shrink: 0;
+
+
+    
+}
+
+/* Month text */
+.current-month {
+    font-size: clamp(11px, 1.3vw, 14px);
+    font-weight: 600;
+    min-width: clamp(90px, 12vw, 140px);
+    text-align: center;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+
+.header-stats{
+display: flex;
+ width: clamp(18px, 2vw, 22px);
+ margin-right: auto;
+
+ 
+
+}
+.header-left{
+    flex-direction: column;
+
+}
+
+
+
+
+}
+
+
+
+
+
+
+@media (max-width: 768px) {
+
+
+.analytics-header h3 {
+    font-size: x-small;
+}
+
+
+.month-navigation {
+   position: relative;
+   right: 0%;
+  /* padding-right: 9px; */
+  gap: 0px;
+}
+.header-stats{
+  white-space: nowrap;
+ 
+    
+}
+
+.header-left{
+    flex-direction: column;
+    gap: 0px;
+}
+
+.month-pnl {
+  padding: 1px 2px;
+}
+.month-pnl-label{
+color: var(--text-secondary);
+}
+
+
+
+
+
+.analytics-calendar {
+ width: 100%;
+
+
+}
+
+.current-month {
+    font-size: small;
+}
+.months-btn {
+    width: 23px;
+}
+
+
+.months-btn-left{
+   position: relative;
+   left: 10px;
+
+
+}
+.months-btn-right{
+   position: relative;
+   right: 10px;
+
+
+}
+
+
+}           
+
+
+
+
+
+
+
+

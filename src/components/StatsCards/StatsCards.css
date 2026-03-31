@@ -1,0 +1,126 @@
+/* PHOTO STYLE STATS CARDS */
+
+/* .stats-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 0px;
+  width: 1220px;
+} */
+
+/* CARD */
+.stat-card {
+  background: var(--bg-card);
+  border-radius: 12px;
+  padding: 18px 20px;
+  height: 70px;
+
+  border: 1px solid;
+  border-color: var(--border-light);
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* VALUE */
+.stat-value {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+
+
+}
+
+/* LABEL */
+.stat-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+/* COLORS */
+.stat-value.positive {
+  color: #1f9d55;
+}
+
+.stat-value.negative {
+  color: #dc2626;
+}
+
+/* FIRST CARD (HERO) */
+.stat-card:first-child {
+  background: linear-gradient(135deg, #5b2cff, #7b5cff);
+  border: none;
+}
+
+.stat-card:first-child .stat-value {
+  color: #ffffff;
+}
+
+.stat-card:first-child .stat-label {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* ---------------- DARK MODE ---------------- */
+/* body.dark lag raha hai maan ke chal raha hoon */
+
+body.dark .stat-card {
+  background: rgba(255, 255, 255, 0.04); /* 👈 subtle glass */
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+body.dark .stat-value {
+  color: #e5e7eb;
+}
+
+body.dark .stat-label {
+  color: #9ca3af;
+}
+
+/* first card dark mode me same hero rahe */
+body.dark .stat-card:first-child {
+  background: linear-gradient(135deg, #5b2cff, #7b5cff);
+  border: none;
+}
+
+body.dark .stat-card:first-child .stat-value,
+body.dark .stat-card:first-child .stat-label {
+  color: #ffffff;
+}
+
+
+
+
+
+.stats-cards {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);  /* 🔥 Always 2 columns */
+  gap: clamp(5px, 2vw, 10px);
+  width: 100%;
+} 
+
+/* 🔥 Very Small Screens → Single Column */
+@media (max-width: 480px) {
+  .stats-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Card responsive padding */
+.stat-card {
+  padding: clamp(12px, 2vw, 20px);
+  height: auto;
+}
+
+/* Responsive typography */
+.stat-value {
+  font-size: clamp(14px, 3vw, 22px);
+}
+
+.stat-label {
+  font-size: clamp(9px, 2vw, 13px);
+}

@@ -1,0 +1,546 @@
+
+/* =====================================================
+   SIDEBAR BASE
+===================================================== */
+.sidebar {
+  width: 60px;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border-light);
+  padding: 24px 0;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  z-index: 1000;
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  transition: width 0.3s ease, transform 0.3s ease;
+}
+
+/* =====================================================
+   DESKTOP (1024px AND ABOVE) - HOVER EXPAND ONLY HERE
+===================================================== */
+@media (min-width: 1024px) {
+  .sidebar {
+    transform: translateX(0);
+  }
+
+  .sidebar:hover {
+    width: 180px;
+  }
+
+}
+/* =====================================================
+   TABLET (769px TO 1023px) - NO HOVER, SMALLER SIDEBAR
+===================================================== */
+@media (min-width: 769px) and (max-width: 1023px) {
+  .sidebar {
+    width: 0px; /* Even smaller for tablets */
+    transform: translateX(0);
+  }
+
+  /* Disable hover effect completely on tablets */
+
+  /* Toggle functionality for tablets */
+  .sidebar.open {
+    width: 220px; /* Smaller expanded width for tablets */
+    transform: translateX(0);
+    box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.5);
+  }
+}
+
+/* =====================================================
+   SMALL TABLETS & LARGE MOBILES (481px TO 768px)
+===================================================== */
+@media (max-width: 768px) and (min-width: 481px) {
+  .sidebar {
+    width: 0px;
+    transform: translateX(-100%);
+  }
+  
+  .sidebar.open {
+    width: 240px; /* Medium width for smaller tablets */
+    transform: translateX(0);
+    box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.6);
+  }
+}
+
+/* =====================================================
+   MOBILE (Up to 480px)
+===================================================== */
+@media (max-width: 480px) {
+  .sidebar {
+    width: 0;
+    transform: translateX(-100%);
+  }
+  
+  .sidebar.open {
+    width: 100%;
+    max-width: 270px;
+    transform: translateX(0);
+    box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.7);
+  }
+}
+
+/* =====================================================
+   TOGGLE BUTTON - VISIBLE ON TABLET & MOBILE
+===================================================== */
+.sidebar-toggle {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 1100;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: none;
+  font-size: 22px;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 8px;
+  box-shadow: var(--shadow-md);
+  transition: all 0.2s ease;
+  display: none; /* Hidden by default */
+}
+
+.sidebar-toggle:hover {
+  background: var(--primary);
+  color: white;
+  transform: scale(1.05);
+}
+
+/* Show toggle on tablet (769px to 1023px) */
+@media (min-width: 769px) and (max-width: 1023px) {
+  .sidebar-toggle {
+    display: block;
+    top: 31px;
+    left: 1px;
+    padding: 6px 10px;
+    font-size: 20px;
+  }
+}
+
+/* Show toggle on mobile and small tablets (768px and below) */
+@media (max-width: 768px) {
+  .sidebar-toggle {
+    display: block;
+  }
+}
+
+/* Hide toggle on desktop (1024px and above) */
+@media (min-width: 1024px) {
+  .sidebar-toggle {
+    display: none;
+  }
+}
+
+/* =====================================================
+   SIDEBAR LOGO
+===================================================== */
+.sidebar-logo {
+  height: 50px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--border-light);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  margin-bottom: 20px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.logo-text {
+  font-size: 17px;
+  font-weight: 900;
+  color: var(--text-primary);
+  white-space: nowrap;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  display: flex;
+}
+
+.logo-text .ex {
+  color: var(--primary);
+}
+
+.logo-text .track {
+  color: var(--text-primary);
+}
+
+/* collapsed state for desktop (when not hovering) */
+@media (min-width: 1024px) {
+  .sidebar:not(:hover) .sidebar-logo,
+  .sidebar:not(:hover) .logo-text {
+    opacity: 0;
+    transform: translateX(-8px);
+    pointer-events: none;
+  }
+  
+  .sidebar:hover .sidebar-logo,
+  .sidebar:hover .logo-text {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+}
+
+/* collapsed state for tablets (when not open) */
+@media (min-width: 769px) and (max-width: 1023px) {
+  .sidebar:not(.open) .sidebar-logo,
+  .sidebar:not(.open) .logo-text {
+    opacity: 0;
+    transform: translateX(-8px);
+    pointer-events: none;
+  }
+  
+  .sidebar.open .sidebar-logo,
+  .sidebar.open .logo-text {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+}
+
+/* collapsed state for mobile (when not open) */
+@media (max-width: 768px) {
+  .sidebar:not(.open) .sidebar-logo,
+  .sidebar:not(.open) .logo-text {
+    opacity: 0;
+    transform: translateX(-8px);
+    pointer-events: none;
+  }
+  
+  .sidebar.open .sidebar-logo,
+  .sidebar.open .logo-text {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+}
+
+/* =====================================================
+   NAV ITEMS
+===================================================== */
+.nav-item {
+  display: flex;
+  align-items: right;
+  gap: 10px;
+  padding: 10px 16px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-weight: 500;
+  border-left: 4px solid transparent;
+  margin: 6px 8px;
+  border-radius: var(--radius-md);
+  white-space: nowrap;
+  font-size: 13px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  overflow: hidden;
+  
+}
+
+.nav-item i {
+  width: 20px;
+  text-align: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.nav-item span {
+  flex-grow: 1;
+  transition: opacity 0.2s ease;
+
+}
+
+
+
+.nav-item:hover {
+  background: var(--bg-secondary);
+  color: var(--primary);
+  border-left-color: var(--primary);
+  transform: translateX(4px);
+}
+
+/* Settings dropdown arrow */
+.dropdown-arrow {
+  transition: transform 0.2s ease;
+}
+
+.nav-item.active .dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+/* Hide text when sidebar is collapsed on desktop */
+@media (min-width: 1024px) {
+  .sidebar:not(:hover) .nav-item span,
+  .sidebar:not(:hover) .dropdown-arrow {
+    display: none;
+  }
+  
+  .sidebar:not(:hover) .nav-item {
+    justify-content: center;
+    padding: 10px 0;
+  }
+  
+  .sidebar:not(:hover) .nav-item i {
+    margin-right: 0;
+  }
+}
+
+/* Hide text when sidebar is collapsed on tablets */
+@media (min-width: 769px) and (max-width: 1023px) {
+  .sidebar:not(.open) .nav-item span,
+  .sidebar:not(.open) .dropdown-arrow {
+    display: none;
+  }
+  
+  .sidebar:not(.open) .nav-item {
+    justify-content: center;
+    padding: 10px 0;
+  }
+  
+  .sidebar:not(.open) .nav-item i {
+    margin-right: 0;
+  }
+}
+
+/* Hide text when sidebar is collapsed on mobile */
+@media (max-width: 768px) {
+  .sidebar:not(.open) .nav-item span,
+  .sidebar:not(.open) .dropdown-arrow {
+    display: none;
+  }
+  
+  .sidebar:not(.open) .nav-item {
+    justify-content: center;
+    padding: 10px 0;
+  }
+  
+  .sidebar:not(.open) .nav-item i {
+    margin-right: 0;
+  }
+}
+
+/* =====================================================
+   SETTINGS SUB MENU
+===================================================== */
+.sub-menu {
+  background: var(--bg-card);
+  margin: 10px 12px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.sub-nav-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  border-bottom: 1px solid var(--border-light);
+  white-space: nowrap;
+  transition: background 0.2s ease, color 0.2s ease;
+  cursor: pointer;
+}
+
+.sub-nav-item:last-child {
+  border-bottom: none;
+}
+
+.sub-nav-item:hover {
+  background: var(--bg-secondary);
+  color: var(--primary);
+}
+
+.sub-nav-item i {
+  margin-right: 8px;
+  width: 16px;
+  text-align: center;
+}
+
+/* Hide sub-menu when sidebar is collapsed */
+@media (min-width: 1024px) {
+  .sidebar:not(:hover) .sub-menu {
+    display: none;
+  }
+}
+
+@media (max-width: 1023px) {
+  .sidebar:not(.open) .sub-menu {
+    display: none;
+  }
+}
+
+/* =====================================================
+   SWITCH TOGGLE
+===================================================== */
+.switch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  inset: 0;
+  background: var(--border-medium);
+  border-radius: 24px;
+  transition: all 0.25s ease;
+}
+
+.slider::before {
+  content: "";
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  left: 3px;
+  bottom: 3px;
+  background: #fff;
+  border-radius: 50%;
+  transition: all 0.25s ease;
+}
+
+input:checked + .slider {
+  background: var(--success);
+}
+
+input:checked + .slider::before {
+  transform: translateX(20px);
+}
+
+/* =====================================================
+   LAYOUT OVERLAY & PANEL
+===================================================== */
+.layout-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.layout-panel {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  background: var(--bg-card);
+  z-index: 1000;
+  padding: 20px;
+  box-shadow: var(--shadow-md);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  animation: scaleIn 0.2s ease;
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.layout-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.layout-panel-header button {
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.layout-panel-header button:hover {
+  background: var(--bg-secondary);
+}
+
+/* =====================================================
+   RESPONSIVE ADJUSTMENTS FOR LAYOUT PANEL
+===================================================== */
+@media (max-width: 768px) {
+  .layout-panel {
+    width: 95%;
+    max-height: 85vh;
+  }
+}
+
+@media (max-width: 480px) {
+  .layout-panel {
+    width: 98%;
+    max-height: 90vh;
+  }
+}
+
+/* =====================================================
+   SCROLLBAR STYLING
+===================================================== */
+.sidebar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: var(--primary);
+  border-radius: 4px;
+}
+
+/* =====================================================
+   ACTIVE LINK STATE
+===================================================== */
+.nav-item.active {
+  background: var(--primary);
+  color: white;
+  border-left-color: white;
+}                      

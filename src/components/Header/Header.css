@@ -1,0 +1,246 @@
+.dashboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px;
+  background: transparent;
+  position: relative;
+}
+
+/* LEFT */
+.header-left h1 {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--heading);
+}
+
+/* CENTER */
+.header-center {
+  position: relative;
+  flex: 1;
+  max-width: 420px;
+  margin: 0 40px;
+}
+
+.header-search {
+  width: 100%;
+  padding: 10px 40px 10px 14px;
+  border-radius: 9px;
+  border-color: rgb(114, 5, 216);
+  font-size: 14px;
+  background: transparent;
+}
+
+.shortcut {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* RIGHT */
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.3s ease;
+}
+
+.header-btn {
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background-color: var(--button-bg);
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.header-btn.primary {
+  background: #7c72f5;
+  background: var(--button-bg);
+  color: #fff;
+  border: none;
+}
+
+.profile img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.header-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 10px;
+}
+
+.header-user .user-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--button-bg);
+  color: #f4f4f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.header-user .user-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* ================= COLLAPSE BUTTON ================= */
+.collapse-btn {
+  display: none;
+  /* background: var(--button-bg); */
+  background: none;
+  color: var(--text-primary);
+  border: none;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: 0.3s ease;
+}
+.collapse-btn:hover {
+  background: #6b7280;
+}
+
+/* ================= TRADE FILTER ================= */
+.trade-filter-wrapper {
+  position: relative;
+}
+
+.trade-filter-menu {
+  position: absolute;
+  top: 44px;
+  right: 0;
+  width: 180px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+  overflow: hidden;
+  z-index: 100;
+}
+
+.filter-menu-item {
+  padding: 10px 14px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.filter-menu-item:hover {
+  background: #f4f4f5;
+}
+
+.filter-menu-item.active {
+  background: #eef2ff;
+  color: #4f46e5;
+  font-weight: 600;
+}
+
+/* ================= PROFILE OVERLAY ================= */
+.profile-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 20px 20px;
+  overflow-y: auto;
+}
+
+/* ================= PROFILE CONTAINER ================= */
+.profile-overlay > * {
+  width: 100%;
+  max-width: 800px;
+  background: #f5f7fb;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  animation: profileFadeIn 0.25s ease-out;
+}
+
+/* ================= ANIMATION ================= */
+@keyframes profileFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ================= MOBILE ================= */
+@media (max-width: 768px) {
+
+  .dashboard-header {
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 12px 16px;
+  }
+
+  .header-left h1 {
+    font-size: 18px;
+  }
+
+  .header-center {
+    order: 3;
+    margin: 0;
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .header-search {
+    font-size: 13px;
+    padding: 8px 36px 8px 12px;
+  }
+
+  .collapse-btn {
+    display: block;
+  }
+
+  .header-right {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+
+  .header-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  .profile img,
+  .header-user .user-avatar {
+    width: 30px;
+    height: 30px;
+  }
+
+  .header-user .user-name {
+    font-size: 12px;
+  }
+
+  .profile-overlay {
+    padding: 0;
+  }
+
+  .profile-overlay > * {
+    min-height: 100vh;
+    border-radius: 0;
+  }
+}

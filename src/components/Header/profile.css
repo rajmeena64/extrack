@@ -1,0 +1,176 @@
+/* ================= ROOT ================= */
+.account-page {
+  display: flex;
+  gap: 28px;
+  padding: 28px;
+  background: #f5f7fb;
+  border-radius: 16px;
+}
+
+/* ================= LEFT MENU ================= */
+.account-page .settings-menu {
+  width: 260px;
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 22px;
+  flex-shrink: 0;
+}
+
+.account-page .settings-menu h4 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 18px;
+  color: #111;
+}
+
+.account-page .settings-menu ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.account-page .settings-menu li {
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #555;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.account-page .settings-menu li:hover {
+  background: #f0f2ff;
+}
+
+.account-page .settings-menu li.active {
+  background: #e6ebff;
+  color: #3b5cff;
+  font-weight: 600;
+}
+
+.account-page .settings-menu li.danger {
+  color: #e54848;
+}
+
+/* ================= RIGHT CONTENT ================= */
+.account-page .settings-content {
+  flex: 1;
+}
+
+.account-page .settings-content h2 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 18px;
+  color: #111;
+}
+
+/* ================= CARD ================= */
+.account-page .box {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 22px;
+  margin-bottom: 20px;
+}
+
+/* ================= PROFILE TOP ================= */
+.account-page .profile-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.account-page .profile-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.account-page .profile-left img {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.account-page .profile-left h3 {
+  font-size: 16px;
+  margin: 0;
+  color: #111;
+}
+
+.account-page .profile-left p {
+  font-size: 14px;
+  margin: 2px 0;
+  color: #666;
+}
+
+.account-page .profile-left span {
+  font-size: 13px;
+  color: #999;
+}
+
+/* ================= BOX HEADER ================= */
+.account-page .box-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.account-page .box-head h4 {
+  font-size: 15px;
+  margin: 0;
+  color: #111;
+}
+
+/* ================= GRID ================= */
+.account-page .grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  column-gap: 40px;
+  row-gap: 22px;
+}
+
+.account-page .grid label {
+  font-size: 13px;
+  color: #8a8a8a;
+}
+
+.account-page .grid p {
+  margin-top: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #222;
+}
+
+/* ================= EDIT BUTTON ================= */
+.account-page .icon-btn {
+  background: #f1f3ff;
+  border: none;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #3b5cff;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.account-page .icon-btn:hover {
+  background: #e1e6ff;
+}
+
+/* ================= RESPONSIVE ================= */
+@media (max-width: 900px) {
+  .account-page {
+    flex-direction: column;
+  }
+
+  .account-page .settings-menu {
+    width: 100%;
+  }
+
+  .account-page .grid {
+    grid-template-columns: 1fr;
+  }
+}
