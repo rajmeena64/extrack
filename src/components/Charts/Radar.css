@@ -1,154 +1,225 @@
+/* =====================================================
+   RADAR — tokens for light mode
+===================================================== */
+:root {
+  --radar-title:      #0f172a;
+  --radar-sub:        #475569;
+  --radar-bar-bg:     #e2e8f0;
+  --radar-row-border: rgba(51, 65, 85, 0.10);
+  --radar-empty:      #94a3b8;
 
-.radar-title {
-  font-size: 14px;
-  font-weight: 600;
-  margin-bottom: 6px;
+  --grade-excellent:  #16a34a;
+  --grade-good:       #d97706;
+  --grade-average:    #ea580c;
+  --grade-poor:       #dc2626;
+
+  --val-good:         #16a34a;
+  --val-mid:          #d97706;
+  --val-poor:         #dc2626;
 }
 
-.radar-metrics {
-  list-style: none;
-  padding: 0;
-  margin-top: 8px;
+/* =====================================================
+   RADAR — tokens for dark mode
+===================================================== */
+body.dark-mode {
+  --radar-title:      #e2e8f0;
+  --radar-sub:        #94a3b8;
+  --radar-bar-bg:     #1e293b;
+  --radar-row-border: rgba(148, 163, 184, 0.10);
+  --radar-empty:      #64748b;
+
+  --grade-excellent:  #4ade80;
+  --grade-good:       #fbbf24;
+  --grade-average:    #fb923c;
+  --grade-poor:       #f87171;
+
+  --val-good:         #4ade80;
+  --val-mid:          #fbbf24;
+  --val-poor:         #f87171;
 }
 
-.radar-row {
-  display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-  padding: 2px 0;
-}
-
-
-
-
-
-
-
+/* =====================================================
+   CARD
+===================================================== */
 .radar-card {
- 
-
-  border-radius: 4px;
-  padding: 7px;
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  padding: 10px 12px;
+  background: var(--bg-card);
+  width: 100%;
   height: 100%;
-
-
+  overflow: hidden;
 }
 
+/* =====================================================
+   HEADER
+===================================================== */
 .radar-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 13px;
-  color: #e5e7eb;
   margin-bottom: 8px;
 }
 
-.radar-header strong {
-  font-size: 18px;
-  color: #22c55e;
+.radar-title-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--radar-title);       /* ✅ light: near-black | dark: near-white */
 }
 
-/* BODY LAYOUT */
-.radar-body {
-/* BODY LAYOUT */
+.radar-score {
+  font-size: 20px;
+  font-weight: 700;
+}
 
+.radar-score-empty {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--radar-empty);
+}
 
-  gap: 5px;
+/* grade colour classes */
+.grade-excellent { color: var(--grade-excellent); }
+.grade-good      { color: var(--grade-good);      }
+.grade-average   { color: var(--grade-average);   }
+.grade-poor      { color: var(--grade-poor);       }
+
+/* =====================================================
+   EMPTY STATE
+===================================================== */
+.radar-empty {
+  display: flex;
   align-items: center;
-  height: 240px;
-  top: 6px;
-  
+  justify-content: center;
+  height: 180px;
+  font-size: 13px;
+  color: var(--radar-empty);
 }
 
+/* =====================================================
+   BODY
+===================================================== */
+.radar-body {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  height: 230px;
+}
 
-/* RADAR LEFT */
 .radar-chart {
   flex: 1;
-  align-items: center;
-  height: 190px;
-
-
+  height: 100%;
+  min-width: 0;
 }
 
-/* OVERALL RIGHT */
 .radar-overall {
-   width: 150px;
-  position: relative;
-  left: 149px;
-
-
-
-
-
-
+  width: 115px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 4px;
 }
 
-.radar-overall .label {
-  font-size: 11px;
-  color: #9ca3af;
-  margin-bottom: 6px;
-  display: block;
+/* =====================================================
+   OVERALL LABEL
+===================================================== */
+.radar-overall-label {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--radar-sub);           /* ✅ muted but visible */
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
 }
 
-.bar {
+/* =====================================================
+   PROGRESS BAR
+===================================================== */
+.radar-bar {
   height: 6px;
-  background: #111827;
+  background: var(--radar-bar-bg);
   border-radius: 999px;
   overflow: hidden;
 }
 
-.fill {
+.radar-bar-fill {
   height: 100%;
-  background: linear-gradient(
-    90deg,
-    #ef4444,
-    #facc15,
-    #22c55e
-  );
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ef4444, #facc15, #22c55e);
+  transition: width 0.5s ease;
 }
 
-.scale {
+/* =====================================================
+   SCALE ROW
+===================================================== */
+.radar-scale {
   display: flex;
   justify-content: space-between;
-  font-size: 10px;
-  color: #6b7280;
-  margin-top: 4px;
+  align-items: center;
+  margin-top: 2px;
 }
 
-/* MOBILE */
-@media (max-width: 400px) {
+.radar-scale-num {
+  font-size: 10px;
+  color: var(--radar-sub);           /* ✅ visible in both modes */
+}
+
+.radar-grade {
+  font-size: 10px;
+  font-weight: 700;
+}
+
+/* =====================================================
+   METRIC BREAKDOWN LIST
+===================================================== */
+.radar-metrics-list {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+}
+
+.radar-metric-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--radar-row-border);
+}
+
+.radar-metric-row:last-child {
+  border-bottom: none;
+}
+
+.radar-metric-label {
+  font-size: 10px;
+  color: var(--radar-sub);           /* ✅ light: dark-slate | dark: light-slate */
+}
+
+.radar-metric-value {
+  font-size: 10px;
+  font-weight: 700;
+}
+
+/* value colour classes */
+.val-good { color: var(--val-good); }
+.val-mid  { color: var(--val-mid);  }
+.val-poor { color: var(--val-poor); }
+
+/* =====================================================
+   MOBILE
+===================================================== */
+@media (max-width: 480px) {
   .radar-body {
     flex-direction: column;
+    height: auto;
   }
 
-.radar-card {
+  .radar-chart {
+    width: 100%;
+    height: 200px;
+  }
 
-
-  border: 1px solid var(--border-light);
-  border-radius: 6px;
-  padding: 6px;
-  background: var(--bg-card);
-  position: relative;
-  overflow: hidden;
-  height: 280px;
-  margin-top: 10px;
-  width: 100%;
-
- 
-}
-.radar-chart{
-  max-width: 350px;
-}
-
-.radar-body {
-/* BODY LAYOUT */
-
- 
-  display: grid;
-  gap: 1px;
-  align-items: center;
-
-  
-}
-
+  .radar-overall {
+    width: 100%;
+  }
 }

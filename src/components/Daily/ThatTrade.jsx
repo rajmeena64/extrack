@@ -5,6 +5,9 @@ import Chart from "./Chart";
 import SymbolWithIcon from "../Common/SymbolWithIcon";
 import { API_URL } from "../../utils/constants";
 
+// import TradePnLCurve from "./Tradepnlcurve ";
+
+
 function ThatTrade({ trades = [] }) {
   const { tradeId } = useParams();
   const navigate = useNavigate();
@@ -467,9 +470,25 @@ function ThatTrade({ trades = [] }) {
              }]}
 
             />
-          </div>
-        </div>
-      </div>
+
+
+    {/* <TradePnLCurve
+      symbol={getBinanceSymbol(trade.symbol)}
+      entryTime={trade.open_timestamp}
+      exitTime={trade.close_timestamp}
+      entryPrice={Number(trade.price)}
+      exitPrice={Number(trade.exit_price)}
+      quantity={Number(trade.quantity)}
+      side={trade.trade_type}
+    /> */}
+  </div>
+
+
+    </div>
+    </div>
+
+
+      
 
       {/* STRATEGY MODAL */}
       {showStrategyModal && (

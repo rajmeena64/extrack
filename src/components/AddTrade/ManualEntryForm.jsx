@@ -155,9 +155,10 @@ function ManualEntryForm({ API_URL, trades }) {
           <label htmlFor="symbol" className="required">Symbol</label>
 
 
-<Autocomplete
+ <Autocomplete
   freeSolo
   options={symbols}
+  value={formData.symbol || null}
   inputValue={formData.symbol}
 
   onInputChange={(event, newValue) => {
@@ -185,7 +186,11 @@ function ManualEntryForm({ API_URL, trades }) {
       }}
     />
   )}
-/>
+/> 
+
+
+
+
 
 
         </div>
