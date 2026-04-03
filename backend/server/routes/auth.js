@@ -40,6 +40,14 @@ const generateTokens = async (userId) => {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 30);
 
+
+        // 🔥 1. Purana token delete
+    await pool.query(
+        `DELETE FROM refresh_tokens WHERE user_id = $1`,
+        [userId]
+    );
+
+
     // Save refresh token to database
     await pool.query(
         `INSERT INTO refresh_tokens (user_id, token, expires_at) 
