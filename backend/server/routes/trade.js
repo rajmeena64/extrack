@@ -156,10 +156,13 @@ router.post('/save-bulk-trades', async (req, res) => {
     });
 });
 
-// *** SAVE API TRADES (WITH FULL TIMESTAMP SUPPORT) ***
+// // *** SAVE API TRADES (WITH FULL TIMESTAMP SUPPORT) ***
 router.post('/save-api-trade', async (req, res) => {
+
     try {
+    
         let trades = req.body;
+
         if (!Array.isArray(trades)) trades = [trades];
 
         let savedCount = 0;
@@ -275,9 +278,11 @@ router.post('/save-api-trade', async (req, res) => {
 
                 if (tradeRes.rows.length > 0) {
                     savedCount++;
+                    console.log("✅ SAVED:", ticket, symbol);
                     results.push({ success: true, ticket });
                 } else {
                     skippedCount++;
+                    console.log("⚠️ SKIPPED:", ticket, symbol);
                     results.push({ success: false, ticket, error: "duplicate ticket" });
                 }
 
@@ -286,6 +291,16 @@ router.post('/save-api-trade', async (req, res) => {
                 results.push({ success: false, error: err.message });
             }
         }
+
+
+
+
+
+        //             console.log("✅ API TRADE RESPONSE:", {
+        // savedCount,
+        // skippedCount,
+        // errorCount
+        // });
 
         res.json({
             success: true,
@@ -299,6 +314,17 @@ router.post('/save-api-trade', async (req, res) => {
         res.status(500).json({ success: false, error: err.message });
     }
 });
+
+
+
+
+
+
+
+
+
+
+
 
 
 // ============================
