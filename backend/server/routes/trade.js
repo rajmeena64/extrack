@@ -156,21 +156,29 @@ router.post('/save-bulk-trades', async (req, res) => {
     });
 });
 
-// // *** SAVE API TRADES (WITH FULL TIMESTAMP SUPPORT) ***
+
+
+// *** SAVE API TRADES (BULK OPTIMIZED) ***
 router.post('/save-api-trade', async (req, res) => {
 
     try {
-    
-        let trades = req.body;
 
+        let trades = req.body;
         if (!Array.isArray(trades)) trades = [trades];
 
-        let savedCount = 0;
+        let results = [];
         let skippedCount = 0;
         let errorCount = 0;
-        const results = [];
+
+        // We'll store DB insert data here
+        let values = [];
+        let params = [];
+        let i = 1;
+
+        let userIdMap = new Map(); // account_id -> user_id cache
 
         for (const trade of trades) {
+
             try {
                 const {
                     account_id,
@@ -183,108 +191,84 @@ router.post('/save-api-trade', async (req, res) => {
                     profit,
                     open_time,
                     close_time,
-                    open_timestamp,    // ✅ NEW
-                    close_timestamp,   // ✅ NEW
+                    open_timestamp,
+                    close_timestamp,
                     balance,
                     account_currency
                 } = trade;
 
-                // ✅ Basic validation
+                // basic validation
                 if (!account_id || !ticket || balance === undefined) {
                     errorCount++;
-                    results.push({ success: false, error: "missing required fields" });
+                    results.push({ success: false, ticket, error: "missing required fields" });
                     continue;
                 }
 
-                // 🔥 Timestamp validation (IMPORTANT)
                 if (!open_timestamp || !close_timestamp) {
                     errorCount++;
                     results.push({ success: false, ticket, error: "missing timestamps" });
                     continue;
                 }
 
-                // 1️⃣ GET OLD BALANCE + USER
-                const accRes = await pool.query(
-                    `SELECT user_id, balance FROM mt5_accounts WHERE account_id = $1`,
-                    [account_id]
-                );
+                // 🔥 cache user_id (avoid repeated DB calls)
+                let userId;
 
-                if (accRes.rows.length === 0) {
-                    errorCount++;
-                    results.push({ success: false, ticket, error: "account not found" });
-                    continue;
-                }
-
-                const userId = accRes.rows[0].user_id;
-                const oldBalance = Number(accRes.rows[0].balance);
-
-                // 2️⃣ CALCULATE BALANCE CHANGE %
-                let balanceChangePercent = 0;
-                if (oldBalance > 0) {
-                    balanceChangePercent = ((balance - oldBalance) / oldBalance) * 100;
-                }
-
-                // 3️⃣ UPDATE ACCOUNT
-                await pool.query(
-                    `
-                    UPDATE mt5_accounts
-                    SET balance = $1,
-                        balance_change = $2,
-                        account_currency = $3,
-                        last_connected = NOW()
-                    WHERE account_id = $4
-                    `,
-                    [balance, balanceChangePercent, account_currency, account_id]
-                );
-
-                // 4️⃣ INSERT TRADE (🔥 UPDATED)
-                const tradeRes = await pool.query(
-                    `
-                    INSERT INTO api_trades
-                    (
-                        user_id,
-                        account_id,
-                        platform,
-                        symbol,
-                        trade_type,
-                        quantity,
-                        price,
-                        exit_price,
-                        pnl,
-                        timestamp,
-                        open_timestamp,
-                        close_timestamp,
-                        ticket
-                    )
-                    VALUES ($1,$2,'mt5',$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
-                    ON CONFLICT (ticket) DO NOTHING
-                    RETURNING id
-                    `,
-                    [
-                        userId,
-                        account_id,
-                        symbol,
-                        type.toLowerCase(),
-                        volume,
-                        entry_price,
-                        exit_price,
-                        profit,
-                        close_time,        // 🟡 readable (old)
-                        open_timestamp,    // 🟢 ENTRY
-                        close_timestamp,   // 🔴 EXIT
-                        ticket
-                    ]
-                );
-
-                if (tradeRes.rows.length > 0) {
-                    savedCount++;
-                    console.log("✅ SAVED:", ticket, symbol);
-                    results.push({ success: true, ticket });
+                if (userIdMap.has(account_id)) {
+                    userId = userIdMap.get(account_id);
                 } else {
-                    skippedCount++;
-                    console.log("⚠️ SKIPPED:", ticket, symbol);
-                    results.push({ success: false, ticket, error: "duplicate ticket" });
+
+                    const accRes = await pool.query(
+                        `SELECT user_id, balance FROM mt5_accounts WHERE account_id = $1`,
+                        [account_id]
+                    );
+
+                    if (accRes.rows.length === 0) {
+                        errorCount++;
+                        results.push({ success: false, ticket, error: "account not found" });
+                        continue;
+                    }
+
+                    userId = accRes.rows[0].user_id;
+                    userIdMap.set(account_id, userId);
+
+                    // update balance once per account (not per trade)
+                    let oldBalance = Number(accRes.rows[0].balance);
+                    let balanceChangePercent = oldBalance > 0
+                        ? ((balance - oldBalance) / oldBalance) * 100
+                        : 0;
+
+                    await pool.query(
+                        `
+                        UPDATE mt5_accounts
+                        SET balance = $1,
+                            balance_change = $2,
+                            account_currency = $3,
+                            last_connected = NOW()
+                        WHERE account_id = $4
+                        `,
+                        [balance, balanceChangePercent, account_currency, account_id]
+                    );
                 }
+
+                // 🟢 prepare bulk insert
+                values.push(
+                    `($${i++},$${i++},'mt5',$${i++},$${i++},$${i++},$${i++},$${i++},$${i++},$${i++},$${i++},$${i++},$${i++})`
+                );
+
+                params.push(
+                    userId,
+                    account_id,
+                    symbol,
+                    type.toLowerCase(),
+                    volume,
+                    entry_price,
+                    exit_price,
+                    profit,
+                    close_time,
+                    open_timestamp,
+                    close_timestamp,
+                    ticket
+                );
 
             } catch (err) {
                 errorCount++;
@@ -292,39 +276,58 @@ router.post('/save-api-trade', async (req, res) => {
             }
         }
 
+        // ⚡ BULK INSERT (ONLY ONE QUERY)
+        if (values.length > 0) {
 
+            const query = `
+                INSERT INTO api_trades
+                (
+                    user_id,
+                    account_id,
+                    platform,
+                    symbol,
+                    trade_type,
+                    quantity,
+                    price,
+                    exit_price,
+                    pnl,
+                    timestamp,
+                    open_timestamp,
+                    close_timestamp,
+                    ticket
+                )
+                VALUES ${values.join(",")}
+                ON CONFLICT (ticket) DO NOTHING
+                RETURNING id
+            `;
 
+            const tradeRes = await pool.query(query, params);
 
+            // console.log("🚀 BULK INSERT DONE");
+            // console.log("📦 TOTAL INSERTED:", tradeRes.rows.length);
+            // console.log("⛔ SKIPPED COUNT:", skippedCount);
 
-        //             console.log("✅ API TRADE RESPONSE:", {
-        // savedCount,
-        // skippedCount,
-        // errorCount
-        // });
+            results.push({
+                success: true,
+                inserted: tradeRes.rows.length
+            });
+        }
 
         res.json({
             success: true,
-            savedCount,
-            skippedCount,
             errorCount,
+            skippedCount,
             results
+            
         });
 
     } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
+        res.status(500).json({
+            success: false,
+            error: err.message
+        });
     }
 });
-
-
-
-
-
-
-
-
-
-
-
 
 
 // ============================
