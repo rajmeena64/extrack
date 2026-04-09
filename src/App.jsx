@@ -37,23 +37,6 @@ function Profile() {
   );
 }
 
-const getTradesCacheKey = (userId, mode) => `trades-cache:${userId}:${mode}`;
-
-const getStoredTrades = (userId, mode) => {
-  if (!userId) return [];
-
-  try {
-    const raw = localStorage.getItem(getTradesCacheKey(userId, mode));
-    if (!raw) return [];
-
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (error) {
-    console.warn('Failed to parse trades cache:', error);
-    return [];
-  }
-};
-
 function App() {
   const [user, setUser] = useState(null);
   const [tradeMode, setTradeMode] = useState(() => localStorage.getItem('tradeMode') || 'all');
@@ -73,17 +56,8 @@ function App() {
     queryKey: ['trades', user?.ID, tradeMode],
     enabled: Boolean(user?.ID),
     queryFn: () => tradeManager.loadTrades(user.ID, tradeMode),
-    initialData: () => getStoredTrades(user?.ID, tradeMode),
+    placeholderData: (previousData) => previousData,
   });
-
-  useEffect(() => {
-    if (!user?.ID || !Array.isArray(tradesQuery.data)) return;
-
-    localStorage.setItem(
-      getTradesCacheKey(user.ID, tradeMode),
-      JSON.stringify(tradesQuery.data)
-    );
-  }, [user?.ID, tradeMode, tradesQuery.data]);
 
   // WebSocket
   useEffect(() => {
