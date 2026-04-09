@@ -1,15 +1,9 @@
 
-
-
-
-
-
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { createChart, CandlestickSeries, createSeriesMarkers } from "lightweight-charts";
 import { CrosshairMode } from "lightweight-charts";
-import "./Markets.css";
-import "../../utils/constants"
-import { API_URL } from "../../utils/constants";
+import "./Chart.css";
+import {API_URL} from "../../../utils/constants";
 
 const TF_MAP = { "1m": "1m", "5m": "5m", "15m": "15m", "1h": "1h" };
 const INTERVAL_MS = { "1m": 60*1000, "5m": 5*60*1000, "15m": 15*60*1000, "1h": 60*60*1000 };
