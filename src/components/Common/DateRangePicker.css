@@ -1,0 +1,327 @@
+.trade-date-picker {
+  width: 640px;
+  max-width: calc(100vw - 32px);
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-xl);
+  padding: 14px;
+  box-shadow: var(--shadow-xl);
+  backdrop-filter: blur(10px);
+}
+
+/* top range label */
+.trade-date-picker__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 0 14px;
+  margin-bottom: 14px;
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--bg-secondary) 88%, transparent);
+  border: 1px solid var(--border-light);
+  color: var(--heading);
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+}
+
+.trade-date-picker__label-icon {
+  font-size: 15px;
+  color: var(--primary-light);
+  flex-shrink: 0;
+}
+
+/* calendar root */
+.trade-rdp {
+  --rdp-accent-color: var(--primary);
+  --rdp-accent-background-color: color-mix(in srgb, var(--primary) 14%, transparent);
+  margin: 0;
+  color: var(--text-primary);
+}
+
+/* months wrapper */
+.trade-rdp .rdp-months {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  align-items: start;
+}
+
+/* month card */
+.trade-rdp .rdp-month {
+  position: relative;
+  min-width: 0;
+  padding: 18px 22px 16px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--bg-secondary) 92%, transparent) 0%,
+    color-mix(in srgb, var(--bg-card) 100%, transparent) 100%
+  );
+  border-top: 1px solid var(--border-light);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.trade-rdp .rdp-month:first-child {
+  border-left: 1px solid var(--border-light);
+  border-right: 1px solid color-mix(in srgb, var(--border-light) 75%, transparent);
+  border-radius: 14px 0 0 14px;
+}
+
+.trade-rdp .rdp-month:last-child {
+  border-right: 1px solid var(--border-light);
+  border-left: 1px solid color-mix(in srgb, var(--border-light) 75%, transparent);
+  border-radius: 0 14px 14px 0;
+}
+
+/* caption */
+.trade-rdp .rdp-month_caption,
+.trade-rdp .rdp-caption {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  margin-bottom: 12px;
+}
+
+.trade-rdp .rdp-caption_label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--heading);
+  letter-spacing: 0.01em;
+}
+
+/* nav */
+.trade-rdp .rdp-nav {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+
+}
+
+.trade-rdp .rdp-button_previous,
+.trade-rdp .rdp-button_next,
+.trade-rdp .rdp-nav_button {
+  pointer-events: auto;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: var(--transition);
+}
+
+.trade-rdp .rdp-button_previous,
+.trade-rdp .rdp-nav_button_previous {
+  left: 0;
+}
+
+.trade-rdp .rdp-button_next,
+.trade-rdp .rdp-nav_button_next {
+  right: 0;
+}
+
+.trade-rdp .rdp-button_previous:hover,
+.trade-rdp .rdp-button_next:hover,
+.trade-rdp .rdp-nav_button:hover {
+  background: color-mix(in srgb, var(--bg-secondary) 85%, transparent);
+  border-color: var(--border-medium);
+  color: var(--heading);
+}
+
+.trade-rdp__nav-icon {
+  font-size: 64px;
+  color: rgb(255, 0, 170);
+  size: 100px;
+  
+}
+
+/* weekdays */
+.trade-rdp .rdp-weekdays {
+  margin-bottom: 8px;
+}
+
+.trade-rdp .rdp-weekday {
+  width: 40px;
+  height: 28px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+  padding: 0;
+}
+
+/* table */
+.trade-rdp .rdp-month_grid,
+.trade-rdp .rdp-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.trade-rdp .rdp-week {
+  height: 40px;
+}
+
+/* cells */
+.trade-rdp .rdp-day,
+.trade-rdp .rdp-cell {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* day button */
+.trade-rdp .rdp-day_button,
+.trade-rdp .rdp-button_reset {
+  width: 32px;
+  height: 32px;
+  margin: 0 auto;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+}
+
+.trade-rdp .rdp-day_button:hover,
+.trade-rdp .rdp-button_reset:hover {
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+  color: var(--heading);
+}
+
+/* outside days */
+.trade-rdp .rdp-day_outside .rdp-day_button,
+.trade-rdp .rdp-outside .rdp-day_button {
+  color: color-mix(in srgb, var(--text-muted) 55%, transparent);
+}
+
+/* today */
+.trade-rdp .rdp-day_today .rdp-day_button,
+.trade-rdp .rdp-today .rdp-day_button {
+  border-color: color-mix(in srgb, var(--primary) 35%, transparent);
+  color: var(--heading);
+}
+
+/* selected day / range ends */
+.trade-rdp .rdp-day_selected .rdp-day_button,
+.trade-rdp .rdp-selected .rdp-day_button,
+.trade-rdp .rdp-range_start .rdp-day_button,
+.trade-rdp .rdp-range_end .rdp-day_button {
+  background: color-mix(in srgb, var(--primary) 16%, transparent);
+  border-color: color-mix(in srgb, var(--primary) 28%, transparent);
+  color: var(--heading);
+  box-shadow: var(--shadow-sm);
+}
+
+/* middle fill */
+.trade-rdp .rdp-range_middle,
+.trade-rdp .rdp-day_range_middle {
+  background: color-mix(in srgb, var(--primary) 7%, transparent);
+}
+
+.trade-rdp .rdp-range_middle .rdp-day_button,
+.trade-rdp .rdp-day_range_middle .rdp-day_button {
+  background: transparent;
+  color: var(--heading);
+  border-color: transparent;
+  border-radius: 0;
+}
+
+/* smooth strip */
+.trade-rdp .rdp-range_start {
+  background: linear-gradient(
+    to right,
+    transparent 0,
+    color-mix(in srgb, var(--primary) 7%, transparent) 100%
+  );
+  border-radius: 999px 0 0 999px;
+}
+
+.trade-rdp .rdp-range_end {
+  background: linear-gradient(
+    to left,
+    transparent 0,
+    color-mix(in srgb, var(--primary) 7%, transparent) 100%
+  );
+  border-radius: 0 999px 999px 0;
+}
+
+.trade-rdp .rdp-range_start.rdp-range_end {
+  background: transparent;
+  border-radius: 999px;
+}
+
+/* disabled */
+.trade-rdp .rdp-day_disabled .rdp-day_button,
+.trade-rdp .rdp-disabled .rdp-day_button {
+  opacity: 0.28;
+  pointer-events: none;
+}
+
+/* focus */
+.trade-rdp .rdp-day_button:focus-visible,
+.trade-rdp .rdp-button_previous:focus-visible,
+.trade-rdp .rdp-button_next:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--primary) 35%, transparent);
+  outline-offset: 2px;
+}
+
+/* optional bottom preview */
+.trade-date-picker__input-preview {
+  margin-top: 14px;
+  height: 44px;
+  border-radius: 10px;
+  border: 1px solid var(--border-medium);
+  background: var(--bg-secondary);
+  color: var(--heading);
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+}
+
+.trade-date-picker__input-preview-icon {
+  color: var(--text-secondary);
+  font-size: 16px;
+}
+
+
+/* responsive */
+@media (max-width: 760px) {
+  .trade-date-picker {
+    width: 100%;
+    padding: 12px;
+    border-radius: var(--radius-lg);
+  }
+
+  .trade-rdp .rdp-months {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .trade-rdp .rdp-month:first-child,
+  .trade-rdp .rdp-month:last-child {
+    border-radius: 14px;
+  }
+}

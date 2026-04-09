@@ -16,7 +16,7 @@ import { API_URL } from "./utils/constants";
 import AddTrade from './components/AddTrade/AddTrade';
 import Analytics from "./components/Analytics/Analytics";
 import TradeView from './components/Daily/TradeView';
-import ThatTrade from './components/Daily/ThatTrade';
+import ThatTrade from './components/Daily/ThatTrade/ThatTrade';
 
 function Profile() {
   const currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
