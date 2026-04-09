@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import UserLoginModal from '../user/UserLoginModal/UserLoginModal';
 import DashboardSettings from './DashboardSettings';
 
@@ -12,6 +12,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import './Sidebar.css';
 
 function Sidebar() {
+  const navigate = useNavigate();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [layoutOpen, setLayoutOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
@@ -89,7 +90,8 @@ function Sidebar() {
     e.preventDefault();
     localStorage.removeItem('currentUser');
     localStorage.removeItem('tradeMode');
-    window.location.reload();
+    window.dispatchEvent(new Event('auth:logout'));
+    navigate('/dashboard', { replace: true });
   };
 
   return (

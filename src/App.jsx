@@ -85,6 +85,17 @@ function App() {
     );
   }, [user?.ID, tradeMode, tradesQuery.data]);
 
+  useEffect(() => {
+    const handleAuthLogout = () => {
+      setUser(null);
+      setTradeMode('all');
+      queryClient.clear();
+    };
+
+    window.addEventListener('auth:logout', handleAuthLogout);
+    return () => window.removeEventListener('auth:logout', handleAuthLogout);
+  }, [queryClient]);
+
   // WebSocket
   useEffect(() => {
     if (!user?.ID) return;
