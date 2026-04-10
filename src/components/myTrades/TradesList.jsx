@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom"; // <-- added
 import "./Trades.css";
 import SymbolWithIcon from "../Common/SymbolWithIcon";
-import { FaEllipsisVertical } from "react-icons/fa6";
+import { EllipsisVertical } from "../Common/icons";
 
 const FIELDS = [
   { key: "symbol", label: "Symbol" },
@@ -13,7 +13,7 @@ const FIELDS = [
   { key: "trade_type", label: "Type" },
   { key: "strategy", label: "Strategy" },
 ];
-
+const ICON_SIZE = 25;
 const LOCAL_STORAGE_KEY = "trades_visible_fields";
 
 function TradesList({ trades = [] }) {
@@ -129,7 +129,7 @@ function TradesList({ trades = [] }) {
 
         {/* SETTINGS */}
         <div className="settings-wrapper" ref={dropdownRef}>
-          <FaEllipsisVertical
+         <EllipsisVertical size={ICON_SIZE}
             className="settings-icon"
             onClick={() => setShowSettings((prev) => !prev)}
           />

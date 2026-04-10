@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
@@ -9,15 +9,15 @@ import '@fontsource/roboto/700.css';
 import './styles/style.css';
 
 import Sidebar from './components/Sidebar/Sidebar';
-import Dashboard from './components/dashboard/dashboard';
 import { TradeManager } from './utils/tradeManager';
 import { API_URL } from './utils/constants';
 
-/* ---------------- PAGES ---------------- */
-import AddTrade from './components/AddTrade/AddTrade';
-import Analytics from './components/Analytics/Analytics';
-import TradeView from './components/Daily/TradeView';
-import ThatTrade from './components/Daily/ThatTrade/ThatTrade';
+// Lazy loaded components
+const Dashboard = lazy(() => import('./components/dashboard/dashboard'));
+const AddTrade = lazy(() => import('./components/AddTrade/AddTrade'));
+const Analytics = lazy(() => import('./components/Analytics/Analytics'));
+const TradeView = lazy(() => import('./components/Daily/TradeView'));
+const ThatTrade = lazy(() => import('./components/Daily/ThatTrade/ThatTrade'));
 
 function Profile() {
   const currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
@@ -109,27 +109,27 @@ function App() {
       <div className="dashboard">
         <Sidebar />
 
-        <Routes>
-          <Route path="/" element={<Navigate to="/dashboard" />} />
-
-          <Route
-            path="/dashboard"
-            element={
-              <Dashboard
-                tradeMode={tradeMode}
-                setTradeMode={handleTradeModeChange}
-                trades={trades}
-                isLoading={trades.length === 0} 
-              />
-            }
-          />
-
-          <Route path="/add-trade" element={<AddTrade trades={trades} />} />
-          <Route path="/analytics" element={<Analytics />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/TradeView" element={<TradeView trades={trades} />} />
-          <Route path="/trade/:tradeId" element={<ThatTrade />} />
-        </Routes>
+        <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Loading...</div>}>
+          <Routes>
+            <Route path="/" element={<Navigate to="/dashboard" />} />
+            <Route
+              path="/dashboard"
+              element={
+                <Dashboard
+                  tradeMode={tradeMode}
+                  setTradeMode={handleTradeModeChange}
+                  trades={trades}
+                  isLoading={trades.length === 0} 
+                />
+              }
+            />
+            <Route path="/add-trade" element={<AddTrade trades={trades} />} />
+            <Route path="/analytics" element={<Analytics />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/TradeView" element={<TradeView trades={trades} />} />
+            <Route path="/trade/:tradeId" element={<ThatTrade />} />
+          </Routes>
+        </Suspense>
       </div>
     </BrowserRouter>
   );

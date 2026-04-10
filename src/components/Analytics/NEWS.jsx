@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 
-function Calendar({ darkMode }) {
+function NEWS({ darkMode }) {
   const src = useMemo(() => {
     const theme = darkMode ? "dark" : "light";
 
@@ -25,4 +25,4 @@ function Calendar({ darkMode }) {
   );
 }
 
-export default Calendar;
+export default NEWS;
