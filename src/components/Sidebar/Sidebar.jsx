@@ -127,7 +127,7 @@ function Sidebar() {
 
 <Link to="/TradeView" className="nav-item" onClick={() => setSidebarOpen(false)}>
      < BarChartIcon fontSize='small'/> 
-     <span>Markets</span>
+     <span>Trades</span>
 </Link>
 
         {/* SETTINGS */}

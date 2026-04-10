@@ -114,7 +114,6 @@ body {
 
     overflow-y: auto;
     position: relative;
-
     height: 100%;
     min-height: 0%;
    
@@ -136,16 +135,7 @@ body {
     color: var(--text-primary);
 }
 
-/* Overview Section - Two Columns */
-.overview-section {
-    display: grid;
-    grid-template-columns: minmax(0, 1.65fr) minmax(0, 2fr);
-    gap: 10px;
-    width: 100%;
-    align-items: start;
-    /* height: calc(100% - 80px); */
-   
-}
+
 
 /* Charts Wrapper - Three Columns */
 .charts-wrapper {
@@ -162,7 +152,7 @@ body {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 10px;
     width: 100%;
-   height: 100%;
+    height: 100%;
  
 }
 
@@ -177,9 +167,29 @@ body {
     border: 1px solid var(--border-light);
     overflow: hidden;
 
+}
 
-  
-    
+.overview-section {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+    gap: 10px;
+    width: 100%;
+    align-items: stretch;
+}
+
+.second {
+    display: grid;
+    grid-template-rows: 1fr 1fr;
+    gap: 10px;
+    min-width: 0;
+    height: 100%;
+}
+
+.trades-section {
+    min-width: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
 }
 
 .chart-cardx {
@@ -190,28 +200,23 @@ body {
     border-radius: 6px;
     background: var(--bg-card);
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+
 }
 
-/* Radar Card */
-.radar-card {
-    border: 1px solid var(--border-light);
-    border-radius: 6px;
-    padding: 12px;
-    background: var(--bg-card);
-    position: relative;
-    overflow: hidden;
+.radar-card,
+.my-trades {
     width: 100%;
     height: 100%;
-}
-
-.second {
-    display: grid;
-    grid-template-rows: auto auto;
-    gap: 10px;
-    width: 100%;
     min-width: 0;
-    height: 100%;
 }
+
+
+
+
+
+
 
 /* Trades Card */
 .my-trades {
@@ -222,7 +227,8 @@ body {
     display: flex;
     flex-direction: column;
     width: 100%;
-    height: 285px;
+   
+ 
 }
 
 .chart-card h3 {

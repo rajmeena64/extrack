@@ -1,6 +1,3 @@
-
-
-
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Markets.css";
@@ -11,6 +8,62 @@ import DateRangePicker from "../Common/DateRangePicker";
 
 import { FiFilter, FiCalendar, FiColumns, FiChevronDown } from "react-icons/fi";
 import { HiOutlineAdjustmentsHorizontal } from "react-icons/hi2";
+
+// Skeleton Loader Components
+const SkeletonHeader = () => (
+  <div className="trade-header-shell">
+    <div className="trade-header">
+      <div className="trade-header-left">
+        <div className="trade-title-block">
+          <div className="trade-title-row">
+            <div className="skeleton-icon" style={{ width: '24px', height: '24px', borderRadius: '6px' }}></div>
+            <div className="skeleton-text" style={{ width: '120px', height: '32px', marginLeft: '12px' }}></div>
+          </div>
+          <div className="skeleton-text" style={{ width: '280px', height: '20px', marginTop: '8px' }}></div>
+        </div>
+      </div>
+      <div className="trade-header-right">
+        <div className="skeleton-button" style={{ width: '100px', height: '38px' }}></div>
+        <div className="skeleton-button" style={{ width: '140px', height: '38px' }}></div>
+        <div className="skeleton-button" style={{ width: '130px', height: '38px' }}></div>
+        <div className="skeleton-button" style={{ width: '100px', height: '38px' }}></div>
+      </div>
+    </div>
+  </div>
+);
+
+const SkeletonTableRow = () => (
+  <tr className="skeleton-row">
+    <td><div className="skeleton-text" style={{ width: '90px', height: '16px' }}></div></td>
+    <td><div className="skeleton-text" style={{ width: '80px', height: '16px' }}></div></td>
+    <td><div className="skeleton-text" style={{ width: '50px', height: '16px' }}></div></td>
+    <td><div className="skeleton-text" style={{ width: '60px', height: '16px' }}></div></td>
+    <td><div className="skeleton-text" style={{ width: '100px', height: '16px' }}></div></td>
+  </tr>
+);
+
+const SkeletonTable = () => (
+  <div className="trades-table-card">
+    <div className="trades-table-container">
+      <table className="trades-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Symbol</th>
+            <th>Type</th>
+            <th>P&L</th>
+            <th>Strategy</th>
+          </tr>
+        </thead>
+        <tbody>
+          {[...Array(8)].map((_, index) => (
+            <SkeletonTableRow key={index} />
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+);
 
 function TradeView({ trades = [] }) {
   const navigate = useNavigate();
@@ -54,6 +107,9 @@ function TradeView({ trades = [] }) {
     strategy: true,
   });
 
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
   /* =======================
      OUTSIDE CLICK
   ======================= */
@@ -75,18 +131,48 @@ function TradeView({ trades = [] }) {
   ======================= */
   useEffect(() => {
     const loadSettings = async () => {
+      setIsLoading(true);
       try {
         const res = await api.get("/settings");
         const data = res.data;
 
         if (data.success && data.settings) {
-          setFilters(data.settings.filters || filters);
-          setVisibleColumns(data.settings.columns || visibleColumns);
-          setCurrentMonth(data.settings.currentMonth ?? currentMonth);
-          setCurrentYear(data.settings.currentYear ?? currentYear);
+          setFilters(
+            data.settings.filters || {
+              symbol: "",
+              tradeType: "",
+              winTrades: false,
+              lossTrades: false,
+              minPnl: "",
+              maxPnl: "",
+              sortBy: "",
+              order: "desc",
+            }
+          );
+
+          setVisibleColumns(
+            data.settings.columns || {
+              date: true,
+              symbol: true,
+              type: true,
+              pnl: true,
+              entry: false,
+              exit: false,
+              notes: false,
+              rating: false,
+              strategy: true,
+            }
+          );
+
+          setCurrentMonth(data.settings.currentMonth ?? new Date().getMonth());
+          setCurrentYear(data.settings.currentYear ?? new Date().getFullYear());
         }
       } catch (err) {
         console.error("Error loading settings:", err);
+      } finally {
+        setSettingsLoaded(true);
+        // Add a small delay to ensure smooth transition
+        setTimeout(() => setIsLoading(false), 300);
       }
     };
 
@@ -244,9 +330,56 @@ function TradeView({ trades = [] }) {
     setDateRange({ from: "", to: "" });
   };
 
-return (
-  <div className="main-content ">
+  // Show skeleton while loading
+  if (isLoading || !settingsLoaded) {
+    return (
+      <div className="main-content">
+        <SkeletonHeader />
+        <SkeletonTable />
+        <style jsx>{`
+          @keyframes skeleton-pulse {
+            0% {
+              opacity: 1;
+            }
+            50% {
+              opacity: 0.5;
+            }
+            100% {
+              opacity: 1;
+            }
+          }
+          
+          .skeleton-text {
+            background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
+            background-size: 200% 100%;
+            animation: skeleton-pulse 1.5s ease-in-out infinite;
+            border-radius: 4px;
+            height: 16px;
+          }
+          
+          .skeleton-icon {
+            background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
+            background-size: 200% 100%;
+            animation: skeleton-pulse 1.5s ease-in-out infinite;
+          }
+          
+          .skeleton-button {
+            background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
+            background-size: 200% 100%;
+            animation: skeleton-pulse 1.5s ease-in-out infinite;
+            border-radius: 6px;
+          }
+          
+          .skeleton-row td {
+            padding: 12px 16px;
+          }
+        `}</style>
+      </div>
+    );
+  }
 
+  return (
+    <div className="main-content">
       {(showFilters || showSettings || showDatePicker) && (
         <div
           className="popup-overlay"
@@ -258,192 +391,156 @@ return (
         />
       )}
 
-
-    {/* HEADER */}
-    <div className="trade-header-shell">
-      <div className="trade-header">
-        <div className="trade-header-left">
-        <div className="trade-title-block">
-            <div className="trade-title-row">
-              <HiOutlineAdjustmentsHorizontal className="trade-title-icon" />
-              <h1 className="trade-page-title">Trade Log</h1>
-            </div>
-            <p className="trade-page-subtitle">
-              Review, filter and analyze all your trades in one place
-            </p>
-          </div>
-        </div>
-
-        <div className="trade-header-right">
-          {/* FILTERS */}
-          <div className="toolbar-group" ref={filterRef}>
-          <button
-            className={`toolbar-btn ${showFilters ? "toolbar-btn-active" : ""}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowFilters(!showFilters);
-              setShowSettings(false);
-              setShowDatePicker(false);
-            }}
-          >
-            <FiFilter className="toolbar-svg-icon" />
-            <span className="toolbar-btn-text">Filters</span>
-            <FiChevronDown className="toolbar-caret-icon" />
-          </button>
-
-            {showFilters && (
-              <div className="toolbar-dropdown filter-panel popup-elevated">
-                <h4>Advanced Filters</h4>
-
-                <select
-                  value={filters.symbol}
-                  onChange={(e) =>
-                    setFilters({ ...filters, symbol: e.target.value })
-                  }
-                >
-                  <option value="">All Symbols</option>
-                  {uniqueSymbols.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-
-                <select
-                  value={filters.tradeType}
-                  onChange={(e) =>
-                    setFilters({ ...filters, tradeType: e.target.value })
-                  }
-                >
-                  <option value="">All Types</option>
-                  <option value="buy">Buy</option>
-                  <option value="sell">Sell</option>
-                </select>
-
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={filters.winTrades}
-                    onChange={(e) =>
-                      setFilters({ ...filters, winTrades: e.target.checked })
-                    }
-                  />
-                  Winning Trades
-                </label>
-
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={filters.lossTrades}
-                    onChange={(e) =>
-                      setFilters({ ...filters, lossTrades: e.target.checked })
-                    }
-                  />
-                  Losing Trades
-                </label>
-
-                <input
-                  type="number"
-                  placeholder="Min P&L"
-                  value={filters.minPnl}
-                  onChange={(e) =>
-                    setFilters({ ...filters, minPnl: e.target.value })
-                  }
-                />
-
-                <input
-                  type="number"
-                  placeholder="Max P&L"
-                  value={filters.maxPnl}
-                  onChange={(e) =>
-                    setFilters({ ...filters, maxPnl: e.target.value })
-                  }
-                />
-
-                <select
-                  value={filters.sortBy}
-                  onChange={(e) =>
-                    setFilters({ ...filters, sortBy: e.target.value })
-                  }
-                >
-                  <option value="">Sort By</option>
-                  <option value="pnl">P&L</option>
-                  <option value="date">Date</option>
-                </select>
-
-                <select
-                  value={filters.order}
-                  onChange={(e) =>
-                    setFilters({ ...filters, order: e.target.value })
-                  }
-                >
-                  <option value="desc">High → Low</option>
-                  <option value="asc">Low → High</option>
-                </select>
-
-                <button className="toolbar-action-btn" onClick={resetFilters}>
-                  Reset
-                </button>
+      {/* HEADER */}
+      <div className="trade-header-shell">
+        <div className="trade-header">
+          <div className="trade-header-left">
+            <div className="trade-title-block">
+              <div className="trade-title-row">
+                <HiOutlineAdjustmentsHorizontal className="trade-title-icon" />
+                <h1 className="trade-page-title">Trade Log</h1>
               </div>
-            )}
+              <p className="trade-page-subtitle">
+                Review, filter and analyze all your trades in one place
+              </p>
+            </div>
           </div>
 
-          {/* DATE */}
-          <div className="toolbar-group" ref={datePickerRef}>
-          <button
-            className={`toolbar-btn toolbar-btn-date ${
-              showDatePicker ? "toolbar-btn-active" : ""
-            }`}
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowDatePicker(!showDatePicker);
-              setShowFilters(false);
-              setShowSettings(false);
-            }}
-          >
-            <div className="toolbar-inline">
-              <FiCalendar className="toolbar-svg-icon" />
-              <span className="toolbar-btn-text">{formatDateLabel()}</span>
+          <div className="trade-header-right">
+            {/* FILTERS */}
+            <div className="toolbar-group" ref={filterRef}>
+              <button
+                className={`toolbar-btn ${showFilters ? "toolbar-btn-active" : ""}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowFilters(!showFilters);
+                  setShowSettings(false);
+                  setShowDatePicker(false);
+                }}
+              >
+                <FiFilter className="toolbar-svg-icon" />
+                <span className="toolbar-btn-text">Filters</span>
+                <FiChevronDown className="toolbar-caret-icon" />
+              </button>
+
+              {showFilters && (
+                <div className="toolbar-dropdown filter-panel popup-elevated">
+                  <h4>Advanced Filters</h4>
+
+                  <select
+                    value={filters.symbol}
+                    onChange={(e) =>
+                      setFilters({ ...filters, symbol: e.target.value })
+                    }
+                  >
+                    <option value="">All Symbols</option>
+                    {uniqueSymbols.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+
+                  <select
+                    value={filters.tradeType}
+                    onChange={(e) =>
+                      setFilters({ ...filters, tradeType: e.target.value })
+                    }
+                  >
+                    <option value="">All Types</option>
+                    <option value="buy">Buy</option>
+                    <option value="sell">Sell</option>
+                  </select>
+
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={filters.winTrades}
+                      onChange={(e) =>
+                        setFilters({ ...filters, winTrades: e.target.checked })
+                      }
+                    />
+                    Winning Trades
+                  </label>
+
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={filters.lossTrades}
+                      onChange={(e) =>
+                        setFilters({ ...filters, lossTrades: e.target.checked })
+                      }
+                    />
+                    Losing Trades
+                  </label>
+
+                  <input
+                    type="number"
+                    placeholder="Min P&L"
+                    value={filters.minPnl}
+                    onChange={(e) =>
+                      setFilters({ ...filters, minPnl: e.target.value })
+                    }
+                  />
+
+                  <input
+                    type="number"
+                    placeholder="Max P&L"
+                    value={filters.maxPnl}
+                    onChange={(e) =>
+                      setFilters({ ...filters, maxPnl: e.target.value })
+                    }
+                  />
+
+                  <select
+                    value={filters.sortBy}
+                    onChange={(e) =>
+                      setFilters({ ...filters, sortBy: e.target.value })
+                    }
+                  >
+                    <option value="">Sort By</option>
+                    <option value="pnl">P&L</option>
+                    <option value="date">Date</option>
+                  </select>
+
+                  <select
+                    value={filters.order}
+                    onChange={(e) =>
+                      setFilters({ ...filters, order: e.target.value })
+                    }
+                  >
+                    <option value="desc">High → Low</option>
+                    <option value="asc">Low → High</option>
+                  </select>
+
+                  <button className="toolbar-action-btn" onClick={resetFilters}>
+                    Reset
+                  </button>
+                </div>
+              )}
             </div>
-            <FiChevronDown className="toolbar-caret-icon" />
-          </button>
 
-            {/* {showDatePicker && (
-              <div className="toolbar-dropdown date-dropdown popup-elevated">
-                <div className="month-nav-box">
-                  <button onClick={handlePrevMonth}>◀</button>
-                  <span>
-                    {monthNames[currentMonth]} {currentYear}
-                  </span>
-                  <button onClick={handleNextMonth}>▶</button>
+            {/* DATE */}
+            <div className="toolbar-group" ref={datePickerRef}>
+              <button
+                className={`toolbar-btn toolbar-btn-date ${
+                  showDatePicker ? "toolbar-btn-active" : ""
+                }`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowDatePicker(!showDatePicker);
+                  setShowFilters(false);
+                  setShowSettings(false);
+                }}
+              >
+                <div className="toolbar-inline">
+                  <FiCalendar className="toolbar-svg-icon" />
+                  <span className="toolbar-btn-text">{formatDateLabel()}</span>
                 </div>
-
-                <div className="date-range-box">
-                  <label>From</label>
-                  <input
-                    type="date"
-                    value={dateRange.from}
-                    onChange={(e) =>
-                      setDateRange({ ...dateRange, from: e.target.value })
-                    }
-                  />
-                </div>
-
-                <div className="date-range-box">
-                  <label>To</label>
-                  <input
-                    type="date"
-                    value={dateRange.to}
-                    onChange={(e) =>
-                      setDateRange({ ...dateRange, to: e.target.value })
-                    }
-                  />
-                </div>
-              </div>
-            )} */}
+                <FiChevronDown className="toolbar-caret-icon" />
+              </button>
 
               {showDatePicker && (
-                // <div className="toolbar-dropdown popup-elevated">
                 <div className="calendar-wrapper">
                   <DateRangePicker
                     value={dateRange}
@@ -456,136 +553,131 @@ return (
                   />
                 </div>
               )}
+            </div>
 
+            {/* ACCOUNT */}
+            <div className="toolbar-group">
+              <select
+                className="toolbar-select"
+                value={selectedAccount}
+                onChange={(e) => setSelectedAccount(e.target.value)}
+              >
+                <option>All Accounts</option>
+                <option>Live Account</option>
+                <option>Demo Account</option>
+                <option>Funded Account</option>
+              </select>
+            </div>
 
+            {/* COLUMNS */}
+            <div className="toolbar-group" ref={settingsRef}>
+              <button
+                className={`toolbar-btn toolbar-btn-ghost ${
+                  showSettings ? "toolbar-btn-active" : ""
+                }`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowSettings(!showSettings);
+                  setShowFilters(false);
+                  setShowDatePicker(false);
+                }}
+              >
+                <FiColumns className="toolbar-svg-icon" />
+                <span className="toolbar-btn-text">Columns</span>
+                <FiChevronDown className="toolbar-caret-icon" />
+              </button>
 
-          </div>
+              {showSettings && (
+                <div className="toolbar-dropdown filter-panel popup-elevated">
+                  <h4>Column Settings</h4>
 
-          {/* ACCOUNT */}
-          <div className="toolbar-group">
-            <select
-              className="toolbar-select"
-              value={selectedAccount}
-              onChange={(e) => setSelectedAccount(e.target.value)}
-            >
-              <option>All Accounts</option>
-              <option>Live Account</option>
-              <option>Demo Account</option>
-              <option>Funded Account</option>
-            </select>
-          </div>
+                  {Object.keys(visibleColumns).map((col) => (
+                    <label key={col}>
+                      <input
+                        type="checkbox"
+                        checked={visibleColumns[col]}
+                        onChange={() =>
+                          setVisibleColumns({
+                            ...visibleColumns,
+                            [col]: !visibleColumns[col],
+                          })
+                        }
+                      />
+                      {col.toUpperCase()}
+                    </label>
+                  ))}
 
-          {/* COLUMNS */}
-          <div className="toolbar-group" ref={settingsRef}>
-            <button
-              className={`toolbar-btn toolbar-btn-ghost ${
-                showSettings ? "toolbar-btn-active" : ""
-              }`}
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowSettings(!showSettings);
-                setShowFilters(false);
-                setShowDatePicker(false);
-              }}
-            >
-              <FiColumns className="toolbar-svg-icon" />
-              <span className="toolbar-btn-text">Columns</span>
-              <FiChevronDown className="toolbar-caret-icon" />
-            </button>
-
-            {showSettings && (
-              <div className="toolbar-dropdown filter-panel popup-elevated">
-                <h4>Column Settings</h4>
-
-                {Object.keys(visibleColumns).map((col) => (
-                  <label key={col}>
-                    <input
-                      type="checkbox"
-                      checked={visibleColumns[col]}
-                      onChange={() =>
-                        setVisibleColumns({
-                          ...visibleColumns,
-                          [col]: !visibleColumns[col],
-                        })
-                      }
-                    />
-                    {col.toUpperCase()}
-                  </label>
-                ))}
-
-                <button className="toolbar-action-btn" onClick={saveSettings}>
-                  Save Settings
-                </button>
-              </div>
-            )}
+                  <button className="toolbar-action-btn" onClick={saveSettings}>
+                    Save Settings
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    {/* TABLE */}
-    <div className="trades-table-card">
-      <div className="trades-table-container">
-        <table className="trades-table">
-          <thead>
-            <tr>
-              {visibleColumns.date && <th>Date</th>}
-              {visibleColumns.symbol && <th>Symbol</th>}
-              {visibleColumns.type && <th>Type</th>}
-              {visibleColumns.pnl && <th>P&amp;L</th>}
-              {visibleColumns.entry && <th>Entry</th>}
-              {visibleColumns.exit && <th>Exit</th>}
-              {visibleColumns.notes && <th>Notes</th>}
-              {visibleColumns.rating && <th>Rating</th>}
-              {visibleColumns.strategy && <th>Strategy</th>}
-            </tr>
-          </thead>
+      {/* TABLE */}
+      <div className="trades-table-card">
+        <div className="trades-table-container">
+          <table className="trades-table">
+            <thead>
+              <tr>
+                {visibleColumns.date && <th>Date</th>}
+                {visibleColumns.symbol && <th>Symbol</th>}
+                {visibleColumns.type && <th>Type</th>}
+                {visibleColumns.pnl && <th>P&amp;L</th>}
+                {visibleColumns.entry && <th>Entry</th>}
+                {visibleColumns.exit && <th>Exit</th>}
+                {visibleColumns.notes && <th>Notes</th>}
+                {visibleColumns.rating && <th>Rating</th>}
+                {visibleColumns.strategy && <th>Strategy</th>}
+              </tr>
+            </thead>
 
-          <tbody>
-            {filteredTrades.map((trade, i) => {
-              const pnl = Number(trade.pnl) || 0;
-              const tradeDate = trade.timestamp ? new Date(trade.timestamp) : null;
+            <tbody>
+              {filteredTrades.map((trade, i) => {
+                const pnl = Number(trade.pnl) || 0;
+                const tradeDate = trade.timestamp ? new Date(trade.timestamp) : null;
 
-              return (
-                <tr
-                  key={i}
-                  onClick={() => handleTradeClick(trade)}
-                  className="trade-row"
-                >
-                  {visibleColumns.date && (
-                    <td>{tradeDate ? tradeDate.toLocaleDateString() : "--"}</td>
-                  )}
+                return (
+                  <tr
+                    key={i}
+                    onClick={() => handleTradeClick(trade)}
+                    className="trade-row"
+                  >
+                    {visibleColumns.date && (
+                      <td>{tradeDate ? tradeDate.toLocaleDateString() : "--"}</td>
+                    )}
 
-                  {visibleColumns.symbol && (
-                    <td>
-                      <SymbolWithIcon symbol={trade.symbol} />
-                    </td>
-                  )}
+                    {visibleColumns.symbol && (
+                      <td>
+                        <SymbolWithIcon symbol={trade.symbol} />
+                      </td>
+                    )}
 
-                  {visibleColumns.type && <td>{trade.trade_type || "--"}</td>}
+                    {visibleColumns.type && <td>{trade.trade_type || "--"}</td>}
 
-                  {visibleColumns.pnl && (
-                    <td className={pnl >= 0 ? "profit" : "loss"}>
-                      {pnl >= 0 ? `+$${pnl}` : `-$${Math.abs(pnl)}`}
-                    </td>
-                  )}
+                    {visibleColumns.pnl && (
+                      <td className={pnl >= 0 ? "profit" : "loss"}>
+                        {pnl >= 0 ? `+$${pnl}` : `-$${Math.abs(pnl)}`}
+                      </td>
+                    )}
 
-                  {visibleColumns.entry && <td>{trade.price || "--"}</td>}
-                  {visibleColumns.exit && <td>{trade.exit_price || "--"}</td>}
-                  {visibleColumns.notes && <td>{trade.notes || "--"}</td>}
-                  {visibleColumns.rating && <td>{trade.rating || "--"}</td>}
-                  {visibleColumns.strategy && <td>{trade.strategy || "--"}</td>}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                    {visibleColumns.entry && <td>{trade.price || "--"}</td>}
+                    {visibleColumns.exit && <td>{trade.exit_price || "--"}</td>}
+                    {visibleColumns.notes && <td>{trade.notes || "--"}</td>}
+                    {visibleColumns.rating && <td>{trade.rating || "--"}</td>}
+                    {visibleColumns.strategy && <td>{trade.strategy || "--"}</td>}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
-  </div>
-);
-
-  
+  );
 }
 
 export default TradeView;
