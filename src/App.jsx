@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 import '@fontsource/roboto/400.css';
@@ -10,11 +11,11 @@ import './styles/style.css';
 import Sidebar from './components/Sidebar/Sidebar';
 import Dashboard from './components/dashboard/dashboard';
 import { TradeManager } from './utils/tradeManager';
-import { API_URL } from "./utils/constants";
+import { API_URL } from './utils/constants';
 
 /* ---------------- PAGES ---------------- */
 import AddTrade from './components/AddTrade/AddTrade';
-import Analytics from "./components/Analytics/Analytics";
+import Analytics from './components/Analytics/Analytics';
 import TradeView from './components/Daily/TradeView';
 import ThatTrade from './components/Daily/ThatTrade/ThatTrade';
 
@@ -39,10 +40,11 @@ function Profile() {
 function App() {
   const [user, setUser] = useState(null);
   const [tradeMode, setTradeMode] = useState(() => localStorage.getItem('tradeMode') || 'all');
-  const [trades, setTrades] = useState([]);
 
   const tradeManager = useMemo(() => new TradeManager(), []);
+  const queryClient = useQueryClient();
   const ws = useRef(null);
+  const updatingTrades = useRef(false);
 
   // Load current user
   useEffect(() => {
@@ -50,24 +52,12 @@ function App() {
     setUser(currentUser);
   }, []);
 
-  // Load trades
-  useEffect(() => {
-    if (user?.ID) {
-      loadTradesData(user.ID, tradeMode);
-    }
-  }, [user, tradeMode]);
-
-  const loadTradesData = async (userId, mode) => {
-    try {
-      const tradesData = await tradeManager.loadTrades(userId, mode);
-      setTrades(tradesData);
-    } catch (err) {
-      // console.error('Error loading trades:', err);
-      setTrades([]);
-    }
-  };
-
-  const updatingTrades = useRef(false);
+  const tradesQuery = useQuery({
+    queryKey: ['trades', user?.ID, tradeMode],
+    enabled: Boolean(user?.ID),
+    queryFn: () => tradeManager.loadTrades(user.ID, tradeMode),
+    placeholderData: (previousData) => previousData,
+  });
 
   // WebSocket
   useEffect(() => {
@@ -79,16 +69,17 @@ function App() {
       ws.current.onmessage = async (event) => {
         const msg = JSON.parse(event.data);
 
-        if (msg.type === "TRADE_UPDATED") {
+        if (msg.type === 'TRADE_UPDATED') {
           if (updatingTrades.current) return;
 
           updatingTrades.current = true;
 
           try {
-            const tradesData = await tradeManager.loadTrades(user.ID, tradeMode);
-            setTrades([...tradesData]);
+            await queryClient.invalidateQueries({
+              queryKey: ['trades', user.ID, tradeMode],
+            });
           } catch (err) {
-            console.error("Error updating trades:", err);
+            console.error('Error updating trades:', err);
           } finally {
             setTimeout(() => {
               updatingTrades.current = false;
@@ -104,12 +95,14 @@ function App() {
         ws.current = null;
       }
     };
-  }, [user, tradeMode]);
+  }, [user?.ID, tradeMode, queryClient]);
 
   const handleTradeModeChange = (mode) => {
     localStorage.setItem('tradeMode', mode);
     setTradeMode(mode);
   };
+
+  const trades = tradesQuery.data || [];
 
   return (
     <BrowserRouter>
@@ -137,7 +130,6 @@ function App() {
           <Route path="/TradeView" element={<TradeView trades={trades} />} />
           <Route path="/trade/:tradeId" element={<ThatTrade />} />
         </Routes>
-
       </div>
     </BrowserRouter>
   );
