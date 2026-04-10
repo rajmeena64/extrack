@@ -126,6 +126,7 @@ function App() {
                 tradeMode={tradeMode}
                 setTradeMode={handleTradeModeChange}
                 trades={trades}
+                isLoading={trades.length === 0} 
               />
             }
           />
