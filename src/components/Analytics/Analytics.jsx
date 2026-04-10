@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from "react";
 import "./Analytics.css";
 
-import Calendar from "./Calendar";
+import NEWS from "./NEWS";
 import Heatmap from "./heatmap";
 
-import { FaCalendarAlt, FaThLarge } from "react-icons/fa";
+import { Calendar, Ratio } from "../Common/icons";
 
 function Analytics() {
   const [activeTab, setActiveTab] = useState("calendar");
   const [darkMode, setDarkMode] = useState(false);
+  const IconSize= 15;
 
   // 🔥 FOLLOW GLOBAL DARK MODE (body class)
   useEffect(() => {
@@ -41,7 +42,7 @@ function Analytics() {
             }`}
             onClick={() => setActiveTab("calendar")}
           >
-            <FaCalendarAlt />
+            <Calendar size={IconSize} />
             <span>Calendar</span>
           </button>
 
@@ -51,7 +52,7 @@ function Analytics() {
             }`}
             onClick={() => setActiveTab("heatmap")}
           >
-            <FaThLarge />
+            <Ratio size={IconSize} />
             <span>Heatmap</span>
           </button>
         </div>
@@ -59,7 +60,7 @@ function Analytics() {
 
       {/* ===== CONTENT ===== */}
       <div className="analytics-content">
-        {activeTab === "calendar" && <Calendar darkMode={darkMode} />}
+        {activeTab === "calendar" && <NEWS darkMode={darkMode} />}
         {activeTab === "heatmap" && <Heatmap darkMode={darkMode} />}
       </div>
 

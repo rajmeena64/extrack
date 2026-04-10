@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { DayPicker } from "react-day-picker";
 import { format, startOfMonth, endOfMonth } from "date-fns";
-import { FiChevronLeft, FiChevronRight, FiCalendar } from "react-icons/fi";
 import "./DateRangePicker.css";
+import { Calendar, ChevronLeft, ChevronRight } from "../Common/icons";
 
 export default function DateRangePicker({
   value,
@@ -67,7 +67,7 @@ export default function DateRangePicker({
     <div className="trade-date-picker">
       {showLabel && (
         <div className="trade-date-picker__label">
-          <FiCalendar className="trade-date-picker__label-icon" />
+          <Calendar className="trade-date-picker__label-icon" />
           <span>{label}</span>
         </div>
       )}
@@ -86,9 +86,9 @@ export default function DateRangePicker({
         components={{
           Chevron: ({ orientation }) =>
             orientation === "left" ? (
-              <FiChevronLeft className="trade-rdp__nav-icon" />
+              <ChevronLeft className="trade-rdp__nav-icon" />
             ) : (
-              <FiChevronRight className="trade-rdp__nav-icon" />
+              <ChevronRight className="trade-rdp__nav-icon" />
             ),
         }}
       />

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import "./ThatTrade.css";
+
 import Chart from "../chart/Chart";
 import SymbolWithIcon from "../../Common/SymbolWithIcon";
 import { API_URL } from "../../../utils/constants";

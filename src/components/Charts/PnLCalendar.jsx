@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import './PnLCalendar.css';
-import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 
-
+import { ArrowLeft, ArrowRight, Calendar } from '../Common/icons';
 
 function PnLCalendar({ trades }) {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -202,7 +201,7 @@ function PnLCalendar({ trades }) {
 <div className="month-navigation">
 
   <button className="months-btn-left" onClick={() => changeMonth(-1)}>
-    <FaChevronLeft />
+    <ArrowLeft />
   </button>
 
     <span className="current-month">
@@ -210,7 +209,8 @@ function PnLCalendar({ trades }) {
   </span>
 
   <button className="months-btn-right" onClick={() => changeMonth(1)}>
-    <FaChevronRight />
+  
+    <ArrowRight />
   </button>
 
   </div>

@@ -6,8 +6,12 @@ import SymbolWithIcon from "../Common/SymbolWithIcon";
 import api from "../../utils/serve";
 import DateRangePicker from "../Common/DateRangePicker";
 
-import { FiFilter, FiCalendar, FiColumns, FiChevronDown } from "react-icons/fi";
-import { HiOutlineAdjustmentsHorizontal } from "react-icons/hi2";
+// import { FiFilter, FiCalendar, FiColumns, FiChevronDown } from "react-icons/fi";
+// import { HiOutlineAdjustmentsHorizontal } from "react-icons/hi2";
+import { ArrowLeft, ArrowRight, Calendar, ChartBar,Filter,Ratio,Table} from '../Common/icons';
+import { ALargeSmall, ArrowDown, CircleSmall } from "lucide-react";
+
+const IconSize = 16;
 
 // Skeleton Loader Components
 const SkeletonHeader = () => (
@@ -397,7 +401,7 @@ function TradeView({ trades = [] }) {
           <div className="trade-header-left">
             <div className="trade-title-block">
               <div className="trade-title-row">
-                <HiOutlineAdjustmentsHorizontal className="trade-title-icon" />
+                <Ratio className="trade-title-icon" />
                 <h1 className="trade-page-title">Trade Log</h1>
               </div>
               <p className="trade-page-subtitle">
@@ -418,9 +422,9 @@ function TradeView({ trades = [] }) {
                   setShowDatePicker(false);
                 }}
               >
-                <FiFilter className="toolbar-svg-icon" />
+                <Filter size={IconSize} className="toolbar-svg-icon" />
                 <span className="toolbar-btn-text">Filters</span>
-                <FiChevronDown className="toolbar-caret-icon" />
+            
               </button>
 
               {showFilters && (
@@ -534,10 +538,11 @@ function TradeView({ trades = [] }) {
                 }}
               >
                 <div className="toolbar-inline">
-                  <FiCalendar className="toolbar-svg-icon" />
+                  <Calendar size={IconSize} className="toolbar-svg-icon" />
                   <span className="toolbar-btn-text">{formatDateLabel()}</span>
                 </div>
-                <FiChevronDown className="toolbar-caret-icon" />
+               
+           
               </button>
 
               {showDatePicker && (
@@ -582,9 +587,9 @@ function TradeView({ trades = [] }) {
                   setShowDatePicker(false);
                 }}
               >
-                <FiColumns className="toolbar-svg-icon" />
+                <Table size={IconSize} className="toolbar-svg-icon" />
                 <span className="toolbar-btn-text">Columns</span>
-                <FiChevronDown className="toolbar-caret-icon" />
+          
               </button>
 
               {showSettings && (
