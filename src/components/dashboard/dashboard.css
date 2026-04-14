@@ -1,68 +1,96 @@
-/* style.css - PROFESSIONAL TRADING DASHBOARD */
 :root {
-    /* Light Theme Variables */
-    --bg-primary: #eaf0f7;
-    --bg-secondary: #ffffff;
-    --bg-card: #ffffff;
-    --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    --text-primary: #131a5e;
-    --text-secondary: #475569;
-    --text-muted: #64748b;
-    --border-light: #c2b9b956;
-    --border-medium: #cbd5e1;
-    --primary: #3b82f6;
-    --primary-light: #60a5fa;
-    --primary-dark: #2563eb;
-      
-    --button-bg: #5124bd;
-    --value-bg: #1d48d8da;
-    --heading: #000000;
-    
-    /* Shadows */
-    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-    
-    /* Border Radius */
-    --radius-sm: 4px;
-    --radius-md: 8px;
-    --radius-lg: 12px;
-    --radius-xl: 16px;
-    --radius-2xl: 20px;
-    
-    /* Transitions */
-    --transition: all 0.3s ease;
-    --transition-slow: all 0.5s ease;
-    --transition-bounce: all 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  /* Light Theme Variables */
+  --bg-primary: #eaf0f7;
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+  --bg-hover: #ac91d86e;
+
+  --text-primary: #131a5e;
+  --text-secondary: #475569;
+  --no-data: #e7e2e265;
+  --text-muted: #64748b;
+
+  --heading: #000000;
+
+  --border-light: #c2b9b956;
+  --border-medium: #cbd5e1;
+
+  /* PRIMARY COLORS */
+  --primary: #3b82f6;
+  --primary-light: #60a5fa;
+  --primary-dark: #2563eb;
+
+  /* 🔥 ADDED (from your purple theme) */
+  --purple: #7c3aed;
+  --purple-light: rgba(124, 58, 237, 0.1);
+  --purple-hover: rgba(124, 58, 237, 0.2);
+
+  --button-bg: #5124bd;
+  --value-bg: #1d48d8da;
+
+  /* Profit / Loss */
+  --profit-color: #10b981;
+  --loss-color: #ef4444;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+  /* Border Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+
+  /* Transitions */
+  --transition: all 0.3s ease;
+  --transition-slow: all 0.5s ease;
+  --transition-bounce: all 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
-/* DARK MODE - BLACK PREMIUM THEME */
-.dark-mode {
-    /* BLACK PREMIUM Variables */
-    --bg-primary: #000000c4;
-    --bg-secondary: #0a0a0a;
-    --bg-card: #0e0f14;
-    --bg-gradient: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
-    --text-primary: #dfe7c9;
-    --text-secondary: #b0b0b0;
-    --text-muted: #666666;
-    --border-light: #222222;
-    --border-medium: #333333;
-    --primary: #ffffff;
-    --primary-light: #cccccc;
-    --primary-dark: #999999;
 
-    --button-bg: #2461bd;
-    --heading: #ffffff;
-    
-    /* Premium Shadows for Black Theme */
-    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
-    --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.7), 0 1px 2px 0 rgba(0, 0, 0, 0.5);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.8), 0 2px 4px -1px rgba(0, 0, 0, 0.6);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.9), 0 4px 6px -2px rgba(0, 0, 0, 0.7);
-    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 1), 0 10px 10px -5px rgba(0, 0, 0, 0.8);
+
+.dark-mode {
+  --bg-primary: #000000c4;
+  --bg-secondary: #0a0a0a;
+  --bg-card: #0e0f14;
+  --bg-gradient: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+
+  --text-primary: #dfe7c9;
+  --text-secondary: #b0b0b0;
+  --no-data: #4050681e;
+  --text-muted: #666666;
+  --heading: #ffffff;
+
+  --border-light: #222222;
+  --border-medium: #333333;
+
+  --primary: #ffffff;
+  --primary-light: #cccccc;
+  --primary-dark: #999999;
+
+  /* 🔥 keep purple usable in dark too */
+  --purple: #a78bfa;
+  --purple-light: rgba(167, 139, 250, 0.1);
+  --purple-hover: rgba(167, 139, 250, 0.2);
+
+  --button-bg: #2461bd;
+
+  --profit-color: #10b981;
+  --loss-color: #ef4444;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+  --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.7), 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.8), 0 2px 4px -1px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.9), 0 4px 6px -2px rgba(0, 0, 0, 0.7);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 1), 0 10px 10px -5px rgba(0, 0, 0, 0.8);
 }
 
 /* Base Styles */
@@ -107,6 +135,24 @@ body {
 
 }
 
+/* CARD */
+.stat-card {
+  background: var(--bg-card);
+  border-radius: 12px;
+  padding: 18px 20px;
+  height: 70px;
+
+  border: 1px solid;
+  border-color: var(--border-light);
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin-bottom: 20px;
+ 
+}
+
+
 
 .main-content {
     margin-left: 60px;
@@ -116,6 +162,7 @@ body {
     position: relative;
     height: 100%;
     min-height: 0%;
+    
    
 }
 
@@ -127,14 +174,14 @@ body {
     margin-bottom: 30px;
     padding-bottom: 24px;
     border-bottom: 1px solid var(--border-light);
-}
+   
+}   
 
 .header h1 {
     font-size: 28px;
     font-weight: 700;
     color: var(--text-primary);
 }
-
 
 
 /* Charts Wrapper - Three Columns */

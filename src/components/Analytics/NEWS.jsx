@@ -1,6 +1,8 @@
 import React, { useMemo } from "react";
+import { useTheme } from "@/context/ThemeContext"; 
 
-function NEWS({ darkMode }) {
+function NEWS() {
+  const { darkMode } = useTheme(); 
   const src = useMemo(() => {
     const theme = darkMode ? "dark" : "light";
 
@@ -13,9 +15,9 @@ function NEWS({ darkMode }) {
         key={src} // 🔥 force reload when theme changes
         title="TradingView Economic Calendar"
         src={src}
-        frameBorder="0"
+        frameborder="0"
         scrolling="no"
-        allowTransparency="true"
+        allowtransparency="true"
         style={{
           width: "100%",
           height: "100%",

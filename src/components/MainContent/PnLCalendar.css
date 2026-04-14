@@ -168,6 +168,7 @@ font-size: small;
    
     color: var(--text-muted);
     border: 1px solid var(--border-light);
+    background: var(--no-data);
 }
 
 
@@ -300,7 +301,7 @@ background: #da8f8f96;
 
 /* Dark Mode */
 .dark-mode .analytics-calendar td.no-data {
-    background: #0a0a0a;
+background-color: var(--no-data);
     color: #666666;
     border-color: #222222;
 }
@@ -410,12 +411,12 @@ background: #da8f8f96;
 
 
 .week-card.profit .week-pnl {
-    color: var(--pnl-positive);
+    color: var(--profit-color);
 }
 
 
 .week-card.loss .week-pnl {
-  color: var(--pnl-negative);
+  color: var(--loss-color);
 }
 
 .week-card.neutral {

@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import './dashboard.css';
+// import './dashboard.css';
 import './mobile.css';
-import Header from '../../components/Header/Header';
-import StatsCards from '../../components/StatsCards/StatsCards';
 
-import Radar from '../../components/Charts/Radar';
-import PerformanceChart from '../../components/Charts/PerformanceChart';
-import ActivityChart from '../../components/Charts/ActivityChart';
-import PortfolioChart from '../../components/Charts/PortfolioChart';
-import PnLCalendar from '../../components/Charts/PnLCalendar';
-import TradesList from '../../components/myTrades/TradesList';
+import Header from '@/components/Header/Header';
+import StatsCards from '@/components/StatsCards/StatsCards';
 
-import TradeView from '../Daily/TradeView';
+import Radar from '@/components/MainContent/Radar';
+import PerformanceChart from '@/components/MainContent/PerformanceChart';
+import ActivityChart from '@/components/MainContent/ActivityChart';
+import PortfolioChart from '@/components/MainContent/PortfolioChart';
+import PnLCalendar from '@/components/MainContent/PnLCalendar';
+import TradesList from '@/components/myTrades/TradesList';
+
+
+
 
 // ================= SKELETON COMPONENTS =================
 
@@ -199,7 +201,7 @@ function Dashboard({ user, tradeMode, setTradeMode, trades, isLoading = false })
         )}
       </section>
 
-      <style jsx>{`
+      <style >{`
         @keyframes skeleton-pulse {
           0% {
             opacity: 1;

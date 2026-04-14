@@ -8,28 +8,28 @@ import { Calendar, Ratio } from "../Common/icons";
 
 function Analytics() {
   const [activeTab, setActiveTab] = useState("calendar");
-  const [darkMode, setDarkMode] = useState(false);
+  // const [darkMode, setDarkMode] = useState(false);
   const IconSize= 15;
 
   // 🔥 FOLLOW GLOBAL DARK MODE (body class)
-  useEffect(() => {
-    const checkDark = () => {
-      setDarkMode(document.body.classList.contains("dark-mode"));
-    };
+  // useEffect(() => {
+  //   const checkDark = () => {
+  //     setDarkMode(document.body.classList.contains("dark-mode"));
+  //   };
 
-    checkDark();
+  //   checkDark();
 
-    const observer = new MutationObserver(checkDark);
-    observer.observe(document.body, {
-      attributes: true,
-      attributeFilter: ["class"],
-    });
+  //   const observer = new MutationObserver(checkDark);
+  //   observer.observe(document.body, {
+  //     attributes: true,
+  //     attributeFilter: ["class"],
+  //   });
 
-    return () => observer.disconnect();
-  }, []);
+  //   return () => observer.disconnect();
+  // }, []);
 
   return (
-    <div className={`main-content page ${darkMode ? "dark" : ""}`}>
+    <div className= "main-content" >
       
       {/* ===== HEADER ===== */}
       <div className="analytics-topbar">
@@ -60,8 +60,8 @@ function Analytics() {
 
       {/* ===== CONTENT ===== */}
       <div className="analytics-content">
-        {activeTab === "calendar" && <NEWS darkMode={darkMode} />}
-        {activeTab === "heatmap" && <Heatmap darkMode={darkMode} />}
+        {activeTab === "calendar" && <NEWS />}
+        {activeTab === "heatmap" && <Heatmap />}
       </div>
 
     </div>
