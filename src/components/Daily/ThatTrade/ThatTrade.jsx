@@ -19,7 +19,6 @@ function ThatTrade({ trades = [] }) {
   const [notes, setNotes] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   
   // Screenshot states
   const [screenshots, setScreenshots] = useState([]);
@@ -48,7 +47,6 @@ function ThatTrade({ trades = [] }) {
   const fetchTradeData = async () => {
     if (!trade?.unique_id || !trade?.user_id) return;
     
-    setIsLoading(true);
     try {
       const response = await fetch(
         `${API_URL}/api/get-trade/${trade.unique_id}?userId=${trade.user_id}`
@@ -66,15 +64,13 @@ function ThatTrade({ trades = [] }) {
               ? data.trade.screenshots 
               : JSON.parse(data.trade.screenshots);
             setScreenshots(parsedScreenshots || []);
-          } catch (e) {
+          } catch {
             setScreenshots([]);
           }
         }
       }
     } catch (error) {
       console.error("Error fetching trade data:", error);
-    } finally {
-      setIsLoading(false);
     }
 
     
@@ -98,7 +94,7 @@ function ThatTrade({ trades = [] }) {
           ? trade.screenshots 
           : JSON.parse(trade.screenshots);
         setScreenshots(parsedScreenshots || []);
-      } catch (e) {
+      } catch {
         setScreenshots([]);
       }
     }

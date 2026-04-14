@@ -21,7 +21,6 @@ function ManualEntryForm({ API_URL, trades }) {
   });
 
   const [previewImage, setPreviewImage] = useState('');
-  const [screenshotFile, setScreenshotFile] = useState(null);
   const symbols = useMemo(() => {
     return [...new Set(trades?.map(t => t.symbol).filter(Boolean))];
   }, [trades]);
@@ -64,13 +63,11 @@ function ManualEntryForm({ API_URL, trades }) {
       };
       reader.readAsDataURL(file);
       
-      setScreenshotFile(file);
     }
   };
 
   const removeScreenshot = () => {
     setPreviewImage('');
-    setScreenshotFile(null);
   };
 
   const submitManualTrade = async () => {

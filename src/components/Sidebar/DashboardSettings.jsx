@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import './DashboardSettings.css';
 
 
-function DashboardSettings({ onClose }) {
+function DashboardSettings() {
   const [rowOrder, setRowOrder] = useState(
     localStorage.getItem('dashboardRowOrder') || 'charts-first'
   );
