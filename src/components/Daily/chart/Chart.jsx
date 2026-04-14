@@ -2,7 +2,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { createChart, CandlestickSeries, createSeriesMarkers } from "lightweight-charts";
 import { CrosshairMode } from "lightweight-charts";
-import "./Chart.css";
+import "./chart.css";
 import {API_URL} from "../../../utils/constants";
 
 const TF_MAP = { "1m": "1m", "5m": "5m", "15m": "15m", "1h": "1h" };

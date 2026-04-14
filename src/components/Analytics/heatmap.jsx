@@ -1,18 +1,23 @@
 import React, { useState, useMemo } from "react";
-
-function Heatmap({ darkMode }) {
+import { useTheme } from "@/context/ThemeContext";  
+ 
+function Heatmap() {
   const [active, setActive] = useState("stocks");
-
+  const { darkMode } = useTheme(); // ✅ ADDED
   const theme = darkMode ? "dark" : "light";
+
 
   // 🔥 iframe URLs theme-aware
   const srcMap = useMemo(
     () => ({
       stocks: `https://www.tradingview.com/embed-widget/stock-heatmap/?locale=en&colorTheme=${theme}`,
       forex: `https://www.tradingview.com/embed-widget/forex-heat-map/?locale=en&colorTheme=${theme}`,
-      crypto: `https://www.tradingview.com/embed-widget/crypto-heatmap/?locale=en&colorTheme=${theme}`,
+      crypto: `https://www.tradingview.com/embed-widget/crypto-coins-heatmap/?locale=en&colorTheme=${theme}`,
+         
     }),
     [theme]
+
+
   );
 
   return (
@@ -63,3 +68,5 @@ function Heatmap({ darkMode }) {
 }
 
 export default Heatmap;
+
+

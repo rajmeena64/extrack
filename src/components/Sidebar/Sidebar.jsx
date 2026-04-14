@@ -1,39 +1,26 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import UserLoginModal from '../user/UserLoginModal/UserLoginModal';
 import DashboardSettings from './DashboardSettings';
-
 import BarChartIcon from '@mui/icons-material/BarChart';
 import SettingsIcon from '@mui/icons-material/Settings';
-
-
-
+import { useTheme } from '../../context/ThemeContext';  // ✅ ADDED
 
 import './Sidebar.css';
 
 function Sidebar() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [layoutOpen, setLayoutOpen] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
 
   const settingsRef = useRef(null);
   const settingsToggleRef = useRef(null);
 
-  // 🔹 INIT DARK MODE
-  useEffect(() => {
-    const savedDarkMode = localStorage.getItem('darkMode') === 'true';
-    setDarkMode(savedDarkMode);
-    document.body.classList.toggle('dark-mode', savedDarkMode);
-  }, []);
+  // ✅ ADDED - from context
+  const { darkMode, toggleDarkMode } = useTheme();
 
-  const toggleDarkMode = () => {
-    const newMode = !darkMode;
-    setDarkMode(newMode);
-    localStorage.setItem('darkMode', newMode);
-    document.body.classList.toggle('dark-mode', newMode);
-  };
+
 
   // 🔹 SIDEBAR TOGGLE
   const toggleSidebar = () => {
@@ -41,7 +28,7 @@ function Sidebar() {
   };
 
   // 🔹 CLOSE SIDEBAR ON OUTSIDE CLICK (MOBILE)
-  useEffect(() => {
+  React.useEffect(() => {
     const handleClickOutside = (e) => {
       if (
         sidebarOpen &&
@@ -56,7 +43,7 @@ function Sidebar() {
   }, [sidebarOpen]);
 
   // 🔹 CLOSE SETTINGS ON OUTSIDE CLICK
-  useEffect(() => {
+  React.useEffect(() => {
     const handleOutsideSettings = (e) => {
       if (
         settingsOpen &&
@@ -73,7 +60,7 @@ function Sidebar() {
   }, [settingsOpen]);
 
   // 🔹 ESC KEY
-  useEffect(() => {
+  React.useEffect(() => {
     const escHandler = (e) => {
       if (e.key === 'Escape') {
         setSettingsOpen(false);
@@ -125,10 +112,10 @@ function Sidebar() {
           <i className="fas fa-chart-pie"></i> <span>Analytics</span>
         </Link>
 
-<Link to="/TradeView" className="nav-item" onClick={() => setSidebarOpen(false)}>
-     < BarChartIcon fontSize='small'/> 
-     <span>Trades</span>
-</Link>
+        <Link to="/TradeView" className="nav-item" onClick={() => setSidebarOpen(false)}>
+          <BarChartIcon fontSize='small'/> 
+          <span>Trades</span>
+        </Link>
 
         {/* SETTINGS */}
         <div
@@ -136,8 +123,8 @@ function Sidebar() {
           ref={settingsToggleRef}
           onClick={() => setSettingsOpen(!settingsOpen)}
         >
-
-       <SettingsIcon fontSize='small'/>         <span>  Settings  </span>
+          <SettingsIcon fontSize='small'/>         
+          <span>Settings</span>
           <i className="fas fa-chevron-down dropdown-arrow"></i>
         </div>
 

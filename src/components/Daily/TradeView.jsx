@@ -1,15 +1,16 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import "./Markets.css";
-import "../dashboard/dashboard.css";
+import "./TradeView.css";
+
 import SymbolWithIcon from "../Common/SymbolWithIcon";
-import api from "../../utils/serve";
+// import api from "../../utils/serve";
+import api from  "@/utils/serve";
 import DateRangePicker from "../Common/DateRangePicker";
 
-// import { FiFilter, FiCalendar, FiColumns, FiChevronDown } from "react-icons/fi";
-// import { HiOutlineAdjustmentsHorizontal } from "react-icons/hi2";
-import { ArrowLeft, ArrowRight, Calendar, ChartBar,Filter,Ratio,Table} from '../Common/icons';
-import { ALargeSmall, ArrowDown, CircleSmall } from "lucide-react";
+
+
+import  {  Calendar,Filter,Ratio,Table} from "@/components/common/icons";
+
 
 const IconSize = 16;
 
@@ -340,7 +341,7 @@ function TradeView({ trades = [] }) {
       <div className="main-content">
         <SkeletonHeader />
         <SkeletonTable />
-        <style jsx>{`
+        <style >{`
           @keyframes skeleton-pulse {
             0% {
               opacity: 1;

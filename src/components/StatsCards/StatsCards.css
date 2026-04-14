@@ -1,37 +1,13 @@
-/* PHOTO STYLE STATS CARDS */
-
-/* .stats-cards {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  margin-bottom: 0px;
-  width: 1220px;
-} */
-
-/* CARD */
-.stat-card {
-  background: var(--bg-card);
-  border-radius: 12px;
-  padding: 18px 20px;
-  height: 70px;
-
-  border: 1px solid;
-  border-color: var(--border-light);
-
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
 
 /* VALUE */
-.stat-value {
+/* .stat-value {
   font-size: 18px;
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: 4px;
 
 
-}
+} */
 
 /* LABEL */
 .stat-label {
@@ -118,7 +94,8 @@ body.dark .stat-card:first-child .stat-label {
 
 /* Responsive typography */
 .stat-value {
-  font-size: clamp(14px, 3vw, 22px);
+  font-size: clamp(14px, 3vw, 18px);
+  font-weight: 500;
 }
 
 .stat-label {
