@@ -117,7 +117,7 @@ function UserLoginModal({ isOpen, onClose }) {
       } else {
         alert('Error: ' + data.error);
       }
-    } catch (error) {
+    } catch {
       alert('Network error. Check if server is running.');
     } finally {
       setLoading(false);
@@ -175,7 +175,7 @@ function UserLoginModal({ isOpen, onClose }) {
       } else {
         alert('Error: ' + data.error);
       }
-    } catch (error) {
+    } catch {
       alert('Network error. Check if server is running.');
     } finally {
       setLoading(false);
@@ -203,7 +203,7 @@ function UserLoginModal({ isOpen, onClose }) {
       } else {
         alert('❌ Error: ' + data.error);
       }
-    } catch (error) {
+    } catch {
       alert('⚠️ Network error. Check if server is running.');
     } finally {
       setLoading(false);
@@ -273,14 +273,9 @@ function UserLoginModal({ isOpen, onClose }) {
       } else {
         alert('Error: ' + data.error);
       }
-    } catch (error) {
+    } catch {
       alert('Network error');
     }
-  };
-
-  // ✅ DELETE ACCOUNT
-  const handleDeleteAccount = () => {
-    setIsDeleteModalOpen(true);
   };
 
   const confirmDeleteAccount = async (password) => {
@@ -309,7 +304,7 @@ function UserLoginModal({ isOpen, onClose }) {
       } else {
         alert('Error: ' + data.error);
       }
-    } catch (error) {
+    } catch {
       alert('Network error');
     }
   };
