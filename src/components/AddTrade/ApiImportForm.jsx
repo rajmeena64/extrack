@@ -234,7 +234,7 @@ function ApiImportForm({ API_URL, setSelectedMT5AccountId }) {
         day: 'numeric',
         year: 'numeric'
       });
-    } catch (e) {
+    } catch {
       return 'Unknown';
     }
   };

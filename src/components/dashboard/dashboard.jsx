@@ -96,7 +96,7 @@ const SkeletonPnLCalendar = () => (
   </div>
 );
 
-function Dashboard({ user, tradeMode, setTradeMode, trades, isLoading = false }) {
+function Dashboard({ tradeMode, setTradeMode, trades, isLoading = false }) {
   const [rowOrder, setRowOrder] = useState(
     localStorage.getItem('dashboardRowOrder') || 'charts-first'
   );

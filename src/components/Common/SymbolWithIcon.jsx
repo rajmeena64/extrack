@@ -39,15 +39,6 @@ function SymbolWithIcon({ symbol, size = "md" }) {
   const iconSize = SIZE_MAP[size] || 18;
   const pairSize = Math.floor(iconSize * 0.75); // 👈 smaller pair icons
 
-  /* Base styles */
-  const flagBaseStyle = {
-    width: iconSize,
-    height: iconSize,
-    borderRadius: "50%",
-    position: "absolute",
-    objectFit: "cover",
-  };
-
   const pairFlagStyle = {
     width: pairSize,
     height: pairSize,
@@ -258,7 +249,6 @@ function SymbolWithIcon({ symbol, size = "md" }) {
 }
 
 export default SymbolWithIcon;
-
 
 
 
