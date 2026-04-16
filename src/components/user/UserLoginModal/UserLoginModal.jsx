@@ -1,6 +1,7 @@
 // src/components/user/UserLoginModal/UserLoginModal.jsx
 import React, { useState, useEffect } from 'react';
 import './UserLoginModal.css';
+import LegacyIcon from '../../Common/LegacyIcon';
 
 import { API_URL } from "../../../utils/constants";
 
@@ -43,8 +44,8 @@ function UserLoginModal({ isOpen, onClose }) {
         const logoutSection = document.getElementById('logoutSection');
         if (loginForm) loginForm.style.display = 'none';
         if (logoutSection) logoutSection.style.display = 'block';
-      } catch (e) {
-        console.error('Error parsing user data:', e);
+      } catch (_error) {
+        console.error('Error parsing user data');
       }
     }
   }, []);
@@ -117,7 +118,7 @@ function UserLoginModal({ isOpen, onClose }) {
       } else {
         alert('Error: ' + data.error);
       }
-    } catch {
+    } catch (_error) {
       alert('Network error. Check if server is running.');
     } finally {
       setLoading(false);
@@ -175,7 +176,7 @@ function UserLoginModal({ isOpen, onClose }) {
       } else {
         alert('Error: ' + data.error);
       }
-    } catch {
+    } catch (_error) {
       alert('Network error. Check if server is running.');
     } finally {
       setLoading(false);
@@ -203,7 +204,7 @@ function UserLoginModal({ isOpen, onClose }) {
       } else {
         alert('❌ Error: ' + data.error);
       }
-    } catch {
+    } catch (_error) {
       alert('⚠️ Network error. Check if server is running.');
     } finally {
       setLoading(false);
@@ -273,9 +274,13 @@ function UserLoginModal({ isOpen, onClose }) {
       } else {
         alert('Error: ' + data.error);
       }
-    } catch {
+    } catch (_error) {
       alert('Network error');
     }
+  };
+
+  const handleDeleteAccount = () => {
+    setIsDeleteModalOpen(true);
   };
 
   const confirmDeleteAccount = async (password) => {
@@ -304,7 +309,7 @@ function UserLoginModal({ isOpen, onClose }) {
       } else {
         alert('Error: ' + data.error);
       }
-    } catch {
+    } catch (_error) {
       alert('Network error');
     }
   };
@@ -331,7 +336,7 @@ function UserLoginModal({ isOpen, onClose }) {
         <div className="modal-header">
           <div className="header-left">
             <div className="logo">
-              <i className="fas fa-chart-line"></i>
+              <LegacyIcon className="fas fa-chart-line" />
               <div className="logo-text">
                 <span className="pip">PIP</span><span className="x"> Trade</span>
                 <span className="trade"> Trade</span>
@@ -342,7 +347,7 @@ function UserLoginModal({ isOpen, onClose }) {
           <div className="header-right">
             {currentUser && (
               <a href="../index.html" className="dashboard-btn">
-                <i className="fas fa-tachometer-alt"></i>
+                <LegacyIcon className="fas fa-tachometer-alt" />
                 <span>Dashboard</span>
               </a>
             )}
@@ -350,7 +355,7 @@ function UserLoginModal({ isOpen, onClose }) {
             {currentUser && (
               <div className="user-profile-section">
                 <button className="settings-gear" onClick={handleEditProfile}>
-                  <i className="fas fa-user-circle"></i>
+                  <LegacyIcon className="fas fa-user-circle" />
                 </button>
               </div>
             )}
@@ -439,7 +444,7 @@ function UserLoginModal({ isOpen, onClose }) {
                           className="toggle-password"
                           onClick={() => setShowPassword(!showPassword)}
                         >
-                          <i className={`fas fa-eye${showPassword ? '-slash' : ''}`}></i>
+                          <LegacyIcon className={`fas fa-eye${showPassword ? '-slash' : ''}`} />
                         </button>
                       </div>
                     </div>
@@ -562,7 +567,7 @@ function UserLoginModal({ isOpen, onClose }) {
                           className="toggle-password"
                           onClick={() => setShowPassword(!showPassword)}
                         >
-                          <i className={`fas fa-eye${showPassword ? '-slash' : ''}`}></i>
+                          <LegacyIcon className={`fas fa-eye${showPassword ? '-slash' : ''}`} />
                         </button>
                       </div>
                     </div>
@@ -651,11 +656,11 @@ function UserLoginModal({ isOpen, onClose }) {
                       <h3>Switch Account Type</h3>
                       <div className="account-buttons">
                         <button className={`account-btn ${currentUser.accountType === 'manual' ? 'active' : ''}`}>
-                          <i className="fas fa-hand-paper"></i>
+                          <LegacyIcon className="fas fa-hand-paper" />
                           Manual
                         </button>
                         <button className={`account-btn ${currentUser.accountType === 'api' ? 'active' : ''}`}>
-                          <i className="fas fa-code"></i>
+                          <LegacyIcon className="fas fa-code" />
                           API
                         </button>
                       </div>
@@ -663,15 +668,19 @@ function UserLoginModal({ isOpen, onClose }) {
 
                     <div className="action-buttons">
                       <button className="action-btn primary" onClick={() => window.location.href = '../index.html'}>
-                        <i className="fas fa-tachometer-alt"></i>
+                        <LegacyIcon className="fas fa-tachometer-alt" />
                         Go to Dashboard
                       </button>
                       <button className="action-btn secondary" onClick={handleEditProfile}>
-                        <i className="fas fa-user-edit"></i>
+                        <LegacyIcon className="fas fa-user-edit" />
                         Edit Profile
                       </button>
+                      <button className="action-btn danger" onClick={handleDeleteAccount}>
+                        <LegacyIcon className="fas fa-trash-alt" />
+                        Delete Account
+                      </button>
                       <button className="action-btn danger" onClick={handleLogout}>
-                        <i className="fas fa-sign-out-alt"></i>
+                        <LegacyIcon className="fas fa-sign-out-alt" />
                         Logout
                       </button>
                     </div>
@@ -696,9 +705,9 @@ function UserLoginModal({ isOpen, onClose }) {
           <div className="edit-modal">
             <div className="edit-content">
               <div className="edit-header">
-                <h3><i className="fas fa-user-edit"></i> Edit Profile</h3>
+                <h3><LegacyIcon className="fas fa-user-edit" /> Edit Profile</h3>
                 <button className="close-modal" onClick={() => setIsEditModalOpen(false)}>
-                  <i className="fas fa-times"></i>
+                  <LegacyIcon className="fas fa-times" />
                 </button>
               </div>
               
@@ -782,7 +791,7 @@ function UserLoginModal({ isOpen, onClose }) {
           <div className="delete-modal">
             <div className="delete-content">
               <div className="delete-header">
-                <i className="fas fa-exclamation-triangle"></i>
+                <LegacyIcon className="fas fa-exclamation-triangle" />
                 <h3>Delete Account</h3>
               </div>
               

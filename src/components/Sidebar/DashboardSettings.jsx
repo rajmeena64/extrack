@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import './DashboardSettings.css';
+import LegacyIcon from '../Common/LegacyIcon';
 
 
 function DashboardSettings() {
@@ -18,7 +19,7 @@ function DashboardSettings() {
   return (
     <div className="dashboard-settings">
       <div className="sub-nav-item">
-        <i className="fas fa-th-large"></i>
+        <LegacyIcon className="fas fa-th-large" />
         <span>Dashboard Layout</span>
       </div>
 

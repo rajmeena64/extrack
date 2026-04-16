@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import ManualTradeForm from './ManualTradeForm';
 import ApiImportForm from './ApiImportForm';
 import './AddTrade.css';
+import LegacyIcon from '../Common/LegacyIcon';
 import { API_URL } from "../../utils/constants";
 
 const brokers = [
@@ -29,7 +30,7 @@ function AddTrade({trades}) {
       {/* Header */}
       <div className="header">
         <button className="back-btn" onClick={() => navigate('/')}>
-          <i className="fas fa-arrow-left"></i>
+          <LegacyIcon className="fas fa-arrow-left" />
         </button>
         <h1>{activeTab === 'manual' ? 'Add Trade' : 'Trade Import'}</h1>
 

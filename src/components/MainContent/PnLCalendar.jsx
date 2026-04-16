@@ -1,298 +1,258 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
+import { Camera, CalendarDays, ChevronLeft, ChevronRight, Info, Settings } from 'lucide-react';
 import './PnLCalendar.css';
 
-import { ArrowLeft, ArrowRight, Calendar } from '../Common/icons';
+const MONTH_NAMES = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
+
+const WEEKDAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+function formatCellCurrency(value) {
+  const absolute = Math.abs(value);
+  if (absolute >= 1000) {
+    return `${value < 0 ? '-' : ''}$${(absolute / 1000).toFixed(2)}K`;
+  }
+  return `${value < 0 ? '-' : ''}$${absolute.toFixed(0)}`;
+}
 
 function PnLCalendar({ trades }) {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [calendarData, setCalendarData] = useState([]);
 
-  const monthNames = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
-  ];
+  const dailySummary = useMemo(() => {
+    const summary = {};
 
-  const weekNames = ["Week 1", "Week 2", "Week 3", "Week 4", "Week 5"];
+    (trades || []).forEach((trade) => {
+      if (!trade?.timestamp || trade?.pnl === undefined || trade?.pnl === null) return;
 
-  const calculateDailyStats = () => {
-    const dailyPnL = {};
-    const dailyTradesCount = {};
+      const date = new Date(trade.timestamp);
+      if (Number.isNaN(date.getTime())) return;
 
-    if (trades && trades.length > 0) {
-      trades.forEach(trade => {
-        if (!trade.timestamp || trade.pnl === undefined) return;
+      const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
+        date.getDate()
+      ).padStart(2, '0')}`;
 
-        const date = new Date(trade.timestamp);
-        const dateStr = `${date.getFullYear()}-${(date.getMonth() + 1)
-          .toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+      if (!summary[dateKey]) {
+        summary[dateKey] = {
+          pnl: 0,
+          trades: 0,
+          wins: 0,
+          hasBadge: false,
+        };
+      }
 
-        dailyPnL[dateStr] = (dailyPnL[dateStr] || 0) + (parseFloat(trade.pnl) || 0);
-        dailyTradesCount[dateStr] = (dailyTradesCount[dateStr] || 0) + 1;
-      });
-    }
+      const pnl = Number(trade.pnl) || 0;
+      summary[dateKey].pnl += pnl;
+      summary[dateKey].trades += 1;
+      if (pnl > 0) summary[dateKey].wins += 1;
+      if (trade.note || trade.notes || trade.strategy) summary[dateKey].hasBadge = true;
+    });
 
-    return { dailyPnL, dailyTradesCount };
-  };
+    return summary;
+  }, [trades]);
 
-  const calculateWeeklyStats = useMemo(() => {
-    const { dailyPnL, dailyTradesCount } = calculateDailyStats();
+  const calendarData = useMemo(() => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
-    
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
-    
-    const weeklyStats = [];
-    let currentWeek = 1;
-    let weekStart = new Date(firstDay);
-    
-    while (weekStart.getDay() !== 0) {
-      weekStart.setDate(weekStart.getDate() - 1);
-    }
-    
-    while (weekStart <= lastDay) {
-      let weekPnL = 0;
-      let tradingDays = 0;
-      let weeklyTrades = 0;
-      
-      for (let i = 0; i < 7; i++) {
-        const currentDate = new Date(weekStart);
-        currentDate.setDate(weekStart.getDate() + i);
-        
-        if (currentDate < firstDay || currentDate > lastDay) continue;
-        
-        const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${currentDate.getDate().toString().padStart(2, '0')}`;
-        
-        if (dailyPnL[dateStr] !== undefined) {
-          weekPnL += dailyPnL[dateStr];
-          tradingDays++;
-          weeklyTrades += dailyTradesCount[dateStr] || 0;
-        }
-      }
-      
-      if (weekStart <= lastDay) {
-        weeklyStats.push({
-          week: weekNames[currentWeek - 1] || `Week ${currentWeek}`,
-          pnl: weekPnL,
-          days: tradingDays,
-          trades: weeklyTrades
-        });
-      }
-      
-      weekStart.setDate(weekStart.getDate() + 7);
-      currentWeek++;
-    }
-    
-    return weeklyStats;
-  }, [currentDate, trades]);
+    const firstWeekday = firstDay.getDay();
+    const daysInMonth = lastDay.getDate();
+    const today = new Date();
 
-  const calculateMonthlyStats = () => {
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth() + 1;
-    const { dailyPnL } = calculateDailyStats();
-    
-    let monthlyPnL = 0;
-    let totalTradingDaysThisMonth = 0;
-    
-    Object.keys(dailyPnL).forEach(dateStr => {
-      const [y, m] = dateStr.split('-').map(Number);
-      if (y === year && m === month) {
-        monthlyPnL += dailyPnL[dateStr];
-        totalTradingDaysThisMonth++;
-      }
-    });
-    
-    return { monthlyPnL, totalTradingDaysThisMonth };
-  };
+    const weeks = [];
+    let dayCounter = 1;
 
-  const generateCalendar = () => {
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-    const firstDay = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const monthStr = (month + 1).toString().padStart(2, '0');
-
-    const { dailyPnL, dailyTradesCount } = calculateDailyStats();
-    const data = [];
-    let dayCount = 1;
-
-    while (dayCount <= daysInMonth) {
+    while (dayCounter <= daysInMonth) {
       const week = [];
-      for (let i = 0; i < 7; i++) {
-        if ((data.length === 0 && i < firstDay) || dayCount > daysInMonth) {
+
+      for (let weekday = 0; weekday < 7; weekday += 1) {
+        if ((weeks.length === 0 && weekday < firstWeekday) || dayCounter > daysInMonth) {
           week.push({ day: null });
-        } else {
-          const dateStr = `${year}-${monthStr}-${dayCount.toString().padStart(2, '0')}`;
-          week.push({
-            day: dayCount,
-            pnl: dailyPnL[dateStr] || 0,
-            trades: dailyTradesCount[dateStr] || 0,
-            dateStr,
-            isToday: isToday(year, month, dayCount)
-          });
-          dayCount++;
+          continue;
         }
+
+        const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(dayCounter).padStart(2, '0')}`;
+        const stats = dailySummary[dateKey] || {
+          pnl: 0,
+          trades: 0,
+          wins: 0,
+          hasBadge: false,
+        };
+
+        week.push({
+          day: dayCounter,
+          dateKey,
+          pnl: stats.pnl,
+          trades: stats.trades,
+          winRate: stats.trades > 0 ? (stats.wins / stats.trades) * 100 : 0,
+          hasBadge: stats.hasBadge,
+          isToday:
+            today.getFullYear() === year &&
+            today.getMonth() === month &&
+            today.getDate() === dayCounter,
+        });
+
+        dayCounter += 1;
       }
-      data.push(week);
+
+      weeks.push(week);
     }
 
-    setCalendarData(data);
+    const allCells = weeks.flat().filter((cell) => cell.day);
+    const monthlyPnL = allCells.reduce((sum, cell) => sum + cell.pnl, 0);
+    const tradingDays = allCells.filter((cell) => cell.trades > 0).length;
+
+    const weeklyStats = weeks.map((week, index) => {
+      const activeDays = week.filter((cell) => cell.day && cell.trades > 0);
+      return {
+        label: `Week ${index + 1}`,
+        pnl: activeDays.reduce((sum, cell) => sum + cell.pnl, 0),
+        days: activeDays.length,
+      };
+    });
+
+    return {
+      monthLabel: `${MONTH_NAMES[month]} ${year}`,
+      weeks,
+      monthlyPnL,
+      tradingDays,
+      weeklyStats,
+    };
+  }, [currentDate, dailySummary]);
+
+  const changeMonth = (direction) => {
+    setCurrentDate((previous) => {
+      const next = new Date(previous);
+      next.setMonth(next.getMonth() + direction);
+      return next;
+    });
   };
-
-  const isToday = (y, m, d) => {
-    const t = new Date();
-    return t.getFullYear() === y && t.getMonth() === m && t.getDate() === d;
-  };
-
-  const changeMonth = dir => {
-    const d = new Date(currentDate);
-    d.setMonth(d.getMonth() + dir);
-    setCurrentDate(d);
-  };
-
-  const getCellClassName = cell => {
-    if (!cell.day) return 'empty';
-    let cls = cell.pnl > 0 ? 'positive' : cell.pnl < 0 ? 'negative' : 'no-data';
-    if (cell.isToday) cls += ' today';
-    return cls;
-  };
-
-  const formatPnL = pnl => {
-    if (!pnl) return '';
-    const abs = Math.abs(pnl);
-    return `${pnl > 0 ? '+' : '-'}${abs >= 1000 ? (abs / 1000).toFixed(1) + 'K' : abs.toFixed(0)}`;
-  };
-
-  const formatTrades = trades => {
-    if (!trades || trades === 0) return null;
-    return `${trades} tr`;
-  };
-
-  useEffect(() => {
-    generateCalendar();
-  }, [currentDate, trades]);
-
-  const { monthlyPnL, totalTradingDaysThisMonth } = calculateMonthlyStats();
 
   return (
-    <div className="calendar-card">
-      <div className="analytics-header">
-        <div className="header-left">
-          <h3>PnL Calendar</h3>
-          <div className="header-stats">
-            <div className={`month-pnl ${monthlyPnL >= 0 ? 'positive' : 'negative'}`}>
-              <span className="month-pnl-label"> PnL</span>
-              <span className="month-pnl-value">
-                {monthlyPnL >= 0 ? '+' : ''}{monthlyPnL.toFixed(2)}
-              </span>
-            </div>
-            <div className="month-trades">
-              <span className="trades-label">days</span>
-              <span className="trades-value">{totalTradingDaysThisMonth}</span>
-            </div>
+    <section className="calendar-shell">
+      <header className="calendar-shell__toolbar">
+        <div className="calendar-shell__toolbar-left">
+          <button className="calendar-shell__nav" onClick={() => changeMonth(-1)} type="button">
+            <ChevronLeft size={16} />
+          </button>
+          <h3 className="calendar-shell__month">{calendarData.monthLabel}</h3>
+          <button className="calendar-shell__nav" onClick={() => changeMonth(1)} type="button">
+            <ChevronRight size={16} />
+          </button>
+          <button className="calendar-shell__range" type="button">
+            This month
+          </button>
+        </div>
+
+        <div className="calendar-shell__toolbar-right">
+          <span className="calendar-shell__label">Monthly stats:</span>
+          <span className="calendar-shell__pill calendar-shell__pill--green">
+            {formatCellCurrency(calendarData.monthlyPnL)}
+          </span>
+          <span className="calendar-shell__pill calendar-shell__pill--purple">
+            {calendarData.tradingDays} days
+          </span>
+          <button className="calendar-shell__icon" type="button" aria-label="Settings">
+            <Settings size={15} />
+          </button>
+          <button className="calendar-shell__icon" type="button" aria-label="Snapshot">
+            <Camera size={15} />
+          </button>
+          <button className="calendar-shell__icon" type="button" aria-label="Info">
+            <Info size={15} />
+          </button>
+        </div>
+      </header>
+
+      <div className="calendar-shell__body">
+        <div className="calendar-shell__main">
+          <div className="calendar-shell__weekdays">
+            {WEEKDAY_NAMES.map((weekday) => (
+              <div key={weekday} className="calendar-shell__weekday">
+                {weekday}
+              </div>
+            ))}
+          </div>
+
+          <div className="calendar-shell__grid">
+            {calendarData.weeks.flat().map((cell, index) => {
+              if (!cell.day) {
+                return (
+                  <div
+                    key={`empty-${index}`}
+                    className="calendar-day-card calendar-day-card--empty"
+                  />
+                );
+              }
+
+              const toneClass =
+                cell.trades === 0
+                  ? 'calendar-day-card--muted'
+                  : cell.pnl > 0
+                    ? 'calendar-day-card--positive'
+                    : cell.pnl < 0
+                      ? 'calendar-day-card--negative'
+                      : 'calendar-day-card--flat';
+
+              return (
+                <div
+                  key={cell.dateKey}
+                  className={`calendar-day-card ${toneClass} ${cell.isToday ? 'calendar-day-card--today' : ''}`}
+                >
+                  <span className="calendar-day-card__date">{cell.day}</span>
+                  {cell.hasBadge && (
+                    <span className="calendar-day-card__icon">
+                      <CalendarDays size={14} />
+                    </span>
+                  )}
+
+                  {cell.trades > 0 && (
+                    <div className="calendar-day-card__content">
+                      <strong className="calendar-day-card__pnl">{formatCellCurrency(cell.pnl)}</strong>
+                      <span className="calendar-day-card__trades">
+                        {cell.trades} trade{cell.trades > 1 ? 's' : ''}
+                      </span>
+                      <span className="calendar-day-card__rate">{cell.winRate.toFixed(1)}%</span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
 
-
-
-
-
-
-<div className="month-navigation">
-
-  <button className="months-btn-left" onClick={() => changeMonth(-1)}>
-    <ArrowLeft />
-  </button>
-
-    <span className="current-month">
-    {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-  </span>
-
-  <button className="months-btn-right" onClick={() => changeMonth(1)}>
-  
-    <ArrowRight />
-  </button>
-
-  </div>
-
-
-
-
-
-
-
-
-      </div>  
-      <div className="calendar-layout">
-        <table className="analytics-calendar">
-          <thead>
-            <tr>
-              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(d => (
-                <th key={d}>{d}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {calendarData.map((week, wi) => (
-              <tr key={wi}>
-                {week.map((cell, di) => (
-                  <td key={di} className={getCellClassName(cell)}>
-                    {cell.day && (
-
-                     
-                      <div className="day-cell-content">
-                  
-                        <span className="date-number">{cell.day}</span>
-                        <div className="day-stats">
-                          {cell.pnl !== 0 && (
-                            <span className={`pnl-amount ${cell.pnl > 0 ? 'positive' : 'negative'}`}>
-                              {formatPnL(cell.pnl)}
-                            </span>
-                          )}
-                          {cell.trades > 0 && (
-                            <span className="trades-count">
-                              {formatTrades(cell.trades)}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        <div className="weekly-stats">
-          {calculateWeeklyStats.map((week, i) => (
-            <div
-              key={i}
-              className={`week-card ${
-                week.pnl > 0 ? 'profit' : week.pnl < 0 ? 'loss' : 'neutral'
-              }`}
-            >
-              <div className='one'>
-              <span className="week-title">{week.week}</span>
-              <span className="week-pnl">
-                {week.pnl > 0 ? '+' : ''}{week.pnl.toFixed(2)}
+        <aside className="calendar-shell__weeks">
+          {calendarData.weeklyStats.map((week) => (
+            <article key={week.label} className="calendar-week-card">
+              <span className="calendar-week-card__label">{week.label}</span>
+              <strong
+                className={`calendar-week-card__value ${
+                  week.pnl > 0 ? 'profit' : week.pnl < 0 ? 'loss' : 'neutral'
+                }`}
+              >
+                {formatCellCurrency(week.pnl)}
+              </strong>
+              <span className="calendar-week-card__days">
+                {week.days} day{week.days !== 1 ? 's' : ''}
               </span>
-           </div>
-              <span className="week-days">{week.days}days• {week.trades}tr</span>
-            </div>
+            </article>
           ))}
-          
-          {calculateWeeklyStats.length === 0 && (
-            <div className="week-card neutral">
-              <span className="week-title">No Data</span>
-              <span className="week-pnl">0.00</span>
-              <span className="week-days">0 days • 0 tr</span>
-            </div>
-          )}
-        </div>
+        </aside>
       </div>
-    </div>
+    </section>
   );
 }
 
-export default PnLCalendar; 
+export default PnLCalendar;

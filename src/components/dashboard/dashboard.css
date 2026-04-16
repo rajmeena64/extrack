@@ -111,7 +111,6 @@ body {
     font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
     color: var(--text-primary);
     line-height: 1.6;
-    transition: var(--transition-slow);
     background: var(--bg-primary);
     overflow: auto;
     
@@ -129,7 +128,6 @@ body {
 .dashboard-layout {
     display: grid;
     grid-template-rows: 1fr auto;
-
     gap: 10px;
     width: 100%;
 
@@ -139,8 +137,8 @@ body {
 .stat-card {
   background: var(--bg-card);
   border-radius: 12px;
-  padding: 18px 20px;
-  height: 70px;
+  padding: 14px 16px;
+  height: 62px;
 
   border: 1px solid;
   border-color: var(--border-light);
@@ -148,7 +146,7 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  margin-bottom: 20px;
+  margin-bottom: 14px;
  
 }
 
@@ -156,7 +154,7 @@ body {
 
 .main-content {
     margin-left: 60px;
-    padding: 19px;
+    padding: 14px;
 
     overflow-y: auto;
     position: relative;
@@ -197,7 +195,7 @@ body {
 .left-charts {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
+    gap: 12px;
     width: 100%;
     height: 100%;
  
@@ -205,32 +203,42 @@ body {
 
 /* Chart Cards - Professional Style */
 .chart-card {
-    border-radius: 6px;
+    border-radius: 18px;
     background: var(--bg-card);
-    transition: var(--transition-bounce);
-    animation: fadeInUp 0.6s ease-out;
     display: flex;
     flex-direction: column;
-    border: 1px solid var(--border-light);
+    border: 1px solid rgba(191, 206, 231, 0.75);
     overflow: hidden;
+    box-shadow: 0 12px 28px rgba(70, 97, 146, 0.06);
 
 }
 
-.overview-section {
+.dashboard-feature-row {
+    align-items: stretch;
+}
+
+.dashboard-main-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
-    gap: 10px;
+    grid-template-columns: minmax(0, 1.8fr) minmax(0, 1.1fr) minmax(0, 1.3fr);
+    grid-template-areas:
+        "zella performance progress"
+        "balance calendar calendar"
+        "trades calendar calendar";
+    gap: 12px;
     width: 100%;
     align-items: stretch;
 }
 
-.second {
-    display: grid;
-    grid-template-rows: 1fr 1fr;
-    gap: 10px;
+.dashboard-grid-card {
     min-width: 0;
-    height: 100%;
 }
+
+.dashboard-grid-card--zella { grid-area: zella; }
+.dashboard-grid-card--performance { grid-area: performance; }
+.dashboard-grid-card--progress { grid-area: progress; }
+.dashboard-grid-card--balance { grid-area: balance; }
+.dashboard-grid-card--calendar { grid-area: calendar; }
+.dashboard-grid-card--trades { grid-area: trades; }
 
 .trades-section {
     min-width: 0;
@@ -239,16 +247,22 @@ body {
     overflow: hidden;
 }
 
+.zella-panel {
+    min-height: 172px;
+}
+
 .chart-cardx {
     width: 100%;
     position: relative;
-    border: 1px solid var(--border-light);
+    border: 1px solid rgba(191, 206, 231, 0.75);
     height: 100%;
-    border-radius: 6px;
+    border-radius: 18px;
     background: var(--bg-card);
     min-width: 0;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 12px 28px rgba(70, 97, 146, 0.06);
 
 }
 
@@ -268,12 +282,14 @@ body {
 /* Trades Card */
 .my-trades {
     background: var(--bg-card);
-    border-radius: 6px;
-    padding: 16px;
-    border: 1px solid var(--border-light);
+    border-radius: 18px;
+    padding: 12px;
+    border: 1px solid rgba(191, 206, 231, 0.75);
     display: flex;
     flex-direction: column;
     width: 100%;
+    min-height: 148px;
+    box-shadow: 0 12px 28px rgba(70, 97, 146, 0.06);
    
  
 }
@@ -306,7 +322,7 @@ body {
     position: relative;
     width: 100%;
     height: 100%;
-    min-height: 200px;
+    min-height: 104px;
     flex: 1;
 }
 
@@ -315,19 +331,12 @@ body {
     text-align: center;
     padding: 60px 20px;
     color: var(--text-muted);
-    transition: var(--transition);
 }
 
 .chart-empty-state i, .calendar-empty-state i {
     font-size: 48px;
     margin-bottom: 16px;
     opacity: 0.5;
-    transition: var(--transition);
-}
-
-.chart-empty-state:hover i, .calendar-empty-state:hover i {
-    transform: scale(1.05);
-    opacity: 0.7;
 }
 
 .chart-empty-state p, .calendar-empty-state p {
@@ -347,11 +356,30 @@ body {
 .portfolio-card {
     width: 100%;
     height: 100%;
-    border: 1px solid var(--border-light);
-    border-radius: 6px;
+    border: 1px solid rgba(191, 206, 231, 0.75);
+    border-radius: 18px;
     background: var(--bg-card);
-    padding: 22px;
-    transition: var(--transition);
+    padding: 14px;
+    min-height: 200px;
+    box-shadow: 0 12px 28px rgba(70, 97, 146, 0.06);
+}
+
+.calendar-panel {
+    min-height: 210px ;
+}
+
+.account-balance-card {
+    min-height: 210px ;
+}
+
+.dark-mode .chart-card,
+.dark-mode .chart-cardx,
+.dark-mode .my-trades,
+.dark-mode .activity-card,
+.dark-mode .performance-card,
+.dark-mode .portfolio-card {
+    border-color: rgba(44, 53, 76, 0.92);
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.22);
 }
 
 .activity-header,
@@ -426,32 +454,6 @@ body {
     display: none;
 }
 
-/* Smooth Transitions */
-body,
-.dashboard,
-.sidebar,
-.main-content,
-.stat-card,
-.chart-card,
-.trade-item,
-.nav-item,
-.header,
-.my-trades,
-.form-container,
-.calendar-container,
-.logo-icon,
-.user-avatar,
-.activity-card,
-.performance-card,
-.portfolio-card,
-.radar-card,
-.chart-cardx {
-    transition: background-color 0.5s ease,
-                color 0.5s ease,
-                border-color 0.5s ease,
-                box-shadow 0.5s ease;
-}
-
 /* =========================================
    RESPONSIVE DESIGN - TABLET (769px - 1023px)
 ========================================= */
@@ -460,10 +462,14 @@ body,
         margin-left: 12px;
     }
     
-    .overview-section {
-        grid-template-columns: 1fr;
-        gap: 20px;
-        height: auto;
+    .dashboard-main-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-areas:
+            "zella performance"
+            "progress balance"
+            "calendar calendar"
+            "trades trades";
+        gap: 12px;
     }
     
     .charts-wrapper {
@@ -475,14 +481,9 @@ body,
         grid-template-columns: repeat(2, 1fr);
         gap: 15px;
     }
-    
-    .second {
-        grid-template-rows: auto;
-        gap: 20px;
-    }
-    
+
     .chart-container {
-        min-height: 250px;
+        min-height: 140px;
     }
 }
 
@@ -495,10 +496,16 @@ body,
         padding: 12px;
     }
     
-    .overview-section {
+    .dashboard-main-grid {
         grid-template-columns: 1fr;
-        gap: 15px;
-        height: auto;
+        grid-template-areas:
+            "zella"
+            "performance"
+            "progress"
+            "balance"
+            "calendar"
+            "trades";
+        gap: 12px;
     }
     
     .charts-wrapper {
@@ -507,15 +514,10 @@ body,
     }
     
     .left-charts {
-        grid-template-columns: 1fr;
-        gap: 15px;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
     }
-    
-    .second {
-        grid-template-rows: auto;
-        gap: 15px;
-    }
-    
+
     .chart-card,
     .chart-cardx,
     .radar-card,
@@ -530,8 +532,8 @@ body,
     
     .chart-container {
         width: 100%;
-        height: clamp(200px, 50vw, 300px);
-        min-height: 200px;
+        height: clamp(138px, 30vw, 176px);
+        min-height: 138px;
     }
     
     .header h1 {
@@ -540,7 +542,12 @@ body,
     
     .my-trades {
         height: auto;
-        min-height: 250px;
+        min-height: 150px;
+    }
+
+    .calendar-panel,
+    .account-balance-card {
+        min-height: 180px;
     }
 }
 
@@ -553,10 +560,16 @@ body,
         padding: 12px;
     }
     
-    .overview-section {
+    .dashboard-main-grid {
         grid-template-columns: 1fr;
-        gap: 12px;
-        height: auto;
+        grid-template-areas:
+            "zella"
+            "performance"
+            "progress"
+            "balance"
+            "calendar"
+            "trades";
+        gap: 10px;
     }
     
     .charts-wrapper {
@@ -568,12 +581,7 @@ body,
         grid-template-columns: 1fr;
         gap: 12px;
     }
-    
-    .second {
-        grid-template-rows: auto;
-        gap: 12px;
-    }
-    
+
     .chart-card,
     .chart-cardx,
     .radar-card,
@@ -588,8 +596,8 @@ body,
     
     .chart-container {
         width: 100%;
-        height: clamp(180px, 45vw, 250px);
-        min-height: 180px;
+        height: clamp(124px, 30vw, 154px);
+        min-height: 124px;
     }
     
     .header {
@@ -606,8 +614,13 @@ body,
     
     .my-trades {
         height: auto;
-        min-height: 220px;
-        padding: 12px;
+        min-height: 138px;
+        padding: 10px;
+    }
+
+    .calendar-panel,
+    .account-balance-card {
+        min-height: 160px;
     }
     
     .activity-card,
@@ -622,25 +635,6 @@ body,
         font-size: 14px;
     }
 }
-
-/* =========================================
-   ANIMATIONS
-========================================= */
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* Animation delays for chart cards */
-.chart-card:nth-child(1) { animation-delay: 0.5s; }
-.chart-card:nth-child(2) { animation-delay: 0.6s; }
-.chart-card:nth-child(3) { animation-delay: 0.7s; }
 
 /* =========================================
    UTILITY CLASSES

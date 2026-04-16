@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useMemo, useState } from "react";
-import Chart from "chart.js/auto";
+import Chart from "../../utils/chartSetup";
 import "./Radar.css";
 
 export default function Radar({ trades = [] }) {

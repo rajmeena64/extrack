@@ -1,9 +1,17 @@
 const corsMiddleware = (req, res, next) => {
-    const allowedOrigin ='http://localhost:3000'; // React app ka URL
-    res.header('Access-Control-Allow-Origin', allowedOrigin);
+    const allowedOrigins = (process.env.ALLOWED_ORIGINS || process.env.FRONTEND_URL || 'http://localhost:3000')
+        .split(',')
+        .map(origin => origin.trim())
+        .filter(Boolean);
+    const requestOrigin = req.headers.origin;
+
+    if (!requestOrigin || allowedOrigins.includes(requestOrigin)) {
+        res.header('Access-Control-Allow-Origin', requestOrigin || allowedOrigins[0] || '*');
+    }
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.header('Access-Control-Allow-Credentials', 'true'); // ← ye important hai
+    res.header('Vary', 'Origin');
 
     if (req.method === 'OPTIONS') return res.sendStatus(200);
     next();

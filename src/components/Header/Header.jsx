@@ -1,45 +1,82 @@
-import React, { useState, useEffect, useRef } from 'react';
-import UserLoginModal from '../user/UserLoginModal/UserLoginModal';
-import Profile from './profile';
+import React, { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  ChevronDown,
+  Download,
+  Plus,
+  RefreshCw,
+  Search,
+  SlidersHorizontal,
+} from 'lucide-react';
 import './Header.css';
 
-function Header({ tradeMode, setTradeMode }) {
+const UserLoginModal = lazy(() => import('../user/UserLoginModal/UserLoginModal'));
+const Profile = lazy(() => import('./profile'));
+
+function Header({ tradeMode, setTradeMode, trades = [] }) {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(false); // ✅ NEW
-  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768); // ✅ NEW
-
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const filterRef = useRef(null);
+  const navigate = useNavigate();
 
   const currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
 
   const modes = [
     { value: 'all', label: 'All Trades' },
     { value: 'manual', label: 'Manual Trades' },
-    { value: 'api', label: 'API Trades' }
+    { value: 'api', label: 'API Trades' },
   ];
 
   const currentLabel =
-    modes.find(m => m.value === tradeMode)?.label || 'All Trades';
+    modes.find((mode) => mode.value === tradeMode)?.label || 'All Trades';
 
-  /* ---------- MOBILE DETECT ---------- */
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours();
+
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
+  }, []);
+
+  const heroName = currentUser?.firstName || 'Trader';
+
+  const latestTradeLabel = useMemo(() => {
+    if (!Array.isArray(trades) || trades.length === 0) {
+      return 'No imports yet';
+    }
+
+    const sortedTrades = [...trades].sort(
+      (left, right) => new Date(right.timestamp) - new Date(left.timestamp)
+    );
+
+    const latestTrade = sortedTrades[0];
+    if (!latestTrade?.timestamp) {
+      return 'No imports yet';
+    }
+
+    return new Intl.DateTimeFormat('en-US', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(new Date(latestTrade.timestamp));
+  }, [trades]);
+
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth <= 768);
-      if (window.innerWidth > 768) {
-        setCollapsed(false); // desktop pe auto open
-      }
     };
 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  /* ---------- OUTSIDE CLICK (FILTER ONLY) ---------- */
   useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (filterOpen && filterRef.current && !filterRef.current.contains(e.target)) {
+    const handleClickOutside = (event) => {
+      if (filterOpen && filterRef.current && !filterRef.current.contains(event.target)) {
         setFilterOpen(false);
       }
     };
@@ -48,10 +85,9 @@ function Header({ tradeMode, setTradeMode }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [filterOpen]);
 
-  /* ---------- ESC CLOSE PROFILE ---------- */
   useEffect(() => {
-    const handleEsc = (e) => {
-      if (e.key === 'Escape') setProfileOpen(false);
+    const handleEsc = (event) => {
+      if (event.key === 'Escape') setProfileOpen(false);
     };
 
     if (profileOpen) {
@@ -64,48 +100,48 @@ function Header({ tradeMode, setTradeMode }) {
   return (
     <>
       <header className="dashboard-header">
+        <div className="dashboard-header__hero">
+          <div className="dashboard-header__title-row">
+            <div>
+              <h1>
+                {greeting}, {heroName}!
+              </h1>
+            </div>
 
-        {/* LEFT */}
-        <div className="header-left">
-          <h1>Dashboard</h1>
+            <div className="dashboard-header__meta">
+              <span className="dashboard-header__meta-pill">
+                <RefreshCw size={14} />
+                Last import was made: {latestTradeLabel}
+              </span>
+            </div>
+          </div>
         </div>
 
-        {/* CENTER */}
-        <div className="header-center">
-          <input
-            type="text"
-            placeholder="Search"
-            className="header-search"
-          />
-          <span className="shortcut">⌘ F</span>
-        </div>
+        <div className="dashboard-toolbar">
+          <div className="dashboard-toolbar__search">
+            <Search size={16} />
+            <input type="text" placeholder="Search symbols, strategy, setup" />
+          </div>
 
-        {/* COLLAPSE BUTTON (Mobile Only) */}
-        {isMobile && (
-          <button
-            className="collapse-btn"
-            onClick={() => setCollapsed(prev => !prev)}
-          >
-            {collapsed ? '▶' : '◀'}
-          </button>
-        )}
+          <div className="dashboard-toolbar__controls">
+            <button className="toolbar-chip" type="button">
+              <SlidersHorizontal size={15} />
+              Filters
+            </button>
 
-        {/* RIGHT */}
-        {(!isMobile || !collapsed) && (
-          <div className="header-right">
-
-            {/* TRADE FILTER */}
             <div className="trade-filter-wrapper" ref={filterRef}>
               <button
-                className="header-btn"
-                onClick={() => setFilterOpen(prev => !prev)}
+                className="toolbar-chip"
+                type="button"
+                onClick={() => setFilterOpen((prev) => !prev)}
               >
-                {currentLabel} ▾
+                {currentLabel}
+                <ChevronDown size={15} />
               </button>
 
               {filterOpen && (
                 <div className="trade-filter-menu">
-                  {modes.map(mode => (
+                  {modes.map((mode) => (
                     <div
                       key={mode.value}
                       className={`filter-menu-item ${tradeMode === mode.value ? 'active' : ''}`}
@@ -121,9 +157,26 @@ function Header({ tradeMode, setTradeMode }) {
               )}
             </div>
 
-            <button className="header-btn primary">Export CSV</button>
+            {!isMobile && (
+              <button
+                className="toolbar-chip"
+                type="button"
+                onClick={() => navigate('/add-trade')}
+              >
+                <Download size={15} />
+                Import
+              </button>
+            )}
 
-            {/* USER */}
+            <button
+              className="toolbar-primary"
+              type="button"
+              onClick={() => navigate('/add-trade')}
+            >
+              <Plus size={16} />
+              Import trades
+            </button>
+
             {currentUser ? (
               <div
                 className="header-user"
@@ -134,9 +187,12 @@ function Header({ tradeMode, setTradeMode }) {
                   {currentUser.firstName?.[0]}
                   {currentUser.lastName?.[0]}
                 </div>
-                <span className="user-name">
-                  {currentUser.firstName} {currentUser.lastName}
-                </span>
+                <div className="header-user__text">
+                  <span className="user-name">
+                    {currentUser.firstName} {currentUser.lastName}
+                  </span>
+                  <span className="user-role">Active account</span>
+                </div>
               </div>
             ) : (
               <div
@@ -145,28 +201,30 @@ function Header({ tradeMode, setTradeMode }) {
                 style={{ cursor: 'pointer' }}
               >
                 <div className="user-avatar">Ur</div>
-                <span className="user-name">Login</span>
+                <div className="header-user__text">
+                  <span className="user-name">Login</span>
+                  <span className="user-role">Open your profile</span>
+                </div>
               </div>
             )}
-
           </div>
-        )}
+        </div>
       </header>
 
-      {/* PROFILE OVERLAY */}
       {profileOpen && (
         <div className="profile-overlay">
-          <Profile
-            user={currentUser}
-            onClose={() => setProfileOpen(false)}
-          />
+          <Suspense fallback={null}>
+            <Profile user={currentUser} onClose={() => setProfileOpen(false)} />
+          </Suspense>
         </div>
       )}
 
-      <UserLoginModal
-        isOpen={showLoginModal}
-        onClose={() => setShowLoginModal(false)}
-      />
+      <Suspense fallback={null}>
+        <UserLoginModal
+          isOpen={showLoginModal}
+          onClose={() => setShowLoginModal(false)}
+        />
+      </Suspense>
     </>
   );
 }

@@ -109,7 +109,7 @@ function TradesList({ trades = [] }) {
     <div className="my-trades">
       {/* ================= HEADER ================= */}
       <div className="trades-header">
-        <h3>My Trades</h3>
+        <h2 className="trades-title">My Trades</h2>
 
         {/* TABS */}
         <div className="tabs">

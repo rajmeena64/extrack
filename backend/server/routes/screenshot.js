@@ -4,11 +4,12 @@ const pool = require('../config/database');
 const cloudinary = require('../config/cloudinary');
 const upload = require('../config/multer');
 const fs = require('fs');
+const { authCheck } = require('./auth');
 
 // ==================== GET TRADE DATA (NOTES, STRATEGY, SCREENSHOTS) ====================
-router.get('/get-trade/:unique_id', async (req, res) => {
+router.get('/get-trade/:unique_id', authCheck, async (req, res) => {
     const { unique_id } = req.params;
-    const { userId } = req.query; // userId as query parameter
+    const userId = req.userId;
 
     if (!unique_id || !userId) {
         return res.json({
@@ -60,8 +61,9 @@ router.get('/get-trade/:unique_id', async (req, res) => {
 });
 
 // ==================== UPDATE TRADE DATA (NOTES, STRATEGY) ====================
-router.post('/update-trade', async (req, res) => {
-    const { unique_id, userId, notes, strategy } = req.body;
+router.post('/update-trade', authCheck, async (req, res) => {
+    const { unique_id, notes, strategy } = req.body;
+    const userId = req.userId;
 
     // Validation
     if (!unique_id || !userId) {
@@ -162,7 +164,7 @@ router.post('/update-trade', async (req, res) => {
 });
 
 // ==================== SCREENSHOT UPLOAD TO CLOUDINARY ====================
-router.post('/upload-screenshot', upload.single('screenshot'), async (req, res) => {
+router.post('/upload-screenshot', authCheck, upload.single('screenshot'), async (req, res) => {
     try {
         if (!req.file) {
             return res.json({ 
@@ -171,7 +173,8 @@ router.post('/upload-screenshot', upload.single('screenshot'), async (req, res) 
             });
         }
 
-        const { unique_id, userId } = req.body;
+        const { unique_id } = req.body;
+        const userId = req.userId;
 
         if (!unique_id || !userId) {
             if (req.file && fs.existsSync(req.file.path)) {
@@ -238,7 +241,7 @@ router.post('/upload-screenshot', upload.single('screenshot'), async (req, res) 
                 existingScreenshots = Array.isArray(existingTrade.screenshots) 
                     ? existingTrade.screenshots 
                     : JSON.parse(existingTrade.screenshots);
-            } catch (e) {
+            } catch (_e) {
                 existingScreenshots = [];
             }
         }
@@ -275,8 +278,9 @@ router.post('/upload-screenshot', upload.single('screenshot'), async (req, res) 
 });
 
 // ==================== DELETE SCREENSHOT FROM CLOUDINARY ====================
-router.delete('/delete-screenshot', async (req, res) => {
-    const { unique_id, screenshotUrl, userId } = req.body;
+router.delete('/delete-screenshot', authCheck, async (req, res) => {
+    const { unique_id, screenshotUrl } = req.body;
+    const userId = req.userId;
 
     if (!unique_id || !screenshotUrl || !userId) {
         return res.json({ 
@@ -324,7 +328,7 @@ router.delete('/delete-screenshot', async (req, res) => {
                 existingScreenshots = Array.isArray(existingTrade.screenshots) 
                     ? existingTrade.screenshots 
                     : JSON.parse(existingTrade.screenshots);
-            } catch (e) {
+            } catch (_e) {
                 return res.json({ 
                     success: false, 
                     error: 'Invalid screenshots data format' 
@@ -350,7 +354,7 @@ router.delete('/delete-screenshot', async (req, res) => {
                     const publicId = publicIdParts.join('/').replace(/\.[^/.]+$/, "");
                     await cloudinary.uploader.destroy(publicId);
                 }
-            } catch (cloudinaryError) {
+            } catch (_cloudinaryError) {
                 // Ignore Cloudinary deletion errors
             }
         }

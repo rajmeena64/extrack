@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import LegacyIcon from '../Common/LegacyIcon';
+import api from '../../utils/serve';
 
 function ApiImportForm({ API_URL, setSelectedMT5AccountId }) {
   const [showConnectionForm, setShowConnectionForm] = useState(false);
@@ -22,14 +24,9 @@ function ApiImportForm({ API_URL, setSelectedMT5AccountId }) {
     accountName: ''
   });
 
-  // Load connected accounts
-  useEffect(() => {
-    loadConnectedAccounts();
-  }, []);
-
-  const loadConnectedAccounts = async () => {
+  const loadConnectedAccounts = useCallback(async () => {
     try {
-      const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       
       if (!token) {
         setAccounts([]);
@@ -37,15 +34,7 @@ function ApiImportForm({ API_URL, setSelectedMT5AccountId }) {
         return;
       }
 
-      const response = await fetch(`${API_URL}/api/get-mt5-accounts`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      const result = await response.json();
+      const { data: result } = await api.get('/get-mt5-accounts');
       
       if (result.success && result.accounts && result.accounts.length > 0) {
         setAccounts(result.accounts);
@@ -58,7 +47,12 @@ function ApiImportForm({ API_URL, setSelectedMT5AccountId }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [API_URL]);
+
+  // Load connected accounts
+  useEffect(() => {
+    loadConnectedAccounts();
+  }, [loadConnectedAccounts]);
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
@@ -98,23 +92,12 @@ function ApiImportForm({ API_URL, setSelectedMT5AccountId }) {
     });
     
     try {
-      const token = localStorage.getItem('authToken') || localStorage.getItem('token');
-      
-      const saveResponse = await fetch(`${API_URL}/api/save-mt5-account`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          broker_name: broker,
-          account_id: loginId,
-          server_name: finalServer,
-          investor_password: password
-        })
+      const { data: saveResult } = await api.post('/save-mt5-account', {
+        broker_name: broker,
+        account_id: loginId,
+        server_name: finalServer,
+        investor_password: password
       });
-      
-      const saveResult = await saveResponse.json();
       
       if (!saveResult.success) {
         throw new Error('Failed to save credentials: ' + saveResult.error);
@@ -168,22 +151,14 @@ function ApiImportForm({ API_URL, setSelectedMT5AccountId }) {
     if (!accountId) return;
     
     try {
-      const token = localStorage.getItem('authToken') || localStorage.getItem('token');
-      
+      const token = localStorage.getItem('accessToken');
+
       if (!token) {
         alert('Please login first!');
         return;
       }
       
-      // Get all accounts to find the database ID
-      const accountsResponse = await fetch(`${API_URL}/api/get-mt5-accounts`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      const accountsResult = await accountsResponse.json();
+      const { data: accountsResult } = await api.get('/get-mt5-accounts');
       
       if (!accountsResult.success) {
         throw new Error('Failed to fetch accounts');
@@ -196,15 +171,7 @@ function ApiImportForm({ API_URL, setSelectedMT5AccountId }) {
       }
       
       // Delete using database ID
-      const response = await fetch(`${API_URL}/api/delete-mt5-account/${account.id}`, {
-        method: 'DELETE',
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      const result = await response.json();
+      const { data: result } = await api.delete(`/delete-mt5-account/${account.id}`);
       
       if (result.success) {
         alert('✅ Account deleted successfully');
@@ -265,7 +232,7 @@ function ApiImportForm({ API_URL, setSelectedMT5AccountId }) {
                 className="btn btn-danger" 
                 onClick={deleteAccount}
               >
-                <i className="fas fa-trash"></i> Delete
+                <LegacyIcon className="fas fa-trash" /> Delete
               </button>
             </div>
           </div>
@@ -278,12 +245,12 @@ function ApiImportForm({ API_URL, setSelectedMT5AccountId }) {
           {showConnectionForm ? (
             <div className="connection-form" id="connectionForm">
               <div className="section-title">
-                <i className="fas fa-plug"></i>
+                <LegacyIcon className="fas fa-plug" />
                 Connect New MT5 Account
               </div>
               
               <div className="api-status" id="apiStatus">
-                <i className={connectionStatus.icon}></i>
+                <LegacyIcon className={connectionStatus.icon} />
                 <span>{connectionStatus.text}</span>
               </div>
               
@@ -386,7 +353,7 @@ function ApiImportForm({ API_URL, setSelectedMT5AccountId }) {
                     className="password-toggle" 
                     onClick={() => setShowPassword(!showPassword)}
                   >
-                    <i className={showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'}></i>
+                    <LegacyIcon className={showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'} />
                   </button>
                 </div>
                 <small className="hint">Note: Use Investor Password (not Master Password)</small>
@@ -395,24 +362,24 @@ function ApiImportForm({ API_URL, setSelectedMT5AccountId }) {
               {/* Connection Buttons */}
               <div className="connection-buttons">
                 <button className="btn btn-secondary" onClick={() => setShowConnectionForm(false)}>
-                  <i className="fas fa-times"></i> Cancel
+                  <LegacyIcon className="fas fa-times" /> Cancel
                 </button>
                 <button className="btn btn-success" onClick={connectMT5API}>
-                  <i className="fas fa-plug"></i> Connect Account
+                  <LegacyIcon className="fas fa-plug" /> Connect Account
                 </button>
               </div>
             </div>
           ) : (
             <div className="connected-accounts-section">
               <div className="section-title">
-                <i className="fas fa-link"></i>
+                <LegacyIcon className="fas fa-link" />
                 Connected Accounts
               </div>
               
               <div className="accounts-list" id="accountsList">
                 {loading ? (
                   <div className="loading-accounts">
-                    <i className="fas fa-spinner fa-spin"></i>
+                    <LegacyIcon className="fas fa-spinner fa-spin" />
                     Loading connected accounts...
                   </div>
                 ) : accounts.length > 0 ? (
@@ -420,20 +387,20 @@ function ApiImportForm({ API_URL, setSelectedMT5AccountId }) {
                     <div key={account.id} className="account-item" data-account-id={account.account_id}>
                       <div className="account-header">
                         <div className="account-info">
-                          <i className={`fas fa-check-circle ${account.connection_status === 'connected' ? 'status-connected' : 'status-disconnected'}`}></i>
+                          <LegacyIcon className={`fas fa-check-circle ${account.connection_status === 'connected' ? 'status-connected' : 'status-disconnected'}`} />
                           <span className="account-name">{account.broker_name}</span>
                           <span className="account-id">ID: {account.account_id}</span>
                         </div>
                         <div className="account-actions">
                           <button className="btn-icon" onClick={() => toggleAccountPassword(account.account_id)} title="Show/Hide Password">
-                            <i className="fas fa-eye"></i>
+                            <LegacyIcon className="fas fa-eye" />
                           </button>
                           <button 
                             className="btn-icon delete" 
                             onClick={() => confirmDelete(account.account_id, account.broker_name)} 
                             title="Delete Account"
                           >
-                            <i className="fas fa-trash"></i>
+                            <LegacyIcon className="fas fa-trash" />
                           </button>
                         </div>
                       </div>
@@ -467,14 +434,14 @@ function ApiImportForm({ API_URL, setSelectedMT5AccountId }) {
                   ))
                 ) : (
                   <div className="no-accounts">
-                    <i className="fas fa-plus-circle"></i>
+                    <LegacyIcon className="fas fa-plus-circle" />
                     No connected accounts found. Add your first MT5 account.
                   </div>
                 )}
               </div>
               
               <div className="add-account-btn" onClick={() => setShowConnectionForm(true)}>
-                <i className="fas fa-plus-circle"></i>
+                <LegacyIcon className="fas fa-plus-circle" />
                 Add New MT5 Account
               </div>
             </div>
@@ -484,12 +451,12 @@ function ApiImportForm({ API_URL, setSelectedMT5AccountId }) {
         {/* Right Side - Warning Section */}
         <div className="form-card">
           <div className="section-title">
-            <i className="fas fa-exclamation-triangle"></i>
+            <LegacyIcon className="fas fa-exclamation-triangle" />
             Important Information
           </div>
           
           <div className="warning-note">
-            <i className="fas fa-exclamation-triangle"></i>
+            <LegacyIcon className="fas fa-exclamation-triangle" />
             <strong>Warning:</strong> Deleting an account will also delete all trades imported from that account.
           </div>
           

@@ -9,12 +9,12 @@
   --radar-empty:      #94a3b8;
 
   --grade-excellent:  #16a34a;
-  --grade-good:       #d97706;
+  --grade-good:       #b45309;
   --grade-average:    #ea580c;
   --grade-poor:       #dc2626;
 
   --val-good:         #16a34a;
-  --val-mid:          #d97706;
+  --val-mid:          #b45309;
   --val-poor:         #dc2626;
 }
 
@@ -43,8 +43,8 @@ body.dark-mode {
 ===================================================== */
 .radar-card {
   border: 1px solid var(--border-light);
-  border-radius: 6px;
-  padding: 10px 12px;
+  border-radius: 18px;
+  padding: 12px 14px;
   background: var(--bg-card);
   width: 100%;
   height: 100%;
@@ -58,17 +58,17 @@ body.dark-mode {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .radar-title-text {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--radar-title);       /* ✅ light: near-black | dark: near-white */
 }
 
 .radar-score {
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 700;
 }
 
@@ -103,7 +103,7 @@ body.dark-mode {
   display: flex;
   gap: 8px;
   align-items: flex-start;
-  height: 230px;
+  height: 198px;
 }
 
 .radar-chart {
@@ -113,12 +113,12 @@ body.dark-mode {
 }
 
 .radar-overall {
-  width: 115px;
+  width: 98px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding-top: 4px;
+  gap: 3px;
+  padding-top: 2px;
 }
 
 /* =====================================================
@@ -146,7 +146,6 @@ body.dark-mode {
   height: 100%;
   border-radius: 999px;
   background: linear-gradient(90deg, #ef4444, #facc15, #22c55e);
-  transition: width 0.5s ease;
 }
 
 /* =====================================================

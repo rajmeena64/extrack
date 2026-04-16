@@ -3,6 +3,8 @@
    SIDEBAR BASE
 ===================================================== */
 .sidebar {
+  --sidebar-collapsed-width: 64px;
+  --sidebar-expanded-width: 188px;
   width: 60px;
   background: var(--bg-card);
   border-right: 1px solid var(--border-light);
@@ -16,7 +18,7 @@
   z-index: 1000;
   box-shadow: var(--shadow-md);
   overflow: hidden;
-  transition: width 0.3s ease, transform 0.3s ease;
+  transition: width 0.34s ease, transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 /* =====================================================
@@ -24,13 +26,13 @@
 ===================================================== */
 @media (min-width: 1024px) {
   .sidebar {
+    width: var(--sidebar-collapsed-width);
     transform: translateX(0);
   }
 
   .sidebar:hover {
-    width: 180px;
+    width: var(--sidebar-expanded-width);
   }
-
 }
 /* =====================================================
    TABLET (769px TO 1023px) - NO HOVER, SMALLER SIDEBAR
@@ -224,7 +226,7 @@
 ===================================================== */
 .nav-item {
   display: flex;
-  align-items: right;
+  align-items: center;
   gap: 10px;
   padding: 10px 16px;
   color: var(--text-secondary);
@@ -235,23 +237,30 @@
   border-radius: var(--radius-md);
   white-space: nowrap;
   font-size: 13px;
-  transition: all 0.2s ease;
+  transition: background-color 0.24s ease, color 0.24s ease, transform 0.28s ease,
+    border-color 0.24s ease, padding 0.28s ease;
   cursor: pointer;
   overflow: hidden;
-  
 }
 
-.nav-item i {
+.nav-item i,
+.nav-item .legacy-icon {
   width: 20px;
   text-align: center;
   font-size: 16px;
   flex-shrink: 0;
 }
 
+.nav-label,
+.dropdown-arrow {
+  max-width: 120px;
+  opacity: 1;
+  transform: translateX(0);
+  transition: opacity 0.2s ease, transform 0.28s ease, max-width 0.28s ease;
+}
+
 .nav-item span {
   flex-grow: 1;
-  transition: opacity 0.2s ease;
-
 }
 
 
@@ -274,18 +283,25 @@
 
 /* Hide text when sidebar is collapsed on desktop */
 @media (min-width: 1024px) {
-  .sidebar:not(:hover) .nav-item span,
-  .sidebar:not(:hover) .dropdown-arrow {
-    display: none;
-  }
-  
   .sidebar:not(:hover) .nav-item {
     justify-content: center;
     padding: 10px 0;
+    gap: 0;
+  }
+
+  .sidebar:not(:hover) .nav-label,
+  .sidebar:not(:hover) .dropdown-arrow {
+    max-width: 0;
+    opacity: 0;
+    transform: translateX(-10px);
+    pointer-events: none;
   }
   
-  .sidebar:not(:hover) .nav-item i {
-    margin-right: 0;
+  .sidebar:hover .nav-label,
+  .sidebar:hover .dropdown-arrow {
+    max-width: 120px;
+    opacity: 1;
+    transform: translateX(0);
   }
 }
 

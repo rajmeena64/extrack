@@ -2,58 +2,14 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../config/database');
-const jwt = require('jsonwebtoken');
+const { authCheck } = require('./auth');
+const { encryptMT5Password } = require('../utils/mt5Credentials');
 
 // ======= UTILITY FUNCTIONS =======
 function maskPassword(password) {
     if (!password || password.length === 0) return '';
     return password[0] + '•'.repeat(password.length - 1);
 }
-
-// ======= AUTHCHECK MIDDLEWARE =======
-const authCheck = async (req, res, next) => {
-    try {
-        const authHeader = req.headers.authorization;
-
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            console.log("❌ No Bearer token");
-            return res.status(401).json({ 
-                success: false, 
-                error: 'Access token required' 
-            });
-        }
-
-        const token = authHeader.split(' ')[1];
-
-        // Verify JWT token
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-        // Check if user exists
-        const userResult = await pool.query(
-            `SELECT "ID" FROM public."user" WHERE "ID" = $1 AND "isDeleted" = false`,
-            [decoded.userId]
-        );
-
-        if (userResult.rows.length === 0) {
-            console.log("❌ User not found or deleted");
-            return res.status(401).json({ 
-                success: false, 
-                error: 'Account deleted or not found' 
-            });
-        }
-
-        req.userId = decoded.userId;
-        console.log("✅ AUTHCHECK: Authentication successful, userId:", req.userId);
-        next();
-
-    } catch (error) {
-        console.error('❌ AUTHCHECK Error:', error.message);
-        return res.status(401).json({ 
-            success: false, 
-            error: 'Invalid or expired token' 
-        });
-    }
-};
 
 // ======= GET ALL MT5 ACCOUNTS =======
 router.get('/get-mt5-accounts', authCheck, async (req, res) => {
@@ -107,11 +63,13 @@ router.post('/update-mt5-password', authCheck, async (req, res) => {
         }
 
         // Update investor password
+        const encryptedPassword = encryptMT5Password(new_password);
+
         await pool.query(
             `UPDATE mt5_accounts 
              SET investor_password = $1, updated_at = NOW() 
              WHERE account_id = $2 AND user_id = $3`,
-            [new_password, account_id, userId]
+            [encryptedPassword, account_id, userId]
         );
 
         console.log(`✅ MT5 password updated for account ${account_id} by user ${userId}`);
@@ -136,19 +94,22 @@ router.post('/save-mt5-account', authCheck, async (req, res) => {
 
         if (check.rows.length > 0) {
             // Update existing account
+            const encryptedPassword = encryptMT5Password(investor_password);
+
             await pool.query(
                 `UPDATE mt5_accounts 
                  SET broker_name = $1, server_name = $2, investor_password = $3 
                  WHERE user_id = $4 AND account_id = $5`,
-                [broker_name, server_name, investor_password, req.userId, account_id]
+                [broker_name, server_name, encryptedPassword, req.userId, account_id]
             );
         } else {
             // Insert new account
+            const encryptedPassword = encryptMT5Password(investor_password);
             await pool.query(
                 `INSERT INTO mt5_accounts 
                  (user_id, broker_name, account_id, server_name, investor_password) 
                  VALUES ($1, $2, $3, $4, $5)`,
-                [req.userId, broker_name, account_id, server_name, investor_password]
+                [req.userId, broker_name, account_id, server_name, encryptedPassword]
             );
         }
 

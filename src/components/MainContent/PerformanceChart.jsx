@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import Chart from 'chart.js/auto';
+import Chart from '../../utils/chartSetup';
 
 function PerformanceChart({ trades }) {
   const chartRef = useRef(null);

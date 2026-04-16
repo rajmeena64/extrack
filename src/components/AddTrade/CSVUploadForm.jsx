@@ -1,5 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import LegacyIcon from '../Common/LegacyIcon';
+import api from '../../utils/serve';
 
 function CSVUploadForm({ API_URL, csvData, setCsvData }) {
   const navigate = useNavigate();
@@ -171,15 +173,7 @@ function CSVUploadForm({ API_URL, csvData, setCsvData }) {
         throw new Error('No valid trades found in CSV file.');
       }
       
-      const response = await fetch(`${API_URL}/api/save-bulk-trades`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ trades })
-      });
-      
-      const result = await response.json();
+      const { data: result } = await api.post('/save-bulk-trades', { trades });
       
       if (result.success) {
         alert(`✅ Successfully uploaded ${trades.length} trades!`);
@@ -197,7 +191,7 @@ function CSVUploadForm({ API_URL, csvData, setCsvData }) {
     <div id="csv-upload-form">
       <div className="form-card csv-upload-section">
         <div className="section-title">
-          <i className="fas fa-file-csv"></i>
+          <LegacyIcon className="fas fa-file-csv" />
           CSV Bulk Upload
         </div>
         
@@ -215,7 +209,7 @@ function CSVUploadForm({ API_URL, csvData, setCsvData }) {
             onDrop={handleDrop}
           >
             <div className="csv-icon">
-              <i className="fas fa-file-excel"></i>
+              <LegacyIcon className="fas fa-file-excel" />
             </div>
             <div className="csv-text">
               Upload CSV File
@@ -229,7 +223,7 @@ function CSVUploadForm({ API_URL, csvData, setCsvData }) {
               className="btn btn-primary"
               onClick={() => fileInputRef.current?.click()}
             >
-              <i className="fas fa-upload"></i> Choose CSV File
+              <LegacyIcon className="fas fa-upload" /> Choose CSV File
             </button>
             <input
               type="file"
@@ -274,7 +268,7 @@ function CSVUploadForm({ API_URL, csvData, setCsvData }) {
               </tbody>
             </table>
             <button type="button" className="remove-csv" onClick={removeCSV}>
-              <i className="fas fa-trash"></i> Remove CSV File
+              <LegacyIcon className="fas fa-trash" /> Remove CSV File
             </button>
           </div>
         )}
@@ -283,7 +277,7 @@ function CSVUploadForm({ API_URL, csvData, setCsvData }) {
       {/* CSV Upload Buttons */}
       <div className="btn-group">
         <button className="btn btn-secondary" onClick={() => navigate('/')}>
-          <i className="fas fa-times"></i> Cancel
+          <LegacyIcon className="fas fa-times" /> Cancel
         </button>
         <button
           className="btn btn-primary"
@@ -291,7 +285,7 @@ function CSVUploadForm({ API_URL, csvData, setCsvData }) {
           disabled={!csvData}
           id="submitCSVBtn"
         >
-          <i className="fas fa-upload"></i> Upload CSV Trades
+          <LegacyIcon className="fas fa-upload" /> Upload CSV Trades
         </button>
       </div>
     </div>

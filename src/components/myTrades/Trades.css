@@ -6,17 +6,20 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 4px;
+  margin-bottom: 8px;
   position: relative;
-  
+
+
 }
 
-.trades-header h3 {
-  font-size: 12px;
-  font-weight: 600;
-  color: blueviolet;
+.trades-title {
+  font-size: 14px;
+  /* font-weight: 650; */
+
   margin: 0;
+  line-height: 1.2;
   white-space: nowrap;
+  letter-spacing: 0.1px;
 }
 
 /* Tabs */
@@ -135,7 +138,7 @@
   font-size: 10px;
   font-weight: 600;
   color: var(--text-secondary);
-  padding: 19px 0;
+  padding: 9px 0;
   border-bottom: 1px solid var(--border-light);
   
   text-transform: uppercase;
@@ -152,7 +155,7 @@
 ================================ */
 .trades-list.scrollable {
   flex: 1;
-  max-height: 160px;
+  max-height: 172px;
   overflow-y: auto;
   padding-right: 4px;
   margin-bottom: 4px;
@@ -300,12 +303,9 @@ color: crimson;
   .my-trades {
     padding: 12px;
     min-height: 260px;
-
-
   }
   
   .trades-header {
-    flex-wrap: wrap;
     gap: 8px;
     margin-bottom: 10px;
   }
@@ -363,12 +363,10 @@ color: crimson;
   .my-trades{
    width: 100%;
   }
-    .trades-header {
+  .trades-header {
     flex-direction: row;
     gap: 8px;
     max-height: 20px;
-
-
   }
 
   .trade-tabs {
@@ -380,7 +378,6 @@ color: crimson;
     position: relative;
     bottom: 39px;
     left: 65px;
-
   }
   
   .trades-header-row,

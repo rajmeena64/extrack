@@ -1,10 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../config/database');
+const { authCheck } = require('./auth');
 
 // GET TRADES BY DATE
-router.get('/trades-by-date/:userid', async (req, res) => {
-    const userId = req.params.userid;
+router.get('/trades-by-date/:userid?', authCheck, async (req, res) => {
+    const userId = req.userId;
     const { date } = req.query;
 
     console.log("📅 GET TRADES BY DATE - User ID:", userId, "Date:", date);
@@ -65,8 +66,8 @@ router.get('/trades-by-date/:userid', async (req, res) => {
 });
 
 // GET TRADES BY DATE RANGE
-router.get('/trades-by-date-range/:userid', async (req, res) => {
-    const userId = req.params.userid;
+router.get('/trades-by-date-range/:userid?', authCheck, async (req, res) => {
+    const userId = req.userId;
     const { start_date, end_date } = req.query;
 
     console.log("📊 GET TRADES BY DATE RANGE - User ID:", userId, "From:", start_date, "To:", end_date);
@@ -114,8 +115,8 @@ router.get('/trades-by-date-range/:userid', async (req, res) => {
 });
 
 // GET TRADE SUMMARY
-router.get('/trade-summary/:userid', async (req, res) => {
-    const userId = req.params.userid;
+router.get('/trade-summary/:userid?', authCheck, async (req, res) => {
+    const userId = req.userId;
 
     console.log("📈 GET TRADE SUMMARY - User ID:", userId);
 

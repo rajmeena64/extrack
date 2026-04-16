@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { DayPicker } from "react-day-picker";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import "./DateRangePicker.css";
@@ -15,20 +15,13 @@ export default function DateRangePicker({
     to: endOfMonth(new Date()),
   });
 
-  const [range, setRange] = useState(value || getDefaultRange());
-  const [month, setMonth] = useState((value && value.from) || new Date());
-
-  useEffect(() => {
-    if (!value?.from || !value?.to) {
-      const defaultRange = getDefaultRange();
-      setRange(defaultRange);
-      setMonth(defaultRange.from);
-      return;
-    }
-
-    setRange(value);
-    setMonth(value.from);
-  }, [value]);
+  const fallbackRange = useMemo(() => getDefaultRange(), []);
+  const controlledRange = value?.from && value?.to ? value : null;
+  const [range, setRange] = useState(controlledRange || fallbackRange);
+  const [month, setMonth] = useState(
+    (controlledRange && controlledRange.from) || fallbackRange.from
+  );
+  const selectedRange = controlledRange || range;
 
   const handleSelect = (selectedRange) => {
     if (!selectedRange) {
@@ -49,19 +42,18 @@ export default function DateRangePicker({
   };
 
   const label = useMemo(() => {
-    if (range?.from && range?.to) {
-      return `${format(range.from, "MMM dd, yyyy")} - ${format(
-        range.to,
+    if (selectedRange?.from && selectedRange?.to) {
+      return `${format(selectedRange.from, "MMM dd, yyyy")} - ${format(
+        selectedRange.to,
         "MMM dd, yyyy"
       )}`;
     }
 
-    const fallback = getDefaultRange();
-    return `${format(fallback.from, "MMM dd, yyyy")} - ${format(
-      fallback.to,
+    return `${format(fallbackRange.from, "MMM dd, yyyy")} - ${format(
+      fallbackRange.to,
       "MMM dd, yyyy"
     )}`;
-  }, [range]);
+  }, [fallbackRange, selectedRange]);
 
   return (
     <div className="trade-date-picker">
@@ -74,7 +66,7 @@ export default function DateRangePicker({
 
       <DayPicker
         mode="range"
-        selected={range}
+          selected={selectedRange}
         onSelect={handleSelect}
         month={month}
         onMonthChange={setMonth}

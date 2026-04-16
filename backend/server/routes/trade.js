@@ -1,56 +1,71 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../config/database');
+const { authCheck } = require('./auth');
+const {
+    encryptMT5Password,
+    verifyMT5Password,
+} = require('../utils/mt5Credentials');
 
-// SAVE MANUAL TRADE
-router.post('/save-trade', async (req, res) => {
-    const { 
-        userId, symbol, trade_type, category, quantity, price, exit_price,
-        pnl, strategy, timestamp, notes, screenshots
+function normalizeScreenshots(screenshots) {
+    if (!screenshots) return null;
+    return Array.isArray(screenshots)
+        ? JSON.stringify(screenshots)
+        : JSON.stringify([screenshots]);
+}
+
+function parseTradeId(value) {
+    const numericId = Number.parseInt(value, 10);
+    return Number.isNaN(numericId) ? null : numericId;
+}
+
+router.post('/save-trade', authCheck, async (req, res) => {
+    const {
+        symbol,
+        trade_type,
+        category,
+        quantity,
+        price,
+        exit_price,
+        pnl,
+        strategy,
+        timestamp,
+        notes,
+        screenshots
     } = req.body;
 
-    // console.log("💾 SAVE MANUAL TRADE:", { userId, symbol });
-
     try {
-        const screenshotsJson = screenshots 
-            ? (Array.isArray(screenshots) ? JSON.stringify(screenshots) : JSON.stringify([screenshots]))
-            : null;
+        const screenshotsJson = normalizeScreenshots(screenshots);
 
         await pool.query(
-            `INSERT INTO trades 
-             (user_id, symbol, trade_type, category, quantity, price, exit_price, pnl, strategy, timestamp, notes, screenshots) 
+            `INSERT INTO trades
+             (user_id, symbol, trade_type, category, quantity, price, exit_price, pnl, strategy, timestamp, notes, screenshots)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
-            [userId, symbol, trade_type, category, quantity, price, exit_price, pnl, strategy, timestamp, notes, screenshotsJson]
+            [req.userId, symbol, trade_type, category, quantity, price, exit_price, pnl, strategy, timestamp, notes, screenshotsJson]
         );
 
-        // console.log("✅ MANUAL TRADE SAVED SUCCESSFULLY");
-        res.json({ 
-            success: true, 
+        res.json({
+            success: true,
             message: 'Manual trade saved!',
             screenshotCount: screenshotsJson ? JSON.parse(screenshotsJson).length : 0
         });
-
     } catch (error) {
-        // console.log("❌ Manual Trade Save Error:", error.message);
-        res.json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 
-// SAVE BULK TRADES
-router.post('/save-bulk-trades', async (req, res) => {
+router.post('/save-bulk-trades', authCheck, async (req, res) => {
     const { trades } = req.body;
 
-    // console.log("💾 SAVE BULK TRADES - Received:", trades?.length || 0, "trades");
-
     if (!trades || !Array.isArray(trades)) {
-        return res.json({ success: false, error: 'Invalid trades data' });
+        return res.status(400).json({ success: false, error: 'Invalid trades data' });
     }
 
     const MAX_TRADES_PER_REQUEST = 500;
     if (trades.length > MAX_TRADES_PER_REQUEST) {
-        return res.json({ 
-            success: false, 
-            error: `Too many trades. Maximum ${MAX_TRADES_PER_REQUEST} trades per request.` 
+        return res.status(400).json({
+            success: false,
+            error: `Too many trades. Maximum ${MAX_TRADES_PER_REQUEST} trades per request.`
         });
     }
 
@@ -66,18 +81,8 @@ router.post('/save-bulk-trades', async (req, res) => {
             const tradeQuantity = trade.quantity || trade.lots;
             const tradeTimestamp = trade.timestamp || trade.opening_time_utc;
             const tradePNL = trade.pnl || trade.profit_usd || 0;
-            const tradeNotes = trade.notes || null;
-            const tradeScreenshots = trade.screenshots || null;
-            
-            const screenshotsJson = tradeScreenshots 
-                ? (Array.isArray(tradeScreenshots) ? JSON.stringify(tradeScreenshots) : JSON.stringify([tradeScreenshots]))
-                : null;
+            const screenshotsJson = normalizeScreenshots(trade.screenshots || null);
 
-            if (!trade.userId) {
-                results.push({ success: false, trade: trade.symbol, error: 'Missing userId' });
-                errorCount++;
-                continue;
-            }
             if (!trade.symbol) {
                 results.push({ success: false, trade: 'Unknown', error: 'Missing symbol' });
                 errorCount++;
@@ -109,15 +114,18 @@ router.post('/save-bulk-trades', async (req, res) => {
                 continue;
             }
 
-            const normalizedTradeType = tradeType.toLowerCase().includes('buy') ? 'buy' : 
-                                      tradeType.toLowerCase().includes('sell') ? 'sell' : tradeType;
+            const normalizedTradeType = tradeType.toLowerCase().includes('buy')
+                ? 'buy'
+                : tradeType.toLowerCase().includes('sell')
+                    ? 'sell'
+                    : tradeType;
 
             await pool.query(
-                `INSERT INTO trades 
-                 (user_id, symbol, trade_type, category, quantity, price, exit_price, pnl, strategy, timestamp, notes, screenshots) 
+                `INSERT INTO trades
+                 (user_id, symbol, trade_type, category, quantity, price, exit_price, pnl, strategy, timestamp, notes, screenshots)
                  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
                 [
-                    trade.userId,
+                    req.userId,
                     trade.symbol,
                     normalizedTradeType,
                     trade.category || 'forex',
@@ -127,58 +135,42 @@ router.post('/save-bulk-trades', async (req, res) => {
                     parseFloat(tradePNL) || 0,
                     trade.strategy || null,
                     tradeTimestamp,
-                    tradeNotes,
+                    trade.notes || null,
                     screenshotsJson
                 ]
             );
 
             results.push({ success: true, trade: trade.symbol });
             successCount++;
-
         } catch (error) {
-            results.push({ 
-                success: false, 
-                trade: trade.symbol, 
-                error: error.message 
-            });
+            results.push({ success: false, trade: trade.symbol, error: error.message });
             errorCount++;
         }
     }
 
-    // console.log(`✅ BULK TRADES SAVED - Successful: ${successCount}, Failed: ${errorCount}`);
-    
     res.json({
         success: true,
         message: `Processed ${trades.length} trades: ${successCount} successful, ${errorCount} failed`,
         savedCount: successCount,
-        errorCount: errorCount,
-        results: results
+        errorCount,
+        results
     });
 });
 
-
-
-// *** SAVE API TRADES (BULK OPTIMIZED) ***
 router.post('/save-api-trade', async (req, res) => {
-
     try {
-
         let trades = req.body;
         if (!Array.isArray(trades)) trades = [trades];
 
-        let results = [];
+        const results = [];
         let skippedCount = 0;
         let errorCount = 0;
-
-        // We'll store DB insert data here
-        let values = [];
-        let params = [];
+        const values = [];
+        const params = [];
         let i = 1;
-
-        let userIdMap = new Map(); // account_id -> user_id cache
+        const userIdMap = new Map();
 
         for (const trade of trades) {
-
             try {
                 const {
                     account_id,
@@ -189,7 +181,6 @@ router.post('/save-api-trade', async (req, res) => {
                     entry_price,
                     exit_price,
                     profit,
-                    open_time,
                     close_time,
                     open_timestamp,
                     close_timestamp,
@@ -197,26 +188,23 @@ router.post('/save-api-trade', async (req, res) => {
                     account_currency
                 } = trade;
 
-                // basic validation
                 if (!account_id || !ticket || balance === undefined) {
                     errorCount++;
-                    results.push({ success: false, ticket, error: "missing required fields" });
+                    results.push({ success: false, ticket, error: 'missing required fields' });
                     continue;
                 }
 
                 if (!open_timestamp || !close_timestamp) {
                     errorCount++;
-                    results.push({ success: false, ticket, error: "missing timestamps" });
+                    results.push({ success: false, ticket, error: 'missing timestamps' });
                     continue;
                 }
 
-                // 🔥 cache user_id (avoid repeated DB calls)
                 let userId;
 
                 if (userIdMap.has(account_id)) {
                     userId = userIdMap.get(account_id);
                 } else {
-
                     const accRes = await pool.query(
                         `SELECT user_id, balance FROM mt5_accounts WHERE account_id = $1`,
                         [account_id]
@@ -224,33 +212,29 @@ router.post('/save-api-trade', async (req, res) => {
 
                     if (accRes.rows.length === 0) {
                         errorCount++;
-                        results.push({ success: false, ticket, error: "account not found" });
+                        results.push({ success: false, ticket, error: 'account not found' });
                         continue;
                     }
 
                     userId = accRes.rows[0].user_id;
                     userIdMap.set(account_id, userId);
 
-                    // update balance once per account (not per trade)
-                    let oldBalance = Number(accRes.rows[0].balance);
-                    let balanceChangePercent = oldBalance > 0
+                    const oldBalance = Number(accRes.rows[0].balance);
+                    const balanceChangePercent = oldBalance > 0
                         ? ((balance - oldBalance) / oldBalance) * 100
                         : 0;
 
                     await pool.query(
-                        `
-                        UPDATE mt5_accounts
-                        SET balance = $1,
-                            balance_change = $2,
-                            account_currency = $3,
-                            last_connected = NOW()
-                        WHERE account_id = $4
-                        `,
+                        `UPDATE mt5_accounts
+                         SET balance = $1,
+                             balance_change = $2,
+                             account_currency = $3,
+                             last_connected = NOW()
+                         WHERE account_id = $4`,
                         [balance, balanceChangePercent, account_currency, account_id]
                     );
                 }
 
-                // 🟢 prepare bulk insert
                 values.push(
                     `($${i++},$${i++},'mt5',$${i++},$${i++},$${i++},$${i++},$${i++},$${i++},$${i++},$${i++},$${i++},$${i++})`
                 );
@@ -269,16 +253,13 @@ router.post('/save-api-trade', async (req, res) => {
                     close_timestamp,
                     ticket
                 );
-
             } catch (err) {
                 errorCount++;
                 results.push({ success: false, error: err.message });
             }
         }
 
-        // ⚡ BULK INSERT (ONLY ONE QUERY)
         if (values.length > 0) {
-
             const query = `
                 INSERT INTO api_trades
                 (
@@ -302,405 +283,252 @@ router.post('/save-api-trade', async (req, res) => {
             `;
 
             const tradeRes = await pool.query(query, params);
-
-            // console.log("🚀 BULK INSERT DONE");
-            // console.log("📦 TOTAL INSERTED:", tradeRes.rows.length);
-            // console.log("⛔ SKIPPED COUNT:", skippedCount);
-
-            results.push({
-                success: true,
-                inserted: tradeRes.rows.length
-            });
+            skippedCount = values.length - tradeRes.rows.length;
+            results.push({ success: true, inserted: tradeRes.rows.length });
         }
 
-        res.json({
-            success: true,
-            errorCount,
-            skippedCount,
-            results
-            
-        });
-
+        res.json({ success: true, errorCount, skippedCount, results });
     } catch (err) {
-        res.status(500).json({
-            success: false,
-            error: err.message
-        });
+        res.status(500).json({ success: false, error: err.message });
     }
 });
 
-
-// ============================
-// GET MANUAL TRADES
-// ============================
-router.get('/user-trades/:userid', async (req, res) => {
-    const userId = req.params.userid;
-
+router.get('/user-trades/:userid?', authCheck, async (req, res) => {
     try {
         const result = await pool.query(
             `SELECT * FROM trades WHERE user_id = $1 ORDER BY timestamp DESC`,
-            [userId]
+            [req.userId]
         );
 
         res.json({ success: true, trades: result.rows });
     } catch (error) {
-        res.json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 
-
-// ============================
-// GET API TRADES
-// ============================
-router.get('/user-api-trades/:userid', async (req, res) => {
-    const userId = req.params.userid;
-
+router.get('/user-api-trades/:userid?', authCheck, async (req, res) => {
     try {
         const result = await pool.query(
             `SELECT * FROM api_trades WHERE user_id = $1 ORDER BY timestamp DESC`,
-            [userId]
+            [req.userId]
         );
 
         res.json({ success: true, trades: result.rows });
     } catch (error) {
-        res.json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 
-
-// DELETE MANUAL TRADE (UNIQUE ID VERSION)
-router.delete('/trades/:uniqueId', async (req, res) => {
+router.delete('/trades/:uniqueId', authCheck, async (req, res) => {
     const uniqueId = req.params.uniqueId;
-    const userId = req.headers['user-id'] || req.query.userId || req.body.userId;
 
-    // console.log("🗑️ DELETE TRADE BY UNIQUE ID:", uniqueId, "User ID:", userId);
-
-    if (!uniqueId || !userId) {
-        return res.json({ 
-            success: false, 
-            error: 'Trade ID and User ID required' 
-        });
+    if (!uniqueId) {
+        return res.status(400).json({ success: false, error: 'Trade ID required' });
     }
 
     try {
-        // ✅ DELETE BY UNIQUE_ID (primary method)
         const deleteResult = await pool.query(
-            `DELETE FROM trades WHERE unique_id = $1 AND user_id = $2 RETURNING "ID", unique_id, symbol, user_id`,
-            [uniqueId, userId]
+            `DELETE FROM trades WHERE unique_id = $1 AND user_id = $2 RETURNING "ID", unique_id, symbol`,
+            [uniqueId, req.userId]
         );
 
-        if (deleteResult.rowCount === 0) {
-            // Try by numeric ID as fallback
-            const numericId = parseInt(uniqueId);
-            if (!isNaN(numericId)) {
-                const fallbackResult = await pool.query(
-                    `DELETE FROM trades WHERE "ID" = $1 AND user_id = $2 RETURNING "ID", unique_id, symbol, user_id`,
-                    [numericId, userId]
-                );
-                
-                if (fallbackResult.rowCount === 0) {
-                    return res.json({ 
-                        success: false, 
-                        error: 'Trade not found or unauthorized' 
-                    });
-                }
-                
-                const deletedTrade = fallbackResult.rows[0];
-                return res.json({ 
-                    success: true, 
-                    message: 'Trade deleted successfully',
-                    deletedId: deletedTrade.ID,
-                    unique_id: deletedTrade.unique_id,
-                    symbol: deletedTrade.symbol
-                });
-            }
-            
-            return res.json({ 
-                success: false, 
-                error: 'Trade not found or unauthorized' 
+        if (deleteResult.rowCount > 0) {
+            const deletedTrade = deleteResult.rows[0];
+            return res.json({
+                success: true,
+                message: 'Trade deleted successfully',
+                deletedId: deletedTrade.ID,
+                unique_id: deletedTrade.unique_id,
+                symbol: deletedTrade.symbol
             });
         }
 
-        const deletedTrade = deleteResult.rows[0];
-        
-        res.json({ 
-            success: true, 
+        const numericId = parseTradeId(uniqueId);
+        if (numericId === null) {
+            return res.status(404).json({ success: false, error: 'Trade not found or unauthorized' });
+        }
+
+        const fallbackResult = await pool.query(
+            `DELETE FROM trades WHERE "ID" = $1 AND user_id = $2 RETURNING "ID", unique_id, symbol`,
+            [numericId, req.userId]
+        );
+
+        if (fallbackResult.rowCount === 0) {
+            return res.status(404).json({ success: false, error: 'Trade not found or unauthorized' });
+        }
+
+        const deletedTrade = fallbackResult.rows[0];
+        return res.json({
+            success: true,
             message: 'Trade deleted successfully',
             deletedId: deletedTrade.ID,
             unique_id: deletedTrade.unique_id,
             symbol: deletedTrade.symbol
         });
-
     } catch (error) {
-        console.log("❌ Delete Trade Error:", error.message);
-        res.json({ 
-            success: false, 
-            error: error.message 
-        });
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 
-// DELETE API TRADE
-router.delete('/api-trades/:id', async (req, res) => {
+router.delete('/api-trades/:id', authCheck, async (req, res) => {
     const tradeId = req.params.id;
-    const userId = req.headers['user-id'] || req.query.userId || req.body.userId;
 
-    // console.log("🗑️ DELETE API TRADE - Trade ID:", tradeId, "User ID:", userId);
-
-    if (!tradeId || !userId) {
-        return res.json({ 
-            success: false, 
-            error: 'Trade ID and User ID required' 
-        });
+    if (!tradeId) {
+        return res.status(400).json({ success: false, error: 'Trade ID required' });
     }
 
     try {
-        const checkResult = await pool.query(
-            `SELECT * FROM api_trades WHERE "ID" = $1 AND user_id = $2`,
-            [tradeId, userId]
-        );
-
-        if (checkResult.rows.length === 0) {
-            return res.json({ 
-                success: false, 
-                error: 'Trade not found or unauthorized' 
-            });
-        }
-
         const deleteResult = await pool.query(
             `DELETE FROM api_trades WHERE "ID" = $1 AND user_id = $2 RETURNING "ID", symbol`,
-            [tradeId, userId]
+            [tradeId, req.userId]
         );
 
-        const deletedTrade = deleteResult.rows[0];
-        
-        res.json({ 
-            success: true, 
-            message: 'API Trade deleted successfully',
-            deletedId: deletedTrade?.ID,
-            symbol: deletedTrade?.symbol
-        });
+        if (deleteResult.rowCount === 0) {
+            return res.status(404).json({ success: false, error: 'Trade not found or unauthorized' });
+        }
 
-    } catch (error) {
-        // console.log("❌ Delete API Trade Error:", error.message);
-        res.json({ 
-            success: false, 
-            error: error.message 
+        const deletedTrade = deleteResult.rows[0];
+        res.json({
+            success: true,
+            message: 'API Trade deleted successfully',
+            deletedId: deletedTrade.ID,
+            symbol: deletedTrade.symbol
         });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 
-// UPDATE TRADE NOTES
-router.post('/update-trade-note', async (req, res) => {
-    const { tradeId, notes, userId } = req.body;
+router.post('/update-trade-note', authCheck, async (req, res) => {
+    const { tradeId, notes } = req.body;
 
-    // console.log("📝 UPDATE TRADE NOTE - Trade ID:", tradeId, "User ID:", userId);
-
-    if (!tradeId || !userId) {
-        return res.json({ 
-            success: false, 
-            error: 'Trade ID and User ID required' 
-        });
+    if (!tradeId) {
+        return res.status(400).json({ success: false, error: 'Trade ID required' });
     }
 
     try {
-        const checkResult = await pool.query(
-            `SELECT * FROM trades WHERE "ID" = $1 AND user_id = $2`,
-            [tradeId, userId]
-        );
-
-        if (checkResult.rows.length === 0) {
-            return res.json({ 
-                success: false, 
-                error: 'Trade not found or unauthorized' 
-            });
-        }
-
         const updateResult = await pool.query(
             `UPDATE trades SET notes = $1 WHERE "ID" = $2 AND user_id = $3 RETURNING "ID", symbol`,
-            [notes, tradeId, userId]
+            [notes, tradeId, req.userId]
         );
 
-        const updatedTrade = updateResult.rows[0];
-        
-        // console.log("✅ TRADE NOTE UPDATED SUCCESSFULLY");
-        res.json({ 
-            success: true, 
-            message: 'Trade notes updated!',
-            tradeId: updatedTrade?.ID,
-            symbol: updatedTrade?.symbol
-        });
+        if (updateResult.rowCount === 0) {
+            return res.status(404).json({ success: false, error: 'Trade not found or unauthorized' });
+        }
 
-    } catch (error) {
-        // console.log("❌ Update Trade Note Error:", error.message);
-        res.json({ 
-            success: false, 
-            error: error.message 
+        const updatedTrade = updateResult.rows[0];
+        res.json({
+            success: true,
+            message: 'Trade notes updated!',
+            tradeId: updatedTrade.ID,
+            symbol: updatedTrade.symbol
         });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 
-// GET TRADE WITH SCREENSHOTS
-router.get('/trade-with-screenshots/:tradeId', async (req, res) => {
+router.get('/trade-with-screenshots/:tradeId', authCheck, async (req, res) => {
     const tradeId = req.params.tradeId;
-    const userId = req.headers['user-id'] || req.query.userId;
 
-    // console.log("📷 GET TRADE WITH SCREENSHOTS - Trade ID:", tradeId, "User ID:", userId);
-
-    if (!tradeId || !userId) {
-        return res.json({ 
-            success: false, 
-            error: 'Trade ID and User ID required' 
-        });
+    if (!tradeId) {
+        return res.status(400).json({ success: false, error: 'Trade ID required' });
     }
 
     try {
         const result = await pool.query(
             `SELECT * FROM trades WHERE "ID" = $1 AND user_id = $2`,
-            [tradeId, userId]
+            [tradeId, req.userId]
         );
 
         if (result.rows.length === 0) {
-            return res.json({ 
-                success: false, 
-                error: 'Trade not found or unauthorized' 
-            });
+            return res.status(404).json({ success: false, error: 'Trade not found or unauthorized' });
         }
 
         const trade = result.rows[0];
-        
         let screenshots = [];
         if (trade.screenshots) {
             try {
-                screenshots = Array.isArray(trade.screenshots) 
-                    ? trade.screenshots 
+                screenshots = Array.isArray(trade.screenshots)
+                    ? trade.screenshots
                     : JSON.parse(trade.screenshots);
-            } catch (e) {
-                console.log("⚠️ Could not parse screenshots");
+            } catch (_error) {
                 screenshots = [];
             }
         }
-        
-        // console.log("✅ TRADE WITH SCREENSHOTS FETCHED - Screenshot count:", screenshots.length);
-        
+
         res.json({
             success: true,
             trade: {
                 ...trade,
-                screenshots: screenshots,
+                screenshots,
                 screenshotCount: screenshots.length
             }
         });
-
     } catch (error) {
-        // console.log("❌ Get Trade With Screenshots Error:", error.message);
-        res.json({ 
-            success: false, 
-            error: error.message 
-        });
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 
-// ==================== MT5 CREDENTIALS ROUTES ==================== //
-
-// 1. SAVE MT5 CREDENTIALS
-router.post('/save-mt5-credentials', async (req, res) => {
+router.post('/save-mt5-credentials', authCheck, async (req, res) => {
     try {
-        const { user_id, broker_name, account_id, server_name, investor_password } = req.body;
+        const { broker_name, account_id, server_name, investor_password } = req.body;
 
-        console.log("💾 SAVE MT5 CREDENTIALS:", { user_id, account_id });
-
-        // Validation
-        if (!user_id || !broker_name || !account_id || !server_name || !investor_password) {
-            return res.json({ 
-                success: false, 
-                error: "All fields required" 
-            });
+        if (!broker_name || !account_id || !server_name || !investor_password) {
+            return res.status(400).json({ success: false, error: 'All fields required' });
         }
 
-        // Save to database
+        const encryptedPassword = encryptMT5Password(investor_password);
+
         await pool.query(
-            `INSERT INTO mt5_accounts 
-             (user_id, broker_name, account_id, server_name, investor_password, connection_status) 
+            `INSERT INTO mt5_accounts
+             (user_id, broker_name, account_id, server_name, investor_password, connection_status)
              VALUES ($1, $2, $3, $4, $5, $6)`,
-            [user_id, broker_name, account_id, server_name, investor_password, 'disconnected']
+            [req.userId, broker_name, account_id, server_name, encryptedPassword, 'disconnected']
         );
 
-        // console.log("✅ MT5 CREDENTIALS SAVED");
-        
-        res.json({ 
-            success: true, 
-            message: 'MT5 credentials saved successfully!'
-        });
-
+        res.json({ success: true, message: 'MT5 credentials saved successfully!' });
     } catch (error) {
-        console.log("❌ Save MT5 Error:", error.message);
-        
         if (error.message.includes('duplicate') || error.message.includes('unique')) {
-            return res.json({ 
-                success: false, 
-                error: "This MT5 account already exists" 
-            });
+            return res.status(409).json({ success: false, error: 'This MT5 account already exists' });
         }
-        
-        res.json({ success: false, error: error.message });
+
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 
-// 2. TEST MT5 CONNECTION
-router.post('/test-mt5-connection', async (req, res) => {
+router.post('/test-mt5-connection', authCheck, async (req, res) => {
     try {
-        const { user_id, account_id, investor_password } = req.body;
+        const { account_id, investor_password } = req.body;
 
-        // console.log("🔗 TEST MT5 CONNECTION:", { account_id });
-
-        if (!user_id || !account_id || !investor_password) {
-            return res.json({ 
-                success: false, 
-                error: "Required fields missing" 
-            });
+        if (!account_id || !investor_password) {
+            return res.status(400).json({ success: false, error: 'Required fields missing' });
         }
 
-        // Check if account exists
         const result = await pool.query(
-            "SELECT * FROM mt5_accounts WHERE user_id = $1 AND account_id = $2",
-            [user_id, account_id]
+            `SELECT * FROM mt5_accounts WHERE user_id = $1 AND account_id = $2`,
+            [req.userId, account_id]
         );
 
         if (result.rows.length === 0) {
-            return res.json({ 
-                success: false, 
-                error: "MT5 account not found. Save credentials first." 
-            });
+            return res.status(404).json({ success: false, error: 'MT5 account not found. Save credentials first.' });
         }
 
         const storedAccount = result.rows[0];
 
-        // Simple password check (temporary - bcrypt baad mein)
-        if (investor_password !== storedAccount.investor_password) {
-            return res.json({ 
-                success: false, 
-                error: "Invalid investor password" 
-            });
+        if (!verifyMT5Password(investor_password, storedAccount.investor_password)) {
+            return res.status(401).json({ success: false, error: 'Invalid investor password' });
         }
 
-        // Update connection status
         await pool.query(
-            "UPDATE mt5_accounts SET connection_status = $1, last_connected = $2 WHERE id = $3",
+            `UPDATE mt5_accounts SET connection_status = $1, last_connected = $2 WHERE id = $3`,
             ['connected', new Date(), storedAccount.id]
         );
 
-        // console.log("✅ MT5 CONNECTION SUCCESS");
-        
-        res.json({ 
-            success: true, 
-            message: 'Connected to MT5 successfully!'
-        });
-
+        res.json({ success: true, message: 'Connected to MT5 successfully!' });
     } catch (error) {
-        // console.log("❌ MT5 Connection Error:", error.message);
-        res.json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 
-module.exports = router; 
+module.exports = router;

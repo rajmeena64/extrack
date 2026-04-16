@@ -15,8 +15,10 @@ if (!JWT_ACCESS_SECRET || !JWT_REFRESH_SECRET) {
 // ✅ COOKIE SETTINGS
 const COOKIE_OPTIONS = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-    sameSite: 'lax',
+    secure: String(process.env.COOKIE_SECURE || (process.env.NODE_ENV === 'production')) === 'true',
+    sameSite: process.env.COOKIE_SAMESITE || 'lax',
+    domain: process.env.COOKIE_DOMAIN || undefined,
+    path: '/',
     maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
 };
 
@@ -234,10 +236,9 @@ router.post('/login', async (req, res) => {
 
 // ✅ NEW - REFRESH TOKEN ENDPOINT
 router.post('/refresh-token', async (req, res) => {
-    try {
-        // Get refresh token from cookie
-        const refreshToken = req.cookies?.refreshToken;
+    const refreshToken = req.cookies?.refreshToken;
 
+    try {
         if (!refreshToken) {
             return res.status(401).json({ 
                 success: false, 
@@ -293,12 +294,9 @@ router.post('/refresh-token', async (req, res) => {
             try {
                 const decoded = jwt.decode(refreshToken);
                 if (decoded?.userId) {
-                    await pool.query(
-                        `DELETE FROM refresh_tokens WHERE token = $1`,
-                        [refreshToken]
-                    );
+                    await pool.query(`DELETE FROM refresh_tokens WHERE token = $1`, [refreshToken]);
                 }
-            } catch (deleteError) {}
+            } catch (_cleanupError) {}
         }
         
         return res.status(401).json({ 

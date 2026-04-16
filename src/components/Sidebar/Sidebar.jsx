@@ -1,18 +1,16 @@
-import React, { useState, useRef } from 'react';
+import React, { lazy, Suspense, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import UserLoginModal from '../user/UserLoginModal/UserLoginModal';
-import DashboardSettings from './DashboardSettings';
-import BarChartIcon from '@mui/icons-material/BarChart';
-import SettingsIcon from '@mui/icons-material/Settings';
 import { useTheme } from '../../context/ThemeContext';  // ✅ ADDED
 
 import './Sidebar.css';
+import LegacyIcon from '../Common/LegacyIcon';
+
+const DashboardSettings = lazy(() => import('./DashboardSettings'));
 
 function Sidebar() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [layoutOpen, setLayoutOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [showLoginModal, setShowLoginModal] = useState(false);
 
   const settingsRef = useRef(null);
   const settingsToggleRef = useRef(null);
@@ -85,6 +83,8 @@ function Sidebar() {
       <button
         className="sidebar-toggle"
         onClick={toggleSidebar}
+        aria-label={sidebarOpen ? 'Close navigation menu' : 'Open navigation menu'}
+        title={sidebarOpen ? 'Close navigation menu' : 'Open navigation menu'}
       >
         ☰
       </button>
@@ -100,21 +100,45 @@ function Sidebar() {
         </div>
 
         {/* NAV LINKS */}
-        <Link to="/dashboard" className="nav-item" onClick={() => setSidebarOpen(false)}>
-          <i className="fas fa-home"></i>  <span>Dashboard</span>
+        <Link
+          to="/dashboard"
+          className="nav-item"
+          onClick={() => setSidebarOpen(false)}
+          aria-label="Go to Dashboard"
+          title="Dashboard"
+        >
+                <LegacyIcon className="fas fa-home" />  <span className="nav-label">Dashboard</span>
         </Link>
 
-        <Link to="/add-trade" className="nav-item add-trade-btn" onClick={() => setSidebarOpen(false)}>
-          <i className="fas fa-plus"></i> <span>Add tarde</span>
+        <Link
+          to="/add-trade"
+          className="nav-item add-trade-btn"
+          onClick={() => setSidebarOpen(false)}
+          aria-label="Go to Add Trade"
+          title="Add Trade"
+        >
+                <LegacyIcon className="fas fa-plus" /> <span className="nav-label">Add tarde</span>
         </Link>
 
-        <Link to="/analytics" className="nav-item" onClick={() => setSidebarOpen(false)}>
-          <i className="fas fa-chart-pie"></i> <span>Analytics</span>
+        <Link
+          to="/analytics"
+          className="nav-item"
+          onClick={() => setSidebarOpen(false)}
+          aria-label="Go to Analytics"
+          title="Analytics"
+        >
+                <LegacyIcon className="fas fa-chart-pie" /> <span className="nav-label">Analytics</span>
         </Link>
 
-        <Link to="/TradeView" className="nav-item" onClick={() => setSidebarOpen(false)}>
-          <BarChartIcon fontSize='small'/> 
-          <span>Trades</span>
+        <Link
+          to="/TradeView"
+          className="nav-item"
+          onClick={() => setSidebarOpen(false)}
+          aria-label="Go to Trades"
+          title="Trades"
+        >
+          <LegacyIcon className="fas fa-chart-line" />
+          <span className="nav-label">Trades</span>
         </Link>
 
         {/* SETTINGS */}
@@ -123,15 +147,15 @@ function Sidebar() {
           ref={settingsToggleRef}
           onClick={() => setSettingsOpen(!settingsOpen)}
         >
-          <SettingsIcon fontSize='small'/>         
-          <span>Settings</span>
-          <i className="fas fa-chevron-down dropdown-arrow"></i>
+          <LegacyIcon className="fas fa-cog" />
+          <span className="nav-label">Settings</span>
+              <LegacyIcon className="fas fa-chevron-down dropdown-arrow" />
         </div>
 
         {settingsOpen && (
           <div className="sub-menu" ref={settingsRef}>
             <div className="sub-nav-item">
-              <i className="fas fa-moon"></i>
+                  <LegacyIcon className="fas fa-moon" />
               <span>Dark mode</span>
               <label className="switch">
                 <input type="checkbox" checked={darkMode} onChange={toggleDarkMode} />
@@ -146,12 +170,12 @@ function Sidebar() {
                 setSettingsOpen(false);
               }}
             >
-              <i className="fas fa-th-large"></i>
+                    <LegacyIcon className="fas fa-th-large" />
               <span>Dashboard Layout</span>
             </div>
 
             <div className="sub-nav-item" onClick={handleLogout}>
-              <i className="fas fa-sign-out-alt"></i> Logout
+                  <LegacyIcon className="fas fa-sign-out-alt" /> Logout
             </div>
           </div>
         )}
@@ -166,16 +190,12 @@ function Sidebar() {
               <span>Dashboard Layout</span>
               <button onClick={() => setLayoutOpen(false)}>✖</button>
             </div>
-            <DashboardSettings />
+            <Suspense fallback={null}>
+              <DashboardSettings />
+            </Suspense>
           </div>
         </>
       )}
-
-      {/* LOGIN MODAL */}
-      <UserLoginModal
-        isOpen={showLoginModal}
-        onClose={() => setShowLoginModal(false)}
-      />
     </>
   );
 }

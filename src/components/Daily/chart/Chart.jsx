@@ -152,6 +152,9 @@ const cleanedSymbol = mapToBinanceSymbol(cleanSymbol(symbol));
         const url = `${API_URL}/api/klines?symbol=${symbol}&interval=${interval}&limit=${limit}&endTime=${endTime}`;
         const res = await fetch(url);
         const data = await res.json();
+        if (!Array.isArray(data) || data.length === 0) {
+          break;
+        }
         allCandles = [...data, ...allCandles];
         endTime = data[0][0] - INTERVAL_MS[interval];
       }
@@ -164,6 +167,11 @@ const cleanedSymbol = mapToBinanceSymbol(cleanSymbol(symbol));
     const loadData = async () => {
       try {
         const candles = await fetchCandles(cleanedSymbol, TF_MAP[tf], totalCandles);
+        if (candles.length === 0) {
+          setError(`No chart data found for ${cleanedSymbol}.`);
+          candleSeriesRef.current.setData([]);
+          return;
+        }
         candleSeriesRef.current.setData(candles);
 
         // Markers
@@ -173,10 +181,9 @@ const markers = [];
 trades.forEach(t => {
   const isSell = String(t.side).toLowerCase() === "sell";
   if (t.entryTime && t.entryPrice) {
-    markers.push({
-      time: Number(t.entryTime) ,
-      position: "belowBar",
-       position: isSell ? "aboveBar" : "belowBar",
+      markers.push({
+        time: Number(t.entryTime) ,
+        position: isSell ? "aboveBar" : "belowBar",
       color: t.side === "sell" ? "red" : "green",
       shape:  isSell ? "arrowDown" :"arrowUp",
       text: `@${t.side === "sell" ? "Sell" : "Buy"} ${t.entryPrice}`
@@ -222,7 +229,7 @@ trades.forEach(t => {
     };
 
     loadData();
-  }, [tf, cleanedSymbol, tradeDate, showFullDay, trades]);
+  }, [tf, cleanedSymbol, tradeDate, showFullDay, trades, getDateRange, totalCandles]);
 
   return (
     <div className="chart">

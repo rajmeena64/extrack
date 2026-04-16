@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import ManualEntryForm from './ManualEntryForm';
 import CSVUploadForm from './CSVUploadForm';
+import LegacyIcon from '../Common/LegacyIcon';
 
 function ManualTradeForm({ API_URL, csvData, setCsvData,trades }) {
   const [uploadType, setUploadType] = useState('single');
@@ -22,14 +23,14 @@ function ManualTradeForm({ API_URL, csvData, setCsvData,trades }) {
           id="singleEntryBtn"
           onClick={showSingleEntry}
         >
-          <i className="fas fa-plus-circle"></i> Single Entry
+          <LegacyIcon className="fas fa-plus-circle" /> Single Entry
         </div>
         <div 
           className={`upload-option-btn ${uploadType === 'csv' ? 'active' : ''}`} 
           id="csvUploadBtn"
           onClick={showCSVUpload}
         >
-          <i className="fas fa-file-csv"></i> CSV Bulk Upload
+          <LegacyIcon className="fas fa-file-csv" /> CSV Bulk Upload
         </div>
       </div>
 

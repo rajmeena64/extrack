@@ -1,38 +1,48 @@
-import React, { useState, useEffect } from 'react';
-// import './dashboard.css';
+import React, { lazy, Suspense, useEffect, useState } from 'react';
+import './dashboard.css';
 import './mobile.css';
 
 import Header from '@/components/Header/Header';
 import StatsCards from '@/components/StatsCards/StatsCards';
-
-import Radar from '@/components/MainContent/Radar';
-import PerformanceChart from '@/components/MainContent/PerformanceChart';
-import ActivityChart from '@/components/MainContent/ActivityChart';
-import PortfolioChart from '@/components/MainContent/PortfolioChart';
-import PnLCalendar from '@/components/MainContent/PnLCalendar';
 import TradesList from '@/components/myTrades/TradesList';
 
+const AccountBalance = lazy(() => import('@/components/MainContent/AccountBalance'));
+const Radar = lazy(() => import('@/components/MainContent/Radar'));
+const PerformanceChart = lazy(() => import('@/components/MainContent/PerformanceChart'));
+const ProgressTracker = lazy(() => import('@/components/MainContent/ProgressTracker'));
+const PnLCalendar = lazy(() => import('@/components/MainContent/PnLCalendar'));
 
 
+function DeferredRender({ delay = 0, children, fallback = null }) {
+  const [isReady, setIsReady] = useState(false);
 
-// ================= SKELETON COMPONENTS =================
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => setIsReady(true), delay);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [delay]);
+
+  return isReady ? children : fallback;
+}
 
 const SkeletonStatsCards = () => (
   <div className="stats-grid">
-    {[...Array(4)].map((_, i) => (
+    {[...Array(5)].map((_, i) => (
       <div key={i} className="stat-card skeleton-box skeleton-stat-card">
         <div
           className="skeleton-text"
           style={{ width: '100px', height: '14px', marginBottom: '12px' }}
-        ></div>
+        />
         <div
           className="skeleton-text"
           style={{ width: '80px', height: '28px', marginBottom: '8px' }}
-        ></div>
+        />
         <div
           className="skeleton-text"
           style={{ width: '120px', height: '12px' }}
-        ></div>
+        />
       </div>
     ))}
   </div>
@@ -43,11 +53,11 @@ const SkeletonChartCard = () => (
     <div
       className="skeleton-text"
       style={{ width: '150px', height: '20px', marginBottom: '20px' }}
-    ></div>
+    />
     <div
       className="skeleton-chart"
       style={{ height: '250px', borderRadius: '8px' }}
-    ></div>
+    />
   </div>
 );
 
@@ -56,28 +66,15 @@ const SkeletonTradesList = () => (
     <div
       className="skeleton-text"
       style={{ width: '120px', height: '20px', marginBottom: '16px' }}
-    ></div>
+    />
 
     {[...Array(5)].map((_, i) => (
       <div
         key={i}
         className="skeleton-text"
         style={{ width: '100%', height: '14px', marginBottom: '10px' }}
-      ></div>
+      />
     ))}
-  </div>
-);
-
-const SkeletonRadar = () => (
-  <div className="skeleton-box skeleton-radar">
-    <div
-      className="skeleton-text"
-      style={{ width: '120px', height: '20px', marginBottom: '20px' }}
-    ></div>
-    <div
-      className="skeleton-chart"
-      style={{ height: '300px', borderRadius: '50%' }}
-    ></div>
   </div>
 );
 
@@ -86,122 +83,113 @@ const SkeletonPnLCalendar = () => (
     <div
       className="skeleton-text"
       style={{ width: '140px', height: '20px', marginBottom: '20px' }}
-    ></div>
+    />
 
     <div className="calendar-grid-skeleton">
       {[...Array(35)].map((_, i) => (
-        <div key={i} className="skeleton-calendar-day"></div>
+        <div key={i} className="skeleton-calendar-day" />
       ))}
     </div>
   </div>
 );
 
 function Dashboard({ tradeMode, setTradeMode, trades, isLoading = false }) {
-  const [rowOrder, setRowOrder] = useState(
-    localStorage.getItem('dashboardRowOrder') || 'charts-first'
-  );
-
-  useEffect(() => {
-    const handleLayoutChange = () => {
-      const updated =
-        localStorage.getItem('dashboardRowOrder') || 'charts-first';
-      setRowOrder(updated);
-    };
-
-    window.addEventListener('dashboard-layout-change', handleLayoutChange);
-
-    return () => {
-      window.removeEventListener('dashboard-layout-change', handleLayoutChange);
-    };
-  }, []);
-
-  // ================= ROW SECTIONS =================
-
-  const ChartsRow = (
-    <div className="left-charts">
-      {isLoading ? (
-        <>
+  const MainGrid = (
+    <>
+      <div className="dashboard-grid-card dashboard-grid-card--zella left-charts">
+        {isLoading ? (
           <SkeletonChartCard />
-          <SkeletonChartCard />
-          <SkeletonChartCard />
-        </>
-      ) : (
-        <>
-          <div className="chart-card">
-            <PerformanceChart trades={trades} />
-          </div>
-
-          <div className="chart-card">
-            <ActivityChart trades={trades} />
-          </div>
-
-          <div className="chart-card">
-            <PortfolioChart trades={trades} />
-          </div>
-        </>
-      )}
-    </div>
-  );
-
-  const OverviewRow = (
-    <section className="overview-section">
-      <div className="second">
-        <section className="trades-section">
-          {isLoading ? (
-            <SkeletonTradesList />
-          ) : (
-            <TradesList trades={trades} currentTradeMode={tradeMode} />
-          )}
-        </section>
-
-        {isLoading ? <SkeletonRadar /> : <Radar trades={trades} />}
+        ) : (
+          <DeferredRender delay={0} fallback={<SkeletonChartCard />}>
+            <Suspense fallback={<SkeletonChartCard />}>
+              <Radar trades={trades} />
+            </Suspense>
+          </DeferredRender>
+        )}
       </div>
 
-      <div className="chart-cardx">
-        {isLoading ? <SkeletonPnLCalendar /> : <PnLCalendar trades={trades} />}
+      <div className="dashboard-grid-card dashboard-grid-card--performance">
+        {isLoading ? (
+          <SkeletonChartCard />
+        ) : (
+          <DeferredRender delay={40} fallback={<SkeletonChartCard />}>
+            <Suspense fallback={<SkeletonChartCard />}>
+              <PerformanceChart trades={trades} />
+            </Suspense>
+          </DeferredRender>
+        )}
       </div>
-    </section>
-  );
 
-  // ================= RENDER =================
+      <div className="dashboard-grid-card dashboard-grid-card--progress">
+        {isLoading ? (
+          <SkeletonChartCard />
+        ) : (
+          <DeferredRender delay={80} fallback={<SkeletonChartCard />}>
+            <Suspense fallback={<SkeletonChartCard />}>
+              <ProgressTracker trades={trades} />
+            </Suspense>
+          </DeferredRender>
+        )}
+      </div>
+
+      <div className="dashboard-grid-card dashboard-grid-card--balance">
+        {isLoading ? (
+          <SkeletonChartCard />
+        ) : (
+          <DeferredRender delay={120} fallback={<SkeletonChartCard />}>
+            <Suspense fallback={<SkeletonChartCard />}>
+              <AccountBalance trades={trades} />
+            </Suspense>
+          </DeferredRender>
+        )}
+      </div>
+
+      <div className="dashboard-grid-card dashboard-grid-card--calendar chart-cardx calendar-panel">
+        {isLoading ? (
+          <SkeletonPnLCalendar />
+        ) : (
+          <DeferredRender delay={160} fallback={<SkeletonPnLCalendar />}>
+            <Suspense fallback={<SkeletonPnLCalendar />}>
+              <PnLCalendar trades={trades} />
+            </Suspense>
+          </DeferredRender>
+        )}
+      </div>
+
+      <section className="dashboard-grid-card dashboard-grid-card--trades trades-section">
+        {isLoading ? (
+          <SkeletonTradesList />
+        ) : (
+          <TradesList trades={trades} currentTradeMode={tradeMode} />
+        )}
+      </section>
+    </>
+  );
 
   return (
     <main className="main-content">
-      {/* HEADER */}
       {isLoading ? (
         <div className="header-skeleton">
           <div
             className="skeleton-text"
             style={{ width: '150px', height: '32px' }}
-          ></div>
+          />
           <div
             className="skeleton-button"
             style={{ width: '100px', height: '38px' }}
-          ></div>
+          />
         </div>
       ) : (
-        <Header tradeMode={tradeMode} setTradeMode={setTradeMode} />
+        <Header tradeMode={tradeMode} setTradeMode={setTradeMode} trades={trades} />
       )}
 
-      {/* TOP STATS */}
       {isLoading ? <SkeletonStatsCards /> : <StatsCards trades={trades} />}
 
-      {/* MAIN GRID */}
-      <section className="dashboard-layout">
-        {rowOrder === 'overview-first' ? (
-          <>
-            {OverviewRow}
-            {ChartsRow}
-          </>
-        ) : (
-          <>
-            {ChartsRow}
-            {OverviewRow}
-          </>
-        )}
+      <section className="dashboard-layout dashboard-main-grid">
+        {MainGrid}
       </section>
 
-      <style >{`
+      <style>{`
         @keyframes skeleton-pulse {
           0% {
             opacity: 1;
@@ -244,7 +232,6 @@ function Dashboard({ tradeMode, setTradeMode, trades, isLoading = false }) {
 
         .skeleton-stat-card,
         .skeleton-chart-card,
-        .skeleton-radar,
         .skeleton-trades,
         .skeleton-calendar {
           min-width: 0;

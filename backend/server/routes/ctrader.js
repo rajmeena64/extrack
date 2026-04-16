@@ -4,7 +4,8 @@ const axios = require('axios');
 const WebSocket = require('ws');
 const protobuf = require("protobufjs");
 const fs = require('fs');
-const path = require('path');
+const _path = require('path');
+const { authCheck } = require('./auth');
 
 let root;
 let ws;
@@ -20,12 +21,12 @@ const ctraderConfig = {
   clientId: process.env.CTRADER_CLIENT_ID,
   clientSecret: process.env.CTRADER_CLIENT_SECRET,
 
-  accessToken: "9VMuhNMkPzVkYRLzymH8sBrlSeebQfYPqq0PGEqK-c8",
-  refreshToken: "KCYw_qYlQr5RSuvZ-Al_FonWy8o7sHMpGvVnwy8BHV0",
+  accessToken: process.env.CTRADER_ACCESS_TOKEN || '',
+  refreshToken: process.env.CTRADER_REFRESH_TOKEN || '',
   expiresAt: Date.now() + (1800 * 1000),
 
-  accountId: 9934489 , // Will be auto-detected
-  isDemo: true,
+  accountId: process.env.CTRADER_ACCOUNT_ID ? Number(process.env.CTRADER_ACCOUNT_ID) : null,
+  isDemo: String(process.env.CTRADER_IS_DEMO || 'true') === 'true',
   
   // Store symbols and current symbol ID
   symbols: new Map(),
@@ -206,6 +207,10 @@ async function getAccounts() {
 // REFRESH TOKEN
 // =======================
 async function refreshAccessToken() {
+  if (!ctraderConfig.refreshToken || !ctraderConfig.clientId || !ctraderConfig.clientSecret) {
+    return false;
+  }
+
   try {
     const res = await axios.post(
       "https://openapi.ctrader.com/apps/token",
@@ -547,7 +552,7 @@ function handleMessage(data) {
           } else {
             console.error("❌ Account auth failed:", accAuthData.errorMessage);
           }
-        } catch (err) {
+        } catch (_err) {
           console.log("✅ Account authorization successful");
           setTimeout(() => requestSymbols(), 500);
         }
@@ -613,7 +618,7 @@ function handleMessage(data) {
           const ErrorRes = root.lookupType("ProtoOAErrorRes");
           const errorData = ErrorRes.decode(decoded.payload);
           console.error("❌ Error:", errorData.errorCode);
-        } catch (err) {
+        } catch (_err) {
           console.error("❌ Error received");
         }
         break;
@@ -633,8 +638,12 @@ function handleMessage(data) {
 // =======================
 function registerCtraderRoutes(app) {
   
-  app.get("/api/start-ctrader", async (req, res) => {
+  app.get("/api/start-ctrader", authCheck, async (req, res) => {
     try {
+      if (!ctraderConfig.clientId || !ctraderConfig.clientSecret || !ctraderConfig.accessToken) {
+        return res.status(500).json({ success: false, error: 'cTrader environment variables are not configured' });
+      }
+
       cleanup();
       await loadProtos();
       await connectSocket();
@@ -649,7 +658,7 @@ function registerCtraderRoutes(app) {
     }
   });
   
-  app.get("/api/ctrader-status", (req, res) => {
+  app.get("/api/ctrader-status", authCheck, (req, res) => {
     res.json({
       success: true,
       connected: ws && ws.readyState === WebSocket.OPEN,
@@ -659,7 +668,7 @@ function registerCtraderRoutes(app) {
     });
   });
   
-  app.get("/api/ctrader-symbols", (req, res) => {
+  app.get("/api/ctrader-symbols", authCheck, (req, res) => {
     res.json({
       success: true,
       symbols: Array.from(ctraderConfig.symbols.values()),

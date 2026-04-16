@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const pool = require('../config/database');
 const emailTransporter = require('../config/email');
 const bcrypt = require('bcrypt'); // ✅ YEH LINE ADD KI
+const { authCheck } = require('./auth');
 
 // FORGOT PASSWORD
 router.post('/forgot-password', async (req, res) => {
@@ -12,6 +13,13 @@ router.post('/forgot-password', async (req, res) => {
     console.log("📧 FORGOT PASSWORD REQUEST - Email:", email);
 
     try {
+        if (!emailTransporter) {
+            return res.status(500).json({
+                success: false,
+                error: 'Email service is not configured'
+            });
+        }
+
         const result = await pool.query(
             `SELECT * FROM public."user" WHERE "email" = $1`,
             [email]
@@ -34,10 +42,13 @@ router.post('/forgot-password', async (req, res) => {
             [resetToken, new Date(Date.now() + 15 * 60 * 1000), user.ID]
         );
 
-        const resetLink = `http://localhost:5500/reset-password.html?token=${resetToken}`;
+        const resetBaseUrl = process.env.PASSWORD_RESET_URL || `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password`;
+        const resetLink = `${resetBaseUrl}?token=${encodeURIComponent(resetToken)}`;
+        const fromEmail = process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER || 'no-reply@example.com';
+        const fromName = process.env.SMTP_FROM_NAME || 'TradeAnalytics';
         
         const mailOptions = {
-            from: '"TradeAnalytics" <rm6462041@gmail.com>',
+            from: `"${fromName}" <${fromEmail}>`,
             to: email,
             subject: 'Reset Your Password - TradeAnalytics',
             html: `
@@ -146,13 +157,16 @@ router.post('/reset-password', async (req, res) => {
 });
 
 // UPDATE PASSWORD
-router.post('/update-password', async (req, res) => {
-    const { userId, currentPassword, newPassword } = req.body;
+router.post('/update-password', authCheck, async (req, res) => {
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.userId;
 
-    console.log("🔐 UPDATE PASSWORD - User ID:", userId);
+    if (!currentPassword || !newPassword) {
+        return res.status(400).json({ success: false, error: 'Current password and new password are required' });
+    }
 
-    if (!userId || !currentPassword || !newPassword) {
-        return res.json({ success: false, error: 'All fields required' });
+    if (String(newPassword).trim().length < 6) {
+        return res.status(400).json({ success: false, error: 'New password must be at least 6 characters long' });
     }
 
     try {
@@ -195,13 +209,12 @@ router.post('/update-password', async (req, res) => {
 });
 
 // UPDATE ACCOUNT TYPE
-router.post('/update-account-type', async (req, res) => {
-    const { userId, accountType } = req.body;
+router.post('/update-account-type', authCheck, async (req, res) => {
+    const { accountType } = req.body;
+    const userId = req.userId;
 
-    console.log("🔄 UPDATE ACCOUNT TYPE - User ID:", userId, "Type:", accountType);
-
-    if (!userId || !accountType) {
-        return res.json({ success: false, error: 'User ID and account type required' });
+    if (!accountType) {
+        return res.status(400).json({ success: false, error: 'Account type required' });
     }
 
     try {

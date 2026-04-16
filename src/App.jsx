@@ -150,13 +150,10 @@
 import React, { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-
 import '@fontsource/roboto/400.css';
 import '@fontsource/roboto/500.css';
 import '@fontsource/roboto/700.css';
-
-
-import "@/components/dashboard/dashboard.css";
+import './styles/app-shell.css';
 
 import Sidebar from './components/Sidebar/Sidebar';
 import { TradeManager } from './utils/tradeManager';
@@ -268,6 +265,10 @@ function App() {
   };
 
   const trades = tradesQuery.data || [];
+  const isTradesLoading =
+    Boolean(user?.ID) &&
+    tradesQuery.isPending &&
+    !Array.isArray(tradesQuery.data);
 
   return (
     <BrowserRouter>
@@ -287,7 +288,7 @@ function App() {
                   tradeMode={tradeMode}
                   setTradeMode={handleTradeModeChange}
                   trades={trades}
-                  isLoading={trades.length === 0} 
+                  isLoading={isTradesLoading}
                 />
               }
             />

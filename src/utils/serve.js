@@ -32,7 +32,9 @@ const onRefreshed = (token) => {
 const forceLogout = async () => {
   try {
     await api.post("/logout"); // backend cleanup (optional safe call)
-  } catch (e) {}
+  } catch {
+    // Ignore logout cleanup failures and continue clearing local auth state.
+  }
 
   //  CLEAR EVERYTHING
   localStorage.clear();

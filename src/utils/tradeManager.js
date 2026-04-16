@@ -1,4 +1,4 @@
-import { API_URL } from './constants';
+import api from './serve';
 
 export class TradeManager {
   constructor() {
@@ -25,10 +25,7 @@ export class TradeManager {
   // Manual trades loader
   async loadManualTrades(userId) {
     try {
-      const response = await fetch(`${API_URL}/api/user-trades/${userId}`);
-      if (!response.ok) throw new Error('Network response was not ok');
-
-      const data = await response.json();
+      const { data } = await api.get(`/user-trades/${userId}`);
       this.trades = data.trades?.map(t => ({
         ID: t.ID,
         user_id: t.user_id,
@@ -56,11 +53,7 @@ export class TradeManager {
   // API trades loader
   async loadAPITrades(userId) {
     try {
-      const response = await fetch(`${API_URL}/api/user-api-trades/${userId}`);
-      if (!response.ok) throw new Error('Network response was not ok');
-
-      const data = await response.json();
-    console.log("API TRADES RESPONSE:", data);
+      const { data } = await api.get(`/user-api-trades/${userId}`);
 
       this.trades = data.trades?.map(t => ({
    
@@ -97,8 +90,8 @@ export class TradeManager {
   async loadAllTrades(userId) {
     try {
       const [manualRes, apiRes] = await Promise.all([
-        fetch(`${API_URL}/api/user-trades/${userId}`).then(r => r.ok ? r.json() : { trades: [] }),
-        fetch(`${API_URL}/api/user-api-trades/${userId}`).then(r => r.ok ? r.json() : { trades: [] })
+        api.get(`/user-trades/${userId}`).then(({ data }) => data).catch(() => ({ trades: [] })),
+        api.get(`/user-api-trades/${userId}`).then(({ data }) => data).catch(() => ({ trades: [] }))
       ]);
 
       let allTrades = [];

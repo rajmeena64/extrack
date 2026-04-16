@@ -27,3 +27,5 @@ dist-ssr
 # env files (VERY IMPORTANT)
 .env
 .env.*
+backend/server/.env
+backend/server/.env.*

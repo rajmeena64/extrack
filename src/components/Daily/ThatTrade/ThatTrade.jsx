@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import "./ThatTrade.css";
 
 import Chart from "../chart/Chart";
 import SymbolWithIcon from "../../Common/SymbolWithIcon";
-import { API_URL } from "../../../utils/constants";
+import LegacyIcon from "../../Common/LegacyIcon";
+import api from "../../../utils/serve";
 
 // import TradePnLCurve from "./Tradepnlcurve ";
-
 
 function ThatTrade({ trades = [] }) {
   const { tradeId } = useParams();
@@ -19,7 +19,6 @@ function ThatTrade({ trades = [] }) {
   const [notes, setNotes] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
-  
   // Screenshot states
   const [screenshots, setScreenshots] = useState([]);
   const [uploading, setUploading] = useState(false);
@@ -44,14 +43,10 @@ function ThatTrade({ trades = [] }) {
   const currentTradeIdRef = useRef(trade?.unique_id);
 
   // Fetch latest trade data from backend
-  const fetchTradeData = async () => {
-    if (!trade?.unique_id || !trade?.user_id) return;
-    
+  const fetchTradeData = useCallback(async () => {
+    if (!trade?.unique_id) return;
     try {
-      const response = await fetch(
-        `${API_URL}/api/get-trade/${trade.unique_id}?userId=${trade.user_id}`
-      );
-      const data = await response.json();
+      const { data } = await api.get(`/get-trade/${trade.unique_id}`);
       
       if (data.success) {
         setNotes(data.trade.notes || "");
@@ -72,9 +67,7 @@ function ThatTrade({ trades = [] }) {
     } catch (error) {
       console.error("Error fetching trade data:", error);
     }
-
-    
-  };
+  }, [trade?.unique_id]);
 
 
 
@@ -105,7 +98,7 @@ function ThatTrade({ trades = [] }) {
       currentTradeIdRef.current = trade.unique_id;
       fetchTradeData();
     }
-  }, [trade?.unique_id]);
+  }, [fetchTradeData, trade]);
 
   const goBack = () => navigate(-1);
 
@@ -117,17 +110,10 @@ function ThatTrade({ trades = [] }) {
     setSaveMessage("");
     
     try {
-      const response = await fetch(`${API_URL}/api/update-trade`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          unique_id: trade.unique_id,
-          userId: trade.user_id,
-          strategy: strategy
-        })
+      const { data } = await api.post('/update-trade', {
+        unique_id: trade.unique_id,
+        strategy
       });
-      
-      const data = await response.json();
       
       if (data.success) {
         setSaveMessage("✅ Strategy saved!");
@@ -153,17 +139,10 @@ function ThatTrade({ trades = [] }) {
     setSaveMessage("");
     
     try {
-      const response = await fetch(`${API_URL}/api/update-trade`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          unique_id: trade.unique_id,
-          userId: trade.user_id,
-          notes: notes
-        })
+      const { data } = await api.post('/update-trade', {
+        unique_id: trade.unique_id,
+        notes
       });
-      
-      const data = await response.json();
       
       if (data.success) {
         setSaveMessage("✅ Notes saved!");
@@ -189,15 +168,9 @@ function ThatTrade({ trades = [] }) {
     const formData = new FormData();
     formData.append('screenshot', file);
     formData.append('unique_id', trade.unique_id);
-    formData.append('userId', trade.user_id);
 
     try {
-      const response = await fetch(`${API_URL}/api/upload-screenshot`, {
-        method: 'POST',
-        body: formData
-      });
-      
-      const data = await response.json();
+      const { data } = await api.post('/upload-screenshot', formData);
       
       if (data.success) {
         setScreenshots(data.screenshots || []);
@@ -228,17 +201,12 @@ function ThatTrade({ trades = [] }) {
     
     setDeleting(true);
     try {
-      const response = await fetch(`${API_URL}/api/delete-screenshot`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const { data } = await api.delete('/delete-screenshot', {
+        data: {
           unique_id: trade.unique_id,
-          userId: trade.user_id,
           screenshotUrl: screenshotToDelete
-        })
+        }
       });
-      
-      const data = await response.json();
       
       if (data.success) {
         setScreenshots(data.screenshots || []);
@@ -348,10 +316,10 @@ function ThatTrade({ trades = [] }) {
           <div className="strategy-section">
             <div className="section-header">
               <div className="section-title">
-                <i className="fas fa-chess-board"></i> Strategy
+                <LegacyIcon className="fas fa-chess-board" /> Strategy
               </div>
               <button className="edit-btn" onClick={() => setShowStrategyModal(true)}>
-                <i className="fas fa-edit"></i> Edit
+                <LegacyIcon className="fas fa-edit" /> Edit
               </button>
             </div>
             <div 
@@ -370,10 +338,10 @@ function ThatTrade({ trades = [] }) {
           <div className="notes-section">
             <div className="section-header">
               <div className="section-title">
-                <i className="fas fa-sticky-note"></i> Notes
+                <LegacyIcon className="fas fa-sticky-note" /> Notes
               </div>
               <button className="edit-btn" onClick={() => setShowNoteModal(true)}>
-                <i className="fas fa-edit"></i> Edit
+                <LegacyIcon className="fas fa-edit" /> Edit
               </button>
             </div>
             <div 
@@ -388,7 +356,7 @@ function ThatTrade({ trades = [] }) {
           <div className="screenshots-section">
             <div className="section-header">
               <div className="section-title">
-                <i className="fas fa-camera"></i> Screenshots ({screenshots.length})
+                <LegacyIcon className="fas fa-camera" /> Screenshots ({screenshots.length})
               </div>
               <div className="screenshot-actions">
                 <input
@@ -403,7 +371,7 @@ function ThatTrade({ trades = [] }) {
                   htmlFor="screenshot-upload" 
                   className="add-btn"
                 >
-                  <i className="fas fa-plus"></i> Add
+                  <LegacyIcon className="fas fa-plus" /> Add
                 </label>
               </div>
             </div>
@@ -438,7 +406,7 @@ function ThatTrade({ trades = [] }) {
 
             {uploading && (
               <div className="uploading-indicator">
-                <i className="fas fa-spinner fa-spin"></i> Uploading...
+                <LegacyIcon className="fas fa-spinner fa-spin" /> Uploading...
               </div>
             )}
           </div>
@@ -492,7 +460,7 @@ function ThatTrade({ trades = [] }) {
         <div className="modal-overlay" onClick={() => setShowStrategyModal(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3><i className="fas fa-chess-board"></i> Trading Strategy</h3>
+              <h3><LegacyIcon className="fas fa-chess-board" /> Trading Strategy</h3>
               <button className="modal-close" onClick={() => setShowStrategyModal(false)}>×</button>
             </div>
             <div className="modal-body">
@@ -550,7 +518,7 @@ function ThatTrade({ trades = [] }) {
         <div className="modal-overlay" onClick={() => setShowNoteModal(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3><i className="fas fa-sticky-note"></i> Trade Notes</h3>
+              <h3><LegacyIcon className="fas fa-sticky-note" /> Trade Notes</h3>
               <button className="modal-close" onClick={() => setShowNoteModal(false)}>×</button>
             </div>
             <div className="modal-body">

@@ -2,8 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-
-import App from './App';
+import AppBootstrap from './AppBootstrap';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -17,15 +16,11 @@ const queryClient = new QueryClient({
   },
 });
 
-// Hide loading screen (safe check)
-const loading = document.getElementById('loading');
-if (loading) loading.style.display = 'none';
-
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      <App />
+      <AppBootstrap />
     </QueryClientProvider>
   </React.StrictMode>
 );

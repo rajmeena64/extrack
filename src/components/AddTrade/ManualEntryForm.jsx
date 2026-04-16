@@ -1,18 +1,23 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SymbolWithIcon from "../Common/SymbolWithIcon";
+import LegacyIcon from "../Common/LegacyIcon";
 
 import Autocomplete from "@mui/material/Autocomplete";
 import TextField from "@mui/material/TextField";
+import api from "../../utils/serve";
 
 function ManualEntryForm({ API_URL, trades }) {
   const navigate = useNavigate();
+  const now = new Date();
+  const initialTradeDate = now.toISOString().split('T')[0];
+  const initialTradeTime = now.toTimeString().substring(0, 5);
   const [formData, setFormData] = useState({
     symbol: '',
     tradeType: '',
     category: '',
-    tradeDate: '',
-    tradeTime: '',
+    tradeDate: initialTradeDate,
+    tradeTime: initialTradeTime,
     quantity: '',
     entryPrice: '',
     exitPrice: '',
@@ -24,18 +29,6 @@ function ManualEntryForm({ API_URL, trades }) {
   const symbols = useMemo(() => {
     return [...new Set(trades?.map(t => t.symbol).filter(Boolean))];
   }, [trades]);
-
-  // Set current date and time on load
-  useEffect(() => {
-    const today = new Date().toISOString().split('T')[0];
-    const time = new Date().toTimeString().substring(0, 5);
-    
-    setFormData(prev => ({
-      ...prev,
-      tradeDate: today,
-      tradeTime: time
-    }));
-  }, []);
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
@@ -93,7 +86,6 @@ function ManualEntryForm({ API_URL, trades }) {
     const utcTimestamp = dateObj.toISOString();
 
     const tradeData = {
-      userId: currentUser.ID,
       symbol: formData.symbol,
       trade_type: formData.tradeType,
       category: formData.category,
@@ -106,15 +98,7 @@ function ManualEntryForm({ API_URL, trades }) {
     };
 
     try {
-      const response = await fetch(`${API_URL}/api/save-trade`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(tradeData)
-      });
-
-      const result = await response.json();
+      const { data: result } = await api.post('/save-trade', tradeData);
 
       if (result.success) {
         alert('✅ Trade added successfully!');
@@ -242,7 +226,7 @@ function ManualEntryForm({ API_URL, trades }) {
         {!previewImage ? (
           <div className="screenshot-upload" id="screenshotUpload">
             <div className="upload-icon">
-              <i className="fas fa-cloud-upload-alt"></i>
+              <LegacyIcon className="fas fa-cloud-upload-alt" />
             </div>
             <div className="upload-text">Upload Screenshot</div>
             <div className="upload-hint">Click or drag & drop chart screenshot</div>
@@ -258,14 +242,14 @@ function ManualEntryForm({ API_URL, trades }) {
               className="btn btn-primary"
               onClick={() => document.getElementById('screenshotInput').click()}
             >
-              <i className="fas fa-upload"></i> Choose Image
+              <LegacyIcon className="fas fa-upload" /> Choose Image
             </button>
           </div>
         ) : (
           <div className="screenshot-preview" style={{display: 'block'}}>
             <img id="previewImage" src={previewImage} alt="Screenshot Preview" />
             <button type="button" className="remove-screenshot" onClick={removeScreenshot}>
-              <i className="fas fa-trash"></i> Remove Screenshot
+              <LegacyIcon className="fas fa-trash" /> Remove Screenshot
             </button>
           </div>
         )}
@@ -274,10 +258,10 @@ function ManualEntryForm({ API_URL, trades }) {
       {/* Submit Buttons */}
       <div className="btn-group-horizontal">
         <button className="btn btn-secondary" onClick={() => navigate('/')}>
-          <i className="fas fa-times"></i> Cancel
+          <LegacyIcon className="fas fa-times" /> Cancel
         </button>
         <button className="btn btn-primary" onClick={submitManualTrade}>
-          <i className="fas fa-plus-circle"></i> Add Trade
+          <LegacyIcon className="fas fa-plus-circle" /> Add Trade
         </button>
       </div>
     </div>

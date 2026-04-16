@@ -3,13 +3,12 @@ import { useNavigate } from "react-router-dom";
 import "./TradeView.css";
 
 import SymbolWithIcon from "../Common/SymbolWithIcon";
-// import api from "../../utils/serve";
-import api from  "@/utils/serve";
+import api from "../../utils/serve";
 import DateRangePicker from "../Common/DateRangePicker";
 
 
 
-import  {  Calendar,Filter,Ratio,Table} from "@/components/common/icons";
+import { Calendar, Filter, Ratio, Table } from "../Common/icons";
 
 
 const IconSize = 16;
@@ -209,6 +208,9 @@ function TradeView({ trades = [] }) {
     }
   };
 
+  /* =======================
+     MONTH NAV
+  ======================= */
   const monthNames = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"
@@ -621,7 +623,13 @@ function TradeView({ trades = [] }) {
             </thead>
 
             <tbody>
-              {filteredTrades.map((trade, i) => {
+              {filteredTrades.length === 0 ? (
+                <tr>
+                  <td colSpan={Object.values(visibleColumns).filter(Boolean).length} style={{ textAlign: "center", padding: "24px", color: "var(--text-secondary)" }}>
+                    No trades found for the selected filters
+                  </td>
+                </tr>
+              ) : filteredTrades.map((trade, i) => {
                 const pnl = Number(trade.pnl) || 0;
                 const tradeDate = trade.timestamp ? new Date(trade.timestamp) : null;
 
