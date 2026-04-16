@@ -19,7 +19,6 @@ function ThatTrade({ trades = [] }) {
   const [notes, setNotes] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   
   // Screenshot states
   const [screenshots, setScreenshots] = useState([]);
@@ -72,7 +71,6 @@ function ThatTrade({ trades = [] }) {
     } finally {
       setIsLoading(false);
     }
-  }, [trade?.unique_id]);
   }, [trade?.unique_id]);
 
   // ✅ FIXED: Proper useEffect with null check and dependencies
