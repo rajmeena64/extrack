@@ -19,6 +19,8 @@ function ThatTrade({ trades = [] }) {
   const [notes, setNotes] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  
   // Screenshot states
   const [screenshots, setScreenshots] = useState([]);
   const [uploading, setUploading] = useState(false);
@@ -32,19 +34,20 @@ function ThatTrade({ trades = [] }) {
   const [showFullscreen, setShowFullscreen] = useState(false);
   const [fullscreenImage, setFullscreenImage] = useState("");
 
-  // ✅ FIX 1: useMemo to prevent recreation on every render
+  // ✅ FIXED: Proper useMemo syntax
   const trade = useMemo(() => {
     return location.state?.tradeData ||
       trades.find(t => t.id === tradeId || t.unique_id === tradeId);
   }, [tradeId, location.state?.tradeData, trades]);
 
-
-  // ✅ FIX 2: Track current trade ID
+  // Track current trade ID
   const currentTradeIdRef = useRef(trade?.unique_id);
 
-  // Fetch latest trade data from backend
+  // ✅ FIXED: Memoized fetchTradeData with useCallback
   const fetchTradeData = useCallback(async () => {
     if (!trade?.unique_id) return;
+
+    setIsLoading(true);
     try {
       const { data } = await api.get(`/get-trade/${trade.unique_id}`);
       
@@ -66,12 +69,13 @@ function ThatTrade({ trades = [] }) {
       }
     } catch (error) {
       console.error("Error fetching trade data:", error);
+    } finally {
+      setIsLoading(false);
     }
   }, [trade?.unique_id]);
+  }, [trade?.unique_id]);
 
-
-
-  // ✅ FIX 3: Sirf tab run hoga jab unique_id change ho
+  // ✅ FIXED: Proper useEffect with null check and dependencies
   useEffect(() => {
     // Agar trade nahi hai to kuch mat karo
     if (!trade) return;
@@ -98,7 +102,7 @@ function ThatTrade({ trades = [] }) {
       currentTradeIdRef.current = trade.unique_id;
       fetchTradeData();
     }
-  }, [fetchTradeData, trade]);
+  }, [trade, fetchTradeData]);
 
   const goBack = () => navigate(-1);
 
@@ -119,7 +123,6 @@ function ThatTrade({ trades = [] }) {
         setSaveMessage("✅ Strategy saved!");
         setShowStrategyModal(false);
         setTimeout(() => setSaveMessage(""), 3000);
-        // Save ke baad bhi fetch nahi karna, state already updated hai
       } else {
         setSaveMessage("❌ Error saving strategy");
       }
@@ -148,7 +151,6 @@ function ThatTrade({ trades = [] }) {
         setSaveMessage("✅ Notes saved!");
         setShowNoteModal(false);
         setTimeout(() => setSaveMessage(""), 3000);
-        // Save ke baad bhi fetch nahi karna
       } else {
         setSaveMessage("❌ Error saving notes");
       }
@@ -425,35 +427,27 @@ function ThatTrade({ trades = [] }) {
               tradeDate={dateObj}
               tradeTime={time}
               showFullDay={true}
-
-               trades={[{
-                  entryTime: trade.open_timestamp,
-                  exitTime: trade.close_timestamp,
-                  entryPrice: trade.price,
-                  exitPrice: trade.exit_price,
-                  side     :  trade.trade_type
-             }]}
-
+              trades={[{
+                entryTime: trade.open_timestamp,
+                exitTime: trade.close_timestamp,
+                entryPrice: trade.price,
+                exitPrice: trade.exit_price,
+                side: trade.trade_type
+              }]}
             />
 
-
-    {/* <TradePnLCurve
-      symbol={getBinanceSymbol(trade.symbol)}
-      entryTime={trade.open_timestamp}
-      exitTime={trade.close_timestamp}
-      entryPrice={Number(trade.price)}
-      exitPrice={Number(trade.exit_price)}
-      quantity={Number(trade.quantity)}
-      side={trade.trade_type}
-    /> */}
-  </div>
-
-
-    </div>
-    </div>
-
-
-      
+            {/* <TradePnLCurve
+              symbol={getBinanceSymbol(trade.symbol)}
+              entryTime={trade.open_timestamp}
+              exitTime={trade.close_timestamp}
+              entryPrice={Number(trade.price)}
+              exitPrice={Number(trade.exit_price)}
+              quantity={Number(trade.quantity)}
+              side={trade.trade_type}
+            /> */}
+          </div>
+        </div>
+      </div>
 
       {/* STRATEGY MODAL */}
       {showStrategyModal && (
