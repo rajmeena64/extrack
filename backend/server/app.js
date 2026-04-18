@@ -34,7 +34,7 @@ if (process.env.NODE_ENV === 'production') {
 
   if (String(process.env.DB_SSL_ENABLED || 'true') === 'true'
     && String(process.env.DB_SSL_REJECT_UNAUTHORIZED || 'true') !== 'true') {
-    missingEnv.push('DB_SSL_REJECT_UNAUTHORIZED=true');
+    missingEnv.push('DB_SSL_REJECT_UNAUTHORIZED=false');
   }
 }
 
