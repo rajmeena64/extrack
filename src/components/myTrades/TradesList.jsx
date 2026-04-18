@@ -109,78 +109,84 @@ function TradesList({ trades = [] }) {
     <div className="my-trades">
       {/* ================= HEADER ================= */}
       <div className="trades-header">
-        <h2 className="trades-title">My Trades</h2>
+        <h2 className="trades-title dashboard-card-title">My Trades</h2>
 
-        {/* TABS */}
-        <div className="tabs">
-          <button
-            className={activeTab === "open" ? "active" : ""}
-            onClick={() => setActiveTab("open")}
-          >
-            Open
-          </button>
-          <button
-            className={activeTab === "closed" ? "active" : ""}
-            onClick={() => setActiveTab("closed")}
-          >
-            Closed
-          </button>
-        </div>
+        <div className="trades-header-actions">
+          {/* TABS */}
+          <div className="tabs">
+            <button
+              className={activeTab === "open" ? "active" : ""}
+              onClick={() => setActiveTab("open")}
+            >
+              Open
+            </button>
+            <button
+              className={activeTab === "closed" ? "active" : ""}
+              onClick={() => setActiveTab("closed")}
+            >
+              Closed
+            </button>
+          </div>
 
-        {/* SETTINGS */}
-        <div className="settings-wrapper" ref={dropdownRef}>
-         <EllipsisVertical size={ICON_SIZE}
-            className="settings-icon"
-            onClick={() => setShowSettings((prev) => !prev)}
-          />
-          {showSettings && (
-            <div className="settings-dropdown">
-              {FIELDS.map((f) => {
-                const checked = visibleFields.includes(f.key);
-                const disabled = !checked && visibleFields.length >= 5;
-                return (
-                  <label key={f.key} className={disabled ? "disabled" : ""}>
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      disabled={disabled}
-                      onChange={() => toggleField(f.key)}
-                    />
-                    {f.label}
-                  </label>
-                );
-              })}
-            </div>
-          )}
+          {/* SETTINGS */}
+          <div className="settings-wrapper" ref={dropdownRef}>
+            <EllipsisVertical
+              size={ICON_SIZE}
+              className="settings-icon"
+              onClick={() => setShowSettings((prev) => !prev)}
+            />
+            {showSettings && (
+              <div className="settings-dropdown">
+                {FIELDS.map((f) => {
+                  const checked = visibleFields.includes(f.key);
+                  const disabled = !checked && visibleFields.length >= 5;
+                  return (
+                    <label key={f.key} className={disabled ? "disabled" : ""}>
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        disabled={disabled}
+                        onChange={() => toggleField(f.key)}
+                      />
+                      {f.label}
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       {/* ================= TABLE HEADER ================= */}
-      <div className="trades-header-row">
-        {visibleFields.map((key) => {
-          const field = FIELDS.find((f) => f.key === key);
-          return <div key={key}>{field?.label}</div>;
-        })}
-      </div>
+      <div className="trades-table-scroll">
+        <div className="trades-header-row" data-columns={visibleFields.length}>
+          {visibleFields.map((key) => {
+            const field = FIELDS.find((f) => f.key === key);
+            return <div key={key}>{field?.label}</div>;
+          })}
+        </div>
 
-      {/* ================= ROWS ================= */}
-      <div className="trades-list scrollable">
-        {filteredTrades.length === 0 ? (
-          <div className="empty-state">No {activeTab} trades</div>
-        ) : (
-          filteredTrades.map((t) => (
-            <div
-              key={t.unique_id || t.id || t.timestamp}
-              className="trade-item"
-              onClick={() => handleTradeClick(t)} // <-- added click here
-              style={{ cursor: "pointer" }} // optional, shows pointer
-            >
-              {visibleFields.map((key) => (
-                <div key={key}>{renderValue(t, key)}</div>
-              ))}
-            </div>
-          ))
-        )}
+        {/* ================= ROWS ================= */}
+        <div className="trades-list scrollable">
+          {filteredTrades.length === 0 ? (
+            <div className="empty-state">No {activeTab} trades</div>
+          ) : (
+            filteredTrades.map((t) => (
+              <div
+                key={t.unique_id || t.id || t.timestamp}
+                className="trade-item"
+                data-columns={visibleFields.length}
+                onClick={() => handleTradeClick(t)} // <-- added click here
+                style={{ cursor: "pointer" }} // optional, shows pointer
+              >
+                {visibleFields.map((key) => (
+                  <div key={key}>{renderValue(t, key)}</div>
+                ))}
+              </div>
+            ))
+          )}
+        </div>
       </div>
     </div>
   );

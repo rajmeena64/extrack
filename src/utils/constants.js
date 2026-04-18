@@ -14,5 +14,12 @@
 
 // src/constants.js
 
-export const API_URL = import.meta.env.VITE_URL;
-export const WS_URL = import.meta.env.VITE_WS_URL;
+const rawApiUrl = String(import.meta.env.VITE_URL || '').trim();
+const rawWsUrl = String(import.meta.env.VITE_WS_URL || '').trim();
+
+const normalizeUrl = (value) => value.replace(/\/+$/, '');
+
+export const API_URL = normalizeUrl(rawApiUrl);
+export const WS_URL = rawWsUrl
+  ? normalizeUrl(rawWsUrl)
+  : API_URL.replace(/^http/i, (protocol) => (protocol.toLowerCase() === 'https' ? 'wss' : 'ws'));

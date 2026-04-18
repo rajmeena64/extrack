@@ -153,12 +153,15 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import '@fontsource/roboto/400.css';
 import '@fontsource/roboto/500.css';
 import '@fontsource/roboto/700.css';
+import { endOfDay, startOfDay } from 'date-fns';
 import './styles/app-shell.css';
+import './styles/mobile.css';
 
 import Sidebar from './components/Sidebar/Sidebar';
 import { TradeManager } from './utils/tradeManager';
-import { API_URL } from './utils/constants';
+import { API_URL, WS_URL } from './utils/constants';
 import { ThemeProvider } from './context/ThemeContext'; 
+import { useAuth } from './context/AuthContext';
 
 
 /* ---------------- LAZY LOADED PAGES ---------------- */
@@ -182,7 +185,11 @@ const PageLoader = () => (
 );
 
 function Profile() {
-  const currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
+  const { user: currentUser, isAuthLoading } = useAuth();
+
+  if (isAuthLoading) {
+    return <div style={{ padding: '40px' }}>Loading profile...</div>;
+  }
 
   return (
     <div style={{ padding: '40px' }}>
@@ -200,75 +207,118 @@ function Profile() {
 }
 
 function App() {
-  const [user, setUser] = useState(null);
+  const { user, isAuthLoading } = useAuth();
   const [tradeMode, setTradeMode] = useState(() => localStorage.getItem('tradeMode') || 'all');
+  const [dashboardDateRange, setDashboardDateRange] = useState({ from: null, to: null });
 
   const tradeManager = useMemo(() => new TradeManager(), []);
   const queryClient = useQueryClient();
   const ws = useRef(null);
   const updatingTrades = useRef(false);
 
-  // Load current user
-  useEffect(() => {
-    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-    setUser(currentUser);
-  }, []);
-
   const tradesQuery = useQuery({
     queryKey: ['trades', user?.ID, tradeMode],
-    enabled: Boolean(user?.ID),
+    enabled: !isAuthLoading && Boolean(user?.ID),
     queryFn: () => tradeManager.loadTrades(user.ID, tradeMode),
     placeholderData: (previousData) => previousData,
   });
 
   // WebSocket
   useEffect(() => {
-    if (!user?.ID) return;
+    if (isAuthLoading || !user?.ID || !API_URL || !WS_URL) return undefined;
 
-    if (!ws.current) {
-      ws.current = new WebSocket(API_URL);
+    let isDisposed = false;
 
-      ws.current.onmessage = async (event) => {
-        const msg = JSON.parse(event.data);
+    const connectWebSocket = async () => {
+      try {
+        const healthResponse = await fetch(`${API_URL}/api/health`, {
+          credentials: 'include',
+        });
 
-        if (msg.type === 'TRADE_UPDATED') {
-          if (updatingTrades.current) return;
-
-          updatingTrades.current = true;
-
-          try {
-            await queryClient.invalidateQueries({
-              queryKey: ['trades', user.ID, tradeMode],
-            });
-          } catch (err) {
-            console.error('Error updating trades:', err);
-          } finally {
-            setTimeout(() => {
-              updatingTrades.current = false;
-            }, 100);
-          }
+        if (!healthResponse.ok || isDisposed || ws.current) {
+          return;
         }
-      };
-    }
+
+        const socket = new WebSocket(WS_URL);
+        ws.current = socket;
+
+        socket.onmessage = async (event) => {
+          const msg = JSON.parse(event.data);
+
+          if (msg.type === 'TRADE_UPDATED') {
+            if (updatingTrades.current) return;
+
+            updatingTrades.current = true;
+
+            try {
+              await queryClient.invalidateQueries({
+                queryKey: ['trades', user.ID, tradeMode],
+              });
+            } catch (err) {
+              console.error('Error updating trades:', err);
+            } finally {
+              setTimeout(() => {
+                updatingTrades.current = false;
+              }, 100);
+            }
+          }
+        };
+
+        socket.onerror = () => {
+          if (ws.current === socket) {
+            ws.current = null;
+          }
+          socket.close();
+        };
+
+        socket.onclose = () => {
+          if (ws.current === socket) {
+            ws.current = null;
+          }
+        };
+      } catch {
+        // Backend not reachable yet; skip websocket setup silently.
+      }
+    };
+
+    connectWebSocket();
 
     return () => {
+      isDisposed = true;
       if (ws.current) {
         ws.current.close();
         ws.current = null;
       }
     };
-  }, [user?.ID, tradeMode, queryClient]);
+  }, [API_URL, WS_URL, isAuthLoading, user?.ID, tradeMode, queryClient]);
 
   const handleTradeModeChange = (mode) => {
     localStorage.setItem('tradeMode', mode);
     setTradeMode(mode);
   };
 
-  const trades = tradesQuery.data || [];
+  const trades = user?.ID ? (tradesQuery.data || []) : [];
+  const dashboardTrades = useMemo(() => {
+    if (!Array.isArray(trades)) return [];
+    const from = dashboardDateRange?.from ? startOfDay(new Date(dashboardDateRange.from)) : null;
+    const to = dashboardDateRange?.to ? endOfDay(new Date(dashboardDateRange.to)) : null;
+
+    return trades.filter((trade) => {
+      if (!trade?.timestamp) return false;
+
+      const tradeDate = new Date(trade.timestamp);
+      if (Number.isNaN(tradeDate.getTime())) return false;
+      if (from && tradeDate < from) return false;
+      if (to && tradeDate > to) return false;
+
+      return true;
+    });
+  }, [dashboardDateRange, trades]);
   const isTradesLoading =
-    Boolean(user?.ID) &&
-    tradesQuery.isPending &&
-    !Array.isArray(tradesQuery.data);
+    (isAuthLoading && !user) ||
+    (Boolean(user?.ID) &&
+      tradesQuery.isPending &&
+      !Array.isArray(tradesQuery.data));
 
   return (
     <BrowserRouter>
@@ -287,7 +337,9 @@ function App() {
                 <Dashboard
                   tradeMode={tradeMode}
                   setTradeMode={handleTradeModeChange}
-                  trades={trades}
+                  trades={dashboardTrades}
+                  dateRange={dashboardDateRange}
+                  setDateRange={setDashboardDateRange}
                   isLoading={isTradesLoading}
                 />
               }

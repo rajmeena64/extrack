@@ -4,8 +4,10 @@ import './UserLoginModal.css';
 import LegacyIcon from '../../Common/LegacyIcon';
 
 import { API_URL } from "../../../utils/constants";
+import { useAuth } from '../../../context/AuthContext';
 
 function UserLoginModal({ isOpen, onClose }) {
+  const { user: currentUser, setUser } = useAuth();
   const [activeTab, setActiveTab] = useState('login'); // 'login', 'signup', 'forgot'
   const [loginMethod, setLoginMethod] = useState('email'); // 'email' or 'phone'
   const [formData, setFormData] = useState({
@@ -21,34 +23,10 @@ function UserLoginModal({ isOpen, onClose }) {
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
-  const [currentUser, setCurrentUser] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [editData, setEditData] = useState({});
-
-
-
-
-  // Load user from localStorage
-  useEffect(() => {
-    const storedUser = localStorage.getItem('currentUser');
-    const storedToken = localStorage.getItem("accessToken");
-    
-    if (storedUser && storedToken) {
-      try {
-        const user = JSON.parse(storedUser);
-        setCurrentUser(user);
-        // Auto switch to logged in state
-        const loginForm = document.getElementById('loginForm');
-        const logoutSection = document.getElementById('logoutSection');
-        if (loginForm) loginForm.style.display = 'none';
-        if (logoutSection) logoutSection.style.display = 'block';
-      } catch (_error) {
-        console.error('Error parsing user data');
-      }
-    }
-  }, []);
 
   // ESC key se close
   useEffect(() => {
@@ -98,8 +76,6 @@ function UserLoginModal({ isOpen, onClose }) {
       const data = await response.json();
 
       if (data.success) {
-        localStorage.setItem('accessToken', data.accessToken);
-        
         const userData = {
           ID: data.user.ID,
           firstName: data.user.firstName,
@@ -110,8 +86,7 @@ function UserLoginModal({ isOpen, onClose }) {
           preferred_currency: data.user.preferred_currency || 'USD'
         };
         
-        localStorage.setItem('currentUser', JSON.stringify(userData));
-        setCurrentUser(userData);
+        setUser(userData);
         
         alert(`Welcome back ${data.user.firstName}!`);
         onClose();
@@ -156,8 +131,6 @@ function UserLoginModal({ isOpen, onClose }) {
       const data = await response.json();
 
       if (data.success) {
-        localStorage.setItem('accessToken', data.accessToken);
-        
         const userData = {
           ID: data.user.ID,
           firstName: data.user.firstName,
@@ -168,8 +141,7 @@ function UserLoginModal({ isOpen, onClose }) {
           preferred_currency: data.user.preferred_currency || formData.currency
         };
         
-        localStorage.setItem('currentUser', JSON.stringify(userData));
-        setCurrentUser(userData);
+        setUser(userData);
         
         alert(`Welcome ${formData.firstName} ${formData.lastName}!`);
         onClose();
@@ -214,11 +186,17 @@ function UserLoginModal({ isOpen, onClose }) {
   // ✅ LOGOUT
   const handleLogout = () => {
     if (window.confirm('Are you sure you want to logout?')) {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('currentUser');
-      setCurrentUser(null);
-      setActiveTab('login');
-      window.alert('Logged out successfully!');
+      fetch(`${API_URL}/api/logout`, {
+        method: 'POST',
+        credentials: 'include'
+      })
+        .catch(() => null)
+        .finally(() => {
+          localStorage.removeItem('authUser');
+          setUser(null);
+          setActiveTab('login');
+          window.alert('Logged out successfully!');
+        });
     }
   };
 
@@ -237,8 +215,6 @@ function UserLoginModal({ isOpen, onClose }) {
   };
 
   const handleUpdateProfile = async () => {
-    const accessToken = localStorage.getItem('accessToken');
-    
     const updatedData = {
       firstName: editData.firstName,
       lastName: editData.lastName,
@@ -251,7 +227,6 @@ function UserLoginModal({ isOpen, onClose }) {
       const response = await fetch(`${API_URL}/api/update-profile`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(updatedData),
@@ -261,13 +236,7 @@ function UserLoginModal({ isOpen, onClose }) {
       const data = await response.json();
 
       if (data.success) {
-        const updatedUser = {
-          ...currentUser,
-          ...updatedData
-        };
-        
-        localStorage.setItem('currentUser', JSON.stringify(updatedUser));
-        setCurrentUser(updatedUser);
+        setUser(data.user);
         
         alert('Profile updated successfully!');
         setIsEditModalOpen(false);
@@ -283,13 +252,10 @@ function UserLoginModal({ isOpen, onClose }) {
     setIsDeleteModalOpen(true);
   };
   const confirmDeleteAccount = async (password) => {
-    const accessToken = localStorage.getItem('accessToken');
-    
     try {
       const response = await fetch(`${API_URL}/api/delete-account`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ password: password }),
@@ -300,9 +266,8 @@ function UserLoginModal({ isOpen, onClose }) {
 
       if (data.success) {
         alert('Account deleted successfully!');
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('currentUser');
-        setCurrentUser(null);
+        localStorage.removeItem('authUser');
+        setUser(null);
         setActiveTab('login');
         setIsDeleteModalOpen(false);
       } else {
@@ -647,7 +612,7 @@ function UserLoginModal({ isOpen, onClose }) {
                         {currentUser.firstName} {currentUser.lastName} ({currentUser.email})
                       </p>
                       <div className="account-type-badge">
-                        {currentUser.accountType || 'manual'} Account
+                        {currentUser.accountType === 'api' ? 'Sync' : (currentUser.accountType || 'manual')} Account
                       </div>
                     </div>
 
@@ -660,7 +625,7 @@ function UserLoginModal({ isOpen, onClose }) {
                         </button>
                         <button className={`account-btn ${currentUser.accountType === 'api' ? 'active' : ''}`}>
                           <LegacyIcon className="fas fa-code" />
-                          API
+                          Sync
                         </button>
                       </div>
                     </div>

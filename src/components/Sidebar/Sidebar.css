@@ -6,7 +6,8 @@
   --sidebar-collapsed-width: 64px;
   --sidebar-expanded-width: 188px;
   width: 60px;
-  background: var(--bg-card);
+background: var(--bg-primary);
+
   border-right: 1px solid var(--border-light);
   padding: 24px 0;
   display: flex;

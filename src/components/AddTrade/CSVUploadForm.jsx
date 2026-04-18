@@ -2,9 +2,11 @@ import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LegacyIcon from '../Common/LegacyIcon';
 import api from '../../utils/serve';
+import { useAuth } from '../../context/AuthContext';
 
 function CSVUploadForm({ API_URL, csvData, setCsvData }) {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [previewData, setPreviewData] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
@@ -121,8 +123,7 @@ function CSVUploadForm({ API_URL, csvData, setCsvData }) {
       return;
     }
     
-    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-    if (!currentUser?.ID) {
+    if (!user?.ID) {
       alert('Please login first!');
       navigate('/login');
       return;
@@ -139,7 +140,7 @@ function CSVUploadForm({ API_URL, csvData, setCsvData }) {
         
         const values = line.split(',').map(v => v.trim());
         const trade = {
-          userId: currentUser.ID
+          userId: user.ID
         };
         
         headers.forEach((header, index) => {

@@ -357,6 +357,17 @@
   height: 100%;
 }
 
+.trade-chart-box {
+  min-height: 360px;
+  width: 100%;
+  min-width: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-medium);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
 /* =======================
    MODAL STYLES
 ======================= */
@@ -784,31 +795,44 @@
 @media (max-width: 1024px) {
   .trade-page {
     grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr;
+    grid-template-rows: auto auto;
     height: auto;
-    gap: 16px;
+    min-height: 0;
+    gap: 14px;
   }
   
   .trade-stats-panel {
-    max-height: 60vh;
+    max-height: none;
+    height: auto;
+    overflow: visible;
   }
   
   .trade-content {
     padding: 0;
+    height: auto;
+    overflow: visible;
+    min-height: 320px;
   }
 }
 
 @media (max-width: 768px) {
   .main-content {
-    padding: 12px;
+    padding: 10px 8px 92px;
   }
   
   .trade-stats-panel {
     padding: 16px;
+    max-height: none;
+    overflow: visible;
   }
   
   .trade-content {
     padding: 0;
+    min-height: 380px;
+  }
+
+  .trade-chart-box {
+    min-height: 380px;
   }
   
   .net-pnl h2 {
@@ -848,6 +872,99 @@
 }
 
 @media (max-width: 480px) {
+  .trade-page {
+    gap: 12px;
+  }
+
+  .trade-stats-panel {
+    padding: 12px;
+    border-radius: 10px;
+  }
+
+  .trade-top {
+    margin-bottom: 12px;
+  }
+
+  .back-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+    margin-bottom: 10px;
+  }
+
+  .trade-title {
+    gap: 8px;
+    font-size: 13px;
+  }
+
+  .trade-date {
+    font-size: 11px;
+  }
+
+  .net-pnl {
+    padding: 14px;
+    margin-bottom: 14px;
+  }
+
+  .net-pnl p,
+  .stat-label,
+  .stat-value,
+  .section-title,
+  .strategy-display,
+  .note-display,
+  .save-message {
+    font-size: 11px;
+  }
+
+  .net-pnl h2 {
+    font-size: 20px;
+  }
+
+  .stat-row {
+    padding: 8px 0;
+  }
+
+  .strategy-section,
+  .notes-section,
+  .screenshots-section {
+    margin-top: 14px;
+    padding-top: 12px;
+  }
+
+  .section-header {
+    margin-bottom: 10px;
+  }
+
+  .edit-btn,
+  .add-btn {
+    padding: 5px 10px;
+    font-size: 10px;
+    gap: 4px;
+  }
+
+  .strategy-display,
+  .note-display {
+    min-height: 56px;
+    max-height: 96px;
+    padding: 10px;
+    line-height: 1.3;
+  }
+
+  .screenshots-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+    max-height: 150px;
+  }
+
+  .no-screenshots {
+    padding: 14px;
+    font-size: 11px;
+  }
+
+  .trade-chart-box {
+    min-height: 420px;
+    border-radius: 10px;
+  }
+
   .stat-row {
     flex-direction: column;
     align-items: flex-start;

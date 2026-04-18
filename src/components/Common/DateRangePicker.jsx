@@ -9,6 +9,7 @@ export default function DateRangePicker({
   onChange,
   showLabel = true,
   numberOfMonths = 2,
+  defaultRangeEnabled = true,
 }) {
   const getDefaultRange = () => ({
     from: startOfMonth(new Date()),
@@ -17,7 +18,7 @@ export default function DateRangePicker({
 
   const fallbackRange = useMemo(() => getDefaultRange(), []);
   const controlledRange = value?.from && value?.to ? value : null;
-  const [range, setRange] = useState(controlledRange || fallbackRange);
+  const [range, setRange] = useState(controlledRange || (defaultRangeEnabled ? fallbackRange : undefined));
   const [month, setMonth] = useState(
     (controlledRange && controlledRange.from) || fallbackRange.from
   );
@@ -25,10 +26,15 @@ export default function DateRangePicker({
 
   const handleSelect = (selectedRange) => {
     if (!selectedRange) {
-      const defaultRange = getDefaultRange();
-      setRange(defaultRange);
-      setMonth(defaultRange.from);
-      onChange?.(defaultRange);
+      if (defaultRangeEnabled) {
+        const defaultRange = getDefaultRange();
+        setRange(defaultRange);
+        setMonth(defaultRange.from);
+        onChange?.(defaultRange);
+      } else {
+        setRange(undefined);
+        onChange?.({ from: null, to: null });
+      }
       return;
     }
 
@@ -49,11 +55,15 @@ export default function DateRangePicker({
       )}`;
     }
 
+    if (!defaultRangeEnabled) {
+      return "Select date range";
+    }
+
     return `${format(fallbackRange.from, "MMM dd, yyyy")} - ${format(
       fallbackRange.to,
       "MMM dd, yyyy"
     )}`;
-  }, [fallbackRange, selectedRange]);
+  }, [defaultRangeEnabled, fallbackRange, selectedRange]);
 
   return (
     <div className="trade-date-picker">

@@ -82,7 +82,7 @@
   border-radius: 12px;
   border: 1px solid var(--border-medium);
   padding: 16px;
-  height: 60%;
+  height: 100%;
   flex-shrink: 0;
   box-shadow: var(--shadow-sm);
   position: relative;
@@ -93,7 +93,7 @@
 .chart {
   width: 100%;
   height: 100%;
-  background: var(--bg-card);
+  background: transparent;
   border-radius: 8px;
   display: flex;
   flex-direction: column;
@@ -151,8 +151,8 @@
   min-height: 0;
   border-radius: 10px;
   overflow: hidden;
-  border: 1px solid var(--border-light);
-  background: var(--bg-secondary);
+  border: none;
+  background: transparent;
   position: relative;
 }
 
@@ -163,6 +163,41 @@
   top: 0;
   left: 0;
   border-radius: 10px;
+}
+
+@media (max-width: 480px) {
+  .trade-chart-box {
+    padding: 10px;
+    border-radius: 10px;
+  }
+
+  .chart {
+    gap: 8px;
+  }
+
+  .chart-header {
+    align-items: flex-start;
+    gap: 8px;
+    padding: 0;
+    flex-wrap: wrap;
+  }
+
+  .markets-title {
+    font-size: 11px;
+    line-height: 1.25;
+    letter-spacing: 0;
+  }
+
+  .timeframes {
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+
+  .timeframe-btn {
+    padding: 3px 8px;
+    font-size: 10px;
+    border-radius: 6px;
+  }
 }
 
 

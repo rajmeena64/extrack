@@ -10,6 +10,8 @@ const INTERVAL_MS = { "1m": 60*1000, "5m": 5*60*1000, "15m": 15*60*1000, "1h": 6
 
 
 function Chart({ darkMode, symbol = "BTCUSDT", tradeDate, tradeTime, showFullDay = false, trades = [], totalCandles = 2000 }) {
+  const BULLISH_CANDLE_COLOR = "#2563eb";
+  const BEARISH_CANDLE_COLOR = "#ef4444";
   const chartRef = useRef(null);
   const chartApiRef = useRef(null);
   const candleSeriesRef = useRef(null);
@@ -20,7 +22,12 @@ function Chart({ darkMode, symbol = "BTCUSDT", tradeDate, tradeTime, showFullDay
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [cssVariables, setCssVariables] = useState({
-    bgCard: "", textMuted: "", borderLight: "", borderMedium: "", pnlPositive: "", pnlNegative: ""
+    bgCard: "",
+    textMuted: "",
+    borderLight: "",
+    borderMedium: "",
+    pnlPositive: BULLISH_CANDLE_COLOR,
+    pnlNegative: BEARISH_CANDLE_COLOR
   });
 
   const cleanSymbol = useCallback(sym => (sym ? sym.replace(/[a-z]+$/g, '').toUpperCase() : "BTCUSDT"), []);
@@ -60,8 +67,8 @@ const cleanedSymbol = mapToBinanceSymbol(cleanSymbol(symbol));
         textMuted: getVar("--text-muted"),
         borderLight: getVar("--border-light"),
         borderMedium: getVar("--border-medium"),
-        pnlPositive: getVar("--pnl-positive"),
-        pnlNegative: getVar("--pnl-negative")
+        pnlPositive: getVar("--pnl-positive") || BULLISH_CANDLE_COLOR,
+        pnlNegative: getVar("--pnl-negative") || BEARISH_CANDLE_COLOR
       });
     };
     updateCssVariables();
@@ -78,8 +85,8 @@ const cleanedSymbol = mapToBinanceSymbol(cleanSymbol(symbol));
         textMuted: getVar("--text-muted"),
         borderLight: getVar("--border-light"),
         borderMedium: getVar("--border-medium"),
-        pnlPositive: getVar("--pnl-positive"),
-        pnlNegative: getVar("--pnl-negative")
+        pnlPositive: getVar("--pnl-positive") || BULLISH_CANDLE_COLOR,
+        pnlNegative: getVar("--pnl-negative") || BEARISH_CANDLE_COLOR
       });
     }, 50);
     return () => clearTimeout(timer);
@@ -190,7 +197,7 @@ trades.forEach(t => {
       
     });
   }
-  console.log(t.side)
+
 
   if (t.exitTime && t.exitPrice) {
     markers.push({
@@ -253,3 +260,4 @@ trades.forEach(t => {
 }
 
 export default Chart;
+

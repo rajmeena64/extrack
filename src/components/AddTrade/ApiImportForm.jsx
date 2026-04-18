@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import LegacyIcon from '../Common/LegacyIcon';
 import api from '../../utils/serve';
+import { useAuth } from '../../context/AuthContext';
 
 function ApiImportForm({ API_URL, setSelectedMT5AccountId }) {
+  const { user } = useAuth();
   const [showConnectionForm, setShowConnectionForm] = useState(false);
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -26,9 +28,7 @@ function ApiImportForm({ API_URL, setSelectedMT5AccountId }) {
 
   const loadConnectedAccounts = useCallback(async () => {
     try {
-      const token = localStorage.getItem('accessToken');
-      
-      if (!token) {
+      if (!user?.ID) {
         setAccounts([]);
         setLoading(false);
         return;
@@ -47,7 +47,7 @@ function ApiImportForm({ API_URL, setSelectedMT5AccountId }) {
     } finally {
       setLoading(false);
     }
-  }, [API_URL]);
+  }, [user?.ID]);
 
   // Load connected accounts
   useEffect(() => {
@@ -65,8 +65,7 @@ function ApiImportForm({ API_URL, setSelectedMT5AccountId }) {
   const connectMT5API = async () => {
     const { broker, loginId, server, password, customServer } = formData;
     
-    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-    if (!currentUser?.ID) {
+    if (!user?.ID) {
       alert('Please login first!');
       window.location.href = '/login';
       return;
@@ -117,7 +116,7 @@ function ApiImportForm({ API_URL, setSelectedMT5AccountId }) {
       }, 1000);
       
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Failed to save MT5 account:', error);
       setConnectionStatus({
         icon: 'fas fa-circle status-disconnected',
         text: 'Error'
@@ -151,9 +150,7 @@ function ApiImportForm({ API_URL, setSelectedMT5AccountId }) {
     if (!accountId) return;
     
     try {
-      const token = localStorage.getItem('accessToken');
-
-      if (!token) {
+      if (!user?.ID) {
         alert('Please login first!');
         return;
       }
@@ -182,14 +179,14 @@ function ApiImportForm({ API_URL, setSelectedMT5AccountId }) {
       }
     } catch (error) {
       alert('❌ Error deleting account: ' + error.message);
-      console.error(error);
+      console.error('Failed to delete account:', error);
       closeDeleteConfirmation();
     }
   };
 
   const toggleAccountPassword = (accountId) => {
     // Implement password toggle logic
-    console.log('Toggle password for account:', accountId);
+    console.log('Password visibility toggle requested for account:', accountId);
   };
 
   const formatDate = (dateString) => {
@@ -476,3 +473,6 @@ function ApiImportForm({ API_URL, setSelectedMT5AccountId }) {
 }
 
 export default ApiImportForm;
+
+
+

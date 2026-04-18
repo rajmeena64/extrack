@@ -98,8 +98,8 @@ export default function Radar({ trades = [] }) {
     if (chartRef.current) chartRef.current.destroy();
 
     // ✅ Hardcoded per mode — canvas cannot use CSS vars
-    const labelColor = isDark ? "#cbd5e1" : "#334155";   // clearly visible both modes
-    const gridColor  = isDark ? "rgba(203,213,225,0.12)" : "rgba(51,65,85,0.12)";
+    const labelColor = isDark ? "#d7e2d8" : "#233126";
+    const gridColor  = isDark ? "rgba(113,224,152,0.12)" : "rgba(17,23,20,0.08)";
 
     chartRef.current = new Chart(radarRef.current, {
       type: "radar",
@@ -108,11 +108,14 @@ export default function Radar({ trades = [] }) {
         datasets: [{
           data:                 Object.values(metrics),
           fill:                 true,
-          backgroundColor:      "rgba(139,92,246,0.18)",
-          borderColor:          "#8b5cf6",
-          borderWidth:          1.5,
+          backgroundColor:      isDark ? "rgba(113,224,152,0.16)" : "rgba(88,212,126,0.12)",
+          borderColor:          isDark ? "#9df0bb" : "#111714",
+          borderWidth:          2,
           pointRadius:          3,
-          pointBackgroundColor: "#8b5cf6",
+          pointHoverRadius:     4,
+          pointBackgroundColor: isDark ? "#9df0bb" : "#58d47e",
+          pointBorderColor:     isDark ? "#0f140f" : "#ffffff",
+          pointBorderWidth:     1.5,
         }],
       },
       options: {
@@ -158,7 +161,7 @@ export default function Radar({ trades = [] }) {
     return (
       <div className="radar-card">
         <div className="radar-header">
-          <span className="radar-title-text">Zella Score</span>
+          <span className="radar-title-text dashboard-card-title">Zella Score</span>
           <strong className="radar-score-empty">—</strong>
         </div>
         <div className="radar-empty">No trade data yet</div>
@@ -171,7 +174,7 @@ export default function Radar({ trades = [] }) {
 
       {/* HEADER */}
       <div className="radar-header">
-        <span className="radar-title-text">Zella Score</span>
+        <span className="radar-title-text dashboard-card-title">Zella Score</span>
         <strong className={`radar-score ${grade.cls}`}>{overallScore}</strong>
       </div>
 

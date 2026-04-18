@@ -35,7 +35,7 @@ function ManualTradeForm({ API_URL, csvData, setCsvData,trades }) {
       </div>
 
       {uploadType === 'single' ? (
-        <ManualEntryForm API_URL={API_URL} />
+        <ManualEntryForm API_URL={API_URL} trades={trades} />
       ) : (
         <CSVUploadForm 
           API_URL={API_URL} 

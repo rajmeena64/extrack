@@ -4,13 +4,35 @@ const crypto = require('crypto');
 const pool = require('../config/database');
 const emailTransporter = require('../config/email');
 const bcrypt = require('bcrypt'); // ✅ YEH LINE ADD KI
+const { createRateLimiter } = require('../middleware/rateLimit');
 const { authCheck } = require('./auth');
+const { hashToken } = require('../utils/security');
+
+const forgotPasswordRateLimiter = createRateLimiter({
+    windowMs: process.env.FORGOT_PASSWORD_RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000,
+    max: process.env.FORGOT_PASSWORD_RATE_LIMIT_MAX || 5,
+    keyGenerator: (req) => {
+        const identifier = String(req.body?.email || '').trim().toLowerCase();
+        return `${req.ip}:${identifier || 'unknown'}`;
+    },
+    message: 'Too many password reset requests. Please try again later.',
+});
+
+const resetPasswordRateLimiter = createRateLimiter({
+    windowMs: process.env.RESET_PASSWORD_RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000,
+    max: process.env.RESET_PASSWORD_RATE_LIMIT_MAX || 10,
+    keyGenerator: (req) => {
+        const identifier = String(req.body?.token || '').trim().slice(0, 16);
+        return `${req.ip}:${identifier || 'unknown'}`;
+    },
+    message: 'Too many password reset attempts. Please try again later.',
+});
 
 // FORGOT PASSWORD
-router.post('/forgot-password', async (req, res) => {
+router.post('/forgot-password', forgotPasswordRateLimiter, async (req, res) => {
     const { email } = req.body;
     
-    console.log("📧 FORGOT PASSWORD REQUEST - Email:", email);
+    console.log("Password reset requested for email:", email);
 
     try {
         if (!emailTransporter) {
@@ -34,12 +56,13 @@ router.post('/forgot-password', async (req, res) => {
 
         const user = result.rows[0];
         const resetToken = crypto.randomBytes(32).toString('hex');
+        const resetTokenHash = hashToken(resetToken);
         
         await pool.query(
             `UPDATE public."user" 
              SET reset_token = $1, reset_token_expiry = $2 
              WHERE "ID" = $3`,
-            [resetToken, new Date(Date.now() + 15 * 60 * 1000), user.ID]
+            [resetTokenHash, new Date(Date.now() + 15 * 60 * 1000), user.ID]
         );
 
         const resetBaseUrl = process.env.PASSWORD_RESET_URL || `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password`;
@@ -92,7 +115,7 @@ router.post('/forgot-password', async (req, res) => {
         };
 
         await emailTransporter.sendMail(mailOptions);
-        console.log("✅ EMAIL SENT TO:", email);
+        console.log("Password reset email sent to:", email);
         
         res.json({
             success: true,
@@ -100,7 +123,7 @@ router.post('/forgot-password', async (req, res) => {
         });
 
     } catch (error) {
-        console.log("❌ Error:", error.message);
+        console.error("Failed to send password reset email:", error.message);
         res.json({ 
             success: false, 
             error: "Failed to send email" 
@@ -109,15 +132,30 @@ router.post('/forgot-password', async (req, res) => {
 });
 
 // RESET PASSWORD
-router.post('/reset-password', async (req, res) => {
+router.post('/reset-password', resetPasswordRateLimiter, async (req, res) => {
     const { token, newPassword } = req.body;
 
     try {
+        if (!token || !newPassword) {
+            return res.status(400).json({
+                success: false,
+                error: 'Reset token and new password are required'
+            });
+        }
+
+        if (String(newPassword).trim().length < 6) {
+            return res.status(400).json({
+                success: false,
+                error: 'New password must be at least 6 characters long'
+            });
+        }
+
+        const tokenHash = hashToken(token);
         const result = await pool.query(
             `SELECT * FROM public."user" 
-             WHERE reset_token = $1 
+             WHERE (reset_token = $1 OR reset_token = $2)
              AND reset_token_expiry > NOW()`,
-            [token]
+            [tokenHash, token]
         );
 
         if (result.rows.length === 0) {
@@ -141,14 +179,14 @@ router.post('/reset-password', async (req, res) => {
             [hashedPassword, user.ID] // ✅ hashedPassword use kiya
         );
 
-        console.log("✅ PASSWORD RESET FOR:", user.email);
+        console.log("Password reset completed for:", user.email);
         res.json({
             success: true,
             message: "Password reset successful!"
         });
 
     } catch (error) {
-        console.log("❌ Reset Password Error:", error.message);
+        console.error("Password reset failed:", error.message);
         res.json({ 
             success: false, 
             error: "Server error" 
@@ -196,14 +234,14 @@ router.post('/update-password', authCheck, async (req, res) => {
             [hashedNewPassword, userId] // ✅ hashedNewPassword use kiya
         );
 
-        console.log("✅ PASSWORD UPDATED SUCCESSFULLY");
+        console.log("Password updated successfully");
         res.json({
             success: true,
             message: 'Password updated successfully!'
         });
 
     } catch (error) {
-        console.log("❌ Update Password Error:", error.message);
+        console.error("Password update failed:", error.message);
         res.json({ success: false, error: error.message });
     }
 });
@@ -212,15 +250,20 @@ router.post('/update-password', authCheck, async (req, res) => {
 router.post('/update-account-type', authCheck, async (req, res) => {
     const { accountType } = req.body;
     const userId = req.userId;
+    const normalizedAccountType = String(accountType || '').toLowerCase();
 
     if (!accountType) {
         return res.status(400).json({ success: false, error: 'Account type required' });
     }
 
+    if (!['manual', 'api'].includes(normalizedAccountType)) {
+        return res.status(400).json({ success: false, error: 'Invalid account type' });
+    }
+
     try {
         const result = await pool.query(
             `UPDATE public."user" SET "accountType" = $1 WHERE "ID" = $2 RETURNING *`,
-            [accountType, userId]
+            [normalizedAccountType, userId]
         );
 
         if (result.rows.length === 0) {
@@ -229,7 +272,7 @@ router.post('/update-account-type', authCheck, async (req, res) => {
 
         const updatedUser = result.rows[0];
         
-        console.log("✅ ACCOUNT TYPE UPDATED SUCCESSFULLY");
+        console.log("Account type updated successfully");
         res.json({
             success: true,
             message: 'Account type updated!',
@@ -242,9 +285,18 @@ router.post('/update-account-type', authCheck, async (req, res) => {
         });
 
     } catch (error) {
-        console.log("❌ Update Account Type Error:", error.message);
+        console.error("Account type update failed:", error.message);
         res.json({ success: false, error: error.message });
     }
 });
 
 module.exports = router;
+
+
+
+
+
+
+
+
+

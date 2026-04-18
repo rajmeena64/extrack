@@ -46,9 +46,6 @@
 }
 
 .trade-page-title {
-  margin: 0;
-  font-size: 26px;
-  font-weight: 700;
   color: var(--heading);
 }
 
@@ -151,7 +148,7 @@
    CENTERED FILTER / SETTINGS POPUP
 ======================= */
 .toolbar-dropdown {
-  position: fixed !important;
+  position: fixed;
   top: 50%;
   left: 50%;
   right: auto;
@@ -178,7 +175,7 @@
    CENTERED CALENDAR POPUP
 ======================= */
 .calendar-wrapper {
-  position: fixed !important;
+  position: fixed;
   top: 50%;
   left: 50%;
   right: auto;
@@ -195,10 +192,10 @@
 
   padding: 12px;
 
-  background: var(--bg-card);
+  /* background: var(--bg-card);
   border: 1px solid var(--border-light);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-xl);
+  box-shadow: var(--shadow-xl); */
 }
 
 /* =======================
@@ -291,48 +288,7 @@
   transform: translateY(-1px);
 }
 
-/* =======================
-   CALENDAR INNER RESET
-======================= */
-.calendar-wrapper .rdp,
-.calendar-wrapper .react-day-picker,
-.calendar-wrapper .trade-rdp {
-  background: transparent !important;
-  box-shadow: none !important;
-  border: none !important;
-  margin: 0 auto;
-}
 
-/* prevent weird horizontal scroll */
-.calendar-wrapper .rdp-months,
-.calendar-wrapper .react-day-picker .rdp-months,
-.calendar-wrapper .trade-rdp .rdp-months {
-  display: grid !important;
-  grid-template-columns: repeat(2, minmax(260px, 1fr));
-  gap: 12px;
-  width: fit-content;
-  max-width: 100%;
-}
-
-.calendar-wrapper .rdp-month,
-.calendar-wrapper .react-day-picker .rdp-month,
-.calendar-wrapper .trade-rdp .rdp-month {
-  min-width: 260px;
-}
-
-/* optional nav/buttons cleanup */
-.calendar-wrapper .rdp-nav,
-.calendar-wrapper .react-day-picker .rdp-nav,
-.calendar-wrapper .trade-rdp .rdp-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.calendar-wrapper .rdp-button,
-.calendar-wrapper button {
-  border-radius: 8px;
-}
 
 /* =======================
    SCROLLBAR
@@ -412,13 +368,13 @@
   transform: translateY(-1px);
 }
 
-.profit {
-  color: var(--profit-color) !important ;
+.trades-table td.trade-view__pnl--profit {
+  color: var(--profit-color);
   font-weight: 600;
 }
 
-.loss {
-  color: var(--loss-color) !important ;
+.trades-table td.trade-view__pnl--loss {
+  color: var(--loss-color);
   font-weight: 600;
 }
 
@@ -456,7 +412,7 @@
     min-width: unset;
   }
 
-  .trade-page-title {
+  .trade-page-title.app-page-title {
     font-size: 22px;
   }
 
@@ -469,7 +425,7 @@
   .calendar-wrapper .rdp-months,
   .calendar-wrapper .react-day-picker .rdp-months,
   .calendar-wrapper .trade-rdp .rdp-months {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: 1fr;
     width: 100%;
   }
 
@@ -490,7 +446,7 @@
     grid-template-columns: 1fr;
   }
 
-  .trade-page-title {
+  .trade-page-title.app-page-title {
     font-size: 20px;
   }
 

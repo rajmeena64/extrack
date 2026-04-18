@@ -1,0 +1,80 @@
+.performance-card {
+  min-height: 210px;
+  height: 100%;
+  background: var(--bg-card);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.performance-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: var(--dashboard-card-padding) var(--dashboard-card-padding) 0;
+}
+
+.performance-header h3 {
+  margin: 0;
+  color: var(--heading);
+}
+
+.performance-card .chart-container {
+  padding: 6px 10px 12px;
+  flex: 1;
+  min-height: 0;
+}
+
+.performance-card canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.dark-mode .performance-card {
+  background: var(--bg-card);
+}
+
+@media (max-width: 768px) {
+  .performance-card {
+    padding: 0 0 12px;
+    min-height: 0;
+  }
+
+  .performance-header {
+    align-items: flex-start;
+    gap: 6px;
+    padding: 12px 12px 2px;
+  }
+
+  .performance-header h3 {
+    font-size: 13px;
+    line-height: 1.2;
+    letter-spacing: 0.02em;
+  }
+
+  .performance-card .chart-container {
+    padding: 4px 10px 8px;
+    min-height: 170px;
+  }
+}
+
+@media (max-width: 480px) {
+  .performance-card {
+    padding-bottom: 10px;
+  }
+
+  .performance-header {
+    padding: 10px 10px 2px;
+  }
+
+  .performance-header h3 {
+    font-size: 12px;
+    line-height: 1.15;
+  }
+
+  .performance-card .chart-container {
+    padding: 2px 8px 6px;
+    min-height: 160px;
+  }
+}

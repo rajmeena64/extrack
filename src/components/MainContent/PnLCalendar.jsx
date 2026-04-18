@@ -1,5 +1,13 @@
-import React, { useMemo, useState } from 'react';
-import { Camera, CalendarDays, ChevronLeft, ChevronRight, Info, Settings } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  Camera,
+  CalendarDays,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Info,
+  Settings,
+} from 'lucide-react';
 import './PnLCalendar.css';
 
 const MONTH_NAMES = [
@@ -29,6 +37,30 @@ function formatCellCurrency(value) {
 
 function PnLCalendar({ trades }) {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [isWeeklyOpen, setIsWeeklyOpen] = useState(false);
+  const [isCompactWeeks, setIsCompactWeeks] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    return window.innerWidth <= 768;
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    const mediaQuery = window.matchMedia('(max-width: 768px)');
+    const syncCompactWeeks = (event) => {
+      setIsCompactWeeks(event.matches);
+    };
+
+    setIsCompactWeeks(mediaQuery.matches);
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', syncCompactWeeks);
+      return () => mediaQuery.removeEventListener('change', syncCompactWeeks);
+    }
+
+    mediaQuery.addListener(syncCompactWeeks);
+    return () => mediaQuery.removeListener(syncCompactWeeks);
+  }, []);
 
   const dailySummary = useMemo(() => {
     const summary = {};
@@ -140,6 +172,8 @@ function PnLCalendar({ trades }) {
     });
   };
 
+  const showWeeklyCards = !isCompactWeeks || isWeeklyOpen;
+
   return (
     <section className="calendar-shell">
       <header className="calendar-shell__toolbar">
@@ -158,7 +192,15 @@ function PnLCalendar({ trades }) {
 
         <div className="calendar-shell__toolbar-right">
           <span className="calendar-shell__label">Monthly stats:</span>
-          <span className="calendar-shell__pill calendar-shell__pill--green">
+          <span
+            className={`calendar-shell__pill ${
+              calendarData.monthlyPnL > 0
+                ? 'calendar-shell__pill--profit'
+                : calendarData.monthlyPnL < 0
+                  ? 'calendar-shell__pill--loss'
+                  : 'calendar-shell__pill--neutral'
+            }`}
+          >
             {formatCellCurrency(calendarData.monthlyPnL)}
           </span>
           <span className="calendar-shell__pill calendar-shell__pill--purple">
@@ -233,22 +275,44 @@ function PnLCalendar({ trades }) {
           </div>
         </div>
 
-        <aside className="calendar-shell__weeks">
-          {calendarData.weeklyStats.map((week) => (
-            <article key={week.label} className="calendar-week-card">
-              <span className="calendar-week-card__label">{week.label}</span>
-              <strong
-                className={`calendar-week-card__value ${
-                  week.pnl > 0 ? 'profit' : week.pnl < 0 ? 'loss' : 'neutral'
-                }`}
-              >
-                {formatCellCurrency(week.pnl)}
-              </strong>
-              <span className="calendar-week-card__days">
-                {week.days} day{week.days !== 1 ? 's' : ''}
-              </span>
-            </article>
-          ))}
+        <aside
+          className={`calendar-shell__weeks-panel ${isCompactWeeks ? 'calendar-shell__weeks-panel--compact' : 'calendar-shell__weeks-panel--desktop'} ${isWeeklyOpen ? 'is-open' : ''}`}
+        >
+          {isCompactWeeks && (
+            <button
+              className="calendar-shell__weeks-toggle"
+              type="button"
+              onClick={() => setIsWeeklyOpen((previous) => !previous)}
+              aria-expanded={isWeeklyOpen}
+            >
+              <span>Weekly cards</span>
+              <ChevronDown size={16} />
+            </button>
+          )}
+
+          {showWeeklyCards && (
+            <div className="calendar-shell__weeks">
+              {calendarData.weeklyStats.map((week) => (
+                <article key={week.label} className="calendar-week-card">
+                  <span className="calendar-week-card__label">{week.label}</span>
+                  <strong
+                    className={`calendar-week-card__value ${
+                      week.pnl > 0
+                        ? 'calendar-week-card__value--profit'
+                        : week.pnl < 0
+                          ? 'calendar-week-card__value--loss'
+                          : 'calendar-week-card__value--neutral'
+                    }`}
+                  >
+                    {formatCellCurrency(week.pnl)}
+                  </strong>
+                  <span className="calendar-week-card__days">
+                    {week.days} day{week.days !== 1 ? 's' : ''}
+                  </span>
+                </article>
+              ))}
+            </div>
+          )}
         </aside>
       </div>
     </section>

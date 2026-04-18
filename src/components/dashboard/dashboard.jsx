@@ -1,12 +1,11 @@
 import React, { lazy, Suspense, useEffect, useState } from 'react';
 import './dashboard.css';
-import './mobile.css';
 
 import Header from '@/components/Header/Header';
 import StatsCards from '@/components/StatsCards/StatsCards';
 import TradesList from '@/components/myTrades/TradesList';
 
-const AccountBalance = lazy(() => import('@/components/MainContent/AccountBalance'));
+const ActivityChart = lazy(() => import('@/components/MainContent/ActivityChart'));
 const Radar = lazy(() => import('@/components/MainContent/Radar'));
 const PerformanceChart = lazy(() => import('@/components/MainContent/PerformanceChart'));
 const ProgressTracker = lazy(() => import('@/components/MainContent/ProgressTracker'));
@@ -93,7 +92,7 @@ const SkeletonPnLCalendar = () => (
   </div>
 );
 
-function Dashboard({ tradeMode, setTradeMode, trades, isLoading = false }) {
+function Dashboard({ tradeMode, setTradeMode, trades, dateRange, setDateRange, isLoading = false }) {
   const MainGrid = (
     <>
       <div className="dashboard-grid-card dashboard-grid-card--zella left-charts">
@@ -102,7 +101,7 @@ function Dashboard({ tradeMode, setTradeMode, trades, isLoading = false }) {
         ) : (
           <DeferredRender delay={0} fallback={<SkeletonChartCard />}>
             <Suspense fallback={<SkeletonChartCard />}>
-              <Radar trades={trades} />
+            <ProgressTracker trades={trades} />
             </Suspense>
           </DeferredRender>
         )}
@@ -126,19 +125,19 @@ function Dashboard({ tradeMode, setTradeMode, trades, isLoading = false }) {
         ) : (
           <DeferredRender delay={80} fallback={<SkeletonChartCard />}>
             <Suspense fallback={<SkeletonChartCard />}>
-              <ProgressTracker trades={trades} />
+                 <Radar trades={trades} />
             </Suspense>
           </DeferredRender>
         )}
       </div>
 
-      <div className="dashboard-grid-card dashboard-grid-card--balance">
+      <div className="dashboard-grid-card dashboard-grid-card--activity">
         {isLoading ? (
           <SkeletonChartCard />
         ) : (
           <DeferredRender delay={120} fallback={<SkeletonChartCard />}>
             <Suspense fallback={<SkeletonChartCard />}>
-              <AccountBalance trades={trades} />
+              <ActivityChart trades={trades} />
             </Suspense>
           </DeferredRender>
         )}
@@ -180,7 +179,13 @@ function Dashboard({ tradeMode, setTradeMode, trades, isLoading = false }) {
           />
         </div>
       ) : (
-        <Header tradeMode={tradeMode} setTradeMode={setTradeMode} trades={trades} />
+        <Header
+          tradeMode={tradeMode}
+          setTradeMode={setTradeMode}
+          trades={trades}
+          dateRange={dateRange}
+          setDateRange={setDateRange}
+        />
       )}
 
       {isLoading ? <SkeletonStatsCards /> : <StatsCards trades={trades} />}

@@ -5,6 +5,7 @@ const WebSocket = require('ws');
 const protobuf = require("protobufjs");
 const fs = require('fs');
 const _path = require('path');
+const pool = require('../config/database');
 const { authCheck } = require('./auth');
 
 let root;
@@ -13,6 +14,35 @@ let heartbeatInterval;
 let reconnectAttempts = 0;
 const MAX_RECONNECT_ATTEMPTS = 5;
 let isConnecting = false;
+const ADMIN_ACCOUNT_TYPES = new Set(['admin', 'superadmin']);
+
+async function requireCtraderAdmin(req, res, next) {
+  try {
+    const userResult = await pool.query(
+      `SELECT "accountType", "isDeleted" FROM public."user" WHERE "ID" = $1`,
+      [req.userId]
+    );
+
+    if (userResult.rows.length === 0 || userResult.rows[0].isDeleted) {
+      return res.status(403).json({ success: false, error: 'Admin account not found' });
+    }
+
+    const accountType = String(userResult.rows[0].accountType || '').toLowerCase();
+    if (!ADMIN_ACCOUNT_TYPES.has(accountType)) {
+      return res.status(403).json({
+        success: false,
+        error: 'cTrader integration is restricted to admin users',
+      });
+    }
+
+    next();
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to verify cTrader access',
+    });
+  }
+}
 
 // =======================
 // CONFIG
@@ -70,10 +100,10 @@ async function loadProtos() {
       "./proto/OpenApiCommonModelMessages.proto"
     ]);
 
-    console.log("✅ Proto loaded successfully");
+    console.log("Proto definitions loaded successfully");
     
   } catch (err) {
-    console.error("❌ Failed to load protos:", err.message);
+    console.error("Failed to load proto definitions:", err.message);
     throw err;
   }
 }
@@ -83,7 +113,7 @@ async function loadProtos() {
 // =======================
 async function getAccountsViaWeb() {
   try {
-    console.log("📡 Fetching accounts from cTrader Web API...");
+    console.log("Fetching accounts from cTrader Web API");
     
     // Try the correct cTrader API endpoint for getting accounts
     const response = await axios.get(
@@ -96,8 +126,8 @@ async function getAccountsViaWeb() {
       }
     );
     
-    console.log("✅ Accounts fetched successfully");
-    console.log("📋 Available accounts:", JSON.stringify(response.data, null, 2));
+    console.log("Accounts fetched successfully");
+    console.log("Available cTrader accounts:", JSON.stringify(response.data, null, 2));
     
     ctraderConfig.accounts = response.data || [];
     
@@ -109,21 +139,21 @@ async function getAccountsViaWeb() {
       if (ctraderConfig.isDemo && demoAccount) {
         ctraderConfig.accountId = demoAccount.id || demoAccount.accountId;
         ctraderConfig.currentAccount = demoAccount;
-        console.log(`✅ Using demo account: ${ctraderConfig.accountId} - ${demoAccount.name || 'Demo Account'}`);
+        console.log(`Using demo account ${ctraderConfig.accountId} - ${demoAccount.name || 'Demo Account'}`);
       } else if (!ctraderConfig.isDemo && liveAccount) {
         ctraderConfig.accountId = liveAccount.id || liveAccount.accountId;
         ctraderConfig.currentAccount = liveAccount;
-        console.log(`✅ Using live account: ${ctraderConfig.accountId} - ${liveAccount.name || 'Live Account'}`);
+        console.log(`Using live account ${ctraderConfig.accountId} - ${liveAccount.name || 'Live Account'}`);
       } else if (ctraderConfig.accounts[0]) {
         ctraderConfig.accountId = ctraderConfig.accounts[0].id || ctraderConfig.accounts[0].accountId;
         ctraderConfig.currentAccount = ctraderConfig.accounts[0];
-        console.log(`✅ Using first available account: ${ctraderConfig.accountId}`);
+        console.log(`Using first available cTrader account ${ctraderConfig.accountId}`);
       }
     }
     
     return ctraderConfig.accounts;
   } catch (err) {
-    console.error("❌ Failed to fetch accounts via Web API:", err.response?.data || err.message);
+    console.error("Failed to fetch accounts from cTrader Web API:", err.response?.data || err.message);
     return [];
   }
 }
@@ -133,7 +163,7 @@ async function getAccountsViaWeb() {
 // =======================
 async function getAccountsViaOpenAPI() {
   try {
-    console.log("📡 Fetching accounts from cTrader OpenAPI...");
+    console.log("Fetching accounts from cTrader OpenAPI");
     
     const response = await axios.get(
       "https://openapi.ctrader.com/v1/accounts",
@@ -145,8 +175,8 @@ async function getAccountsViaOpenAPI() {
       }
     );
     
-    console.log("✅ Accounts fetched successfully");
-    console.log("📋 Available accounts:", JSON.stringify(response.data, null, 2));
+    console.log("Accounts fetched successfully");
+    console.log("Available cTrader accounts:", JSON.stringify(response.data, null, 2));
     
     ctraderConfig.accounts = response.data.accounts || [];
     
@@ -157,21 +187,21 @@ async function getAccountsViaOpenAPI() {
       if (ctraderConfig.isDemo && demoAccount) {
         ctraderConfig.accountId = demoAccount.accountId;
         ctraderConfig.currentAccount = demoAccount;
-        console.log(`✅ Using demo account: ${ctraderConfig.accountId} - ${demoAccount.name || 'Demo Account'}`);
+        console.log(`Using demo account ${ctraderConfig.accountId} - ${demoAccount.name || 'Demo Account'}`);
       } else if (!ctraderConfig.isDemo && liveAccount) {
         ctraderConfig.accountId = liveAccount.accountId;
         ctraderConfig.currentAccount = liveAccount;
-        console.log(`✅ Using live account: ${ctraderConfig.accountId} - ${liveAccount.name || 'Live Account'}`);
+        console.log(`Using live account ${ctraderConfig.accountId} - ${liveAccount.name || 'Live Account'}`);
       } else if (ctraderConfig.accounts[0]) {
         ctraderConfig.accountId = ctraderConfig.accounts[0].accountId;
         ctraderConfig.currentAccount = ctraderConfig.accounts[0];
-        console.log(`✅ Using first available account: ${ctraderConfig.accountId}`);
+        console.log(`Using first available cTrader account ${ctraderConfig.accountId}`);
       }
     }
     
     return ctraderConfig.accounts;
   } catch (err) {
-    console.error("❌ Failed to fetch accounts via OpenAPI:", err.response?.data || err.message);
+    console.error("Failed to fetch accounts from cTrader OpenAPI:", err.response?.data || err.message);
     return [];
   }
 }
@@ -188,12 +218,12 @@ async function getAccounts() {
   }
   
   if (accounts.length === 0) {
-    console.log("⚠️ Could not fetch accounts automatically");
-    console.log("💡 Please check your access token and client credentials");
-    console.log("💡 You may need to manually set the account ID in the config");
+    console.warn("Could not fetch cTrader accounts automatically");
+    console.log("Check your cTrader access token and client credentials.");
+    console.log("You may need to set the account ID manually in the configuration.");
     
     // Fall back to asking user to manually enter account ID
-    console.log("\n📝 To get your account ID:");
+    console.log("\nTo get your account ID:");
     console.log("1. Log in to cTrader Web or Desktop");
     console.log("2. Go to Settings -> Accounts");
     console.log("3. Find your demo account ID (usually a 7-digit number)");
@@ -231,10 +261,10 @@ async function refreshAccessToken() {
     ctraderConfig.refreshToken = data.refreshToken || ctraderConfig.refreshToken;
     ctraderConfig.expiresAt = Date.now() + (data.expiresIn * 1000);
 
-    console.log("🔄 Token refreshed successfully");
+    console.log("cTrader access token refreshed successfully");
     return true;
   } catch (err) {
-    console.error("❌ Refresh failed:", err.response?.data || err.message);
+    console.error("Failed to refresh cTrader access token:", err.response?.data || err.message);
     return false;
   }
 }
@@ -244,7 +274,7 @@ async function refreshAccessToken() {
 // =======================
 async function ensureValidToken() {
   if (Date.now() >= (ctraderConfig.expiresAt - (5 * 60 * 1000))) {
-    console.log("⚠️ Token expiring soon → refreshing...");
+    console.log("cTrader access token is expiring soon. Refreshing token.");
     return await refreshAccessToken();
   }
   return true;
@@ -258,7 +288,7 @@ const pendingRequests = new Map();
 
 function sendMessage(payloadType, payloadData, waitForResponse = false) {
   if (!ws || ws.readyState !== WebSocket.OPEN) {
-    console.error("❌ WebSocket not connected");
+    console.error("cTrader WebSocket is not connected");
     return null;
   }
   
@@ -300,10 +330,10 @@ function sendMessage(payloadType, payloadData, waitForResponse = false) {
     }
     
     ws.send(Message.encode(msg).finish());
-    console.log(`📤 Sent message type: ${payloadType}, requestId: ${requestId}`);
+    console.log(`Sent cTrader message type ${payloadType} with request ID ${requestId}`);
     return requestId;
   } catch (err) {
-    console.error("❌ Failed to send message:", err.message);
+    console.error("Failed to send cTrader message:", err.message);
     return null;
   }
 }
@@ -318,7 +348,7 @@ function sendAppAuth() {
   };
   
   sendMessage(2100, payload);
-  console.log("📤 Application Auth sent");
+  console.log("Sent cTrader application authentication request");
 }
 
 // =======================
@@ -326,9 +356,9 @@ function sendAppAuth() {
 // =======================
 function sendAccountAuth() {
   if (!ctraderConfig.accountId) {
-    console.error("❌ No account ID available.");
-    console.log("💡 Please provide a valid account ID in the config");
-    console.log("💡 You can find your account ID in cTrader platform under Settings -> Accounts");
+    console.error("No cTrader account ID available.");
+    console.log("Provide a valid cTrader account ID in the configuration.");
+    console.log("You can find the account ID in the cTrader platform under Settings -> Accounts.");
     return;
   }
   
@@ -338,7 +368,7 @@ function sendAccountAuth() {
   };
   
   sendMessage(2102, payload);
-  console.log(`📤 Account Auth sent for account ID: ${ctraderConfig.accountId}`);
+  console.log(`Sent account authentication request for cTrader account ${ctraderConfig.accountId}`);
 }
 
 // =======================
@@ -346,7 +376,7 @@ function sendAccountAuth() {
 // =======================
 function requestSymbols() {
   if (!ctraderConfig.accountId) {
-    console.error("❌ No account ID available");
+    console.error("No cTrader account ID available");
     return;
   }
   
@@ -355,7 +385,7 @@ function requestSymbols() {
   };
   
   sendMessage(2104, payload);
-  console.log("📤 Symbols request sent");
+  console.log("Sent cTrader symbols request");
 }
 
 // =======================
@@ -365,12 +395,12 @@ function requestCandles(symbolId = null, period = "M1", count = 100) {
   const targetSymbolId = symbolId || ctraderConfig.currentSymbolId;
   
   if (!targetSymbolId) {
-    console.error("❌ No symbol ID available. Request symbols first.");
+    console.error("No cTrader symbol ID available. Request symbols first.");
     return;
   }
   
   if (!ctraderConfig.accountId) {
-    console.error("❌ No account ID available");
+    console.error("No cTrader account ID available");
     return;
   }
   
@@ -382,7 +412,7 @@ function requestCandles(symbolId = null, period = "M1", count = 100) {
   };
   
   sendMessage(2137, payload);
-  console.log(`📤 Candle request sent for symbol ${targetSymbolId}`);
+  console.log(`Sent candle request for cTrader symbol ${targetSymbolId}`);
 }
 
 // =======================
@@ -439,12 +469,12 @@ async function reconnect() {
   }
   
   if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-    console.error(`❌ Max reconnection attempts reached`);
+    console.error("Maximum cTrader reconnection attempts reached");
     return;
   }
   
   reconnectAttempts++;
-  console.log(`🔄 Reconnection attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}...`);
+  console.log(`Retrying cTrader connection ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}`);
   
   setTimeout(async () => {
     await connectSocket();
@@ -476,10 +506,10 @@ async function connectSocket() {
     
     // If still no account ID, show error
     if (!ctraderConfig.accountId) {
-      console.error("\n❌ Cannot connect: No valid account ID found");
-      console.log("\n📝 To fix this:");
+      console.error("\nCannot connect to cTrader: no valid account ID was found");
+      console.log("\nTo fix this:");
       console.log("1. Log in to your cTrader platform");
-      console.log("2. Go to Settings → Accounts");
+      console.log("2. Go to Settings -> Accounts");
       console.log("3. Find your demo account ID (usually a 7-8 digit number)");
       console.log("4. Update the accountId in ctraderConfig to that number");
       console.log("5. Restart the application\n");
@@ -491,12 +521,12 @@ async function connectSocket() {
       ? "wss://demo.ctraderapi.com:5035"
       : "wss://live.ctraderapi.com:5035";
 
-    console.log(`🔌 Connecting to ${url}...`);
-    console.log(`📋 Using account ID: ${ctraderConfig.accountId}`);
+    console.log(`Connecting to cTrader WebSocket at ${url}`);
+    console.log(`Using cTrader account ID ${ctraderConfig.accountId}`);
     ws = new WebSocket(url);
 
     ws.on("open", () => {
-      console.log("✅ WebSocket connected");
+      console.log("cTrader WebSocket connected successfully");
       reconnectAttempts = 0;
       isConnecting = false;
       sendAppAuth();
@@ -508,18 +538,18 @@ async function connectSocket() {
     });
 
     ws.on("error", (err) => {
-      console.error("❌ WebSocket error:", err.message);
+      console.error("cTrader WebSocket error:", err.message);
     });
 
     ws.on("close", (code, reason) => {
-      console.log(`❌ WebSocket closed: ${code} - ${reason}`);
+      console.log(`cTrader WebSocket closed: ${code} - ${reason}`);
       isConnecting = false;
       stopHeartbeat();
       reconnect();
     });
 
   } catch (err) {
-    console.error("❌ Connection failed:", err.message);
+    console.error("Failed to connect to cTrader:", err.message);
     isConnecting = false;
     reconnect();
   }
@@ -533,11 +563,11 @@ function handleMessage(data) {
     const Message = root.lookupType("ProtoMessage");
     const decoded = Message.decode(new Uint8Array(data));
     
-    console.log(`📩 Received message type: ${decoded.payloadType}`);
+    console.log(`Received cTrader message type ${decoded.payloadType}`);
 
     switch(decoded.payloadType) {
       case 2101:
-        console.log("✅ Application authorized");
+        console.log("cTrader application authorized successfully");
         setTimeout(() => sendAccountAuth(), 500);
         break;
       
@@ -547,13 +577,13 @@ function handleMessage(data) {
           const accAuthData = AccAuthRes.decode(decoded.payload);
           
           if (accAuthData.success) {
-            console.log("✅ Account authorized successfully");
+            console.log("cTrader account authorized successfully");
             setTimeout(() => requestSymbols(), 500);
           } else {
-            console.error("❌ Account auth failed:", accAuthData.errorMessage);
+            console.error("cTrader account authorization failed:", accAuthData.errorMessage);
           }
         } catch (_err) {
-          console.log("✅ Account authorization successful");
+          console.log("cTrader account authorization completed successfully");
           setTimeout(() => requestSymbols(), 500);
         }
         break;
@@ -576,8 +606,8 @@ function handleMessage(data) {
               }
             });
             
-            console.log(`✅ Loaded ${ctraderConfig.symbols.size} symbols`);
-            console.log(`📊 Available symbols: ${Array.from(ctraderConfig.symbols.values()).slice(0, 10).map(s => s.name).join(', ')}...`);
+            console.log(`Loaded ${ctraderConfig.symbols.size} cTrader symbols`);
+            console.log(`Available cTrader symbols: ${Array.from(ctraderConfig.symbols.values()).slice(0, 10).map(s => s.name).join(', ')}...`);
             
             if (ctraderConfig.currentSymbolId) {
               requestCandles();
@@ -602,9 +632,9 @@ function handleMessage(data) {
               close: c.close
             }));
             
-            console.log(`📊 Received ${candles.length} candles`);
+            console.log(`Received ${candles.length} cTrader candles`);
             if (candles.length > 0) {
-              console.log(`📈 Latest candle: ${new Date(candles[candles.length-1].time * 1000).toISOString()} | O:${candles[candles.length-1].open} H:${candles[candles.length-1].high} L:${candles[candles.length-1].low} C:${candles[candles.length-1].close}`);
+              console.log(`Latest cTrader candle: ${new Date(candles[candles.length-1].time * 1000).toISOString()} | O:${candles[candles.length-1].open} H:${candles[candles.length-1].high} L:${candles[candles.length-1].low} C:${candles[candles.length-1].close}`);
               global.lastCandles = candles;
             }
           }
@@ -617,9 +647,9 @@ function handleMessage(data) {
         try {
           const ErrorRes = root.lookupType("ProtoOAErrorRes");
           const errorData = ErrorRes.decode(decoded.payload);
-          console.error("❌ Error:", errorData.errorCode);
+          console.error("cTrader API error:", errorData.errorCode);
         } catch (_err) {
-          console.error("❌ Error received");
+          console.error("Received an error from cTrader");
         }
         break;
       
@@ -629,7 +659,7 @@ function handleMessage(data) {
     }
     
   } catch (err) {
-    console.error("❌ Failed to handle message:", err.message);
+    console.error("Failed to handle cTrader message:", err.message);
   }
 }
 
@@ -638,7 +668,7 @@ function handleMessage(data) {
 // =======================
 function registerCtraderRoutes(app) {
   
-  app.get("/api/start-ctrader", authCheck, async (req, res) => {
+  app.get("/api/start-ctrader", authCheck, requireCtraderAdmin, async (req, res) => {
     try {
       if (!ctraderConfig.clientId || !ctraderConfig.clientSecret || !ctraderConfig.accessToken) {
         return res.status(500).json({ success: false, error: 'cTrader environment variables are not configured' });
@@ -658,7 +688,7 @@ function registerCtraderRoutes(app) {
     }
   });
   
-  app.get("/api/ctrader-status", authCheck, (req, res) => {
+  app.get("/api/ctrader-status", authCheck, requireCtraderAdmin, (req, res) => {
     res.json({
       success: true,
       connected: ws && ws.readyState === WebSocket.OPEN,
@@ -668,7 +698,7 @@ function registerCtraderRoutes(app) {
     });
   });
   
-  app.get("/api/ctrader-symbols", authCheck, (req, res) => {
+  app.get("/api/ctrader-symbols", authCheck, requireCtraderAdmin, (req, res) => {
     res.json({
       success: true,
       symbols: Array.from(ctraderConfig.symbols.values()),

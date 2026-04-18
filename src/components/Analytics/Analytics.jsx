@@ -33,7 +33,7 @@ function Analytics() {
       
       {/* ===== HEADER ===== */}
       <div className="analytics-topbar">
-        <div className="analytics-title">Analytics</div>
+        <h1 className="analytics-title app-page-title">Analytics</h1>
 
         <div className="analytics-tabs">
           <button

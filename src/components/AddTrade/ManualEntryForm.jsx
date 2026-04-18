@@ -1,14 +1,13 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SymbolWithIcon from "../Common/SymbolWithIcon";
 import LegacyIcon from "../Common/LegacyIcon";
-
-import Autocomplete from "@mui/material/Autocomplete";
-import TextField from "@mui/material/TextField";
 import api from "../../utils/serve";
+import { useAuth } from '../../context/AuthContext';
 
 function ManualEntryForm({ API_URL, trades }) {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const now = new Date();
   const initialTradeDate = now.toISOString().split('T')[0];
   const initialTradeTime = now.toTimeString().substring(0, 5);
@@ -26,9 +25,18 @@ function ManualEntryForm({ API_URL, trades }) {
   });
 
   const [previewImage, setPreviewImage] = useState('');
+  const [showSymbolSuggestions, setShowSymbolSuggestions] = useState(false);
+  const symbolBlurTimeoutRef = useRef(null);
   const symbols = useMemo(() => {
     return [...new Set(trades?.map(t => t.symbol).filter(Boolean))];
   }, [trades]);
+  const filteredSymbols = useMemo(() => {
+    const query = formData.symbol.trim().toUpperCase();
+    if (!query) return symbols.slice(0, 8);
+    return symbols
+      .filter((symbol) => symbol.toUpperCase().includes(query))
+      .slice(0, 8);
+  }, [formData.symbol, symbols]);
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
@@ -63,9 +71,16 @@ function ManualEntryForm({ API_URL, trades }) {
     setPreviewImage('');
   };
 
+  const selectSymbol = (symbol) => {
+    setFormData(prev => ({
+      ...prev,
+      symbol: symbol.toUpperCase().replace(/\s+/g, '').trim()
+    }));
+    setShowSymbolSuggestions(false);
+  };
+
   const submitManualTrade = async () => {
-    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-    if (!currentUser?.ID) {
+    if (!user?.ID) {
       alert('Please login first!');
       navigate('/login');
       return;
@@ -132,48 +147,49 @@ function ManualEntryForm({ API_URL, trades }) {
 
       {/* Horizontal row of other fields */}
       <div className="form-fields-horizontal">
-        <div className="form-group">
+        <div className="form-group symbol-field">
           <label htmlFor="symbol" className="required">Symbol</label>
-
-
- <Autocomplete
-  freeSolo
-  options={symbols}
-  value={formData.symbol || null}
-  inputValue={formData.symbol}
-
-  onInputChange={(event, newValue) => {
-    setFormData(prev => ({
-      ...prev,
-      symbol: (newValue || '').toUpperCase().replace(/\s+/g, '')
-    }));
-  }}
-
-  renderOption={(props, option) => (
-    <li {...props}>
-      <SymbolWithIcon symbol={option} size="sm" />
-    </li>
-  )}
-
-  renderInput={(params) => (
-    <TextField
-      {...params}
-      placeholder="BTCUSD"
-      InputProps={{
-        ...params.InputProps,
-        startAdornment: formData.symbol ? (
-          <SymbolWithIcon symbol={formData.symbol} size="sm" />
-        ) : null,
-      }}
-    />
-  )}
-/> 
-
-
-
-
-
-
+          <div className="symbol-input-shell">
+            {formData.symbol ? (
+              <span className="selected-symbol-icon" aria-hidden="true">
+                <SymbolWithIcon symbol={formData.symbol} size="sm" showLabel={false} />
+              </span>
+            ) : null}
+            <input
+              type="text"
+              id="symbol"
+              value={formData.symbol}
+              onChange={handleInputChange}
+              onFocus={() => {
+                if (symbolBlurTimeoutRef.current) {
+                  clearTimeout(symbolBlurTimeoutRef.current);
+                }
+                setShowSymbolSuggestions(true);
+              }}
+              onBlur={() => {
+                symbolBlurTimeoutRef.current = setTimeout(() => {
+                  setShowSymbolSuggestions(false);
+                }, 120);
+              }}
+              placeholder="BTCUSD"
+              autoComplete="off"
+            />
+            {showSymbolSuggestions && filteredSymbols.length > 0 ? (
+              <div className="symbol-suggestions" role="listbox">
+                {filteredSymbols.map((symbol) => (
+                  <button
+                    key={symbol}
+                    type="button"
+                    className="symbol-suggestion-item"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => selectSymbol(symbol)}
+                  >
+                    <SymbolWithIcon symbol={symbol} size="sm" />
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
         </div>
 
         <div className="form-group">

@@ -35,7 +35,7 @@ const STABLES = ["USDT", "USDC"];
 /* =======================
    COMPONENT
 ======================= */
-function SymbolWithIcon({ symbol, size = "md" }) {
+function SymbolWithIcon({ symbol, size = "md", showLabel = true }) {
   const iconSize = SIZE_MAP[size] || 18;
   const pairSize = Math.floor(iconSize * 0.75); // 👈 smaller pair icons
 
@@ -98,9 +98,11 @@ function SymbolWithIcon({ symbol, size = "md" }) {
             ))}
           </div>
 
-          <span style={{ fontSize: 10, fontWeight: 500 }}>
-            {uiSymbol}
-          </span>
+          {showLabel ? (
+            <span style={{ fontSize: 10, fontWeight: 500 }}>
+              {uiSymbol}
+            </span>
+          ) : null}
         </div>
       );
     }
@@ -154,9 +156,11 @@ function SymbolWithIcon({ symbol, size = "md" }) {
             />
           </div>
 
-          <span style={{ fontSize: 10, fontWeight: 500 }}>
-            {uiSymbol}
-          </span>
+          {showLabel ? (
+            <span style={{ fontSize: 10, fontWeight: 500 }}>
+              {uiSymbol}
+            </span>
+          ) : null}
         </div>
       );
     }
@@ -179,7 +183,7 @@ function SymbolWithIcon({ symbol, size = "md" }) {
           }}
         />
 
-        <span style={{ fontSize: 10 }}>{uiSymbol}</span>
+        {showLabel ? <span style={{ fontSize: 10 }}>{uiSymbol}</span> : null}
       </div>
     );
   }
@@ -237,7 +241,7 @@ function SymbolWithIcon({ symbol, size = "md" }) {
           ))}
         </div>
 
-        <span style={{ fontSize: 10 }}>{uiSymbol}</span>
+        {showLabel ? <span style={{ fontSize: 10 }}>{uiSymbol}</span> : null}
       </div>
     );
   }
@@ -245,7 +249,7 @@ function SymbolWithIcon({ symbol, size = "md" }) {
   /* =======================
      FALLBACK
   ======================= */
-  return <span>{uiSymbol}</span>;
+  return showLabel ? <span>{uiSymbol}</span> : null;
 }
 
 export default SymbolWithIcon;

@@ -47,7 +47,7 @@ export default function TradePnLCurve({
   // Fetch candles and build P&L series
   useEffect(() => {
     if (!symbol || !entryTime || !exitTime || !entryPrice) {
-      console.log("Missing required props:", { symbol, entryTime, exitTime, entryPrice });
+      console.log("P&L curve skipped due to missing props:", { symbol, entryTime, exitTime, entryPrice });
       setLoading(false);
       return;
     }
@@ -65,7 +65,7 @@ export default function TradePnLCurve({
         if (startMs < 10000000000) startMs = startMs * 1000;
         if (endMs < 10000000000) endMs = endMs * 1000;
         
-        console.log("Fetching P&L data:", {
+        console.log("Fetching P&L chart data:", {
           symbol,
           startMs,
           endMs,
@@ -97,7 +97,7 @@ export default function TradePnLCurve({
           `&endTime=${endMs}` +
           `&limit=${limit}`;
 
-        console.log("Fetching URL:", url);
+        console.log("Fetching chart URL:", url);
         
         const res = await fetch(url);
         
@@ -107,7 +107,7 @@ export default function TradePnLCurve({
         }
         
         const data = await res.json();
-        console.log("Received candles:", data?.length || 0);
+        console.log("Received chart candles:", data?.length || 0);
 
         if (!Array.isArray(data) || data.length === 0) {
           throw new Error("No candle data returned for this time range");
@@ -148,7 +148,7 @@ export default function TradePnLCurve({
 
         drawChart(clean, isDark);
       } catch (e) {
-        console.error("Error in fetchAndDraw:", e);
+        console.error("Failed to fetch or draw P&L curve:", e);
         setError(e.message);
       } finally {
         setLoading(false);
@@ -363,3 +363,7 @@ export default function TradePnLCurve({
     </div>
   );
 }
+
+
+
+

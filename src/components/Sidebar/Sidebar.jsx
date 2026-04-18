@@ -4,6 +4,8 @@ import { useTheme } from '../../context/ThemeContext';  // ✅ ADDED
 
 import './Sidebar.css';
 import LegacyIcon from '../Common/LegacyIcon';
+import { API_URL } from '../../utils/constants';
+import { useAuth } from '../../context/AuthContext';
 
 const DashboardSettings = lazy(() => import('./DashboardSettings'));
 
@@ -11,6 +13,7 @@ function Sidebar() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [layoutOpen, setLayoutOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { isAuthenticated, setUser } = useAuth();
 
   const settingsRef = useRef(null);
   const settingsToggleRef = useRef(null);
@@ -72,9 +75,17 @@ function Sidebar() {
 
   const handleLogout = (e) => {
     e.preventDefault();
-    localStorage.removeItem('currentUser');
-    localStorage.removeItem('tradeMode');
-    window.location.reload();
+    fetch(`${API_URL}/api/logout`, {
+      method: 'POST',
+      credentials: 'include'
+    })
+      .catch(() => null)
+      .finally(() => {
+        localStorage.removeItem('tradeMode');
+        localStorage.removeItem('authUser');
+        setUser(null);
+        window.dispatchEvent(new Event('auth:logout'));
+      });
   };
 
   return (
@@ -86,11 +97,11 @@ function Sidebar() {
         aria-label={sidebarOpen ? 'Close navigation menu' : 'Open navigation menu'}
         title={sidebarOpen ? 'Close navigation menu' : 'Open navigation menu'}
       >
-        ☰
+        <span className="sidebar-toggle__icon">☰</span>
       </button>
 
       {/* 🔹 SIDEBAR */}
-      <div className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
+      <div className={`sidebar ${sidebarOpen || settingsOpen ? 'open' : ''} ${settingsOpen ? 'settings-open' : ''}`}>
         {/* LOGO */}
         <div className="sidebar-logo">
           <span className="logo-text">
@@ -174,9 +185,11 @@ function Sidebar() {
               <span>Dashboard Layout</span>
             </div>
 
-            <div className="sub-nav-item" onClick={handleLogout}>
-                  <LegacyIcon className="fas fa-sign-out-alt" /> Logout
-            </div>
+            {isAuthenticated && (
+              <div className="sub-nav-item" onClick={handleLogout}>
+                    <LegacyIcon className="fas fa-sign-out-alt" /> Logout
+              </div>
+            )}
           </div>
         )}
       </div>

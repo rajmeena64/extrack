@@ -1,36 +1,42 @@
 import React, { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { format } from 'date-fns';
 import {
+  CalendarRange,
   ChevronDown,
   Download,
   Plus,
   RefreshCw,
   Search,
-  SlidersHorizontal,
 } from 'lucide-react';
 import './Header.css';
+import DateRangePicker from '../Common/DateRangePicker';
+import { useAuth } from '../../context/AuthContext';
 
 const UserLoginModal = lazy(() => import('../user/UserLoginModal/UserLoginModal'));
 const Profile = lazy(() => import('./profile'));
 
-function Header({ tradeMode, setTradeMode, trades = [] }) {
+function Header({ tradeMode, setTradeMode, trades = [], dateRange, setDateRange }) {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const filterRef = useRef(null);
+  const datePickerRef = useRef(null);
   const navigate = useNavigate();
 
-  const currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
+  const { user: currentUser } = useAuth();
 
   const modes = [
     { value: 'all', label: 'All Trades' },
     { value: 'manual', label: 'Manual Trades' },
-    { value: 'api', label: 'API Trades' },
+    { value: 'api', label: 'Sync Trades' },
   ];
 
   const currentLabel =
     modes.find((mode) => mode.value === tradeMode)?.label || 'All Trades';
+  const compactTradeLabel = tradeMode === 'manual' ? 'Manual' : tradeMode === 'api' ? 'Sync' : 'Trades';
 
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
@@ -65,6 +71,39 @@ function Header({ tradeMode, setTradeMode, trades = [] }) {
     }).format(new Date(latestTrade.timestamp));
   }, [trades]);
 
+  const compactLatestTradeLabel = useMemo(() => {
+    if (!Array.isArray(trades) || trades.length === 0) {
+      return 'No imports yet';
+    }
+
+    const sortedTrades = [...trades].sort(
+      (left, right) => new Date(right.timestamp) - new Date(left.timestamp)
+    );
+
+    const latestTrade = sortedTrades[0];
+    if (!latestTrade?.timestamp) {
+      return 'No imports yet';
+    }
+
+    return new Intl.DateTimeFormat('en-US', {
+      day: '2-digit',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(new Date(latestTrade.timestamp));
+  }, [trades]);
+
+  const dateRangeLabel = useMemo(() => {
+    if (dateRange?.from && dateRange?.to) {
+      return `${format(new Date(dateRange.from), 'dd MMM yyyy')} - ${format(
+        new Date(dateRange.to),
+        'dd MMM yyyy'
+      )}`;
+    }
+
+    return 'All time';
+  }, [dateRange]);
+
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth <= 768);
@@ -79,11 +118,14 @@ function Header({ tradeMode, setTradeMode, trades = [] }) {
       if (filterOpen && filterRef.current && !filterRef.current.contains(event.target)) {
         setFilterOpen(false);
       }
+      if (datePickerOpen && datePickerRef.current && !datePickerRef.current.contains(event.target)) {
+        setDatePickerOpen(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [filterOpen]);
+  }, [datePickerOpen, filterOpen]);
 
   useEffect(() => {
     const handleEsc = (event) => {
@@ -97,22 +139,65 @@ function Header({ tradeMode, setTradeMode, trades = [] }) {
     return () => document.removeEventListener('keydown', handleEsc);
   }, [profileOpen]);
 
+  useEffect(() => {
+    const hasPopupOpen = filterOpen || datePickerOpen;
+    document.body.classList.toggle('dashboard-popup-open', hasPopupOpen);
+
+    return () => {
+      document.body.classList.remove('dashboard-popup-open');
+    };
+  }, [datePickerOpen, filterOpen]);
+
   return (
     <>
       <header className="dashboard-header">
         <div className="dashboard-header__hero">
           <div className="dashboard-header__title-row">
-            <div>
-              <h1>
+            <div className="dashboard-header__headline">
+              <span className="dashboard-header__eyebrow">Welcome back</span>
+              <h1 className="app-page-title">
                 {greeting}, {heroName}!
               </h1>
             </div>
 
-            <div className="dashboard-header__meta">
+            <div className="dashboard-header__top-actions">
+              <div className="dashboard-header__meta">
               <span className="dashboard-header__meta-pill">
                 <RefreshCw size={14} />
-                Last import was made: {latestTradeLabel}
+                {isMobile ? `Last import ${compactLatestTradeLabel}` : `Last import was made: ${latestTradeLabel}`}
               </span>
+              </div>
+
+              {isMobile && (currentUser ? (
+                <div
+                  className="header-user header-user--hero"
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => setProfileOpen(true)}
+                >
+                  <div className="user-avatar">
+                    {currentUser.firstName?.[0]}
+                    {currentUser.lastName?.[0]}
+                  </div>
+                  <div className="header-user__text">
+                    <span className="user-name">
+                      {currentUser.firstName} {currentUser.lastName}
+                    </span>
+                    <span className="user-role">Active account</span>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  className="header-user header-user--hero"
+                  onClick={() => setShowLoginModal(true)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <div className="user-avatar">Ur</div>
+                  <div className="header-user__text">
+                    <span className="user-name">Login</span>
+                    <span className="user-role">Open your profile</span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -124,18 +209,59 @@ function Header({ tradeMode, setTradeMode, trades = [] }) {
           </div>
 
           <div className="dashboard-toolbar__controls">
-            <button className="toolbar-chip" type="button">
-              <SlidersHorizontal size={15} />
-              Filters
-            </button>
+            <div
+              className={`toolbar-date-range ${
+                filterOpen ? 'toolbar-control--dimmed' : ''
+              } ${datePickerOpen ? 'toolbar-control--active' : ''}`}
+              ref={datePickerRef}
+            >
+              <button
+                className={`toolbar-chip ${datePickerOpen ? 'toolbar-chip--active' : ''}`}
+                type="button"
+                onClick={() => setDatePickerOpen((prev) => !prev)}
+              >
+                <CalendarRange size={15} />
+                <span className="toolbar-chip__text">
+                  {isMobile ? 'All Time' : dateRangeLabel}
+                </span>
+                <ChevronDown size={15} />
+              </button>
 
-            <div className="trade-filter-wrapper" ref={filterRef}>
+              {datePickerOpen && (
+                <div className="toolbar-date-range__panel">
+                  <DateRangePicker
+                    value={dateRange}
+                    onChange={(range) => {
+                      setDateRange?.({
+                        from: range?.from || null,
+                        to: range?.to || null,
+                      });
+                    }}
+                    showLabel={false}
+                    numberOfMonths={2}
+                    defaultRangeEnabled={false}
+                  />
+                </div>
+              )}
+            </div>
+
+            <div
+              className={`trade-filter-wrapper ${
+                datePickerOpen ? 'toolbar-control--dimmed' : ''
+              } ${filterOpen ? 'toolbar-control--active' : ''}`}
+              ref={filterRef}
+            >
               <button
                 className="toolbar-chip"
                 type="button"
-                onClick={() => setFilterOpen((prev) => !prev)}
+                onClick={() => {
+                  setFilterOpen((prev) => !prev);
+                  setDatePickerOpen(false);
+                }}
               >
-                {currentLabel}
+                <span className="toolbar-chip__text">
+                  {isMobile ? compactTradeLabel : currentLabel}
+                </span>
                 <ChevronDown size={15} />
               </button>
 
@@ -168,16 +294,16 @@ function Header({ tradeMode, setTradeMode, trades = [] }) {
               </button>
             )}
 
-            <button
-              className="toolbar-primary"
-              type="button"
-              onClick={() => navigate('/add-trade')}
-            >
-              <Plus size={16} />
-              Import trades
-            </button>
+              <button
+                className={`toolbar-primary ${datePickerOpen || filterOpen ? 'toolbar-primary--dimmed' : ''}`}
+                type="button"
+                onClick={() => navigate('/add-trade')}
+              >
+                <Plus size={16} />
+                <span className="toolbar-primary__text">{isMobile ? 'Import' : 'Import trades'}</span>
+              </button>
 
-            {currentUser ? (
+            {!isMobile && currentUser ? (
               <div
                 className="header-user"
                 style={{ cursor: 'pointer' }}
@@ -194,7 +320,7 @@ function Header({ tradeMode, setTradeMode, trades = [] }) {
                   <span className="user-role">Active account</span>
                 </div>
               </div>
-            ) : (
+            ) : !isMobile ? (
               <div
                 className="header-user"
                 onClick={() => setShowLoginModal(true)}
@@ -206,7 +332,7 @@ function Header({ tradeMode, setTradeMode, trades = [] }) {
                   <span className="user-role">Open your profile</span>
                 </div>
               </div>
-            )}
+            ) : null}
           </div>
         </div>
       </header>

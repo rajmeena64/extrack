@@ -1,20 +1,45 @@
 const express = require('express');
+const fs = require('fs');
 const http = require('http');
 const WebSocket = require('ws');
 const path = require('path');
 require('dotenv').config();
 
 const app = express();
+const missingEnv = [];
 
 /* =======================
    ENV CHECK
 ======================= */
-if (!process.env.JWT_SECRET) {
-  // console.error("❌ FATAL: JWT_SECRET missing in environment");
-  process.exit(1);
+if (!process.env.JWT_ACCESS_SECRET && !process.env.JWT_SECRET) {
+  missingEnv.push('JWT_ACCESS_SECRET or JWT_SECRET');
 }
 
 if (!process.env.JWT_REFRESH_SECRET) {
+  missingEnv.push('JWT_REFRESH_SECRET');
+}
+
+if (process.env.NODE_ENV === 'production') {
+  if (fs.existsSync(path.join(__dirname, '.env'))) {
+    missingEnv.push('remove backend/server/.env from production deploy and use platform-managed secrets');
+  }
+
+  if (!process.env.MT5_INGEST_SECRET && !process.env.TRADE_INGEST_SECRET) {
+    missingEnv.push('MT5_INGEST_SECRET or TRADE_INGEST_SECRET');
+  }
+
+  if (!process.env.ALLOWED_ORIGINS && !process.env.FRONTEND_URL) {
+    missingEnv.push('ALLOWED_ORIGINS or FRONTEND_URL');
+  }
+
+  if (String(process.env.DB_SSL_ENABLED || 'true') === 'true'
+    && String(process.env.DB_SSL_REJECT_UNAUTHORIZED || 'true') !== 'true') {
+    missingEnv.push('DB_SSL_REJECT_UNAUTHORIZED=true');
+  }
+}
+
+if (missingEnv.length > 0) {
+  console.error(`Missing required environment variables: ${missingEnv.join(', ')}`);
   process.exit(1);
 }
 
@@ -92,14 +117,14 @@ const wss = new WebSocket.Server({ server });
 app.set('wss', wss);
 
 wss.on('connection', (ws) => {
-  // console.log('🟢 WebSocket client connected');
+  // console.log("WebSocket client connected");
 
   ws.on('close', () => {
-    // console.log('🔴 WebSocket client disconnected');
+    // console.log("WebSocket client disconnected");
   });
 
   ws.on('message', (_msg) => {
-    // console.log('📩 WS message:', msg.toString());
+    // console.log("WS message:", msg.toString());
   });
 });
 
@@ -108,7 +133,8 @@ wss.on('connection', (ws) => {
 ======================= */
 const PORT = Number(process.env.PORT || 5000);
 server.listen(PORT, () => {
-  console.log(`🚀 Backend (REST + WebSocket) running on port ${PORT}`);
+  console.log(`Backend server running on port ${PORT}`);
 });
+
 
 

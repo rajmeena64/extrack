@@ -402,7 +402,7 @@ function TradeView({ trades = [] }) {
             <div className="trade-title-block">
               <div className="trade-title-row">
                 <Ratio className="trade-title-icon" />
-                <h1 className="trade-page-title">Trade Log</h1>
+                <h1 className="trade-page-title app-page-title">Trade Log</h1>
               </div>
               <p className="trade-page-subtitle">
                 Review, filter and analyze all your trades in one place
@@ -670,7 +670,7 @@ function TradeView({ trades = [] }) {
                     {visibleColumns.type && <td>{trade.trade_type || "--"}</td>}
 
                     {visibleColumns.pnl && (
-                      <td className={pnl >= 0 ? "profit" : "loss"}>
+                      <td className={pnl >= 0 ? "trade-view__pnl--profit" : "trade-view__pnl--loss"}>
                         {pnl >= 0 ? `+$${pnl}` : `-$${Math.abs(pnl)}`}
                       </td>
                     )}

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../config/database');
 const { authCheck } = require('./auth');
+const { requireIngestSecret } = require('../utils/security');
 const {
     encryptMT5Password,
     verifyMT5Password,
@@ -157,7 +158,7 @@ router.post('/save-bulk-trades', authCheck, async (req, res) => {
     });
 });
 
-router.post('/save-api-trade', async (req, res) => {
+router.post('/save-api-trade', requireIngestSecret, async (req, res) => {
     try {
         let trades = req.body;
         if (!Array.isArray(trades)) trades = [trades];

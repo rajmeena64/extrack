@@ -1,671 +1,240 @@
-:root {
-  /* Light Theme Variables */
-  --bg-primary: #eaf0f7;
-  --bg-secondary: #ffffff;
-  --bg-card: #ffffff;
-  --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-
-  --bg-hover: #ac91d86e;
-
-  --text-primary: #131a5e;
-  --text-secondary: #475569;
-  --no-data: #e7e2e265;
-  --text-muted: #64748b;
-
-  --heading: #000000;
-
-  --border-light: #c2b9b956;
-  --border-medium: #cbd5e1;
-
-  /* PRIMARY COLORS */
-  --primary: #3b82f6;
-  --primary-light: #60a5fa;
-  --primary-dark: #2563eb;
-
-  /* 🔥 ADDED (from your purple theme) */
-  --purple: #7c3aed;
-  --purple-light: rgba(124, 58, 237, 0.1);
-  --purple-hover: rgba(124, 58, 237, 0.2);
-
-  --button-bg: #5124bd;
-  --value-bg: #1d48d8da;
-
-  /* Profit / Loss */
-  --profit-color: #10b981;
-  --loss-color: #ef4444;
-
-  /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-
-  /* Border Radius */
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  --radius-2xl: 20px;
-
-  /* Transitions */
-  --transition: all 0.3s ease;
-  --transition-slow: all 0.5s ease;
-  --transition-bounce: all 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-}
-
-
-
-.dark-mode {
-  --bg-primary: #000000c4;
-  --bg-secondary: #0a0a0a;
-  --bg-card: #0e0f14;
-  --bg-gradient: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
-
-  --text-primary: #dfe7c9;
-  --text-secondary: #b0b0b0;
-  --no-data: #4050681e;
-  --text-muted: #666666;
-  --heading: #ffffff;
-
-  --border-light: #222222;
-  --border-medium: #333333;
-
-  --primary: #ffffff;
-  --primary-light: #cccccc;
-  --primary-dark: #999999;
-
-  /* 🔥 keep purple usable in dark too */
-  --purple: #a78bfa;
-  --purple-light: rgba(167, 139, 250, 0.1);
-  --purple-hover: rgba(167, 139, 250, 0.2);
-
-  --button-bg: #2461bd;
-
-  --profit-color: #10b981;
-  --loss-color: #ef4444;
-
-  /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
-  --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.7), 0 1px 2px 0 rgba(0, 0, 0, 0.5);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.8), 0 2px 4px -1px rgba(0, 0, 0, 0.6);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.9), 0 4px 6px -2px rgba(0, 0, 0, 0.7);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 1), 0 10px 10px -5px rgba(0, 0, 0, 0.8);
-}
-
-/* Base Styles */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-html, body, #root {
-    height: 100%;
-    width: 100%;
-    margin: 0;
-    padding: 0;
-}
-
-body {
-    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
-    color: var(--text-primary);
-    line-height: 1.6;
-    background: var(--bg-primary);
-    overflow: auto;
-    
-}
-
-/* Dashboard Layout */
-.dashboard {
-    background: var(--bg-primary);
-    height: 100%;
-    width: 100%;
-
-
-}
-
-.dashboard-layout {
-    display: grid;
-    grid-template-columns: minmax(0, 1.8fr) minmax(0, 1.1fr) minmax(0, 1.3fr);
-    grid-template-areas:
-        "zella performance progress"
-        "balance calendar calendar"
-        "trades calendar calendar";
-    gap: 12px;
-    width: 100%;
-    align-items: stretch;
-}
-
-/* CARD */
-.stat-card {
-  background: var(--bg-card);
-  border-radius: 12px;
-  padding: 14px 16px;
-  height: 62px;
-
-  border: 1px solid;
-  border-color: var(--border-light);
-
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  margin-bottom: 14px;
- 
-}
-
-
-
-.main-content {
-    margin-left: 60px;
-    padding: 19px;
-
-    overflow-y: auto;
-    position: relative;
-    height: 100%;
-    min-height: 0;
-    
-   
-}
-
-
-.header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 30px;
-    padding-bottom: 24px;
-    border-bottom: 1px solid var(--border-light);
-   
-}   
-
-.header h1 {
-    font-size: 28px;
-    font-weight: 700;
-    color: var(--text-primary);
-}
-
-
-/* Charts Wrapper - Three Columns */
-.charts-wrapper {
-    display: grid;
-    grid-template-columns: 1.2fr 1.6fr 1.2fr;
-    gap: 20px;
-    margin-bottom: 15px;
-    align-items: stretch;
-
+.dashboard-layout,
+.dashboard-main-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(320px, 1.28fr) minmax(0, 1.22fr);
+  grid-template-areas:
+    "zella performance progress"
+    "activity calendar calendar"
+    "trades calendar calendar";
+  gap: 12px;
+  width: 100%;
+  align-items: stretch;
 }
 
 .left-charts {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 12px;
-    width: 100%;
-    height: 100%;
- 
-}
-
-/* Chart Cards - Professional Style */
-.chart-card {
-    border-radius: 18px;
-    background: var(--bg-card);
-    display: flex;
-    flex-direction: column;
-    border: 1px solid rgba(191, 206, 231, 0.75);
-    overflow: hidden;
-    box-shadow: 0 12px 28px rgba(70, 97, 146, 0.06);
-
-}
-
-.dashboard-feature-row {
-    align-items: stretch;
-}
-
-.dashboard-main-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1.8fr) minmax(0, 1.1fr) minmax(0, 1.3fr);
-    grid-template-areas:
-        "zella performance progress"
-        "balance calendar calendar"
-        "trades calendar calendar";
-    gap: 12px;
-    width: 100%;
-    align-items: stretch;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  width: 100%;
+  height: 100%;
 }
 
 .dashboard-grid-card {
-    min-width: 0;
+  min-width: 0;
+}
+
+.dashboard-grid-card--zella,
+.dashboard-grid-card--performance,
+.dashboard-grid-card--progress {
+  align-self: stretch;
+  max-height: 230px;
+}
+
+.dashboard-grid-card--trades {
+  display: flex;
+  min-height: 0;
 }
 
 .dashboard-grid-card--zella { grid-area: zella; }
 .dashboard-grid-card--performance { grid-area: performance; }
 .dashboard-grid-card--progress { grid-area: progress; }
-.dashboard-grid-card--balance { grid-area: balance; }
+.dashboard-grid-card--activity { grid-area: activity; }
 .dashboard-grid-card--calendar { grid-area: calendar; }
 .dashboard-grid-card--trades { grid-area: trades; }
 
-.trades-section {
-    min-width: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
+.dashboard-grid-card--performance .chart-card,
+.dashboard-grid-card--progress .radar-card,
+.dashboard-grid-card--activity .activity-card--daily-pnl,
+.dashboard-grid-card--trades .my-trades {
+  height: 100%;
 }
 
-.zella-panel {
-    min-height: 172px;
+.dashboard-grid-card--zella .progress-card,
+.dashboard-grid-card--performance .chart-card,
+.dashboard-grid-card--progress .radar-card {
+  max-height: 230px;
+}
+
+.dashboard-grid-card--zella .progress-card,
+.dashboard-grid-card--performance .chart-card,
+.dashboard-grid-card--progress .radar-card {
+  /* height: auto; */
+}
+
+.dashboard-grid-card--performance .chart-card,
+.dashboard-grid-card--progress .radar-card,
+.calendar-panel {
+  min-height: 210px;
+}
+
+.dashboard-grid-card--trades .my-trades {
+  flex: 1;
+  height: 244px;
+  min-height: 244px;
+  max-height: 244px;
+}
+
+.chart-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: var(--dashboard-card-border);
+  border-radius: var(--dashboard-card-radius);
+  background: var(--bg-card);
+  box-shadow: var(--dashboard-card-shadow);
+  overflow: hidden;
 }
 
 .chart-cardx {
-    width: 100%;
-    position: relative;
-    border: 1px solid rgba(191, 206, 231, 0.75);
-    height: 100%;
-    border-radius: 18px;
-    background: var(--bg-card);
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    box-shadow: 0 12px 28px rgba(70, 97, 146, 0.06);
-
-}
-
-.radar-card,
-.my-trades {
-    width: 100%;
-    height: 100%;
-    min-width: 0;
-}
-
-
-
-
-
-
-
-/* Trades Card */
-.my-trades {
-    background: var(--bg-card);
-    border-radius: 18px;
-    padding: 12px;
-    border: 1px solid rgba(191, 206, 231, 0.75);
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    min-height: 148px;
-    box-shadow: 0 12px 28px rgba(70, 97, 146, 0.06);
-   
- 
-}
-
-.chart-card h3 {
-    font-size: 10px;
-    font-weight: 700;
-    color: var(--text-primary);
-    margin-bottom: 2px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-left: 12px;
-    margin-top: 14px;
-}
-
-.chart-card h3::before {
-    content: '';
-    width: 10px;
-    height: 20px;
-    background: linear-gradient(135deg, var(--primary) 0%, var(--purple) 100%);
-    border-radius: var(--radius-sm);
-}
-
-.dark-mode .chart-card h3::before {
-    background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  width: 100%;
+  height: 100%;
+  border: var(--dashboard-card-border);
+  border-radius: var(--dashboard-card-radius);
+  background: var(--bg-card);
+  box-shadow: var(--dashboard-card-shadow);
+  overflow: hidden;
 }
 
 .chart-container {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    min-height: 104px;
-    flex: 1;
+  position: relative;
+  width: 100%;
+  max-height: 100%;
+  min-height: 104px;
+  flex: 1;
 }
 
-/* Empty States */
-.chart-empty-state, .calendar-empty-state {
-    text-align: center;
-    padding: 60px 20px;
-    color: var(--text-muted);
+.chart-empty-state,
+.calendar-empty-state {
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--text-muted);
 }
 
-.chart-empty-state i, .calendar-empty-state i {
-    font-size: 48px;
-    margin-bottom: 16px;
-    opacity: 0.5;
+.chart-empty-state i,
+.calendar-empty-state i {
+  display: block;
+  margin-bottom: 16px;
+  font-size: 48px;
+  opacity: 0.5;
 }
 
-.chart-empty-state p, .calendar-empty-state p {
-    font-size: 18px;
-    font-weight: 600;
-    margin-bottom: 8px;
+.chart-empty-state p,
+.calendar-empty-state p {
+  margin-bottom: 8px;
+  font-size: 18px;
+  font-weight: 600;
 }
 
-.chart-empty-state small, .calendar-empty-state small {
-    font-size: 14px;
-    opacity: 0.7;
+.chart-empty-state small,
+.calendar-empty-state small {
+  font-size: 14px;
+  opacity: 0.7;
 }
 
-/* Activity, Performance, Portfolio Cards */
-.activity-card,
-.performance-card,
-.portfolio-card {
-    width: 100%;
-    height: 100%;
-    border: 1px solid rgba(191, 206, 231, 0.75);
-    border-radius: 18px;
-    background: var(--bg-card);
-    padding: 14px;
-    min-height: 200px;
-    box-shadow: 0 12px 28px rgba(70, 97, 146, 0.06);
-}
-
-.calendar-panel {
-    min-height: 210px ;
-}
-
-.account-balance-card {
-    min-height: 210px ;
-}
-
-.dark-mode .chart-card,
-.dark-mode .chart-cardx,
-.dark-mode .my-trades,
-.dark-mode .activity-card,
-.dark-mode .performance-card,
-.dark-mode .portfolio-card {
-    border-color: rgba(44, 53, 76, 0.92);
-    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.22);
-}
-
-.activity-header,
-.performance-header,
-.portfolio-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-}
-
-.activity-header h3,
-.performance-header h3,
-.portfolio-header h3 {
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin: 0;
-}
-
-.activity-sub,
-.performance-header span,
-.portfolio-header span {
-    font-size: 12px;
-    color: #6b7280;
-}
-
-/* Scrollbar */
-::-webkit-scrollbar {
-    width: 6px;
-}
-
-::-webkit-scrollbar-track {
-    background: var(--bg-secondary);
-}
-
-::-webkit-scrollbar-thumb {
-    background: var(--border-medium);
-    border-radius: var(--radius-sm);
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: var(--text-muted);
-}
-
-.dark-mode ::-webkit-scrollbar-track {
-    background: #0a0a0a;
-}
-
-.dark-mode ::-webkit-scrollbar-thumb {
-    background: #333333;
-}
-
-.dark-mode ::-webkit-scrollbar-thumb:hover {
-    background: #444444;
-}
-
-/* Dark Mode Text Toggle */
-.dark-mode .light-text {
-    display: none;
-}
-
-.dark-mode .dark-text {
-    display: inline !important;
-}
-
-.light-text {
-    display: inline;
-}
-
-.dark-text {
-    display: none;
-}
-
-/* =========================================
-   RESPONSIVE DESIGN - TABLET (769px - 1023px)
-========================================= */
 @media (min-width: 769px) and (max-width: 1023px) {
-    .main-content {
-        margin-left: 12px;
-    }
-    
-    .dashboard-main-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        grid-template-areas:
-            "zella performance"
-            "progress balance"
-            "calendar calendar"
-            "trades trades";
-        gap: 12px;
-    }
-    
-    .charts-wrapper {
-        grid-template-columns: 1fr;
-        gap: 20px;
-    }
-    
-    .left-charts {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 15px;
-    }
+  .dashboard-main-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "zella performance"
+      "progress activity"
+      "calendar calendar"
+      "trades trades";
+  }
 
-    .chart-container {
-        min-height: 140px;
-    }
+  .left-charts {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 15px;
+  }
+
+  .chart-container {
+    min-height: 140px;
+  }
+
+  .dashboard-grid-card--trades .my-trades {
+    height: 244px;
+    min-height: 244px;
+    max-height: 244px;
+  }
 }
 
-/* =========================================
-   RESPONSIVE DESIGN - MOBILE (481px - 768px)
-========================================= */
-@media (max-width: 768px) and (min-width: 481px) {
-    .main-content {
-        margin-left: 10px;
-        padding: 12px;
-    }
-    
-    .dashboard-main-grid {
-        grid-template-columns: 1fr;
-        grid-template-areas:
-            "zella"
-            "performance"
-            "progress"
-            "balance"
-            "calendar"
-            "trades";
-        gap: 12px;
-    }
-    
-    .charts-wrapper {
-        grid-template-columns: 1fr;
-        gap: 15px;
-    }
-    
-    .left-charts {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 12px;
-    }
+@media (max-width: 768px) {
+  .dashboard-main-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "zella"
+      "performance"
+      "progress"
+      "activity"
+      "calendar"
+      "trades";
+  }
 
-    .chart-card,
-    .chart-cardx,
-    .radar-card,
-    .my-trades,
-    .activity-card,
-    .performance-card,
-    .portfolio-card {
-        width: 100%;
-        max-width: 100%;
-        min-width: 0;
-    }
-    
-    .chart-container {
-        width: 100%;
-        height: clamp(138px, 30vw, 176px);
-        min-height: 138px;
-    }
-    
-    .header h1 {
-        font-size: 24px;
-    }
-    
-    .my-trades {
-        height: auto;
-        min-height: 150px;
-    }
+  .left-charts {
+    grid-template-columns: minmax(0, 1fr);
+  }
 
-    .calendar-panel,
-    .account-balance-card {
-        min-height: 180px;
-    }
-}
+  .dashboard-grid-card--zella,
+  .dashboard-grid-card--performance,
+  .dashboard-grid-card--progress,
+  .dashboard-grid-card--zella .progress-card,
+  .dashboard-grid-card--performance .chart-card,
+  .dashboard-grid-card--progress .radar-card {
+    max-height: none;
+  }
 
-/* =========================================
-   RESPONSIVE DESIGN - SMALL MOBILE (up to 480px)
-========================================= */
-@media (max-width: 480px) {
-    .main-content {
-        margin-left: 12px;
-        padding: 12px;
-    }
-    
-    .dashboard-main-grid {
-        grid-template-columns: 1fr;
-        grid-template-areas:
-            "zella"
-            "performance"
-            "progress"
-            "balance"
-            "calendar"
-            "trades";
-        gap: 10px;
-    }
-    
-    .charts-wrapper {
-        grid-template-columns: 1fr;
-        gap: 12px;
-    }
-    
-    .left-charts {
-        grid-template-columns: 1fr;
-        gap: 12px;
-    }
-
-    .chart-card,
-    .chart-cardx,
-    .radar-card,
-    .my-trades,
-    .activity-card,
-    .performance-card,
-    .portfolio-card {
-        width: 100%;
-        max-width: 100%;
-        min-width: 0;
-    }
-    
-    .chart-container {
-        width: 100%;
-        height: clamp(124px, 30vw, 154px);
-        min-height: 124px;
-    }
-    
-    .header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 15px;
-        margin-bottom: 20px;
-        padding-bottom: 15px;
-    }
-    
-    .header h1 {
-        font-size: 20px;
-    }
-    
-    .my-trades {
-        height: auto;
-        min-height: 138px;
-        padding: 10px;
-    }
-
-    .calendar-panel,
-    .account-balance-card {
-        min-height: 160px;
-    }
-    
-    .activity-card,
-    .performance-card,
-    .portfolio-card {
-        padding: 15px;
-    }
-    
-    .activity-header h3,
-    .performance-header h3,
-    .portfolio-header h3 {
-        font-size: 14px;
-    }
-}
-
-/* =========================================
-   UTILITY CLASSES
-========================================= */
-.full-height {
-    height: 100%;
-}
-
-.full-width {
+  .chart-card,
+  .chart-cardx,
+  .radar-card,
+  .activity-card--daily-pnl,
+  .my-trades {
     width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .chart-container {
+    height: clamp(138px, 30vw, 176px);
+    min-height: 138px;
+  }
+
+  .dashboard-grid-card--trades .my-trades {
+    /* height: 210px;
+    min-height: 210px;
+    max-height: 210px; */
+    height: 100%;
+  }
+
+  .calendar-panel {
+    min-height: 180px;
+  }
 }
 
-.overflow-auto {
-    overflow: auto;
-}
+@media (max-width: 480px) {
+  .dashboard-main-grid {
+    gap: 10px;
+  }
 
-.overflow-hidden {
-    overflow: hidden;
-}
+  .left-charts {
+    grid-template-columns: 1fr;
+  }
 
-.flex {
-    display: flex;
-}
+  .chart-container {
+    height: clamp(124px, 30vw, 154px);
+    min-height: 124px;
 
-.flex-col {
-    flex-direction: column;
-}
+  }
+  .my-trades{
+    height: 100%;
+  }
 
-.flex-1 {
-    flex: 1;}
+  .dashboard-grid-card--trades .my-trades {
+    padding: 10px;
+  }
+
+  .calendar-panel {
+    min-height: 160px;
+  }
+}

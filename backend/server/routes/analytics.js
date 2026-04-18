@@ -8,7 +8,7 @@ router.get('/trades-by-date/:userid?', authCheck, async (req, res) => {
     const userId = req.userId;
     const { date } = req.query;
 
-    console.log("📅 GET TRADES BY DATE - User ID:", userId, "Date:", date);
+    console.log("Trade lookup by date requested:", { userId, date });
 
     if (!date) {
         return res.json({ 
@@ -52,12 +52,12 @@ router.get('/trades-by-date/:userid?', authCheck, async (req, res) => {
             total_all: manualResult.rows.length + apiResult.rows.length
         };
 
-        console.log(`✅ TRADES BY DATE FETCHED - Manual: ${manualResult.rows.length}, API: ${apiResult.rows.length}`);
+        console.log(`Trade lookup by date completed. Manual: ${manualResult.rows.length}, Sync: ${apiResult.rows.length}`);
         
         res.json(response);
 
     } catch (error) {
-        console.log("❌ Get Trades By Date Error:", error.message);
+        console.error("Trade lookup by date failed:", error.message);
         res.json({ 
             success: false, 
             error: error.message 
@@ -70,7 +70,7 @@ router.get('/trades-by-date-range/:userid?', authCheck, async (req, res) => {
     const userId = req.userId;
     const { start_date, end_date } = req.query;
 
-    console.log("📊 GET TRADES BY DATE RANGE - User ID:", userId, "From:", start_date, "To:", end_date);
+    console.log("Trade range summary requested:", { userId, start_date, end_date });
 
     if (!start_date || !end_date) {
         return res.json({ 
@@ -95,7 +95,7 @@ router.get('/trades-by-date-range/:userid?', authCheck, async (req, res) => {
             [userId, start_date, end_date]
         );
 
-        console.log(`✅ TRADES BY DATE RANGE FETCHED - Days with trades: ${manualResult.rows.length}`);
+        console.log(`Trade range summary completed. Days with trades: ${manualResult.rows.length}`);
         
         res.json({
             success: true,
@@ -106,7 +106,7 @@ router.get('/trades-by-date-range/:userid?', authCheck, async (req, res) => {
         });
 
     } catch (error) {
-        console.log("❌ Get Trades By Date Range Error:", error.message);
+        console.error("Trade range summary failed:", error.message);
         res.json({ 
             success: false, 
             error: error.message 
@@ -118,7 +118,7 @@ router.get('/trades-by-date-range/:userid?', authCheck, async (req, res) => {
 router.get('/trade-summary/:userid?', authCheck, async (req, res) => {
     const userId = req.userId;
 
-    console.log("📈 GET TRADE SUMMARY - User ID:", userId);
+    console.log("Trade summary requested:", { userId });
 
     try {
         const manualResult = await pool.query(
@@ -167,7 +167,7 @@ router.get('/trade-summary/:userid?', authCheck, async (req, res) => {
         const totalTrades = combinedSummary.total_trades;
         const winRate = totalTrades > 0 ? (combinedSummary.winning_trades / totalTrades * 100).toFixed(2) : 0;
 
-        console.log("✅ TRADE SUMMARY FETCHED:", combinedSummary);
+        console.log("Trade summary completed:", combinedSummary);
         
         res.json({
             success: true,
@@ -180,9 +180,18 @@ router.get('/trade-summary/:userid?', authCheck, async (req, res) => {
         });
 
     } catch (error) {
-        console.log("❌ Get Trade Summary Error:", error.message);
+        console.error("Trade summary failed:", error.message);
         res.json({ success: false, error: error.message });
     }
 });
 
 module.exports = router;
+
+
+
+
+
+
+
+
+

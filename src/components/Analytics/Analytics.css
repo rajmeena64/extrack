@@ -18,9 +18,7 @@
 
 /* TITLE */
 .analytics-title {
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: 0.3px;
+  color: var(--heading);
 }
 
 /* ===== TABS ===== */
