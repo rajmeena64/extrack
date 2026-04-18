@@ -32,10 +32,16 @@ if (process.env.NODE_ENV === 'production') {
     missingEnv.push('ALLOWED_ORIGINS or FRONTEND_URL');
   }
 
-  if (String(process.env.DB_SSL_ENABLED || 'true') === 'true'
-    && String(process.env.DB_SSL_REJECT_UNAUTHORIZED || 'true') !== 'true') {
-    missingEnv.push('DB_SSL_REJECT_UNAUTHORIZED=false');
-  }
+  // if (String(process.env.DB_SSL_ENABLED || 'true') === 'true'
+  //   && String(process.env.DB_SSL_REJECT_UNAUTHORIZED || 'true') !== 'true') {
+  //   missingEnv.push('DB_SSL_REJECT_UNAUTHORIZED=false');
+  // }
+  if (
+      String(process.env.DB_SSL_ENABLED || 'true') === 'true' &&
+      process.env.DB_SSL_REJECT_UNAUTHORIZED === undefined
+    ) {
+      missingEnv.push('DB_SSL_REJECT_UNAUTHORIZED');
+    }
 }
 
 if (missingEnv.length > 0) {
