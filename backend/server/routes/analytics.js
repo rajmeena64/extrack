@@ -3,6 +3,15 @@ const router = express.Router();
 const pool = require('../config/database');
 const { authCheck } = require('./auth');
 
+const REAL_API_TRADE_FILTER = `
+    symbol IS NOT NULL
+    AND NULLIF(TRIM(symbol), '') IS NOT NULL
+    AND LOWER(COALESCE(trade_type, '')) IN ('buy', 'sell')
+    AND COALESCE(quantity, 0) > 0
+    AND COALESCE(price, 0) > 0
+    AND COALESCE(exit_price, 0) > 0
+`;
+
 // GET TRADES BY DATE
 router.get('/trades-by-date/:userid?', authCheck, async (req, res) => {
     const userId = req.userId;
@@ -37,6 +46,7 @@ router.get('/trades-by-date/:userid?', authCheck, async (req, res) => {
         const apiResult = await pool.query(
             `SELECT * FROM api_trades 
              WHERE user_id = $1 
+             AND ${REAL_API_TRADE_FILTER}
              AND DATE(timestamp) = $2
              ORDER BY timestamp DESC`,
             [userId, date]
@@ -95,14 +105,56 @@ router.get('/trades-by-date-range/:userid?', authCheck, async (req, res) => {
             [userId, start_date, end_date]
         );
 
-        console.log(`Trade range summary completed. Days with trades: ${manualResult.rows.length}`);
+        const apiResult = await pool.query(
+            `SELECT 
+                DATE(timestamp) as trade_date,
+                COUNT(*) as trade_count,
+                SUM(pnl) as daily_pnl,
+                SUM(CASE WHEN pnl > 0 THEN 1 ELSE 0 END) as winning_trades,
+                SUM(CASE WHEN pnl < 0 THEN 1 ELSE 0 END) as losing_trades
+             FROM api_trades 
+             WHERE user_id = $1
+             AND ${REAL_API_TRADE_FILTER}
+             AND DATE(timestamp) BETWEEN $2 AND $3
+             GROUP BY DATE(timestamp)
+             ORDER BY trade_date DESC`,
+            [userId, start_date, end_date]
+        );
+
+        const mergedByDate = new Map();
+
+        for (const row of [...manualResult.rows, ...apiResult.rows]) {
+            const dateKey = row.trade_date instanceof Date
+                ? row.trade_date.toISOString().slice(0, 10)
+                : String(row.trade_date);
+
+            const existing = mergedByDate.get(dateKey) || {
+                trade_date: row.trade_date,
+                trade_count: 0,
+                daily_pnl: 0,
+                winning_trades: 0,
+                losing_trades: 0,
+            };
+
+            existing.trade_count += Number(row.trade_count || 0);
+            existing.daily_pnl += Number(row.daily_pnl || 0);
+            existing.winning_trades += Number(row.winning_trades || 0);
+            existing.losing_trades += Number(row.losing_trades || 0);
+
+            mergedByDate.set(dateKey, existing);
+        }
+
+        const dailyData = Array.from(mergedByDate.values())
+            .sort((a, b) => new Date(b.trade_date) - new Date(a.trade_date));
+
+        console.log(`Trade range summary completed. Days with trades: ${dailyData.length}`);
         
         res.json({
             success: true,
             start_date: start_date,
             end_date: end_date,
-            daily_data: manualResult.rows,
-            total_days: manualResult.rows.length
+            daily_data: dailyData,
+            total_days: dailyData.length
         });
 
     } catch (error) {
@@ -141,7 +193,9 @@ router.get('/trade-summary/:userid?', authCheck, async (req, res) => {
                 SUM(CASE WHEN pnl < 0 THEN pnl ELSE 0 END) as total_loss,
                 COUNT(CASE WHEN pnl > 0 THEN 1 END) as winning_trades,
                 COUNT(CASE WHEN pnl < 0 THEN 1 END) as losing_trades
-             FROM api_trades WHERE user_id = $1`,
+             FROM api_trades
+             WHERE user_id = $1
+             AND ${REAL_API_TRADE_FILTER}`,
             [userId]
         );
 

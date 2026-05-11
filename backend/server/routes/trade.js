@@ -20,6 +20,25 @@ function parseTradeId(value) {
     return Number.isNaN(numericId) ? null : numericId;
 }
 
+function isClosedTradePayload(trade) {
+    const volume = Number(trade?.volume);
+    const entryPrice = Number(trade?.entry_price);
+    const exitPrice = Number(trade?.exit_price);
+    const tradeType = String(trade?.type || '').toLowerCase();
+
+    return Boolean(
+        trade?.symbol &&
+        tradeType &&
+        (tradeType === 'buy' || tradeType === 'sell') &&
+        Number.isFinite(volume) &&
+        volume > 0 &&
+        Number.isFinite(entryPrice) &&
+        entryPrice > 0 &&
+        Number.isFinite(exitPrice) &&
+        exitPrice > 0
+    );
+}
+
 router.post('/save-trade', authCheck, async (req, res) => {
     const {
         symbol,
@@ -163,6 +182,13 @@ router.post('/save-api-trade', requireIngestSecret, async (req, res) => {
         let trades = req.body;
         if (!Array.isArray(trades)) trades = [trades];
 
+        // console.log('[save-api-trade] ingest request received', {
+        //     tradeCount: trades.length,
+        //     isArrayPayload: Array.isArray(req.body),
+        //     sampleTickets: trades.slice(0, 3).map((trade) => trade?.ticket || null),
+        //     sampleAccounts: trades.slice(0, 3).map((trade) => trade?.account_id || null),
+        // });
+
         const results = [];
         let skippedCount = 0;
         let errorCount = 0;
@@ -190,14 +216,42 @@ router.post('/save-api-trade', requireIngestSecret, async (req, res) => {
                 } = trade;
 
                 if (!account_id || !ticket || balance === undefined) {
+                    console.warn('[save-api-trade] validation failed: missing required fields', {
+                        account_id,
+                        ticket,
+                        hasBalance: balance !== undefined,
+                        symbol,
+                    });
                     errorCount++;
                     results.push({ success: false, ticket, error: 'missing required fields' });
                     continue;
                 }
 
                 if (!open_timestamp || !close_timestamp) {
+                    console.warn('[save-api-trade] validation failed: missing timestamps', {
+                        account_id,
+                        ticket,
+                        open_timestamp,
+                        close_timestamp,
+                        symbol,
+                    });
                     errorCount++;
                     results.push({ success: false, ticket, error: 'missing timestamps' });
+                    continue;
+                }
+
+                if (!isClosedTradePayload(trade)) {
+                    console.warn('[save-api-trade] skipped non-trade or incomplete trade payload', {
+                        account_id,
+                        ticket,
+                        symbol,
+                        type,
+                        volume,
+                        entry_price,
+                        exit_price,
+                    });
+                    skippedCount++;
+                    results.push({ success: false, ticket, error: 'non-trade or incomplete trade payload skipped' });
                     continue;
                 }
 
@@ -212,6 +266,11 @@ router.post('/save-api-trade', requireIngestSecret, async (req, res) => {
                     );
 
                     if (accRes.rows.length === 0) {
+                        console.warn('[save-api-trade] account not found in mt5_accounts', {
+                            account_id,
+                            ticket,
+                            symbol,
+                        });
                         errorCount++;
                         results.push({ success: false, ticket, error: 'account not found' });
                         continue;
@@ -234,6 +293,15 @@ router.post('/save-api-trade', requireIngestSecret, async (req, res) => {
                          WHERE account_id = $4`,
                         [balance, balanceChangePercent, account_currency, account_id]
                     );
+
+                    console.log('[save-api-trade] account balance updated', {
+                        account_id,
+                        userId,
+                        oldBalance,
+                        newBalance: balance,
+                        balanceChangePercent,
+                        account_currency,
+                    });
                 }
 
                 values.push(
@@ -255,6 +323,12 @@ router.post('/save-api-trade', requireIngestSecret, async (req, res) => {
                     ticket
                 );
             } catch (err) {
+                console.error('[save-api-trade] trade processing failed', {
+                    ticket: trade?.ticket,
+                    account_id: trade?.account_id,
+                    symbol: trade?.symbol,
+                    error: err.message,
+                });
                 errorCount++;
                 results.push({ success: false, error: err.message });
             }
@@ -285,11 +359,27 @@ router.post('/save-api-trade', requireIngestSecret, async (req, res) => {
 
             const tradeRes = await pool.query(query, params);
             skippedCount = values.length - tradeRes.rows.length;
+            console.log('[save-api-trade] insert completed', {
+                requestedInsertCount: values.length,
+                insertedCount: tradeRes.rows.length,
+                skippedCount,
+            });
             results.push({ success: true, inserted: tradeRes.rows.length });
+        } else {
+            console.warn('[save-api-trade] no trades queued for insert after validation');
         }
 
+        console.log('[save-api-trade] request completed', {
+            errorCount,
+            skippedCount,
+            resultCount: results.length,
+        });
         res.json({ success: true, errorCount, skippedCount, results });
     } catch (err) {
+        console.error('[save-api-trade] fatal route error', {
+            error: err.message,
+            stack: err.stack,
+        });
         res.status(500).json({ success: false, error: err.message });
     }
 });
