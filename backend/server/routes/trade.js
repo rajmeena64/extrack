@@ -177,7 +177,7 @@ router.post('/save-bulk-trades', authCheck, async (req, res) => {
     });
 });
 
-router.post('/save-api-trade', requireIngestSecret, async (req, res) => {
+async function ingestApiTrades(req, res) {
     try {
         let trades = req.body;
         if (!Array.isArray(trades)) trades = [trades];
@@ -382,7 +382,10 @@ router.post('/save-api-trade', requireIngestSecret, async (req, res) => {
         });
         res.status(500).json({ success: false, error: err.message });
     }
-});
+}
+
+router.post('/save-api-trade', requireIngestSecret, ingestApiTrades);
+router.post('/mt5/receive-trades', requireIngestSecret, ingestApiTrades);
 
 router.get('/user-trades/:userid?', authCheck, async (req, res) => {
     try {
