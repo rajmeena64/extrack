@@ -14,12 +14,36 @@
 
 // src/constants.js
 
-const rawApiUrl = String(import.meta.env.VITE_URL || '').trim();
-const rawWsUrl = String(import.meta.env.VITE_WS_URL || '').trim();
+const PROD_API_FALLBACK = 'https://extrack-backend-9xk0.onrender.com';
+const DEV_API_FALLBACK = 'http://localhost:5000';
 
-const normalizeUrl = (value) => value.replace(/\/+$/, '');
+const normalizeUrl = (value) => String(value || '').trim().replace(/\/+$/, '');
 
-export const API_URL = normalizeUrl(rawApiUrl);
-export const WS_URL = rawWsUrl
-  ? normalizeUrl(rawWsUrl)
-  : API_URL.replace(/^http/i, (protocol) => (protocol.toLowerCase() === 'https' ? 'wss' : 'ws'));
+const getBrowserHostname = () => {
+  if (typeof window === 'undefined') return '';
+  return String(window.location.hostname || '').trim().toLowerCase();
+};
+
+const isLocalHostname = (hostname) => {
+  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+};
+
+const resolveApiUrl = () => {
+  const envUrl = normalizeUrl(import.meta.env.VITE_URL);
+  if (envUrl) return envUrl;
+
+  const hostname = getBrowserHostname();
+  return isLocalHostname(hostname) ? DEV_API_FALLBACK : PROD_API_FALLBACK;
+};
+
+const resolveWsUrl = (apiUrl) => {
+  const envWsUrl = normalizeUrl(import.meta.env.VITE_WS_URL);
+  if (envWsUrl) return envWsUrl;
+
+  return apiUrl.replace(/^http/i, (protocol) =>
+    protocol.toLowerCase() === 'https' ? 'wss' : 'ws'
+  );
+};
+
+export const API_URL = resolveApiUrl();
+export const WS_URL = resolveWsUrl(API_URL);
