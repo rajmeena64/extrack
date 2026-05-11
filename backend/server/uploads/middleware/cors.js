@@ -1,6 +1,7 @@
 const corsMiddleware = (req, res, next) => {
-    const allowedOrigins = (process.env.ALLOWED_ORIGINS || process.env.FRONTEND_URL || 'http://localhost:3000')
-        .split(',')
+    const allowedOrigins = [process.env.ALLOWED_ORIGINS, process.env.FRONTEND_URL]
+        .filter(Boolean)
+        .flatMap((value) => String(value).split(','))
         .map((origin) => origin.trim())
         .filter(Boolean);
     const requestOrigin = req.headers.origin;
