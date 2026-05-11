@@ -39,6 +39,21 @@ function isClosedTradePayload(trade) {
     );
 }
 
+function toFiniteNumber(value) {
+    const numericValue = Number(value);
+    return Number.isFinite(numericValue) ? numericValue : null;
+}
+
+function roundToScale(value, scale = 5) {
+    const numericValue = toFiniteNumber(value);
+    if (numericValue === null) return null;
+    return Number(numericValue.toFixed(scale));
+}
+
+function clamp(value, min, max) {
+    return Math.min(Math.max(value, min), max);
+}
+
 router.post('/save-trade', authCheck, async (req, res) => {
     const {
         symbol,
@@ -215,6 +230,12 @@ async function ingestApiTrades(req, res) {
                     account_currency
                 } = trade;
 
+                const normalizedQuantity = roundToScale(volume, 5);
+                const normalizedEntryPrice = roundToScale(entry_price, 5);
+                const normalizedExitPrice = roundToScale(exit_price, 5);
+                const normalizedProfit = roundToScale(profit ?? 0, 5);
+                const normalizedBalance = roundToScale(balance, 5);
+
                 if (!account_id || !ticket || balance === undefined) {
                     console.warn('[save-api-trade] validation failed: missing required fields', {
                         account_id,
@@ -280,9 +301,13 @@ async function ingestApiTrades(req, res) {
                     userIdMap.set(account_id, userId);
 
                     const oldBalance = Number(accRes.rows[0].balance);
-                    const balanceChangePercent = oldBalance > 0
-                        ? ((balance - oldBalance) / oldBalance) * 100
+                    const rawBalanceChangePercent = oldBalance > 0
+                        ? ((normalizedBalance - oldBalance) / oldBalance) * 100
                         : 0;
+                    const balanceChangePercent = roundToScale(
+                        clamp(rawBalanceChangePercent, -9999.9999, 9999.9999),
+                        4
+                    );
 
                     await pool.query(
                         `UPDATE mt5_accounts
@@ -291,14 +316,14 @@ async function ingestApiTrades(req, res) {
                              account_currency = $3,
                              last_connected = NOW()
                          WHERE account_id = $4`,
-                        [balance, balanceChangePercent, account_currency, account_id]
+                        [normalizedBalance, balanceChangePercent, account_currency, account_id]
                     );
 
                     console.log('[save-api-trade] account balance updated', {
                         account_id,
                         userId,
                         oldBalance,
-                        newBalance: balance,
+                        newBalance: normalizedBalance,
                         balanceChangePercent,
                         account_currency,
                     });
@@ -313,10 +338,10 @@ async function ingestApiTrades(req, res) {
                     account_id,
                     symbol,
                     type.toLowerCase(),
-                    volume,
-                    entry_price,
-                    exit_price,
-                    profit,
+                    normalizedQuantity,
+                    normalizedEntryPrice,
+                    normalizedExitPrice,
+                    normalizedProfit,
                     close_time,
                     open_timestamp,
                     close_timestamp,
@@ -327,6 +352,11 @@ async function ingestApiTrades(req, res) {
                     ticket: trade?.ticket,
                     account_id: trade?.account_id,
                     symbol: trade?.symbol,
+                    quantity: normalizedQuantity,
+                    entry_price: normalizedEntryPrice,
+                    exit_price: normalizedExitPrice,
+                    profit: normalizedProfit,
+                    balance: normalizedBalance,
                     error: err.message,
                 });
                 errorCount++;
