@@ -5,9 +5,11 @@ import LegacyIcon from '../../Common/LegacyIcon';
 
 import { API_URL } from "../../../utils/constants";
 import { useAuth } from '../../../context/AuthContext';
+import { useAppDialog } from '../../../context/AppDialogContext';
 
 function UserLoginModal({ isOpen, onClose }) {
   const { user: currentUser, setUser } = useAuth();
+  const { confirm } = useAppDialog();
   const [activeTab, setActiveTab] = useState('login'); // 'login', 'signup', 'forgot'
   const [loginMethod, setLoginMethod] = useState('email'); // 'email' or 'phone'
   const [formData, setFormData] = useState({
@@ -184,8 +186,13 @@ function UserLoginModal({ isOpen, onClose }) {
   };
 
   // ✅ LOGOUT
-  const handleLogout = () => {
-    if (window.confirm('Are you sure you want to logout?')) {
+  const handleLogout = async () => {
+    const shouldLogout = await confirm('Are you sure you want to logout?', {
+      title: 'Logout',
+      confirmText: 'Logout',
+    });
+
+    if (shouldLogout) {
       fetch(`${API_URL}/api/logout`, {
         method: 'POST',
         credentials: 'include'
