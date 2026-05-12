@@ -178,16 +178,6 @@ function ActivityChart({ trades }) {
           <p>Win P&amp;L & Loss P&amp;L</p>
         </div>
 
-        <div className="activity-card__legend">
-          <span className="activity-card__legend-item activity-card__legend-item--win">
-            <i />
-            Win P&amp;L
-          </span>
-          <span className="activity-card__legend-item activity-card__legend-item--loss">
-            <i />
-            Loss P&amp;L
-          </span>
-        </div>
       </div>
 
       <div className="activity-card__chart-shell">

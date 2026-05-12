@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Camera,
-  CalendarDays,
+  BadgeCheck,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -26,6 +26,7 @@ const MONTH_NAMES = [
 ];
 
 const WEEKDAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const BREAKEVEN_STORAGE_KEY = 'calendar_breakeven_days';
 
 function formatCellCurrency(value) {
   const absolute = Math.abs(value);
@@ -36,12 +37,42 @@ function formatCellCurrency(value) {
 }
 
 function PnLCalendar({ trades }) {
+  const calendarShellRef = useRef(null);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isWeeklyOpen, setIsWeeklyOpen] = useState(false);
+  const [breakevenMenu, setBreakevenMenu] = useState(null);
+  const [breakevenDays, setBreakevenDays] = useState(() => {
+    if (typeof window === 'undefined') return [];
+
+    try {
+      const saved = window.localStorage.getItem(BREAKEVEN_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [isCompactWeeks, setIsCompactWeeks] = useState(() => {
     if (typeof window === 'undefined') return true;
     return window.innerWidth <= 768;
   });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(BREAKEVEN_STORAGE_KEY, JSON.stringify(breakevenDays));
+  }, [breakevenDays]);
+
+  useEffect(() => {
+    if (!breakevenMenu) return undefined;
+
+    const closeMenu = () => setBreakevenMenu(null);
+    window.addEventListener('click', closeMenu);
+    window.addEventListener('keydown', closeMenu);
+
+    return () => {
+      window.removeEventListener('click', closeMenu);
+      window.removeEventListener('keydown', closeMenu);
+    };
+  }, [breakevenMenu]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
@@ -172,10 +203,35 @@ function PnLCalendar({ trades }) {
     });
   };
 
+  const toggleBreakevenDay = (dateKey) => {
+    setBreakevenDays((previous) => (
+      previous.includes(dateKey)
+        ? previous.filter((key) => key !== dateKey)
+        : [...previous, dateKey]
+    ));
+  };
+
+  const openBreakevenMenu = (event, cell) => {
+    event.preventDefault();
+    const rect = event.currentTarget.getBoundingClientRect();
+    const shellRect = calendarShellRef.current?.getBoundingClientRect();
+    const localX = shellRect ? rect.left - shellRect.left : rect.left;
+    const localY = shellRect ? rect.top - shellRect.top : rect.top;
+    const maxX = shellRect ? shellRect.width - 210 : window.innerWidth - 210;
+    const maxY = shellRect ? shellRect.height - 92 : window.innerHeight - 92;
+
+    setBreakevenMenu({
+      dateKey: cell.dateKey,
+      day: cell.day,
+      x: Math.max(8, Math.min(localX + 8, maxX)),
+      y: Math.max(8, Math.min(localY + 28, maxY)),
+    });
+  };
+
   const showWeeklyCards = !isCompactWeeks || isWeeklyOpen;
 
   return (
-    <section className="calendar-shell">
+    <section className="calendar-shell" ref={calendarShellRef}>
       <header className="calendar-shell__toolbar">
         <div className="calendar-shell__toolbar-left">
           <button className="calendar-shell__nav" onClick={() => changeMonth(-1)} type="button">
@@ -239,8 +295,11 @@ function PnLCalendar({ trades }) {
                 );
               }
 
+              const isBreakeven = breakevenDays.includes(cell.dateKey);
               const toneClass =
-                cell.trades === 0
+                isBreakeven
+                  ? 'calendar-day-card--breakeven'
+                  : cell.trades === 0
                   ? 'calendar-day-card--muted'
                   : cell.pnl > 0
                     ? 'calendar-day-card--positive'
@@ -252,11 +311,13 @@ function PnLCalendar({ trades }) {
                 <div
                   key={cell.dateKey}
                   className={`calendar-day-card ${toneClass} ${cell.isToday ? 'calendar-day-card--today' : ''}`}
+                  onContextMenu={(event) => openBreakevenMenu(event, cell)}
+                  title="Right-click for day options"
                 >
                   <span className="calendar-day-card__date">{cell.day}</span>
-                  {cell.hasBadge && (
+                  {(cell.hasBadge || isBreakeven) && (
                     <span className="calendar-day-card__icon">
-                      <CalendarDays size={14} />
+                      <BadgeCheck size={14} />
                     </span>
                   )}
 
@@ -293,7 +354,16 @@ function PnLCalendar({ trades }) {
           {showWeeklyCards && (
             <div className="calendar-shell__weeks">
               {calendarData.weeklyStats.map((week) => (
-                <article key={week.label} className="calendar-week-card">
+                <article
+                  key={week.label}
+                  className={`calendar-week-card ${
+                    week.pnl > 0
+                      ? 'calendar-week-card--profit'
+                      : week.pnl < 0
+                        ? 'calendar-week-card--loss'
+                        : 'calendar-week-card--neutral'
+                  }`}
+                >
                   <span className="calendar-week-card__label">{week.label}</span>
                   <strong
                     className={`calendar-week-card__value ${
@@ -315,6 +385,27 @@ function PnLCalendar({ trades }) {
           )}
         </aside>
       </div>
+
+      {breakevenMenu && (
+        <div
+          className="calendar-context-menu"
+          style={{ left: breakevenMenu.x, top: breakevenMenu.y }}
+          onClick={(event) => event.stopPropagation()}
+        >
+          <span className="calendar-context-menu__eyebrow">Day {breakevenMenu.day}</span>
+          <label className="calendar-context-menu__option">
+            <input
+              type="checkbox"
+              checked={breakevenDays.includes(breakevenMenu.dateKey)}
+              onChange={() => {
+                toggleBreakevenDay(breakevenMenu.dateKey);
+                setBreakevenMenu(null);
+              }}
+            />
+            <span>Is this a breakeven day?</span>
+          </label>
+        </div>
+      )}
     </section>
   );
 }

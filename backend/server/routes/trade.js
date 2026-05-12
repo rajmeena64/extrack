@@ -197,12 +197,18 @@ async function ingestApiTrades(req, res) {
         let trades = req.body;
         if (!Array.isArray(trades)) trades = [trades];
 
-        // console.log('[save-api-trade] ingest request received', {
-        //     tradeCount: trades.length,
-        //     isArrayPayload: Array.isArray(req.body),
-        //     sampleTickets: trades.slice(0, 3).map((trade) => trade?.ticket || null),
-        //     sampleAccounts: trades.slice(0, 3).map((trade) => trade?.account_id || null),
-        // });
+        console.log('[save-api-trade] ingest request received', {
+            host: req.headers.host,
+            origin: req.headers.origin || null,
+            userAgent: req.headers['user-agent'] || null,
+            forwardedFor: req.headers['x-forwarded-for'] || null,
+            remoteAddress: req.socket?.remoteAddress || null,
+            path: req.originalUrl,
+            tradeCount: trades.length,
+            isArrayPayload: Array.isArray(req.body),
+            sampleTickets: trades.slice(0, 3).map((trade) => trade?.ticket || null),
+            sampleAccounts: trades.slice(0, 3).map((trade) => trade?.account_id || null),
+        });
 
         const results = [];
         let skippedCount = 0;

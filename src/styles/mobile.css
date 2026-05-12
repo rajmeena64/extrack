@@ -155,7 +155,7 @@
     border-radius: 18px;
     background: var(--surface-elevated);
     border: var(--dashboard-card-border);
-    box-shadow: 0 22px 38px -32px rgba(15, 23, 42, 0.2);
+    box-shadow: 0 6px 16px -14px rgba(15, 23, 42, 0.18);
   }
 
   .metric-card__top {
@@ -206,7 +206,7 @@
   .dashboard-grid-card--trades .my-trades {
     border-radius: 22px;
     border: var(--dashboard-card-border);
-    box-shadow: 0 22px 40px -34px rgba(15, 23, 42, 0.2);
+    box-shadow: 0 6px 16px -14px rgba(15, 23, 42, 0.18);
   }
 
   .dashboard-grid-card--zella .progress-card {
@@ -327,11 +327,11 @@
     margin-left: 0;
     background: rgba(255, 255, 255, 0.16);
     border: 1px solid rgba(255, 255, 255, 0.18);
-    box-shadow: 0 18px 30px -24px rgba(17, 23, 20, 0.44);
+    box-shadow: 0 6px 14px -12px rgba(17, 23, 20, 0.34);
     font-size: 24px;
     line-height: 1;
     color: #ffffff;
-    backdrop-filter: blur(14px);
+    backdrop-filter: none;
   }
 
 
@@ -348,7 +348,7 @@
     border: var(--dashboard-card-border);
     border-radius: 24px;
     background: var(--surface-elevated);
-    box-shadow: 0 24px 42px -28px rgba(15, 23, 42, 0.24);
+    box-shadow: 0 8px 18px -14px rgba(15, 23, 42, 0.2);
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
     align-items: center;

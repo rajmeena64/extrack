@@ -1,13 +1,16 @@
 .progress-card {
   width: 100%;
   height: 100%;
-  max-height: 230px;
+  min-height: var(--dashboard-chart-slot);
+  max-height: var(--dashboard-chart-slot);
   padding: var(--dashboard-card-padding);
   border-radius: var(--dashboard-card-radius);
   border: var(--dashboard-card-border);
   box-shadow: var(--dashboard-card-shadow);
   background: var(--bg-card);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .progress-card__header {
@@ -51,14 +54,14 @@
 .progress-card__body {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  height: calc(100% - 40px);
+  gap: 10px;
+  flex: 1;
   min-height: 0;
 }
 
 .progress-card__months {
   position: relative;
-  min-height: 18px;
+  flex: 0 0 18px;
   margin-left: 46px;
 }
 
@@ -99,7 +102,7 @@
   display: grid;
   grid-template-columns: repeat(11, minmax(0, 1fr));
   grid-template-rows: repeat(7, 1fr);
-  gap: 3px;
+  gap: 4px;
   min-height: 0;
   height: 100%;
 }

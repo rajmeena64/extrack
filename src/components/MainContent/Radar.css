@@ -4,11 +4,13 @@
   padding: var(--dashboard-card-padding);
   width: 100%;
   height: 100%;
+  min-width: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   box-shadow: var(--dashboard-card-shadow);
   background: var(--bg-card);
+  container-type: inline-size;
 }
 
 .radar-header {
@@ -49,25 +51,35 @@
 }
 
 .radar-body {
-  display: flex;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) minmax(112px, 128px);
+  gap: 10px;
   align-items: center;
-  justify-content: center;
   flex: 1;
   min-height: 0;
 }
 
 .radar-chart {
-  flex: 1;
-  height: 100%;
+  width: 100%;
+  height: min(100%, 168px);
   min-width: 0;
+  min-height: 0;
   display: flex;
   align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.radar-chart canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 176px;
+  max-height: 168px;
 }
 
 .radar-overall {
-  width: 98px;
-  flex-shrink: 0;
+  width: 100%;
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -134,6 +146,10 @@
 .radar-metric-label {
   font-size: 10px;
   color: var(--text-secondary);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .radar-metric-value {
@@ -153,6 +169,37 @@
 
 .dark-mode .radar-metric-row {
   border-bottom-color: rgba(148, 163, 184, 0.1);
+}
+
+@container (max-width: 300px) {
+  .radar-body {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .radar-chart {
+    width: 100%;
+    height: 160px;
+    min-height: 160px;
+  }
+
+  .radar-chart canvas {
+    max-width: 220px;
+    max-height: 160px;
+  }
+
+  .radar-overall {
+    width: 100%;
+    gap: 4px;
+  }
+
+  .radar-metrics-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 10px;
+  }
 }
 
 @media (max-width: 768px) {
@@ -176,12 +223,12 @@
   }
 
   .radar-chart {
-    min-height: 160px;
+    min-height: 0;
     height: 160px;
   }
 
   .radar-overall {
-    width: 110px;
+    width: 100%;
     gap: 4px;
     align-self: stretch;
   }
@@ -213,6 +260,7 @@
   }
 
   .radar-body {
+    display: flex;
     flex-direction: column;
     height: auto;
     gap: 8px;

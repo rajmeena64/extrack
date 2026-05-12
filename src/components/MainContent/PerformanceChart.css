@@ -1,5 +1,5 @@
 .performance-card {
-  min-height: 210px;
+  min-height: var(--dashboard-chart-slot);
   height: 100%;
   background: var(--bg-card);
   display: flex;
@@ -55,7 +55,7 @@
 
   .performance-card .chart-container {
     padding: 4px 10px 8px;
-    min-height: 170px;
+    min-height: 148px;
   }
 }
 
@@ -75,6 +75,6 @@
 
   .performance-card .chart-container {
     padding: 2px 8px 6px;
-    min-height: 160px;
+    min-height: 132px;
   }
 }

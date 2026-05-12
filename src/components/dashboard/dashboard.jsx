@@ -270,9 +270,9 @@ function Dashboard({ tradeMode, setTradeMode, trades, dateRange, setDateRange, i
 
         .stats-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-          gap: 20px;
-          padding: 5px;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 14px;
+          padding: 4px 0;
         }
       `}</style>
     </main>

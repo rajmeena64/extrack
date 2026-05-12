@@ -7,8 +7,8 @@
   flex-direction: column;
   width: 100%;
   height: 100%;
-  min-height: 210px;
-  padding: 12px 14px 10px;
+  min-height: var(--dashboard-chart-slot);
+  padding: var(--dashboard-card-padding) calc(var(--dashboard-card-padding) + 2px) 6px;
   border-radius: var(--dashboard-card-radius);
   border: var(--dashboard-card-border);
   box-shadow: var(--dashboard-card-shadow);
@@ -169,19 +169,24 @@
 }
 
 .trades-table-scroll {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
   min-width: 0;
+  min-height: 0;
 }
 
 /* ===============================
    Trades List Container
 ================================ */
 .trades-list.scrollable {
+  display: flex;
+  flex-direction: column;
   flex: 1;
-  max-height: 150px;
   min-height: 0;
   overflow-y: auto;
   padding-right: 4px;
-  margin-bottom: 2px;
+  margin-bottom: 0;
 }
 
 /* Scrollbar styling */
@@ -210,6 +215,8 @@
   display: grid;
   gap: 8px;
   align-items: center;
+  flex: 1 1 0;
+  min-height: 48px;
   padding: 8px 0;
   border-bottom: 1px solid var(--border-light);
   transition: background-color 0.2s ease;
@@ -324,8 +331,16 @@ color: var(--accent-danger);
 ================================ */
 @media (max-width: 768px) {
   .my-trades {
+    height: 100%;
     padding: 12px;
-    min-height: 260px;
+    min-height: var(--dashboard-chart-slot);
+  }
+
+  .trades-table-scroll,
+  .trades-list.scrollable {
+    flex: 1;
+    min-height: 0;
+    max-height: none;
   }
   
   .trades-header-row,
@@ -363,7 +378,7 @@ color: var(--accent-danger);
   }
   
   .trades-list.scrollable {
-    max-height: 140px;
+    max-height: none;
   }
 
   
@@ -407,7 +422,7 @@ color: var(--accent-danger);
     flex: 1;
     overflow: auto;
     min-height: 0;
-    max-height: 190px;
+    max-height: none;
     padding: 0 2px 4px;
     -webkit-overflow-scrolling: touch;
   }
@@ -441,6 +456,8 @@ color: var(--accent-danger);
   }
 
   .trade-item {
+    flex: 1 1 0;
+    min-height: 42px;
     padding: 7px 0;
     font-size: 9px;
   }
@@ -466,7 +483,7 @@ color: var(--accent-danger);
 
   .trades-list.scrollable {
     max-height: none;
-    overflow: visible;
+    overflow-y: auto;
     padding-right: 0;
   }
 
@@ -497,7 +514,7 @@ color: var(--accent-danger);
   }
 
   .trades-list.scrollable {
-    max-height: 150px;
+    max-height: none;
   }
 
   .trade-item {

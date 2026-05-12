@@ -1,7 +1,9 @@
 .calendar-shell {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
+  overflow: visible;
 }
 
 .calendar-shell__toolbar {
@@ -36,7 +38,7 @@
 }
 
 .calendar-shell__month {
-  font-size: 14px;
+  font-size: var(--font-label);
   font-weight: 700;
   color: var(--text-primary);
   min-width: 96px;
@@ -138,6 +140,7 @@
   border: 1px solid #e7e9f2;
   background: #f1f1f4;
   overflow: hidden;
+  cursor: context-menu;
 }
 
 .calendar-day-card--empty {
@@ -165,6 +168,12 @@
   border-color: #6e84ff;
 }
 
+.calendar-day-card--breakeven {
+  background: #dfe5ff;
+  border-color: #7b8cff;
+  box-shadow: inset 0 0 0 1px rgba(83, 104, 255, 0.14);
+}
+
 .calendar-day-card--today {
   box-shadow: 0 0 0 1px rgba(92, 104, 255, 0.5);
 }
@@ -181,14 +190,19 @@
 
 .calendar-day-card__icon {
   position: absolute;
-  top: 4px;
-  left: 4px;
+  top: 7px;
+  left: 7px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   color: #27314f;
   opacity: 0.85;
-  transform: scale(0.78);
+}
+
+.calendar-day-card__icon svg {
+  width: 12px;
+  height: 12px;
+  stroke-width: 2.4;
 }
 
 .calendar-day-card__content {
@@ -203,20 +217,20 @@
 }
 
 .calendar-day-card__pnl {
-  font-size: clamp(11px, 0.9vw, 14px);
+  font-size: clamp(12px, 0.96vw, 15px);
   line-height: 1.1;
   color: #27314f;
   max-width: 100%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-weight: 650;
+  font-weight: 500;
 }
 
 .calendar-day-card__trades,
 .calendar-day-card__rate {
   margin-top: 0;
-  font-size: 8px;
+  font-size: 9px;
   line-height: 1.15;
   color: #5a6a91;
   font-weight: 500;
@@ -309,6 +323,43 @@
   font-weight: 600;
 }
 
+.calendar-context-menu {
+  position: absolute;
+  z-index: 1000;
+  min-width: 190px;
+  padding: 10px;
+  border: 1px solid rgba(123, 140, 255, 0.42);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 16px 36px -22px rgba(20, 24, 54, 0.55);
+}
+
+.calendar-context-menu__eyebrow {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.calendar-context-menu__option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.calendar-context-menu__option input {
+  width: 14px;
+  height: 14px;
+  accent-color: #6e84ff;
+}
+
 .dark-mode .calendar-shell__weekday,
 .dark-mode .calendar-week-card,
 .dark-mode .calendar-shell__weeks-toggle {
@@ -341,16 +392,37 @@
   border-color: #4c67c8;
 }
 
+.dark-mode .calendar-day-card--breakeven {
+  background: #24345f;
+  border-color: #6f86ff;
+}
+
 .dark-mode .calendar-day-card__date,
 .dark-mode .calendar-day-card__icon,
-.dark-mode .calendar-day-card__pnl,
-.dark-mode .calendar-week-card__value {
+.dark-mode .calendar-day-card__pnl {
+  color: #f6f8ff;
+}
+
+.dark-mode .calendar-week-card__value--profit {
+  color: var(--accent-success-strong);
+}
+
+.dark-mode .calendar-week-card__value--loss {
+  color: var(--accent-danger);
+}
+
+.dark-mode .calendar-week-card__value--neutral {
   color: #f6f8ff;
 }
 
 .dark-mode .calendar-day-card__trades,
 .dark-mode .calendar-day-card__rate {
   color: #c6d0e8;
+}
+
+.dark-mode .calendar-context-menu {
+  background: #151923;
+  border-color: #6f86ff;
 }
 
 @media (max-width: 768px) {
@@ -436,9 +508,13 @@
   }
 
   .calendar-day-card__icon {
-    top: 3px;
-    left: 3px;
-    transform: scale(0.68);
+    top: 4px;
+    left: 4px;
+  }
+
+  .calendar-day-card__icon svg {
+    width: 10px;
+    height: 10px;
   }
 
   .calendar-day-card__content {
@@ -450,7 +526,7 @@
   }
 
   .calendar-day-card__pnl {
-    font-size: 8px;
+    font-size: 9px;
     white-space: normal;
     line-height: 1;
     text-align: center;
@@ -458,7 +534,7 @@
 
   .calendar-day-card__trades,
   .calendar-day-card__rate {
-    font-size: 7px;
+    font-size: 8px;
     line-height: 1;
     text-align: center;
   }

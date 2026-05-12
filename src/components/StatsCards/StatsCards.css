@@ -1,7 +1,7 @@
 .stats-grid-layout {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-  gap: 12px;
+  gap: var(--dashboard-grid-gap);
   width: 100%;
   margin-bottom: 14px;
 }
@@ -97,9 +97,9 @@
 }
 
 .metric-card__value-row h3 {
-  font-size: clamp(24px, 2vw, 30px);
-  line-height: 1;
-  letter-spacing: -0.05em;
+  font-size: var(--stat-value-size);
+  line-height: 1.05;
+  letter-spacing: -0.04em;
   color: #111714;
 }
 
@@ -205,7 +205,7 @@
   }
 
   .metric-card--featured .metric-card__value-row h3 {
-    font-size: clamp(24px, 8vw, 30px);
+    font-size: clamp(22px, 6.5vw, 28px);
     color: #ffffff;
   }
 
@@ -358,7 +358,7 @@
   }
 
   .metric-card--featured .metric-card__value-row h3 {
-    font-size: clamp(22px, 7vw, 28px);
+    font-size: clamp(20px, 6.2vw, 26px);
   }
 
   .metric-card--featured .metric-card__bottom {

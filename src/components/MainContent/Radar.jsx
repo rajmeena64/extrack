@@ -97,14 +97,19 @@ export default function Radar({ trades = [] }) {
     if (!radarRef.current) return;
     if (chartRef.current) chartRef.current.destroy();
 
-    // ✅ Hardcoded per mode — canvas cannot use CSS vars
+    const labels = ["Win %", "Profit Factor", "Avg W/L", "Recovery", "Low DD", "Consistency"];
+    const chartLabels = labels.map((label) => (
+      label === "Profit Factor" ? ["Profit", "Factor"] : label
+    ));
+
+    // Hardcoded per mode because canvas cannot use CSS vars.
     const labelColor = isDark ? "#d7e2d8" : "#233126";
     const gridColor  = isDark ? "rgba(113,224,152,0.12)" : "rgba(17,23,20,0.08)";
 
     chartRef.current = new Chart(radarRef.current, {
       type: "radar",
       data: {
-        labels: ["Win %", "Profit Factor", "Avg W/L", "Recovery", "Low DD", "Consistency"],
+        labels: chartLabels,
         datasets: [{
           data:                 Object.values(metrics),
           fill:                 true,
@@ -121,6 +126,14 @@ export default function Radar({ trades = [] }) {
       options: {
         responsive:          true,
         maintainAspectRatio: false,
+        layout: {
+          padding: {
+            top: 16,
+            right: 18,
+            bottom: 14,
+            left: 18,
+          },
+        },
         plugins: {
           legend:  { display: false },
           tooltip: {
@@ -133,12 +146,15 @@ export default function Radar({ trades = [] }) {
           r: {
             min:  0,
             max:  100,
+            beginAtZero: true,
             ticks:       { display: false, stepSize: 25 },
             grid:        { color: gridColor  },
             angleLines:  { color: gridColor  },
             pointLabels: {
-              color: labelColor,        // ✅ clearly visible
-              font:  { size: 11, weight: "600" },
+              color: labelColor,
+              centerPointLabels: true,
+              padding: 10,
+              font:  { size: 10, weight: "600", lineHeight: 1.2 },
             },
           },
         },

@@ -1,11 +1,16 @@
 .activity-card--daily-pnl {
   width: 100%;
-  min-height: 210px;
+  height: 100%;
+  min-height: var(--dashboard-chart-slot);
+  max-height: var(--dashboard-chart-slot);
   padding: var(--dashboard-card-padding);
   border-radius: var(--dashboard-card-radius);
   border: var(--dashboard-card-border);
   background: var(--bg-card);
   box-shadow: var(--dashboard-card-shadow);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .activity-card__header {
@@ -107,10 +112,11 @@
 }
 
 .activity-card__chart-shell {
-  min-height: 176px;
-  height: 192px;
+  flex: 1;
+  min-height: 0;
+  height: auto;
   padding: 6px 8px 0;
-  border-radius: 20px;
+  border-radius: 16px;
   background: color-mix(in srgb, var(--surface-subtle) 75%, transparent);
   border: 1px solid var(--divider-strong);
 }

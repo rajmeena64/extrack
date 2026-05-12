@@ -1,12 +1,13 @@
 .dashboard-layout,
 .dashboard-main-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.7fr) minmax(320px, 1.28fr) minmax(0, 1.22fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(3, var(--dashboard-chart-slot));
   grid-template-areas:
     "zella performance progress"
     "activity calendar calendar"
     "trades calendar calendar";
-  gap: 12px;
+  gap: var(--dashboard-grid-gap);
   width: 100%;
   align-items: stretch;
 }
@@ -14,7 +15,7 @@
 .left-charts {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 12px;
+  gap: var(--dashboard-grid-gap);
   width: 100%;
   height: 100%;
 }
@@ -25,9 +26,21 @@
 
 .dashboard-grid-card--zella,
 .dashboard-grid-card--performance,
-.dashboard-grid-card--progress {
+.dashboard-grid-card--progress,
+.dashboard-grid-card--activity,
+.dashboard-grid-card--trades {
+  contain: layout paint;
+}
+
+.dashboard-grid-card--zella,
+.dashboard-grid-card--performance,
+.dashboard-grid-card--progress,
+.dashboard-grid-card--activity,
+.dashboard-grid-card--trades {
   align-self: stretch;
-  max-height: 230px;
+  min-height: var(--dashboard-chart-slot);
+  height: var(--dashboard-chart-slot);
+  max-height: var(--dashboard-chart-slot);
 }
 
 .dashboard-grid-card--trades {
@@ -52,32 +65,39 @@
 .dashboard-grid-card--zella .progress-card,
 .dashboard-grid-card--performance .chart-card,
 .dashboard-grid-card--progress .radar-card {
-  max-height: 230px;
+  height: 100%;
+  min-height: var(--dashboard-chart-slot);
+  max-height: var(--dashboard-chart-slot);
 }
 
-.dashboard-grid-card--zella .progress-card,
+.dashboard-grid-card--zella .progress-card {
+  display: flex;
+  flex-direction: column;
+}
+
 .dashboard-grid-card--performance .chart-card,
 .dashboard-grid-card--progress .radar-card {
-  /* height: auto; */
+  min-height: var(--dashboard-chart-slot);
 }
 
-.dashboard-grid-card--performance .chart-card,
-.dashboard-grid-card--progress .radar-card,
 .calendar-panel {
-  min-height: 210px;
+  min-height: calc((var(--dashboard-chart-slot) * 2) + var(--dashboard-grid-gap));
+  height: 100%;
 }
 
 .dashboard-grid-card--trades .my-trades {
   flex: 1;
-  height: 244px;
-  min-height: 244px;
-  max-height: 244px;
+  align-self: stretch;
+  min-height: var(--dashboard-chart-slot);
+  height: 100%;
+  max-height: none;
 }
 
 .chart-card {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  contain: layout paint;
   border: var(--dashboard-card-border);
   border-radius: var(--dashboard-card-radius);
   background: var(--bg-card);
@@ -98,17 +118,21 @@
   overflow: hidden;
 }
 
+.calendar-panel {
+  overflow: visible;
+}
+
 .chart-container {
   position: relative;
   width: 100%;
   max-height: 100%;
-  min-height: 104px;
+  min-height: 118px;
   flex: 1;
 }
 
 .chart-empty-state,
 .calendar-empty-state {
-  padding: 60px 20px;
+  padding: 28px 16px;
   text-align: center;
   color: var(--text-muted);
 }
@@ -116,27 +140,28 @@
 .chart-empty-state i,
 .calendar-empty-state i {
   display: block;
-  margin-bottom: 16px;
-  font-size: 48px;
+  margin-bottom: 12px;
+  font-size: 34px;
   opacity: 0.5;
 }
 
 .chart-empty-state p,
 .calendar-empty-state p {
-  margin-bottom: 8px;
-  font-size: 18px;
+  margin-bottom: 6px;
+  font-size: var(--font-label);
   font-weight: 600;
 }
 
 .chart-empty-state small,
 .calendar-empty-state small {
-  font-size: 14px;
-  opacity: 0.7;
+  font-size: var(--font-caption);
+  opacity: 0.75;
 }
 
 @media (min-width: 769px) and (max-width: 1023px) {
   .dashboard-main-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: none;
     grid-template-areas:
       "zella performance"
       "progress activity"
@@ -146,23 +171,24 @@
 
   .left-charts {
     grid-template-columns: minmax(0, 1fr);
-    gap: 15px;
+    gap: var(--dashboard-grid-gap);
   }
 
   .chart-container {
-    min-height: 140px;
+    min-height: 128px;
   }
 
   .dashboard-grid-card--trades .my-trades {
-    height: 244px;
-    min-height: 244px;
-    max-height: 244px;
+    min-height: var(--dashboard-chart-slot);
+    height: 100%;
+    max-height: none;
   }
 }
 
 @media (max-width: 768px) {
   .dashboard-main-grid {
     grid-template-columns: 1fr;
+    grid-template-rows: none;
     grid-template-areas:
       "zella"
       "performance"
@@ -208,13 +234,13 @@
   }
 
   .calendar-panel {
-    min-height: 180px;
+    min-height: 200px;
   }
 }
 
 @media (max-width: 480px) {
   .dashboard-main-grid {
-    gap: 10px;
+    gap: 12px;
   }
 
   .left-charts {
@@ -222,19 +248,19 @@
   }
 
   .chart-container {
-    height: clamp(124px, 30vw, 154px);
-    min-height: 124px;
-
+    height: clamp(120px, 28vw, 148px);
+    min-height: 120px;
   }
-  .my-trades{
+
+  .my-trades {
     height: 100%;
   }
 
   .dashboard-grid-card--trades .my-trades {
-    padding: 10px;
+    padding: var(--dashboard-card-padding);
   }
 
   .calendar-panel {
-    min-height: 160px;
+    min-height: 176px;
   }
 }
