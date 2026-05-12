@@ -2,13 +2,25 @@ const express = require("express");
 const router = express.Router();
 
 const FUTURES_BASE_URL = "https://fapi.binance.com";
+const VALID_INTERVALS = new Set([
+  "1m", "3m", "5m", "15m", "30m",
+  "1h", "2h", "4h", "6h", "8h", "12h",
+  "1d", "3d", "1w", "1M",
+]);
+
+const clampLimit = (value) => {
+  const limit = Number.parseInt(value, 10);
+
+  if (Number.isNaN(limit)) return 1000;
+  return Math.min(Math.max(limit, 1), 1000);
+};
 
 // ======================
 // KLINES ROUTE
 // ======================
 router.get("/klines", async (req, res) => {
   try {
-    const { symbol, interval, endTime } = req.query;
+    const { symbol, interval, startTime, endTime, limit } = req.query;
 
     if (!symbol || !interval) {
       return res.status(400).json({
@@ -17,11 +29,28 @@ router.get("/klines", async (req, res) => {
       });
     }
 
-    let url = `${FUTURES_BASE_URL}/fapi/v1/klines?symbol=${symbol.toUpperCase()}&interval=${interval}&limit=1000`;
+    if (!VALID_INTERVALS.has(interval)) {
+      return res.status(400).json({
+        error: "Invalid interval",
+        interval,
+      });
+    }
+
+    const params = new URLSearchParams({
+      symbol: String(symbol).toUpperCase(),
+      interval,
+      limit: String(clampLimit(limit)),
+    });
+
+    if (startTime) {
+      params.set("startTime", String(startTime));
+    }
 
     if (endTime) {
-      url += `&endTime=${endTime}`;
+      params.set("endTime", String(endTime));
     }
+
+    const url = `${FUTURES_BASE_URL}/fapi/v1/klines?${params.toString()}`;
 
     const response = await fetch(url);
 

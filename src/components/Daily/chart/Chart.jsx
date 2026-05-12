@@ -159,6 +159,12 @@ const cleanedSymbol = mapToBinanceSymbol(cleanSymbol(symbol));
         const url = `${API_URL}/api/klines?symbol=${symbol}&interval=${interval}&limit=${limit}&endTime=${endTime}`;
         const res = await fetch(url);
         const data = await res.json();
+
+        if (!res.ok) {
+          const message = data?.msg || data?.error || data?.details || `Chart API error (${res.status})`;
+          throw new Error(message);
+        }
+
         if (!Array.isArray(data) || data.length === 0) {
           break;
         }
