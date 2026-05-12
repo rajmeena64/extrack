@@ -17,7 +17,7 @@ router.get('/get-mt5-accounts', authCheck, async (req, res) => {
 
     try {
         const result = await pool.query(
-            `SELECT id, broker_name, account_id, server_name, balance, investor_password
+            `SELECT id, broker_name, account_id, server_name, balance, default_currency, temporary_currency, investor_password
              FROM mt5_accounts 
              WHERE user_id = $1 
              ORDER BY created_at DESC`,
@@ -31,6 +31,8 @@ router.get('/get-mt5-accounts', authCheck, async (req, res) => {
             account_id: acc.account_id,
             server_name: acc.server_name,
             balance: acc.balance,
+            default_currency: acc.default_currency,
+            temporary_currency: acc.temporary_currency,
             investor_password: maskPassword(acc.investor_password)
         }));
 
@@ -38,6 +40,37 @@ router.get('/get-mt5-accounts', authCheck, async (req, res) => {
 
     } catch (error) {
         console.error("Failed to load MT5 accounts:", error.message);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+router.post('/update-dashboard-currency', authCheck, async (req, res) => {
+    const { currency } = req.body;
+
+    if (!currency) {
+        return res.status(400).json({ success: false, error: 'currency required' });
+    }
+
+    const normalizedCurrency = String(currency).trim().toUpperCase();
+
+    try {
+        const result = await pool.query(
+            `UPDATE mt5_accounts
+             SET temporary_currency = $1,
+                 updated_at = NOW()
+             WHERE user_id = $2
+             RETURNING id, default_currency, temporary_currency`,
+            [normalizedCurrency, req.userId]
+        );
+
+        res.json({
+            success: true,
+            currency: normalizedCurrency,
+            updatedCount: result.rowCount,
+            accounts: result.rows
+        });
+    } catch (error) {
+        console.error("Failed to update dashboard currency:", error.message);
         res.status(500).json({ success: false, error: error.message });
     }
 });

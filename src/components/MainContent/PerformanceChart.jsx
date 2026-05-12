@@ -1,8 +1,9 @@
 import React, { useEffect, useRef } from 'react';
 import Chart from '../../utils/chartSetup';
 import './PerformanceChart.css';
+import { formatCompactCurrency, formatCurrency } from '../../utils/Currency';
 
-function PerformanceChart({ trades }) {
+function PerformanceChart({ trades, currencyCode = 'USD' }) {
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
 
@@ -114,7 +115,7 @@ function PerformanceChart({ trades }) {
             padding: 10,
             displayColors: false,
             callbacks: {
-              label: (tooltip) => `Rs ${tooltip.parsed.y.toLocaleString('en-IN')}`,
+              label: (tooltip) => formatCurrency(tooltip.parsed.y, currencyCode),
             },
           },
         },
@@ -144,7 +145,7 @@ function PerformanceChart({ trades }) {
               color: textSecondary,
               display: true,
               font: { size: 11 },
-              callback: (value) => (value >= 1000 ? `${value / 1000}k` : value),
+              callback: (value) => formatCompactCurrency(value, currencyCode),
             },
           },
         },
@@ -161,7 +162,7 @@ function PerformanceChart({ trades }) {
     });
 
     return () => chartInstance.current?.destroy();
-  }, [trades]);
+  }, [currencyCode, trades]);
 
   return (
     <div className="chart-card performance-card">

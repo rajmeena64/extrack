@@ -162,6 +162,8 @@ import { TradeManager } from './utils/tradeManager';
 import { API_URL, WS_URL } from './utils/constants';
 import { ThemeProvider } from './context/ThemeContext'; 
 import { useAuth } from './context/AuthContext';
+import api from './utils/serve';
+import { convertCurrency, normalizeCurrencyCode } from './utils/Currency';
 
 
 /* ---------------- LAZY LOADED PAGES ---------------- */
@@ -210,16 +212,33 @@ function App() {
   const { user, isAuthLoading } = useAuth();
   const [tradeMode, setTradeMode] = useState(() => localStorage.getItem('tradeMode') || 'all');
   const [dashboardDateRange, setDashboardDateRange] = useState({ from: null, to: null });
+  const [dashboardCurrency, setDashboardCurrency] = useState('USD');
 
   const tradeManager = useMemo(() => new TradeManager(), []);
   const queryClient = useQueryClient();
   const ws = useRef(null);
   const updatingTrades = useRef(false);
+  const hasHydratedDashboardCurrency = useRef(false);
+
+  useEffect(() => {
+    hasHydratedDashboardCurrency.current = false;
+    setDashboardCurrency('USD');
+  }, [user?.ID]);
 
   const tradesQuery = useQuery({
     queryKey: ['trades', user?.ID, tradeMode],
     enabled: !isAuthLoading && Boolean(user?.ID),
     queryFn: () => tradeManager.loadTrades(user.ID, tradeMode),
+    placeholderData: (previousData) => previousData,
+  });
+
+  const mt5AccountsQuery = useQuery({
+    queryKey: ['mt5-accounts', user?.ID],
+    enabled: !isAuthLoading && Boolean(user?.ID),
+    queryFn: async () => {
+      const { data } = await api.get('/get-mt5-accounts');
+      return data?.accounts || [];
+    },
     placeholderData: (previousData) => previousData,
   });
 
@@ -298,6 +317,53 @@ function App() {
   };
 
   const trades = user?.ID ? (tradesQuery.data || []) : [];
+  const defaultDashboardCurrency = useMemo(() => {
+    const accountCurrency = mt5AccountsQuery.data?.find((account) => account?.default_currency)
+      ?.default_currency;
+
+    return normalizeCurrencyCode(accountCurrency || user?.preferred_currency || 'USD');
+  }, [mt5AccountsQuery.data, user?.preferred_currency]);
+
+  const savedDashboardCurrency = useMemo(() => {
+    const accountCurrency = mt5AccountsQuery.data?.find((account) => account?.temporary_currency)
+      ?.temporary_currency;
+
+    return accountCurrency ? normalizeCurrencyCode(accountCurrency, defaultDashboardCurrency) : null;
+  }, [defaultDashboardCurrency, mt5AccountsQuery.data]);
+
+  useEffect(() => {
+    if (hasHydratedDashboardCurrency.current) return;
+    if (!mt5AccountsQuery.isSuccess) return;
+
+    setDashboardCurrency(savedDashboardCurrency || defaultDashboardCurrency);
+    hasHydratedDashboardCurrency.current = true;
+  }, [defaultDashboardCurrency, mt5AccountsQuery.isSuccess, savedDashboardCurrency]);
+
+  const handleDashboardCurrencyChange = async (currencyCode) => {
+    const normalizedCurrency = normalizeCurrencyCode(currencyCode, defaultDashboardCurrency);
+    setDashboardCurrency(normalizedCurrency);
+    queryClient.setQueryData(['mt5-accounts', user?.ID], (previousAccounts = []) => (
+      Array.isArray(previousAccounts)
+        ? previousAccounts.map((account) => ({
+            ...account,
+            temporary_currency: normalizedCurrency,
+          }))
+        : previousAccounts
+    ));
+
+    try {
+      const { data } = await api.post('/update-dashboard-currency', {
+        currency: normalizedCurrency,
+      });
+
+      if (data?.success) {
+        setDashboardCurrency(normalizedCurrency);
+      }
+    } catch (error) {
+      console.error('Failed to save dashboard currency:', error);
+    }
+  };
+
   const dashboardTrades = useMemo(() => {
     if (!Array.isArray(trades)) return [];
     const from = dashboardDateRange?.from ? startOfDay(new Date(dashboardDateRange.from)) : null;
@@ -314,6 +380,15 @@ function App() {
       return true;
     });
   }, [dashboardDateRange, trades]);
+  const convertedDashboardTrades = useMemo(() => (
+    dashboardTrades.map((trade) => ({
+      ...trade,
+      pnl: convertCurrency(trade?.pnl, defaultDashboardCurrency, dashboardCurrency),
+      source_pnl: trade?.source_pnl ?? trade?.pnl,
+      source_currency: trade?.source_currency ?? defaultDashboardCurrency,
+      display_currency: dashboardCurrency,
+    }))
+  ), [dashboardCurrency, dashboardTrades, defaultDashboardCurrency]);
   const isTradesLoading =
     (isAuthLoading && !user) ||
     (Boolean(user?.ID) &&
@@ -337,9 +412,12 @@ function App() {
                 <Dashboard
                   tradeMode={tradeMode}
                   setTradeMode={handleTradeModeChange}
-                  trades={dashboardTrades}
+                  trades={convertedDashboardTrades}
                   dateRange={dashboardDateRange}
                   setDateRange={setDashboardDateRange}
+                  currencyCode={dashboardCurrency}
+                  defaultCurrencyCode={defaultDashboardCurrency}
+                  onCurrencyChange={handleDashboardCurrencyChange}
                   isLoading={isTradesLoading}
                 />
               }

@@ -179,6 +179,10 @@
   position: relative;
 }
 
+.currency-filter-wrapper {
+  position: relative;
+}
+
 .toolbar-date-range {
   position: relative;
 }
@@ -221,9 +225,42 @@
   z-index: 1600;
 }
 
+.currency-filter-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  min-width: 220px;
+  overflow: hidden;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(22, 34, 25, 0.12);
+  box-shadow: 0 28px 42px -28px rgba(16, 22, 18, 0.22);
+  z-index: 1600;
+}
+
 .dark-mode .trade-filter-menu {
   background: #111521;
   border-color: rgba(51, 58, 78, 0.9);
+}
+
+.dark-mode .currency-filter-menu {
+  background: #111521;
+  border-color: rgba(51, 58, 78, 0.9);
+}
+
+.currency-filter-menu__eyebrow {
+  padding: 10px 14px 8px;
+  color: #7a8295;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(22, 34, 25, 0.08);
+}
+
+.dark-mode .currency-filter-menu__eyebrow {
+  border-bottom-color: rgba(51, 58, 78, 0.75);
+  color: #a9b4c8;
 }
 
 .filter-menu-item {
@@ -241,6 +278,59 @@
   background: rgba(88, 212, 126, 0.12);
   color: #1e8f49;
   font-weight: 700;
+}
+
+.currency-menu-item {
+  display: grid;
+  width: 100%;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+}
+
+.currency-menu-item:hover {
+  background: rgba(88, 212, 126, 0.08);
+}
+
+.currency-menu-item.active {
+  background: rgba(88, 212, 126, 0.12);
+  color: #1e8f49;
+}
+
+.currency-menu-item__flag {
+  width: 24px;
+  height: 18px;
+  border-radius: 4px;
+  object-fit: cover;
+  box-shadow: 0 0 0 1px rgba(22, 34, 25, 0.08);
+}
+
+.currency-menu-item__text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.currency-menu-item__text strong {
+  font-size: 12px;
+  line-height: 1.1;
+}
+
+.currency-menu-item__text small {
+  color: #7b89a5;
+  font-size: 10px;
+}
+
+.currency-menu-item__symbol {
+  font-size: 14px;
+  font-weight: 800;
 }
 
 .header-user {
@@ -459,13 +549,14 @@
   .dashboard-toolbar__controls {
     width: 100%;
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 8px;
     align-items: stretch;
   }
 
   .toolbar-date-range,
-  .trade-filter-wrapper {
+  .trade-filter-wrapper,
+  .currency-filter-wrapper {
     min-width: 0;
     position: relative;
   }
@@ -511,7 +602,8 @@
   }
 
   .toolbar-date-range__panel,
-  .trade-filter-menu {
+  .trade-filter-menu,
+  .currency-filter-menu {
     position: fixed;
     top: 150px;
     left: 50%;
@@ -522,7 +614,8 @@
     margin: 0 auto;
   }
 
-  .trade-filter-menu {
+  .trade-filter-menu,
+  .currency-filter-menu {
     min-width: 0;
     border-radius: 16px;
   }
@@ -588,27 +681,31 @@ body.dashboard-popup-open .dashboard-toolbar__controls > .header-user {
 }
 
 body.dashboard-popup-open .toolbar-date-range .toolbar-chip,
-body.dashboard-popup-open .trade-filter-wrapper .toolbar-chip {
+body.dashboard-popup-open .trade-filter-wrapper .toolbar-chip,
+body.dashboard-popup-open .currency-filter-wrapper .toolbar-chip {
   opacity: 0.28;
   pointer-events: none;
   transition: opacity 0.18s ease;
 }
 
 body.dashboard-popup-open .toolbar-date-range:has(.toolbar-date-range__panel) .toolbar-chip,
-body.dashboard-popup-open .trade-filter-wrapper:has(.trade-filter-menu) .toolbar-chip {
+body.dashboard-popup-open .trade-filter-wrapper:has(.trade-filter-menu) .toolbar-chip,
+body.dashboard-popup-open .currency-filter-wrapper:has(.currency-filter-menu) .toolbar-chip {
   filter: none;
   opacity: 1;
   pointer-events: auto;
 }
 
 body.dashboard-popup-open .toolbar-date-range,
-body.dashboard-popup-open .trade-filter-wrapper {
+body.dashboard-popup-open .trade-filter-wrapper,
+body.dashboard-popup-open .currency-filter-wrapper {
   position: relative;
   z-index: 20;
 }
 
 body.dashboard-popup-open .toolbar-date-range:has(.toolbar-date-range__panel),
-body.dashboard-popup-open .trade-filter-wrapper:has(.trade-filter-menu) {
+body.dashboard-popup-open .trade-filter-wrapper:has(.trade-filter-menu),
+body.dashboard-popup-open .currency-filter-wrapper:has(.currency-filter-menu) {
   z-index: 2000;
 }
 
@@ -623,7 +720,7 @@ body.dashboard-popup-open .trade-filter-wrapper:has(.trade-filter-menu) {
   }
 
   .dashboard-toolbar__controls {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 6px;
   }
 
@@ -643,7 +740,8 @@ body.dashboard-popup-open .trade-filter-wrapper:has(.trade-filter-menu) {
   }
 
   .toolbar-date-range__panel,
-  .trade-filter-menu {
+  .trade-filter-menu,
+  .currency-filter-menu {
     width: calc(100vw - 24px);
   }
 }

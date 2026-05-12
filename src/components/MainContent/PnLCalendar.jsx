@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Camera,
   BadgeCheck,
@@ -9,6 +10,8 @@ import {
   Settings,
 } from 'lucide-react';
 import './PnLCalendar.css';
+import { formatCompactCurrency } from '../../utils/Currency';
+import api from '../../utils/serve';
 
 const MONTH_NAMES = [
   'January',
@@ -26,40 +29,18 @@ const MONTH_NAMES = [
 ];
 
 const WEEKDAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const BREAKEVEN_STORAGE_KEY = 'calendar_breakeven_days';
 
-function formatCellCurrency(value) {
-  const absolute = Math.abs(value);
-  if (absolute >= 1000) {
-    return `${value < 0 ? '-' : ''}$${(absolute / 1000).toFixed(2)}K`;
-  }
-  return `${value < 0 ? '-' : ''}$${absolute.toFixed(0)}`;
-}
-
-function PnLCalendar({ trades }) {
+function PnLCalendar({ trades, currencyCode = 'USD' }) {
+  const queryClient = useQueryClient();
   const calendarShellRef = useRef(null);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isWeeklyOpen, setIsWeeklyOpen] = useState(false);
   const [breakevenMenu, setBreakevenMenu] = useState(null);
-  const [breakevenDays, setBreakevenDays] = useState(() => {
-    if (typeof window === 'undefined') return [];
-
-    try {
-      const saved = window.localStorage.getItem(BREAKEVEN_STORAGE_KEY);
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [pendingBreakevenDays, setPendingBreakevenDays] = useState({});
   const [isCompactWeeks, setIsCompactWeeks] = useState(() => {
     if (typeof window === 'undefined') return true;
     return window.innerWidth <= 768;
   });
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    window.localStorage.setItem(BREAKEVEN_STORAGE_KEY, JSON.stringify(breakevenDays));
-  }, [breakevenDays]);
 
   useEffect(() => {
     if (!breakevenMenu) return undefined;
@@ -112,6 +93,7 @@ function PnLCalendar({ trades }) {
           trades: 0,
           wins: 0,
           hasBadge: false,
+          isBreakeven: false,
         };
       }
 
@@ -120,6 +102,7 @@ function PnLCalendar({ trades }) {
       summary[dateKey].trades += 1;
       if (pnl > 0) summary[dateKey].wins += 1;
       if (trade.note || trade.notes || trade.strategy) summary[dateKey].hasBadge = true;
+      if (trade.is_breakeven) summary[dateKey].isBreakeven = true;
     });
 
     return summary;
@@ -152,7 +135,9 @@ function PnLCalendar({ trades }) {
           trades: 0,
           wins: 0,
           hasBadge: false,
+          isBreakeven: false,
         };
+        const isBreakeven = pendingBreakevenDays[dateKey] ?? stats.isBreakeven;
 
         week.push({
           day: dayCounter,
@@ -161,6 +146,7 @@ function PnLCalendar({ trades }) {
           trades: stats.trades,
           winRate: stats.trades > 0 ? (stats.wins / stats.trades) * 100 : 0,
           hasBadge: stats.hasBadge,
+          isBreakeven,
           isToday:
             today.getFullYear() === year &&
             today.getMonth() === month &&
@@ -193,7 +179,7 @@ function PnLCalendar({ trades }) {
       tradingDays,
       weeklyStats,
     };
-  }, [currentDate, dailySummary]);
+  }, [currentDate, dailySummary, pendingBreakevenDays]);
 
   const changeMonth = (direction) => {
     setCurrentDate((previous) => {
@@ -203,12 +189,58 @@ function PnLCalendar({ trades }) {
     });
   };
 
-  const toggleBreakevenDay = (dateKey) => {
-    setBreakevenDays((previous) => (
-      previous.includes(dateKey)
-        ? previous.filter((key) => key !== dateKey)
-        : [...previous, dateKey]
+  const toggleBreakevenDay = async (dateKey, currentValue) => {
+    const nextValue = !currentValue;
+
+    setPendingBreakevenDays((previous) => ({
+      ...previous,
+      [dateKey]: nextValue,
+    }));
+    setBreakevenMenu((previous) => (
+      previous?.dateKey === dateKey
+        ? { ...previous, isBreakeven: nextValue }
+        : previous
     ));
+    queryClient.setQueriesData({ queryKey: ['trades'] }, (previousTrades) => (
+      Array.isArray(previousTrades)
+        ? previousTrades.map((trade) => {
+            if (!trade?.timestamp) return trade;
+
+            const tradeDate = new Date(trade.timestamp);
+            if (Number.isNaN(tradeDate.getTime())) return trade;
+
+            const tradeDateKey = `${tradeDate.getFullYear()}-${String(tradeDate.getMonth() + 1).padStart(2, '0')}-${String(
+              tradeDate.getDate()
+            ).padStart(2, '0')}`;
+
+            return tradeDateKey === dateKey
+              ? { ...trade, is_breakeven: nextValue }
+              : trade;
+          })
+        : previousTrades
+    ));
+
+    try {
+      const { data } = await api.patch('/trades/breakeven-day', {
+        date: dateKey,
+        is_breakeven: nextValue,
+      });
+      if (!data?.success) {
+        throw new Error(data?.error || 'Breakeven update failed');
+      }
+      await queryClient.invalidateQueries({ queryKey: ['trades'] });
+    } catch (error) {
+      console.error('Failed to update breakeven day:', error);
+      setPendingBreakevenDays((previous) => ({
+        ...previous,
+        [dateKey]: currentValue,
+      }));
+      setBreakevenMenu((previous) => (
+        previous?.dateKey === dateKey
+          ? { ...previous, isBreakeven: currentValue }
+          : previous
+      ));
+    }
   };
 
   const openBreakevenMenu = (event, cell) => {
@@ -223,6 +255,7 @@ function PnLCalendar({ trades }) {
     setBreakevenMenu({
       dateKey: cell.dateKey,
       day: cell.day,
+      isBreakeven: cell.isBreakeven,
       x: Math.max(8, Math.min(localX + 8, maxX)),
       y: Math.max(8, Math.min(localY + 28, maxY)),
     });
@@ -257,7 +290,7 @@ function PnLCalendar({ trades }) {
                   : 'calendar-shell__pill--neutral'
             }`}
           >
-            {formatCellCurrency(calendarData.monthlyPnL)}
+            {formatCompactCurrency(calendarData.monthlyPnL, currencyCode)}
           </span>
           <span className="calendar-shell__pill calendar-shell__pill--purple">
             {calendarData.tradingDays} days
@@ -295,7 +328,7 @@ function PnLCalendar({ trades }) {
                 );
               }
 
-              const isBreakeven = breakevenDays.includes(cell.dateKey);
+              const isBreakeven = cell.isBreakeven;
               const toneClass =
                 isBreakeven
                   ? 'calendar-day-card--breakeven'
@@ -323,7 +356,7 @@ function PnLCalendar({ trades }) {
 
                   {cell.trades > 0 && (
                     <div className="calendar-day-card__content">
-                      <strong className="calendar-day-card__pnl">{formatCellCurrency(cell.pnl)}</strong>
+                      <strong className="calendar-day-card__pnl">{formatCompactCurrency(cell.pnl, currencyCode)}</strong>
                       <span className="calendar-day-card__trades">
                         {cell.trades} trade{cell.trades > 1 ? 's' : ''}
                       </span>
@@ -374,7 +407,7 @@ function PnLCalendar({ trades }) {
                           : 'calendar-week-card__value--neutral'
                     }`}
                   >
-                    {formatCellCurrency(week.pnl)}
+                    {formatCompactCurrency(week.pnl, currencyCode)}
                   </strong>
                   <span className="calendar-week-card__days">
                     {week.days} day{week.days !== 1 ? 's' : ''}
@@ -391,15 +424,25 @@ function PnLCalendar({ trades }) {
           className="calendar-context-menu"
           style={{ left: breakevenMenu.x, top: breakevenMenu.y }}
           onClick={(event) => event.stopPropagation()}
+          onMouseDown={(event) => event.stopPropagation()}
         >
           <span className="calendar-context-menu__eyebrow">Day {breakevenMenu.day}</span>
-          <label className="calendar-context-menu__option">
+          <label
+            className="calendar-context-menu__option"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              toggleBreakevenDay(breakevenMenu.dateKey, breakevenMenu.isBreakeven);
+            }}
+          >
             <input
               type="checkbox"
-              checked={breakevenDays.includes(breakevenMenu.dateKey)}
-              onChange={() => {
-                toggleBreakevenDay(breakevenMenu.dateKey);
-                setBreakevenMenu(null);
+              checked={breakevenMenu.isBreakeven}
+              readOnly
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                toggleBreakevenDay(breakevenMenu.dateKey, breakevenMenu.isBreakeven);
               }}
             />
             <span>Is this a breakeven day?</span>

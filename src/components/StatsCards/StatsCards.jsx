@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { ArrowDownRight, ArrowUpRight, CircleDollarSign, Gauge, Percent, Sigma } from 'lucide-react';
 import './StatsCards.css';
+import { formatCurrency as formatDashboardCurrency } from '../../utils/Currency';
 
 function formatNumber(value) {
   const num = Number(value);
@@ -8,13 +9,7 @@ function formatNumber(value) {
   return num.toFixed(2);
 }
 
-function formatCurrency(value) {
-  const num = Number(value);
-  if (Number.isNaN(num)) return '$0.00';
-  return `${num < 0 ? '-' : ''}$${Math.abs(num).toFixed(2)}`;
-}
-
-function StatsCards({ trades }) {
+function StatsCards({ trades, currencyCode = 'USD' }) {
   const stats = useMemo(() => {
     if (!Array.isArray(trades)) {
       return {
@@ -79,7 +74,7 @@ function StatsCards({ trades }) {
       key: 'net',
       title: 'Total P&L',
       shortTitle: 'Total P&L',
-      value: formatCurrency(stats.totalPnL),
+      value: formatDashboardCurrency(stats.totalPnL, currencyCode),
       badge: `${stats.totalTrades} trades`,
       tone: netPnlTone,
       badgeTone: 'neutral',
@@ -112,8 +107,8 @@ function StatsCards({ trades }) {
       tone: stats.profitFactor >= 1 ? 'positive' : 'negative',
       badgeTone: stats.profitFactor >= 1 ? 'positive' : 'negative',
       icon: Gauge,
-      meta: `Avg/trade ${formatCurrency(stats.avgPnL)}`,
-      mobileMeta: `Avg ${formatCurrency(stats.avgPnL)}`,
+      meta: `Avg/trade ${formatDashboardCurrency(stats.avgPnL, currencyCode)}`,
+      mobileMeta: `Avg ${formatDashboardCurrency(stats.avgPnL, currencyCode)}`,
       detail: 'Target 1.00+',
       mobileDetail: 'Target 1.0+',
     },
@@ -121,15 +116,15 @@ function StatsCards({ trades }) {
       key: 'avg',
       title: 'Avg P&L',
       shortTitle: 'Avg P&L',
-      value: formatCurrency(stats.avgPnL),
+      value: formatDashboardCurrency(stats.avgPnL, currencyCode),
       badge: stats.avgPnL >= 0 ? 'Positive edge' : 'Negative edge',
       tone: avgTone,
       badgeTone: stats.avgPnL >= 0 ? 'positive' : 'negative',
       icon: Sigma,
-      meta: `Avg win ${formatCurrency(stats.avgWin)}`,
-      mobileMeta: `Win ${formatCurrency(stats.avgWin)}`,
-      detail: `Avg loss ${formatCurrency(-stats.avgLoss)}`,
-      mobileDetail: `Loss ${formatCurrency(-stats.avgLoss)}`,
+      meta: `Avg win ${formatDashboardCurrency(stats.avgWin, currencyCode)}`,
+      mobileMeta: `Win ${formatDashboardCurrency(stats.avgWin, currencyCode)}`,
+      detail: `Avg loss ${formatDashboardCurrency(-stats.avgLoss, currencyCode)}`,
+      mobileDetail: `Loss ${formatDashboardCurrency(-stats.avgLoss, currencyCode)}`,
     },
   ];
 

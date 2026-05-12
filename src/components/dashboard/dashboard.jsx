@@ -92,7 +92,17 @@ const SkeletonPnLCalendar = () => (
   </div>
 );
 
-function Dashboard({ tradeMode, setTradeMode, trades, dateRange, setDateRange, isLoading = false }) {
+function Dashboard({
+  tradeMode,
+  setTradeMode,
+  trades,
+  dateRange,
+  setDateRange,
+  currencyCode = 'USD',
+  defaultCurrencyCode = 'USD',
+  onCurrencyChange,
+  isLoading = false,
+}) {
   const MainGrid = (
     <>
       <div className="dashboard-grid-card dashboard-grid-card--zella left-charts">
@@ -113,7 +123,7 @@ function Dashboard({ tradeMode, setTradeMode, trades, dateRange, setDateRange, i
         ) : (
           <DeferredRender delay={40} fallback={<SkeletonChartCard />}>
             <Suspense fallback={<SkeletonChartCard />}>
-              <PerformanceChart trades={trades} />
+              <PerformanceChart trades={trades} currencyCode={currencyCode} />
             </Suspense>
           </DeferredRender>
         )}
@@ -137,7 +147,7 @@ function Dashboard({ tradeMode, setTradeMode, trades, dateRange, setDateRange, i
         ) : (
           <DeferredRender delay={120} fallback={<SkeletonChartCard />}>
             <Suspense fallback={<SkeletonChartCard />}>
-              <ActivityChart trades={trades} />
+              <ActivityChart trades={trades} currencyCode={currencyCode} />
             </Suspense>
           </DeferredRender>
         )}
@@ -149,7 +159,7 @@ function Dashboard({ tradeMode, setTradeMode, trades, dateRange, setDateRange, i
         ) : (
           <DeferredRender delay={160} fallback={<SkeletonPnLCalendar />}>
             <Suspense fallback={<SkeletonPnLCalendar />}>
-              <PnLCalendar trades={trades} />
+              <PnLCalendar trades={trades} currencyCode={currencyCode} />
             </Suspense>
           </DeferredRender>
         )}
@@ -159,7 +169,7 @@ function Dashboard({ tradeMode, setTradeMode, trades, dateRange, setDateRange, i
         {isLoading ? (
           <SkeletonTradesList />
         ) : (
-          <TradesList trades={trades} currentTradeMode={tradeMode} />
+          <TradesList trades={trades} currentTradeMode={tradeMode} currencyCode={currencyCode} />
         )}
       </section>
     </>
@@ -185,10 +195,13 @@ function Dashboard({ tradeMode, setTradeMode, trades, dateRange, setDateRange, i
           trades={trades}
           dateRange={dateRange}
           setDateRange={setDateRange}
+          currencyCode={currencyCode}
+          defaultCurrencyCode={defaultCurrencyCode}
+          onCurrencyChange={onCurrencyChange}
         />
       )}
 
-      {isLoading ? <SkeletonStatsCards /> : <StatsCards trades={trades} />}
+      {isLoading ? <SkeletonStatsCards /> : <StatsCards trades={trades} currencyCode={currencyCode} />}
 
       <section className="dashboard-layout dashboard-main-grid">
         {MainGrid}

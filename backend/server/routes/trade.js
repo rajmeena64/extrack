@@ -319,7 +319,8 @@ async function ingestApiTrades(req, res) {
                         `UPDATE mt5_accounts
                          SET balance = $1,
                              balance_change = $2,
-                             account_currency = $3,
+                             default_currency = $3,
+                             temporary_currency = COALESCE(temporary_currency, $3),
                              last_connected = NOW()
                          WHERE account_id = $4`,
                         [normalizedBalance, balanceChangePercent, account_currency, account_id]
@@ -444,6 +445,46 @@ router.get('/user-api-trades/:userid?', authCheck, async (req, res) => {
         );
 
         res.json({ success: true, trades: result.rows });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+router.patch('/trades/breakeven-day', authCheck, async (req, res) => {
+    const { date, is_breakeven } = req.body;
+
+    if (!date) {
+        return res.status(400).json({ success: false, error: 'date required' });
+    }
+
+    const isBreakeven = Boolean(is_breakeven);
+
+    try {
+        const manualResult = await pool.query(
+            `UPDATE trades
+             SET is_breakeven = $1
+             WHERE user_id = $2
+               AND timestamp >= $3::date
+               AND timestamp < ($3::date + INTERVAL '1 day')`,
+            [isBreakeven, req.userId, date]
+        );
+
+        const apiResult = await pool.query(
+            `UPDATE api_trades
+             SET is_breakeven = $1
+             WHERE user_id = $2
+               AND timestamp >= $3::date
+               AND timestamp < ($3::date + INTERVAL '1 day')`,
+            [isBreakeven, req.userId, date]
+        );
+
+        res.json({
+            success: true,
+            date,
+            is_breakeven: isBreakeven,
+            manualCount: manualResult.rowCount,
+            apiCount: apiResult.rowCount
+        });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
     }

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom"; // <-- added
 import "./Trades.css";
 import SymbolWithIcon from "../Common/SymbolWithIcon";
 import { EllipsisVertical } from "../Common/icons";
+import { formatCurrency } from "../../utils/Currency";
 
 const FIELDS = [
   { key: "symbol", label: "Symbol" },
@@ -16,7 +17,7 @@ const FIELDS = [
 const ICON_SIZE = 25;
 const LOCAL_STORAGE_KEY = "trades_visible_fields";
 
-function TradesList({ trades = [] }) {
+function TradesList({ trades = [], currencyCode = "USD" }) {
   const navigate = useNavigate(); // <-- added
 
   const [activeTab, setActiveTab] = useState("closed"); // "open" or "closed"
@@ -99,6 +100,9 @@ function TradesList({ trades = [] }) {
           </div>
         );
       }
+
+      case "pnl":
+        return formatCurrency(t.pnl, currencyCode);
 
       default:
         return t[key];

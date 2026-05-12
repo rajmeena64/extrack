@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import {
   CalendarRange,
   ChevronDown,
+  CircleDollarSign,
   Download,
   Plus,
   RefreshCw,
@@ -12,17 +13,29 @@ import {
 import './Header.css';
 import DateRangePicker from '../Common/DateRangePicker';
 import { useAuth } from '../../context/AuthContext';
+import { DASHBOARD_CURRENCIES, getCurrencyMeta } from '../../utils/Currency';
 
 const UserLoginModal = lazy(() => import('../user/UserLoginModal/UserLoginModal'));
 const Profile = lazy(() => import('./profile'));
 
-function Header({ tradeMode, setTradeMode, trades = [], dateRange, setDateRange }) {
+function Header({
+  tradeMode,
+  setTradeMode,
+  trades = [],
+  dateRange,
+  setDateRange,
+  currencyCode = 'USD',
+  defaultCurrencyCode = 'USD',
+  onCurrencyChange,
+}) {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [currencyOpen, setCurrencyOpen] = useState(false);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const filterRef = useRef(null);
+  const currencyRef = useRef(null);
   const datePickerRef = useRef(null);
   const navigate = useNavigate();
 
@@ -37,6 +50,8 @@ function Header({ tradeMode, setTradeMode, trades = [], dateRange, setDateRange 
   const currentLabel =
     modes.find((mode) => mode.value === tradeMode)?.label || 'All Trades';
   const compactTradeLabel = tradeMode === 'manual' ? 'Manual' : tradeMode === 'api' ? 'Sync' : 'Trades';
+  const selectedCurrency = getCurrencyMeta(currencyCode);
+  const defaultCurrency = getCurrencyMeta(defaultCurrencyCode);
 
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
@@ -121,11 +136,14 @@ function Header({ tradeMode, setTradeMode, trades = [], dateRange, setDateRange 
       if (datePickerOpen && datePickerRef.current && !datePickerRef.current.contains(event.target)) {
         setDatePickerOpen(false);
       }
+      if (currencyOpen && currencyRef.current && !currencyRef.current.contains(event.target)) {
+        setCurrencyOpen(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [datePickerOpen, filterOpen]);
+  }, [currencyOpen, datePickerOpen, filterOpen]);
 
   useEffect(() => {
     const handleEsc = (event) => {
@@ -140,13 +158,13 @@ function Header({ tradeMode, setTradeMode, trades = [], dateRange, setDateRange 
   }, [profileOpen]);
 
   useEffect(() => {
-    const hasPopupOpen = filterOpen || datePickerOpen;
+    const hasPopupOpen = filterOpen || datePickerOpen || currencyOpen;
     document.body.classList.toggle('dashboard-popup-open', hasPopupOpen);
 
     return () => {
       document.body.classList.remove('dashboard-popup-open');
     };
-  }, [datePickerOpen, filterOpen]);
+  }, [currencyOpen, datePickerOpen, filterOpen]);
 
   return (
     <>
@@ -211,7 +229,7 @@ function Header({ tradeMode, setTradeMode, trades = [], dateRange, setDateRange 
           <div className="dashboard-toolbar__controls">
             <div
               className={`toolbar-date-range ${
-                filterOpen ? 'toolbar-control--dimmed' : ''
+                filterOpen || currencyOpen ? 'toolbar-control--dimmed' : ''
               } ${datePickerOpen ? 'toolbar-control--active' : ''}`}
               ref={datePickerRef}
             >
@@ -219,6 +237,10 @@ function Header({ tradeMode, setTradeMode, trades = [], dateRange, setDateRange 
                 className={`toolbar-chip ${datePickerOpen ? 'toolbar-chip--active' : ''}`}
                 type="button"
                 onClick={() => setDatePickerOpen((prev) => !prev)}
+                onMouseDown={() => {
+                  setFilterOpen(false);
+                  setCurrencyOpen(false);
+                }}
               >
                 <CalendarRange size={15} />
                 <span className="toolbar-chip__text">
@@ -247,7 +269,7 @@ function Header({ tradeMode, setTradeMode, trades = [], dateRange, setDateRange 
 
             <div
               className={`trade-filter-wrapper ${
-                datePickerOpen ? 'toolbar-control--dimmed' : ''
+                datePickerOpen || currencyOpen ? 'toolbar-control--dimmed' : ''
               } ${filterOpen ? 'toolbar-control--active' : ''}`}
               ref={filterRef}
             >
@@ -257,6 +279,7 @@ function Header({ tradeMode, setTradeMode, trades = [], dateRange, setDateRange 
                 onClick={() => {
                   setFilterOpen((prev) => !prev);
                   setDatePickerOpen(false);
+                  setCurrencyOpen(false);
                 }}
               >
                 <span className="toolbar-chip__text">
@@ -283,6 +306,56 @@ function Header({ tradeMode, setTradeMode, trades = [], dateRange, setDateRange 
               )}
             </div>
 
+            <div
+              className={`currency-filter-wrapper ${
+                datePickerOpen || filterOpen ? 'toolbar-control--dimmed' : ''
+              } ${currencyOpen ? 'toolbar-control--active' : ''}`}
+              ref={currencyRef}
+            >
+              <button
+                className={`toolbar-chip currency-chip ${currencyOpen ? 'toolbar-chip--active' : ''}`}
+                type="button"
+                onClick={() => {
+                  setCurrencyOpen((prev) => !prev);
+                  setDatePickerOpen(false);
+                  setFilterOpen(false);
+                }}
+                title={`Dashboard currency: ${selectedCurrency.label}`}
+              >
+                <CircleDollarSign size={15} />
+                <span className="toolbar-chip__text">
+                  {isMobile ? selectedCurrency.code : `${selectedCurrency.symbol} ${selectedCurrency.code}`}
+                </span>
+                <ChevronDown size={15} />
+              </button>
+
+              {currencyOpen && (
+                <div className="currency-filter-menu">
+                  <div className="currency-filter-menu__eyebrow">
+                    Default from MT5: {defaultCurrency.code}
+                  </div>
+                  {DASHBOARD_CURRENCIES.map((currency) => (
+                    <button
+                      key={currency.code}
+                      className={`currency-menu-item ${selectedCurrency.code === currency.code ? 'active' : ''}`}
+                      type="button"
+                      onClick={() => {
+                        onCurrencyChange?.(currency.code);
+                        setCurrencyOpen(false);
+                      }}
+                    >
+                      <img src={currency.flag} alt="" className="currency-menu-item__flag" />
+                      <span className="currency-menu-item__text">
+                        <strong>{currency.code}</strong>
+                        <small>{currency.shortLabel}</small>
+                      </span>
+                      <span className="currency-menu-item__symbol">{currency.symbol}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {!isMobile && (
               <button
                 className="toolbar-chip"
@@ -295,7 +368,7 @@ function Header({ tradeMode, setTradeMode, trades = [], dateRange, setDateRange 
             )}
 
               <button
-                className={`toolbar-primary ${datePickerOpen || filterOpen ? 'toolbar-primary--dimmed' : ''}`}
+                className={`toolbar-primary ${datePickerOpen || filterOpen || currencyOpen ? 'toolbar-primary--dimmed' : ''}`}
                 type="button"
                 onClick={() => navigate('/add-trade')}
               >

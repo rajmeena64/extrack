@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import Chart from '../../utils/chartSetup';
 import './ActivityChart.css';
+import { formatCompactCurrency, formatCurrency } from '../../utils/Currency';
 
 const WEEK_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-function ActivityChart({ trades }) {
+function ActivityChart({ trades, currencyCode = 'USD' }) {
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
 
@@ -137,7 +138,7 @@ function ActivityChart({ trades }) {
               color: textSecondary,
               padding: 8,
               callback: function (value) {
-                return Number.isInteger(value) ? value : value.toFixed(1);
+                return formatCompactCurrency(value, currencyCode);
               },
             },
           },
@@ -156,7 +157,7 @@ function ActivityChart({ trades }) {
                 if (label) {
                   label += ': ';
                 }
-                label += context.parsed.y.toFixed(2);
+                label += formatCurrency(context.parsed.y, currencyCode);
                 return label;
               },
             },
@@ -166,7 +167,7 @@ function ActivityChart({ trades }) {
     });
 
     return () => chartInstance.current?.destroy();
-  }, [lossPnlData, winPnlData]);
+  }, [currencyCode, lossPnlData, winPnlData]);
 
   return (
     <div className="activity-card--daily-pnl">
