@@ -131,6 +131,13 @@ background: var(--bg-primary);
   }
 }
 
+/* Hide toggle on mobile widths where the sidebar button is not useful */
+@media (max-width: 720px) {
+  .sidebar-toggle {
+    display: none;
+  }
+}
+
 /* Hide toggle on desktop (1024px and above) */
 @media (min-width: 1024px) {
   .sidebar-toggle {

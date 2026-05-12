@@ -3,9 +3,54 @@ import LegacyIcon from '../Common/LegacyIcon';
 import api from '../../utils/serve';
 import { useAuth } from '../../context/AuthContext';
 
-function ApiImportForm({ API_URL, setSelectedMT5AccountId }) {
+const BROKER_ICONS = [
+  { key: 'exness', label: 'Exness', src: '/assets/broker/exness image.svg' },
+  { key: 'xm', label: 'XM', src: '/assets/broker/xm.svg' },
+  { key: 'vantage', label: 'Vantage', src: '/assets/broker/vantage.svg' }
+];
+
+const BROKER_OPTIONS = [
+  { value: 'icmarkets', label: 'IC Markets' },
+  { value: 'exness', label: 'Exness' },
+  { value: 'pepperstone', label: 'Pepperstone' },
+  { value: 'fxtm', label: 'FXTM' },
+  { value: 'xm', label: 'XM' },
+  { value: 'vantage', label: 'Vantage' },
+  { value: 'fbs', label: 'FBS' },
+  { value: 'octafx', label: 'OctaFX' },
+  { value: 'hfm', label: 'HFM' },
+  { value: 'roboforex', label: 'RoboForex' },
+  { value: 'other', label: 'Other Broker' }
+];
+
+const getBrokerIcon = (brokerName = '') => {
+  const normalizedBroker = brokerName.toLowerCase().replace(/[^a-z0-9]/g, '');
+  return BROKER_ICONS.find(({ key, label }) => (
+    normalizedBroker.includes(key) || normalizedBroker.includes(label.toLowerCase())
+  ));
+};
+
+const getBrokerOption = (brokerName = '') => {
+  const normalizedBroker = brokerName.toLowerCase().replace(/[^a-z0-9]/g, '');
+  return BROKER_OPTIONS.find(({ value, label }) => {
+    const normalizedValue = value.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const normalizedLabel = label.toLowerCase().replace(/[^a-z0-9]/g, '');
+    return normalizedBroker === normalizedValue
+      || normalizedBroker === normalizedLabel
+      || normalizedBroker.includes(normalizedValue)
+      || normalizedBroker.includes(normalizedLabel);
+  });
+};
+
+const getBrokerLabel = (brokerName = '') => {
+  const brokerOption = getBrokerOption(brokerName);
+  return brokerOption?.label || brokerName || 'MT5 Broker';
+};
+
+function ApiImportForm({ setSelectedMT5AccountId }) {
   const { user } = useAuth();
   const [showConnectionForm, setShowConnectionForm] = useState(false);
+  const [showBrokerMenu, setShowBrokerMenu] = useState(false);
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [connectionStatus, setConnectionStatus] = useState({
@@ -60,6 +105,14 @@ function ApiImportForm({ API_URL, setSelectedMT5AccountId }) {
       ...prev,
       [id]: value
     }));
+  };
+
+  const handleBrokerSelect = (brokerValue) => {
+    setFormData(prev => ({
+      ...prev,
+      broker: brokerValue
+    }));
+    setShowBrokerMenu(false);
   };
 
   const connectMT5API = async () => {
@@ -203,6 +256,32 @@ function ApiImportForm({ API_URL, setSelectedMT5AccountId }) {
     }
   };
 
+  const renderBrokerLogo = (brokerName) => {
+    const brokerIcon = getBrokerIcon(brokerName);
+
+    if (!brokerIcon) {
+      return (
+        <span className="broker-logo broker-logo--fallback" aria-hidden="true">
+          {(brokerName || 'MT5').slice(0, 2).toUpperCase()}
+        </span>
+      );
+    }
+
+    return (
+      <span className="broker-logo">
+        <img src={brokerIcon.src} alt={`${brokerIcon.label} broker`} />
+      </span>
+    );
+  };
+
+  const renderBrokerOptionIcon = (brokerName) => (
+    <span className="broker-option-icon">
+      {renderBrokerLogo(brokerName)}
+    </span>
+  );
+
+  const selectedBrokerOption = getBrokerOption(formData.broker);
+
   return (
     <div className="form-container api-section">
       {/* Delete Confirmation Modal */}
@@ -241,119 +320,149 @@ function ApiImportForm({ API_URL, setSelectedMT5AccountId }) {
         <div className="api-card">
           {showConnectionForm ? (
             <div className="connection-form" id="connectionForm">
-              <div className="section-title">
-                <LegacyIcon className="fas fa-plug" />
-                Connect New MT5 Account
+              <div className="sync-panel-head">
+                <div>
+                  <div className="section-title">
+                    <LegacyIcon className="fas fa-plug" />
+                    Connect New MT5 Account
+                  </div>
+                  <p className="sync-panel-copy">Keep your journal updated by linking an MT5 investor account.</p>
+                </div>
+                <div className="api-status" id="apiStatus">
+                  <LegacyIcon className={connectionStatus.icon} />
+                  <span>{connectionStatus.text}</span>
+                </div>
               </div>
+
+              <div className="connection-fields">
+                {/* Broker Selection */}
+                <div className="form-group form-group--broker">
+                  <label htmlFor="broker" className="required">
+                    Broker Name
+                  </label>
+                  <div
+                    className="broker-picker"
+                    onBlur={(event) => {
+                      if (!event.currentTarget.contains(event.relatedTarget)) {
+                        setShowBrokerMenu(false);
+                      }
+                    }}
+                  >
+                    <button
+                      id="broker"
+                      type="button"
+                      className={`broker-picker__trigger ${!formData.broker ? 'is-placeholder' : ''}`}
+                      aria-haspopup="listbox"
+                      aria-expanded={showBrokerMenu}
+                      onClick={() => setShowBrokerMenu(prev => !prev)}
+                    >
+                      {formData.broker ? (
+                        renderBrokerOptionIcon(formData.broker)
+                      ) : (
+                        <span className="broker-logo broker-logo--fallback" aria-hidden="true">MT</span>
+                      )}
+                      <span>{selectedBrokerOption?.label || 'Select your MT5 Broker'}</span>
+                      <LegacyIcon className="fas fa-chevron-down" />
+                    </button>
+
+                    {showBrokerMenu && (
+                      <div className="broker-picker__menu" role="listbox" aria-label="Broker Name">
+                        {BROKER_OPTIONS.map((broker) => (
+                          <button
+                            type="button"
+                            key={broker.value}
+                            className={`broker-picker__option ${formData.broker === broker.value ? 'is-selected' : ''}`}
+                            role="option"
+                            aria-selected={formData.broker === broker.value}
+                            onClick={() => handleBrokerSelect(broker.value)}
+                          >
+                            {renderBrokerOptionIcon(broker.value)}
+                            <span>{broker.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
               
-              <div className="api-status" id="apiStatus">
-                <LegacyIcon className={connectionStatus.icon} />
-                <span>{connectionStatus.text}</span>
-              </div>
+                {/* Account ID */}
+                <div className="form-group">
+                  <label htmlFor="loginId" className="required">
+                    MT5 Account ID
+                  </label>
+                  <input 
+                    type="number" 
+                    id="loginId" 
+                    value={formData.loginId}
+                    onChange={handleInputChange}
+                    placeholder="Account Number" 
+                    required 
+                  />
+                </div>
               
-              {/* Broker Selection */}
-              <div className="form-group">
-                <label htmlFor="broker" className="required">
-                  Broker Name
-                </label>
-                <select 
-                  id="broker" 
-                  value={formData.broker} 
-                  onChange={handleInputChange}
-                  required
-                >
-                  <option value="">Select your MT5 Broker</option>
-                  <option value="icmarkets">IC Markets</option>
-                  <option value="exness">Exness</option>
-                  <option value="pepperstone">Pepperstone</option>
-                  <option value="fxtm">FXTM</option>
-                  <option value="xm">XM</option>
-                  <option value="fbs">FBS</option>
-                  <option value="octafx">OctaFX</option>
-                  <option value="hfm">HFM</option>
-                  <option value="roboforex">RoboForex</option>
-                  <option value="other">Other Broker</option>
-                </select>
-              </div>
-              
-              {/* Account ID */}
-              <div className="form-group">
-                <label htmlFor="loginId" className="required">
-                  MT5 Account ID
-                </label>
-                <input 
-                  type="number" 
-                  id="loginId" 
-                  value={formData.loginId}
-                  onChange={handleInputChange}
-                  placeholder="Enter your MT5 Account Number" 
-                  required 
-                />
-              </div>
-              
-              {/* Server Name */}
-              <div className="form-group">
-                <label htmlFor="server" className="required">
-                  Server Name
-                </label>
-                <select 
-                  id="server" 
-                  value={formData.server}
-                  onChange={handleInputChange}
-                  required
-                >
-                  <option value="">Select Server</option>
-                  <option value="ICMarkets-MT5-1">ICMarkets-MT5-1</option>
-                  <option value="ICMarkets-MT5-2">ICMarkets-MT5-2</option>
-                  <option value="ICMarkets-MT5-Demo">ICMarkets-MT5-Demo</option>
-                  <option value="Exness-MT5Real">Exness-MT5Real</option>
-                  <option value="Exness-MT5Trial">Exness-MT5Trial</option>
-                  <option value="Pepperstone-MT5">Pepperstone-MT5</option>
-                  <option value="FXTM-MT5">FXTM-MT5</option>
-                  <option value="XM-2-MT5">XM-2-MT5</option>
-                  <option value="FBS-MT5">FBS-MT5</option>
-                  <option value="OctaFX-MT5">OctaFX-MT5</option>
-                  <option value="MetaQuotes-Demo">MetaQuotes-Demo</option>
-                  <option value="custom">Other / Custom Server</option>
-                </select>
-                
-                {/* Custom Server Input */}
-                {formData.server === 'custom' && (
-                  <div id="customServerContainer" style={{ marginTop: '10px' }}>
+                {/* Server Name */}
+                <div className="form-group">
+                  <label htmlFor="server" className="required">
+                    Server Name
+                  </label>
+                  <select 
+                    id="server" 
+                    value={formData.server}
+                    onChange={handleInputChange}
+                    required
+                  >
+                    <option value="">Select Server</option>
+                    <option value="ICMarkets-MT5-1">ICMarkets-MT5-1</option>
+                    <option value="ICMarkets-MT5-2">ICMarkets-MT5-2</option>
+                    <option value="ICMarkets-MT5-Demo">ICMarkets-MT5-Demo</option>
+                    <option value="Exness-MT5Real">Exness-MT5Real</option>
+                    <option value="Exness-MT5Trial">Exness-MT5Trial</option>
+                    <option value="Pepperstone-MT5">Pepperstone-MT5</option>
+                    <option value="FXTM-MT5">FXTM-MT5</option>
+                    <option value="XM-2-MT5">XM-2-MT5</option>
+                    <option value="FBS-MT5">FBS-MT5</option>
+                    <option value="OctaFX-MT5">OctaFX-MT5</option>
+                    <option value="MetaQuotes-Demo">MetaQuotes-Demo</option>
+                    <option value="custom">Other / Custom Server</option>
+                  </select>
+                  
+                  {/* Custom Server Input */}
+                  {formData.server === 'custom' && (
                     <input 
+                      className="custom-server-input"
                       type="text" 
                       id="customServer" 
                       value={formData.customServer}
                       onChange={handleInputChange}
                       placeholder="Enter your custom server name" 
                     />
-                  </div>
-                )}
-              </div>
-              
-              {/* Investor Password */}
-              <div className="form-group">
-                <label htmlFor="password" className="required">
-                  Investor Password
-                </label>
-                <div className="password-input-group">
-                  <input 
-                    type={showPassword ? 'text' : 'password'} 
-                    id="password" 
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    placeholder="Enter your MT5 Investor Password" 
-                    required 
-                  />
-                  <button 
-                    type="button" 
-                    className="password-toggle" 
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    <LegacyIcon className={showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'} />
-                  </button>
+                  )}
                 </div>
-                <small className="hint">Note: Use Investor Password (not Master Password)</small>
+              
+                {/* Investor Password */}
+                <div className="form-group">
+                  <label htmlFor="password" className="required">
+                    Investor Password
+                  </label>
+                  <div className="password-input-group">
+                    <input 
+                      type={showPassword ? 'text' : 'password'} 
+                      id="password" 
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      placeholder="Investor Password" 
+                      required 
+                    />
+                    <button 
+                      type="button" 
+                      className="password-toggle" 
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      <LegacyIcon className={showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'} />
+                    </button>
+                  </div>
+                  <small className="hint">Use Investor Password, not Master Password.</small>
+                </div>
               </div>
 
               {/* Connection Buttons */}
@@ -368,9 +477,15 @@ function ApiImportForm({ API_URL, setSelectedMT5AccountId }) {
             </div>
           ) : (
             <div className="connected-accounts-section">
-              <div className="section-title">
-                <LegacyIcon className="fas fa-link" />
-                Connected Accounts
+              <div className="sync-panel-head">
+                <div>
+                  <div className="section-title">
+                    <LegacyIcon className="fas fa-link" />
+                    Connected Accounts
+                  </div>
+                  <p className="sync-panel-copy">Manage accounts used for trade sync.</p>
+                </div>
+                <span className="account-count-pill">{accounts.length} linked</span>
               </div>
               
               <div className="accounts-list" id="accountsList">
@@ -384,10 +499,16 @@ function ApiImportForm({ API_URL, setSelectedMT5AccountId }) {
                     <div key={account.id} className="account-item" data-account-id={account.account_id}>
                       <div className="account-header">
                         <div className="account-info">
-                          <LegacyIcon className={`fas fa-check-circle ${account.connection_status === 'connected' ? 'status-connected' : 'status-disconnected'}`} />
-                          <span className="account-name">{account.broker_name}</span>
-                          <span className="account-id">ID: {account.account_id}</span>
+                          {renderBrokerLogo(account.broker_name)}
+                          <div className="account-title-block">
+                            <span className="account-name">{getBrokerLabel(account.broker_name)}</span>
+                            <span className="account-id">ID {account.account_id}</span>
+                          </div>
                         </div>
+                        <span className={`account-status-pill ${account.connection_status === 'connected' ? 'is-connected' : 'is-disconnected'}`}>
+                          <LegacyIcon className="fas fa-check-circle" />
+                          {account.connection_status || 'disconnected'}
+                        </span>
                         <div className="account-actions">
                           <button className="btn-icon" onClick={() => toggleAccountPassword(account.account_id)} title="Show/Hide Password">
                             <LegacyIcon className="fas fa-eye" />
@@ -438,8 +559,15 @@ function ApiImportForm({ API_URL, setSelectedMT5AccountId }) {
               </div>
               
               <div className="add-account-btn" onClick={() => setShowConnectionForm(true)}>
+                <span className="broker-logo-stack" aria-hidden="true">
+                  {BROKER_ICONS.map(broker => (
+                    <span className="broker-logo broker-logo--stacked" key={broker.key}>
+                      <img src={broker.src} alt="" />
+                    </span>
+                  ))}
+                </span>
+                <span>Add New MT5 Account</span>
                 <LegacyIcon className="fas fa-plus-circle" />
-                Add New MT5 Account
               </div>
             </div>
           )}

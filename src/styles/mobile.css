@@ -439,6 +439,12 @@
   }
 }
 
+@media (max-width: 720px) {
+  .dashboard > .sidebar-toggle {
+    display: none !important;
+  }
+}
+
 @media (max-width: 480px) {
   .main-content {
     width: 100%;
