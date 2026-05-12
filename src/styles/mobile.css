@@ -448,7 +448,7 @@
 @media (max-width: 480px) {
   .main-content {
     width: 100%;
-    padding: 12px 12px calc(90px + env(safe-area-inset-bottom, 0px));
+    padding: 12px 12px calc(110px + env(safe-area-inset-bottom, 0px));
   }
 
   .dashboard-header {
