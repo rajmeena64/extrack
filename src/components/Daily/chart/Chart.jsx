@@ -36,6 +36,7 @@ function Chart({ darkMode, symbol = "BTCUSDT", tradeDate, tradeTime, showFullDay
   const [tf, setTf] = useState("1m");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [fallbackChart, setFallbackChart] = useState(null);
   const [cssVariables, setCssVariables] = useState({
     bgCard: "",
     textMuted: "",
@@ -86,7 +87,8 @@ function Chart({ darkMode, symbol = "BTCUSDT", tradeDate, tradeTime, showFullDay
 
     if (!s) return "BTCUSDT";
     if (METAL_ALIASES[s]) return METAL_ALIASES[s];
-    if (BINANCE_QUOTES.some((quote) => s.endsWith(quote))) return s;
+    if (s.endsWith("USDC") || s.endsWith("BUSD")) return `${s.slice(0, -4)}USDT`;
+    if (s.endsWith("USDT")) return s;
     if (s.endsWith("USD") && !METAL_SYMBOL_RE.test(s) && !isForexPair(s)) return `${s.slice(0, -3)}USDT`;
 
     return s;
@@ -95,6 +97,22 @@ function Chart({ darkMode, symbol = "BTCUSDT", tradeDate, tradeTime, showFullDay
   const cleanedSymbol = mapToBinanceSymbol(cleanSymbol(symbol));
   const isForexOrMetalSymbol = isForexPair(cleanedSymbol);
   const isBinanceSymbolShape = BINANCE_QUOTES.some((quote) => cleanedSymbol.endsWith(quote));
+  const tradingViewSymbol = isForexOrMetalSymbol
+    ? `FX:${cleanedSymbol}`
+    : `BINANCE:${cleanedSymbol}`;
+  const tradingViewInterval = { "1m": "1", "5m": "5", "15m": "15", "1h": "60" }[tf] || "1";
+  const tradingViewUrl = `https://s.tradingview.com/widgetembed/?symbol=${encodeURIComponent(tradingViewSymbol)}&interval=${tradingViewInterval}&theme=${darkMode ? "dark" : "light"}&style=1&timezone=Etc%2FUTC&withdateranges=1&hide_side_toolbar=0&allow_symbol_change=0&save_image=0`;
+
+  const shouldFallbackToTradingView = useCallback((message) => {
+    const normalized = String(message || "").toLowerCase();
+    return (
+      normalized.includes("restricted location") ||
+      normalized.includes("service unavailable") ||
+      normalized.includes("invalid symbol") ||
+      normalized.includes("binance api error") ||
+      normalized.includes("451")
+    );
+  }, []);
 
   const normalizeMarkerTime = useCallback((value) => {
     if (!value) return null;
@@ -212,7 +230,7 @@ function Chart({ darkMode, symbol = "BTCUSDT", tradeDate, tradeTime, showFullDay
   // Fetch Historical Candles
   useEffect(() => {
     if (!candleSeriesRef.current) return;
-    setLoading(true); setError(null);
+    setLoading(true); setError(null); setFallbackChart(null);
 
     const fetchBinanceCandles = async (symbol, interval, totalCandles = 2000) => {
       const limit = 1000;
@@ -283,7 +301,9 @@ function Chart({ darkMode, symbol = "BTCUSDT", tradeDate, tradeTime, showFullDay
         let binanceError = null;
 
         if (!isForexOrMetalSymbol && !isBinanceSymbolShape) {
-          setError(`Chart data provider does not support ${cleanedSymbol}.`);
+          setFallbackChart({
+            message: `Opening TradingView chart for ${cleanedSymbol}.`,
+          });
           candleSeriesRef.current.setData([]);
           return;
         }
@@ -299,6 +319,13 @@ function Chart({ darkMode, symbol = "BTCUSDT", tradeDate, tradeTime, showFullDay
         if (candles.length === 0 && isForexOrMetalSymbol) {
           candles = await fetchForexCandles(cleanedSymbol, TF_MAP[tf], totalCandles);
         } else if (binanceError) {
+          if (shouldFallbackToTradingView(binanceError.message)) {
+            setFallbackChart({
+              message: `Binance data is unavailable here, showing TradingView chart for ${cleanedSymbol}.`,
+            });
+            candleSeriesRef.current.setData([]);
+            return;
+          }
           throw binanceError;
         }
 
@@ -365,7 +392,14 @@ trades.forEach(t => {
         }
 
       } catch(err) {
-        setError(`Error: ${err.message}`);
+        if (shouldFallbackToTradingView(err.message)) {
+          setFallbackChart({
+            message: `Chart API is unavailable here, showing TradingView chart for ${cleanedSymbol}.`,
+          });
+          candleSeriesRef.current.setData([]);
+        } else {
+          setError(`Error: ${err.message}`);
+        }
       } finally {
         setLoading(false);
         hasLoadedOnceRef.current = true;
@@ -373,7 +407,7 @@ trades.forEach(t => {
     };
 
     loadData();
-  }, [tf, cleanedSymbol, tradeDate, showFullDay, trades, getDateRange, totalCandles, isForexOrMetalSymbol, isBinanceSymbolShape, normalizeMarkerTime]);
+  }, [tf, cleanedSymbol, tradeDate, showFullDay, trades, getDateRange, totalCandles, isForexOrMetalSymbol, isBinanceSymbolShape, normalizeMarkerTime, shouldFallbackToTradingView]);
 
   return (
     <div className="chart">
@@ -390,8 +424,19 @@ trades.forEach(t => {
 
       {loading && !hasLoadedOnceRef.current && <div className="chart-loading">Loading {cleanedSymbol} data...</div>}
       {error && <div className="chart-error">{error}</div>}
+      {fallbackChart && (
+        <div className="chart-fallback">
+          <iframe
+            key={`${tradingViewSymbol}-${tf}-${darkMode ? "dark" : "light"}`}
+            title={`${cleanedSymbol} TradingView chart`}
+            src={tradingViewUrl}
+            allowFullScreen
+          />
+          <div className="chart-fallback-note">{fallbackChart.message}</div>
+        </div>
+      )}
 
-      <div className="chart-wrapper" ref={chartRef}></div>
+      <div className={`chart-wrapper ${fallbackChart ? "chart-wrapper--hidden" : ""}`} ref={chartRef}></div>
     </div>
   );
 }
