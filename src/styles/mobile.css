@@ -49,8 +49,9 @@
     max-width: none;
     min-height: 100dvh;
     margin: 0;
-    padding: 10px 8px calc(90px + env(safe-area-inset-bottom, 0px));
+    padding: 10px 8px calc(112px + env(safe-area-inset-bottom, 0px));
     overflow-x: hidden;
+    scroll-padding-bottom: calc(112px + env(safe-area-inset-bottom, 0px));
   }
 
   .dashboard-header {
@@ -449,6 +450,7 @@
   .main-content {
     width: 100%;
     padding: 12px 12px calc(140px + env(safe-area-inset-bottom, 0px));
+    scroll-padding-bottom: calc(140px + env(safe-area-inset-bottom, 0px));
   }
 
   .dashboard-header {
