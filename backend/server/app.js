@@ -138,9 +138,24 @@ wss.on('connection', (ws) => {
    START SERVER
 ======================= */
 const PORT = Number(process.env.PORT || 5000);
-server.listen(PORT, () => {
-  console.log(`Backend server running on port ${PORT}`);
-});
+
+async function startServer() {
+  try {
+    if (typeof tradeRoutes.ensureApiTradeMetadataColumns === 'function') {
+      await tradeRoutes.ensureApiTradeMetadataColumns();
+      console.log('api_trades metadata columns are ready');
+    }
+  } catch (error) {
+    console.error('Failed to ensure database schema:', error.message);
+    process.exit(1);
+  }
+
+  server.listen(PORT, () => {
+    console.log(`Backend server running on port ${PORT}`);
+  });
+}
+
+startServer();
 
 
 

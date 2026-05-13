@@ -9,6 +9,61 @@ const {
 } = require('../utils/mt5Credentials');
 const { normalizeStoredSymbol } = require('../utils/symbols');
 
+let apiTradeMetadataColumnsReady = false;
+
+function normalizeText(value) {
+    return String(value || '').trim();
+}
+
+function normalizeSymbolCategory(value) {
+    const normalized = normalizeText(value).toLowerCase();
+
+    if (!normalized) return null;
+    if (/(crypto|coin|token|digital)/.test(normalized)) return 'crypto';
+    if (/(forex|fx|currency|currencies)/.test(normalized)) return 'forex';
+    if (/(metal|metals|gold|silver|xau|xag)/.test(normalized)) return 'metal';
+    if (/(indice|indices|index|indexes|cash index|stock index)/.test(normalized)) return 'index';
+    if (/(stock|equity|shares?)/.test(normalized)) return 'stock';
+    if (/(commodit|energy|oil|gas|wti|brent)/.test(normalized)) return 'commodity';
+
+    return normalized.replace(/[^a-z0-9_-]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '') || null;
+}
+
+function inferSymbolCategory({ symbol, symbolPath, symbolDescription, category, assetClass }) {
+    const explicitCategory = normalizeSymbolCategory(category || assetClass);
+    if (explicitCategory) return explicitCategory;
+
+    const combined = [
+        symbolPath,
+        symbolDescription,
+        symbol,
+    ].map(normalizeText).join(' ').toLowerCase();
+
+    const inferredCategory = normalizeSymbolCategory(combined);
+    if (inferredCategory) return inferredCategory;
+
+    const cleanSymbol = normalizeStoredSymbol(symbol);
+    if (/^X(AU|AG)USD$/.test(cleanSymbol)) return 'metal';
+    if (/^[A-Z]{6}$/.test(cleanSymbol)) return 'forex';
+    if (/(BTC|ETH|USDT|USDC|BNB|SOL|XRP|DOGE|ADA)/.test(cleanSymbol)) return 'crypto';
+    if (/\d/.test(cleanSymbol)) return 'index';
+
+    return null;
+}
+
+async function ensureApiTradeMetadataColumns() {
+    if (apiTradeMetadataColumnsReady) return;
+
+    await pool.query(`
+        ALTER TABLE api_trades
+        ADD COLUMN IF NOT EXISTS category TEXT,
+        ADD COLUMN IF NOT EXISTS symbol_path TEXT,
+        ADD COLUMN IF NOT EXISTS symbol_description TEXT
+    `);
+
+    apiTradeMetadataColumnsReady = true;
+}
+
 function normalizeScreenshots(screenshots) {
     if (!screenshots) return null;
     return Array.isArray(screenshots)
@@ -201,6 +256,8 @@ router.post('/save-bulk-trades', authCheck, async (req, res) => {
 
 async function ingestApiTrades(req, res) {
     try {
+        await ensureApiTradeMetadataColumns();
+
         let trades = req.body;
         if (!Array.isArray(trades)) trades = [trades];
 
@@ -240,7 +297,13 @@ async function ingestApiTrades(req, res) {
                     open_timestamp,
                     close_timestamp,
                     balance,
-                    account_currency
+                    account_currency,
+                    symbol_category,
+                    category,
+                    asset_class,
+                    symbol_path,
+                    symbol_description,
+                    description
                 } = trade;
 
                 const normalizedQuantity = roundToScale(volume, 5);
@@ -249,6 +312,15 @@ async function ingestApiTrades(req, res) {
                 const normalizedProfit = roundToScale(profit ?? 0, 5);
                 const normalizedBalance = roundToScale(balance, 5);
                 const normalizedSymbol = normalizeStoredSymbol(symbol);
+                const normalizedSymbolPath = normalizeText(symbol_path || trade.path);
+                const normalizedSymbolDescription = normalizeText(symbol_description || description);
+                const normalizedCategory = inferSymbolCategory({
+                    symbol,
+                    symbolPath: normalizedSymbolPath,
+                    symbolDescription: normalizedSymbolDescription,
+                    category: symbol_category || category,
+                    assetClass: asset_class,
+                });
 
                 if (!account_id || !ticket || balance === undefined) {
                     console.warn('[save-api-trade] validation failed: missing required fields', {
@@ -345,7 +417,7 @@ async function ingestApiTrades(req, res) {
                 }
 
                 values.push(
-                    `($${i++},$${i++},'mt5',$${i++},$${i++},$${i++},$${i++},$${i++},$${i++},$${i++},$${i++},$${i++},$${i++})`
+                    `($${i++},$${i++},'mt5',$${i++},$${i++},$${i++},$${i++},$${i++},$${i++},$${i++},$${i++},$${i++},$${i++},$${i++},$${i++},$${i++})`
                 );
 
                 params.push(
@@ -360,7 +432,10 @@ async function ingestApiTrades(req, res) {
                     close_time,
                     open_timestamp,
                     close_timestamp,
-                    ticket
+                    ticket,
+                    normalizedCategory,
+                    normalizedSymbolPath || null,
+                    normalizedSymbolDescription || null
                 );
             } catch (err) {
                 console.error('[save-api-trade] trade processing failed', {
@@ -395,7 +470,10 @@ async function ingestApiTrades(req, res) {
                     timestamp,
                     open_timestamp,
                     close_timestamp,
-                    ticket
+                    ticket,
+                    category,
+                    symbol_path,
+                    symbol_description
                 )
                 VALUES ${values.join(",")}
                 ON CONFLICT (ticket) DO NOTHING
@@ -711,3 +789,4 @@ router.post('/test-mt5-connection', authCheck, async (req, res) => {
 });
 
 module.exports = router;
+module.exports.ensureApiTradeMetadataColumns = ensureApiTradeMetadataColumns;
