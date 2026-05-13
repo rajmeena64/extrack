@@ -150,7 +150,7 @@ background: var(--bg-primary);
 ===================================================== */
 .sidebar-logo {
   height: 50px;
-  padding: 0 16px;
+  padding: 0 13px;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -161,34 +161,38 @@ background: var(--bg-primary);
   overflow: hidden;
 }
 
-.logo-text {
-  font-size: 17px;
-  font-weight: 900;
-  color: var(--text-primary);
-  white-space: nowrap;
-  transition: opacity 0.25s ease, transform 0.25s ease;
-  display: flex;
+.sidebar-logo__brand {
+  transition: transform 0.25s ease;
 }
 
-.logo-text .ex {
-  color: var(--primary);
+.sidebar-logo__brand .app-brand__wordmark {
+  transition: opacity 0.25s ease, transform 0.25s ease, max-width 0.25s ease;
 }
 
-.logo-text .track {
+.sidebar-logo__brand .app-brand__wordmark {
   color: var(--text-primary);
 }
 
 /* collapsed state for desktop (when not hovering) */
 @media (min-width: 1024px) {
-  .sidebar:not(:hover) .sidebar-logo,
-  .sidebar:not(:hover) .logo-text {
+  .sidebar:not(:hover) .sidebar-logo {
+    justify-content: center;
+    padding: 0;
+  }
+
+  .sidebar:not(:hover) .sidebar-logo__brand {
+    transform: translateX(0);
+  }
+
+  .sidebar:not(:hover) .sidebar-logo__brand .app-brand__wordmark {
+    max-width: 0;
     opacity: 0;
     transform: translateX(-8px);
     pointer-events: none;
   }
-  
-  .sidebar:hover .sidebar-logo,
-  .sidebar:hover .logo-text {
+
+  .sidebar:hover .sidebar-logo__brand .app-brand__wordmark {
+    max-width: 120px;
     opacity: 1;
     transform: translateX(0);
     pointer-events: auto;
@@ -197,15 +201,13 @@ background: var(--bg-primary);
 
 /* collapsed state for tablets (when not open) */
 @media (min-width: 769px) and (max-width: 1023px) {
-  .sidebar:not(.open) .sidebar-logo,
-  .sidebar:not(.open) .logo-text {
+  .sidebar:not(.open) .sidebar-logo {
     opacity: 0;
     transform: translateX(-8px);
     pointer-events: none;
   }
   
-  .sidebar.open .sidebar-logo,
-  .sidebar.open .logo-text {
+  .sidebar.open .sidebar-logo {
     opacity: 1;
     transform: translateX(0);
     pointer-events: auto;
@@ -214,15 +216,13 @@ background: var(--bg-primary);
 
 /* collapsed state for mobile (when not open) */
 @media (max-width: 768px) {
-  .sidebar:not(.open) .sidebar-logo,
-  .sidebar:not(.open) .logo-text {
+  .sidebar:not(.open) .sidebar-logo {
     opacity: 0;
     transform: translateX(-8px);
     pointer-events: none;
   }
   
-  .sidebar.open .sidebar-logo,
-  .sidebar.open .logo-text {
+  .sidebar.open .sidebar-logo {
     opacity: 1;
     transform: translateX(0);
     pointer-events: auto;

@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import './UserLoginModal.css';
 import LegacyIcon from '../../Common/LegacyIcon';
+import Logo from '../../Common/Logo';
 
 import { API_URL } from "../../../utils/constants";
 import { useAuth } from '../../../context/AuthContext';
@@ -307,11 +308,7 @@ function UserLoginModal({ isOpen, onClose }) {
         <div className="modal-header">
           <div className="header-left">
             <div className="logo">
-              <LegacyIcon className="fas fa-chart-line" />
-              <div className="logo-text">
-                <span className="pip">PIP</span><span className="x"> Trade</span>
-                <span className="trade"> Trade</span>
-              </div>
+              <Logo />
             </div>
           </div>
           

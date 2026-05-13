@@ -3,10 +3,16 @@
   "short_name": "TradeAnalytics",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f8fafc",
-  "theme_color": "#0f172a",
+  "background_color": "#0a0a0a",
+  "theme_color": "#00ff88",
   "description": "Review trades, analyze performance, and manage your trading journal.",
   "icons": [
+    {
+      "src": "/assets/applogo/ex_stylish_clean.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
     {
       "src": "/favicon.svg",
       "sizes": "any",

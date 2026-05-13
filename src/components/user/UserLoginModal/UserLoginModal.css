@@ -46,17 +46,11 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  font-weight: 700;
-  font-size: 18px;
 }
 
-.logo i {
-  color: #4f7cff;
+.modal-header .app-brand__wordmark {
+  color: #111;
 }
-
-.logo-text .pip { color: #111; }
-.logo-text .x { color: #4f7cff; }
-.logo-text .trade { color: #666; margin-left: 4px; }
 
 .header-right {
   display: flex;

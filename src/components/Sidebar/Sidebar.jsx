@@ -4,6 +4,7 @@ import { useTheme } from '../../context/ThemeContext';  // ✅ ADDED
 
 import './Sidebar.css';
 import LegacyIcon from '../Common/LegacyIcon';
+import Logo from '../Common/Logo';
 import { API_URL } from '../../utils/constants';
 import { useAuth } from '../../context/AuthContext';
 
@@ -104,10 +105,7 @@ function Sidebar() {
       <div className={`sidebar ${sidebarOpen || settingsOpen ? 'open' : ''} ${settingsOpen ? 'settings-open' : ''}`}>
         {/* LOGO */}
         <div className="sidebar-logo">
-          <span className="logo-text">
-            <span className="ex">EX</span>
-            <span className="track">TRACK</span>
-          </span>
+          <Logo className="sidebar-logo__brand" />
         </div>
 
         {/* NAV LINKS */}
