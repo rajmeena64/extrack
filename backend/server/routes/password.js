@@ -131,7 +131,6 @@ router.post('/forgot-password', forgotPasswordRateLimiter, async (req, res) => {
             message: 'Password reset link sent to your email'
         });
     } catch (error) {
-        console.error('Failed to send password reset email:', error.message);
         res.json({
             success: false,
             error: 'Failed to send email'
@@ -189,7 +188,6 @@ router.post('/reset-password', resetPasswordRateLimiter, async (req, res) => {
             message: 'Password reset successful!'
         });
     } catch (error) {
-        console.error('Password reset failed:', error.message);
         res.json({
             success: false,
             error: 'Server error'
@@ -238,7 +236,6 @@ router.post('/update-password', authCheck, async (req, res) => {
             message: 'Password updated successfully!'
         });
     } catch (error) {
-        console.error('Password update failed:', error.message);
         res.json({ success: false, error: error.message });
     }
 });
@@ -279,7 +276,6 @@ router.post('/update-account-type', authCheck, async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Account type update failed:', error.message);
         res.json({ success: false, error: error.message });
     }
 });

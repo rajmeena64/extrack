@@ -41,6 +41,8 @@ const clampLimit = (value) => {
   return Math.min(Math.max(limit, 1), 1000);
 };
 
+const normalizeCategory = (value) => String(value || "").trim().toLowerCase();
+
 const isForexPair = (symbol) => (
   FOREX_SYMBOL_RE.test(symbol) &&
   FOREX_CURRENCIES.has(symbol.slice(0, 3)) &&
@@ -69,18 +71,6 @@ const toBinanceSymbol = (symbol) => {
   }
 
   return normalized;
-};
-
-const shouldUseBinance = (symbol) => {
-  if (METAL_SYMBOL_RE.test(symbol) || isForexPair(symbol)) {
-    return false;
-  }
-
-  if (BINANCE_QUOTES.some((quote) => symbol.endsWith(quote))) {
-    return true;
-  }
-
-  return symbol.endsWith("USD");
 };
 
 const formatUtcDate = (timestamp) => {
@@ -223,7 +213,7 @@ const fetchVisionDailyKlines = async ({ market, symbol, interval, endTime, start
 // ======================
 router.get("/klines", async (req, res) => {
   try {
-    const { symbol, interval, startTime, endTime, limit } = req.query;
+    const { symbol, interval, startTime, endTime, limit, category } = req.query;
 
     if (!symbol || !interval) {
       return res.status(400).json({
@@ -241,6 +231,7 @@ router.get("/klines", async (req, res) => {
 
     const storedSymbol = normalizeKlineSymbol(symbol);
     const binanceSymbol = toBinanceSymbol(storedSymbol);
+    const normalizedCategory = normalizeCategory(category);
     const normalizedLimit = clampLimit(limit);
     const numericStartTime = startTime ? Number(startTime) : undefined;
     const numericEndTime = endTime ? Number(endTime) : undefined;
@@ -261,7 +252,7 @@ router.get("/klines", async (req, res) => {
 
     const errors = [];
 
-    const useBinanceSource = shouldUseBinance(binanceSymbol);
+    const useBinanceSource = normalizedCategory === "crypto";
 
     if (useBinanceSource) {
       try {
@@ -293,6 +284,15 @@ router.get("/klines", async (req, res) => {
           return res.json(visionData);
         }
       }
+
+      const lastError = errors[errors.length - 1];
+      return res.status(lastError?.status || 404).json(lastError?.payload || {
+        error: "No Binance kline data found",
+        symbol: storedSymbol,
+        binanceSymbol,
+        category: normalizedCategory,
+        interval,
+      });
     }
 
     try {
@@ -316,6 +316,7 @@ router.get("/klines", async (req, res) => {
       error: "No kline data found",
       symbol: storedSymbol,
       binanceSymbol,
+      category: normalizedCategory,
       interval,
     });
   } catch (err) {

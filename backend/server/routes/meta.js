@@ -39,7 +39,6 @@ router.get('/get-mt5-accounts', authCheck, async (req, res) => {
         res.json({ success: true, accounts });
 
     } catch (error) {
-        console.error("Failed to load MT5 accounts:", error.message);
         res.status(500).json({ success: false, error: error.message });
     }
 });
@@ -70,7 +69,6 @@ router.post('/update-dashboard-currency', authCheck, async (req, res) => {
             accounts: result.rows
         });
     } catch (error) {
-        console.error("Failed to update dashboard currency:", error.message);
         res.status(500).json({ success: false, error: error.message });
     }
 });
@@ -105,12 +103,9 @@ router.post('/update-mt5-password', authCheck, async (req, res) => {
             [encryptedPassword, account_id, userId]
         );
 
-        console.log(`MT5 password updated for account ${account_id} by user ${userId}`);
-
         res.json({ success: true, message: "MT5 password updated successfully" });
 
     } catch (error) {
-        console.error("Failed to update MT5 password:", error.message);
         res.status(500).json({ success: false, error: error.message });
     }
 });
@@ -149,7 +144,6 @@ router.post('/save-mt5-account', authCheck, async (req, res) => {
         res.json({ success: true, message: 'Account saved successfully' });
 
     } catch (error) {
-        console.error("Failed to save MT5 account:", error.message);
         res.status(500).json({ success: false, error: error.message });
     }
 });
@@ -196,7 +190,6 @@ router.delete('/delete-mt5-account/:id', authCheck, async (req, res) => {
 
     } catch (error) {
         await client.query('ROLLBACK');
-        console.error("Failed to delete MT5 account:", error.message);
         res.status(500).json({ success: false, error: error.message });
     } finally {
         client.release();

@@ -47,7 +47,6 @@ router.get("/forex-ohlc", async (req, res) => {
     const data = response.data;
 
     if (!data || data.status === false) {
-      console.error("FCS API request failed:", data);
       return res.status(400).json({
         success: false,
         message: data?.msg || "FCS API error",
@@ -86,12 +85,6 @@ router.get("/forex-ohlc", async (req, res) => {
       data: candles,
     });
   } catch (error) {
-    console.error("Failed to fetch forex OHLC data:", {
-      status: error.response?.status,
-      data: error.response?.data,
-      message: error.message,
-    });
-
     const errorMessage =
       error.response?.data?.msg ||
       error.response?.data?.message ||

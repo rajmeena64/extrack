@@ -424,6 +424,7 @@ function ThatTrade({ trades = [] }) {
           <div className="trade-chart-box">
             <Chart
               symbol={getBinanceSymbol(trade.symbol)}
+              category={trade.category}
               tradeDate={dateObj}
               tradeTime={time}
               showFullDay={true}
@@ -438,6 +439,7 @@ function ThatTrade({ trades = [] }) {
 
             {/* <TradePnLCurve
               symbol={getBinanceSymbol(trade.symbol)}
+              category={trade.category}
               entryTime={trade.open_timestamp}
               exitTime={trade.close_timestamp}
               entryPrice={Number(trade.price)}

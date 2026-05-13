@@ -6,6 +6,7 @@ import "./TradePnLCurve.css";
 
 export default function TradePnLCurve({
   symbol,
+  category = "",
   entryTime,
   exitTime,
   entryPrice,
@@ -94,6 +95,7 @@ export default function TradePnLCurve({
         // ✅ Fixed: Use startMs and endMs directly
         const cleanSymbol = normalizeStoredSymbol(symbol);
         const url = `${API_URL}/api/klines?symbol=${encodeURIComponent(cleanSymbol)}` +
+          `${category ? `&category=${encodeURIComponent(category)}` : ""}` +
           `&interval=${interval}` +
           `&startTime=${startMs}` +
           `&endTime=${endMs}` +
@@ -159,7 +161,7 @@ export default function TradePnLCurve({
 
     fetchAndDraw();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [symbol, entryTime, exitTime, entryPrice, exitPrice, quantity, side]);
+  }, [symbol, category, entryTime, exitTime, entryPrice, exitPrice, quantity, side]);
 
   // Redraw on dark mode change
   useEffect(() => {

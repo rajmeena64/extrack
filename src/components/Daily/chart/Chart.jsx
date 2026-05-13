@@ -10,7 +10,7 @@ const TF_MAP = { "1m": "1m", "5m": "5m", "15m": "15m", "1h": "1h" };
 const INTERVAL_MS = { "1m": 60*1000, "5m": 5*60*1000, "15m": 15*60*1000, "1h": 60*60*1000 };
 
 
-function Chart({ darkMode, symbol = "BTCUSDT", tradeDate, tradeTime, showFullDay = false, trades = [], totalCandles = 2000 }) {
+function Chart({ darkMode, symbol = "BTCUSDT", category = "", tradeDate, tradeTime, showFullDay = false, trades = [], totalCandles = 2000 }) {
   const BULLISH_CANDLE_COLOR = "#2563eb";
   const BEARISH_CANDLE_COLOR = "#ef4444";
   const chartRef = useRef(null);
@@ -170,6 +170,10 @@ function Chart({ darkMode, symbol = "BTCUSDT", tradeDate, tradeTime, showFullDay
           endTime: String(endTime),
         });
 
+        if (category) {
+          params.set("category", category);
+        }
+
         if (rangeStartTime) {
           params.set("startTime", String(rangeStartTime));
         }
@@ -269,7 +273,7 @@ trades.forEach(t => {
     };
 
     loadData();
-  }, [tf, cleanedSymbol, tradeDate, showFullDay, trades, getDateRange, totalCandles, normalizeMarkerTime]);
+  }, [tf, cleanedSymbol, category, tradeDate, showFullDay, trades, getDateRange, totalCandles, normalizeMarkerTime]);
 
   const loaderCandles = [
     ["green", "c0"], ["red", "c1"], ["green", "c2"], ["green", "c3"],

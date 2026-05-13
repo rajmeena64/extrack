@@ -17,8 +17,6 @@ router.get('/trades-by-date/:userid?', authCheck, async (req, res) => {
     const userId = req.userId;
     const { date } = req.query;
 
-    console.log("Trade lookup by date requested:", { userId, date });
-
     if (!date) {
         return res.json({ 
             success: false, 
@@ -62,12 +60,9 @@ router.get('/trades-by-date/:userid?', authCheck, async (req, res) => {
             total_all: manualResult.rows.length + apiResult.rows.length
         };
 
-        console.log(`Trade lookup by date completed. Manual: ${manualResult.rows.length}, Sync: ${apiResult.rows.length}`);
-        
         res.json(response);
 
     } catch (error) {
-        console.error("Trade lookup by date failed:", error.message);
         res.json({ 
             success: false, 
             error: error.message 
@@ -79,8 +74,6 @@ router.get('/trades-by-date/:userid?', authCheck, async (req, res) => {
 router.get('/trades-by-date-range/:userid?', authCheck, async (req, res) => {
     const userId = req.userId;
     const { start_date, end_date } = req.query;
-
-    console.log("Trade range summary requested:", { userId, start_date, end_date });
 
     if (!start_date || !end_date) {
         return res.json({ 
@@ -147,8 +140,6 @@ router.get('/trades-by-date-range/:userid?', authCheck, async (req, res) => {
         const dailyData = Array.from(mergedByDate.values())
             .sort((a, b) => new Date(b.trade_date) - new Date(a.trade_date));
 
-        console.log(`Trade range summary completed. Days with trades: ${dailyData.length}`);
-        
         res.json({
             success: true,
             start_date: start_date,
@@ -158,7 +149,6 @@ router.get('/trades-by-date-range/:userid?', authCheck, async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Trade range summary failed:", error.message);
         res.json({ 
             success: false, 
             error: error.message 
@@ -169,8 +159,6 @@ router.get('/trades-by-date-range/:userid?', authCheck, async (req, res) => {
 // GET TRADE SUMMARY
 router.get('/trade-summary/:userid?', authCheck, async (req, res) => {
     const userId = req.userId;
-
-    console.log("Trade summary requested:", { userId });
 
     try {
         const manualResult = await pool.query(
@@ -221,8 +209,6 @@ router.get('/trade-summary/:userid?', authCheck, async (req, res) => {
         const totalTrades = combinedSummary.total_trades;
         const winRate = totalTrades > 0 ? (combinedSummary.winning_trades / totalTrades * 100).toFixed(2) : 0;
 
-        console.log("Trade summary completed:", combinedSummary);
-        
         res.json({
             success: true,
             summary: {
@@ -234,7 +220,6 @@ router.get('/trade-summary/:userid?', authCheck, async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Trade summary failed:", error.message);
         res.json({ success: false, error: error.message });
     }
 });

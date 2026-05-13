@@ -8,8 +8,6 @@ const { requireIngestSecret } = require('../utils/security');
 router.post("/mt5/receive-trades", requireIngestSecret, (req, res) => {
     const trades = req.body;
 
-    console.log("MT5 trades received:", trades);
-
     // Agar database me save karna ho to yaha kar sakte ho
     // Example: saveBulkTrades(trades)
 

@@ -20,7 +20,6 @@ router.get('/settings', authCheck, async (req, res) => {
 
     res.json({ success: true, settings: result.rows[0].settings });
   } catch (err) {
-    console.error("Failed to load settings:", err.message);
     res.status(500).json({ success: false, error: err.message });
   }
 });
@@ -59,7 +58,6 @@ router.post('/settings', authCheck, async (req, res) => {
 
     res.json({ success: true, settings: update.rows[0].settings });
   } catch (err) {
-    console.error("Failed to save settings:", err.message);
     res.status(500).json({ success: false, error: err.message });
   }
 });

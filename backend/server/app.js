@@ -3,7 +3,7 @@ const fs = require('fs');
 const http = require('http');
 const WebSocket = require('ws');
 const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '.env') });
+require('dotenv').config({ path: path.join(__dirname, '.env'), quiet: true });
 
 const app = express();
 const missingEnv = [];
@@ -45,7 +45,6 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 if (missingEnv.length > 0) {
-  console.error(`Missing required environment variables: ${missingEnv.join(', ')}`);
   process.exit(1);
 }
 
@@ -76,7 +75,7 @@ const apiRoutes = require('./routes/Api');
 
 const binanceRoutes = require('./routes/binance');
 
-const { registerCtraderRoutes } = require('./routes/ctrader');
+const { registerCtraderRoutes, ensureCtraderTokenStore } = require('./routes/ctrader');
 
 
 // **sab API routes pe automatically apply**
@@ -123,15 +122,8 @@ const wss = new WebSocket.Server({ server });
 app.set('wss', wss);
 
 wss.on('connection', (ws) => {
-  // console.log("WebSocket client connected");
-
-  ws.on('close', () => {
-    // console.log("WebSocket client disconnected");
-  });
-
-  ws.on('message', (_msg) => {
-    // console.log("WS message:", msg.toString());
-  });
+  ws.on('close', () => {});
+  ws.on('message', () => {});
 });
 
 /* =======================
@@ -143,15 +135,16 @@ async function startServer() {
   try {
     if (typeof tradeRoutes.ensureApiTradeMetadataColumns === 'function') {
       await tradeRoutes.ensureApiTradeMetadataColumns();
-      console.log('api_trades metadata columns are ready');
+    }
+
+    if (typeof ensureCtraderTokenStore === 'function') {
+      await ensureCtraderTokenStore();
     }
   } catch (error) {
-    console.error('Failed to ensure database schema:', error.message);
     process.exit(1);
   }
 
-  server.listen(PORT, () => {
-    console.log(`Backend server running on port ${PORT}`);
+    server.listen(PORT, () => {
   });
 }
 

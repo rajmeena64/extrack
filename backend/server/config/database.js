@@ -10,7 +10,7 @@
 
 const path = require("path");
 
-require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
+require("dotenv").config({ path: path.join(__dirname, "..", ".env"), quiet: true });
 const { Pool } = require("pg");
 
 const sslEnabled = String(process.env.DB_SSL_ENABLED || "true") === "true";
