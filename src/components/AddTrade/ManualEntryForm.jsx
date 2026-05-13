@@ -4,6 +4,7 @@ import SymbolWithIcon from "../Common/SymbolWithIcon";
 import LegacyIcon from "../Common/LegacyIcon";
 import api from "../../utils/serve";
 import { useAuth } from '../../context/AuthContext';
+import { normalizeStoredSymbol } from "../../utils/symbols";
 
 function ManualEntryForm({ API_URL, trades }) {
   const navigate = useNavigate();
@@ -45,7 +46,7 @@ function ManualEntryForm({ API_URL, trades }) {
     if (id === 'symbol') {
       setFormData(prev => ({
         ...prev,
-        [id]: value.toUpperCase().replace(/\s+/g, '').trim()
+        [id]: normalizeStoredSymbol(value)
       }));
     } else {
       setFormData(prev => ({
@@ -74,7 +75,7 @@ function ManualEntryForm({ API_URL, trades }) {
   const selectSymbol = (symbol) => {
     setFormData(prev => ({
       ...prev,
-      symbol: symbol.toUpperCase().replace(/\s+/g, '').trim()
+      symbol: normalizeStoredSymbol(symbol)
     }));
     setShowSymbolSuggestions(false);
   };
@@ -101,7 +102,7 @@ function ManualEntryForm({ API_URL, trades }) {
     const utcTimestamp = dateObj.toISOString();
 
     const tradeData = {
-      symbol: formData.symbol,
+      symbol: normalizeStoredSymbol(formData.symbol),
       trade_type: formData.tradeType,
       category: formData.category,
       quantity: parseFloat(formData.quantity),

@@ -7,6 +7,7 @@ const {
     encryptMT5Password,
     verifyMT5Password,
 } = require('../utils/mt5Credentials');
+const { normalizeStoredSymbol } = require('../utils/symbols');
 
 function normalizeScreenshots(screenshots) {
     if (!screenshots) return null;
@@ -71,12 +72,17 @@ router.post('/save-trade', authCheck, async (req, res) => {
 
     try {
         const screenshotsJson = normalizeScreenshots(screenshots);
+        const normalizedSymbol = normalizeStoredSymbol(symbol);
+
+        if (!normalizedSymbol) {
+            return res.status(400).json({ success: false, error: 'Invalid symbol' });
+        }
 
         await pool.query(
             `INSERT INTO trades
              (user_id, symbol, trade_type, category, quantity, price, exit_price, pnl, strategy, timestamp, notes, screenshots)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
-            [req.userId, symbol, trade_type, category, quantity, price, exit_price, pnl, strategy, timestamp, notes, screenshotsJson]
+            [req.userId, normalizedSymbol, trade_type, category, quantity, price, exit_price, pnl, strategy, timestamp, notes, screenshotsJson]
         );
 
         res.json({
@@ -117,8 +123,9 @@ router.post('/save-bulk-trades', authCheck, async (req, res) => {
             const tradeTimestamp = trade.timestamp || trade.opening_time_utc;
             const tradePNL = trade.pnl || trade.profit_usd || 0;
             const screenshotsJson = normalizeScreenshots(trade.screenshots || null);
+            const normalizedSymbol = normalizeStoredSymbol(trade.symbol);
 
-            if (!trade.symbol) {
+            if (!normalizedSymbol) {
                 results.push({ success: false, trade: 'Unknown', error: 'Missing symbol' });
                 errorCount++;
                 continue;
@@ -161,7 +168,7 @@ router.post('/save-bulk-trades', authCheck, async (req, res) => {
                  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
                 [
                     req.userId,
-                    trade.symbol,
+                    normalizedSymbol,
                     normalizedTradeType,
                     trade.category || 'forex',
                     parseFloat(tradeQuantity),
@@ -175,7 +182,7 @@ router.post('/save-bulk-trades', authCheck, async (req, res) => {
                 ]
             );
 
-            results.push({ success: true, trade: trade.symbol });
+            results.push({ success: true, trade: normalizedSymbol });
             successCount++;
         } catch (error) {
             results.push({ success: false, trade: trade.symbol, error: error.message });
@@ -241,6 +248,7 @@ async function ingestApiTrades(req, res) {
                 const normalizedExitPrice = roundToScale(exit_price, 5);
                 const normalizedProfit = roundToScale(profit ?? 0, 5);
                 const normalizedBalance = roundToScale(balance, 5);
+                const normalizedSymbol = normalizeStoredSymbol(symbol);
 
                 if (!account_id || !ticket || balance === undefined) {
                     console.warn('[save-api-trade] validation failed: missing required fields', {
@@ -267,11 +275,11 @@ async function ingestApiTrades(req, res) {
                     continue;
                 }
 
-                if (!isClosedTradePayload(trade)) {
+                if (!normalizedSymbol || !isClosedTradePayload({ ...trade, symbol: normalizedSymbol })) {
                     console.warn('[save-api-trade] skipped non-trade or incomplete trade payload', {
                         account_id,
                         ticket,
-                        symbol,
+                        symbol: normalizedSymbol || symbol,
                         type,
                         volume,
                         entry_price,
@@ -343,7 +351,7 @@ async function ingestApiTrades(req, res) {
                 params.push(
                     userId,
                     account_id,
-                    symbol,
+                    normalizedSymbol,
                     type.toLowerCase(),
                     normalizedQuantity,
                     normalizedEntryPrice,

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import LegacyIcon from '../Common/LegacyIcon';
 import api from '../../utils/serve';
 import { useAuth } from '../../context/AuthContext';
+import { normalizeStoredSymbol } from '../../utils/symbols';
 
 function CSVUploadForm({ API_URL, csvData, setCsvData }) {
   const navigate = useNavigate();
@@ -78,11 +79,13 @@ function CSVUploadForm({ API_URL, csvData, setCsvData }) {
       const values = lines[i].split(',').map(v => v.trim());
       const trade = {};
       
-      headers.forEach((header, index) => {
-        if (headerMap[header] && values[index]) {
-          trade[headerMap[header]] = values[index];
-        }
-      });
+        headers.forEach((header, index) => {
+          if (headerMap[header] && values[index]) {
+            trade[headerMap[header]] = headerMap[header] === 'symbol'
+              ? normalizeStoredSymbol(values[index])
+              : values[index];
+          }
+        });
       
       trades.push(trade);
     }
@@ -150,6 +153,8 @@ function CSVUploadForm({ API_URL, csvData, setCsvData }) {
             
             if (['quantity', 'price', 'exit_price', 'pnl'].includes(standardName)) {
               trade[standardName] = parseFloat(value) || 0;
+            } else if (standardName === 'symbol') {
+              trade[standardName] = normalizeStoredSymbol(value);
             } else {
               trade[standardName] = value;
             }

@@ -1,10 +1,15 @@
 const express = require("express");
 const zlib = require("zlib");
 const router = express.Router();
+const { fetchCtraderKlines } = require("./ctrader");
 
 const FUTURES_BASE_URL = "https://fapi.binance.com";
 const SPOT_DATA_BASE_URL = "https://data-api.binance.vision";
 const VISION_BASE_URL = "https://data.binance.vision/data";
+const FOREX_SYMBOL_RE = /^[A-Z]{6}$/;
+const METAL_SYMBOL_RE = /^X(AU|AG)USD$/;
+const FOREX_CURRENCIES = new Set(["USD", "EUR", "GBP", "JPY", "AUD", "NZD", "CAD", "CHF"]);
+const BINANCE_QUOTES = ["USDT", "USDC", "BUSD"];
 const VALID_INTERVALS = new Set([
   "1m", "3m", "5m", "15m", "30m",
   "1h", "2h", "4h", "6h", "8h", "12h",
@@ -33,6 +38,46 @@ const clampLimit = (value) => {
 
   if (Number.isNaN(limit)) return 1000;
   return Math.min(Math.max(limit, 1), 1000);
+};
+
+const isForexPair = (symbol) => (
+  FOREX_SYMBOL_RE.test(symbol) &&
+  FOREX_CURRENCIES.has(symbol.slice(0, 3)) &&
+  FOREX_CURRENCIES.has(symbol.slice(3, 6))
+);
+
+const normalizeKlineSymbol = (symbol) => {
+  const normalized = String(symbol || "").toUpperCase().trim();
+  const forexCandidate = normalized.slice(0, 6);
+  const metalCandidate = normalized.slice(0, 6);
+
+  if (!normalized) return "BTCUSDT";
+  if (isForexPair(forexCandidate)) return forexCandidate;
+  if (METAL_SYMBOL_RE.test(metalCandidate)) return metalCandidate;
+  if (normalized === "GOLD" || normalized === "XAU") return "XAUUSD";
+  if (normalized === "SILVER" || normalized === "XAG") return "XAGUSD";
+  if (normalized.endsWith("USDC") || normalized.endsWith("BUSD")) return `${normalized.slice(0, -4)}USDT`;
+  if (
+    normalized.endsWith("USD") &&
+    !METAL_SYMBOL_RE.test(normalized) &&
+    !isForexPair(normalized)
+  ) {
+    return `${normalized.slice(0, -3)}USDT`;
+  }
+
+  return normalized;
+};
+
+const shouldUseBinance = (symbol) => {
+  if (METAL_SYMBOL_RE.test(symbol) || isForexPair(symbol)) {
+    return false;
+  }
+
+  if (BINANCE_QUOTES.some((quote) => symbol.endsWith(quote))) {
+    return true;
+  }
+
+  return symbol.endsWith("USD");
 };
 
 const formatUtcDate = (timestamp) => {
@@ -191,7 +236,7 @@ router.get("/klines", async (req, res) => {
       });
     }
 
-    const symbolUpper = String(symbol).toUpperCase();
+    const symbolUpper = normalizeKlineSymbol(symbol);
     const normalizedLimit = clampLimit(limit);
     const numericStartTime = startTime ? Number(startTime) : undefined;
     const numericEndTime = endTime ? Number(endTime) : undefined;
@@ -212,24 +257,42 @@ router.get("/klines", async (req, res) => {
 
     const errors = [];
 
-    try {
-      const spotData = await fetchJsonKlines(SPOT_DATA_BASE_URL, "/api/v3/klines", params);
-      if (spotData.length) return res.json(spotData);
-    } catch (error) {
-      errors.push(error);
+    const useBinanceSource = shouldUseBinance(symbolUpper);
+
+    if (useBinanceSource) {
+      try {
+        const spotData = await fetchJsonKlines(SPOT_DATA_BASE_URL, "/api/v3/klines", params);
+        if (spotData.length) return res.json(spotData);
+      } catch (error) {
+        errors.push(error);
+      }
+
+      try {
+        const futuresData = await fetchJsonKlines(FUTURES_BASE_URL, "/fapi/v1/klines", params);
+        if (futuresData.length) return res.json(futuresData);
+      } catch (error) {
+        errors.push(error);
+      }
+
+      const visionMarkets = ["futures", "spot"];
+      for (const market of visionMarkets) {
+        const visionData = await fetchVisionDailyKlines({
+          market,
+          symbol: symbolUpper,
+          interval,
+          startTime: numericStartTime,
+          endTime: numericEndTime,
+          limit: normalizedLimit,
+        });
+
+        if (visionData.length) {
+          return res.json(visionData);
+        }
+      }
     }
 
     try {
-      const futuresData = await fetchJsonKlines(FUTURES_BASE_URL, "/fapi/v1/klines", params);
-      if (futuresData.length) return res.json(futuresData);
-    } catch (error) {
-      errors.push(error);
-    }
-
-    const visionMarkets = ["futures", "spot"];
-    for (const market of visionMarkets) {
-      const visionData = await fetchVisionDailyKlines({
-        market,
+      const ctraderData = await fetchCtraderKlines({
         symbol: symbolUpper,
         interval,
         startTime: numericStartTime,
@@ -237,14 +300,16 @@ router.get("/klines", async (req, res) => {
         limit: normalizedLimit,
       });
 
-      if (visionData.length) {
-        return res.json(visionData);
+      if (ctraderData.length) {
+        return res.json(ctraderData);
       }
+    } catch (error) {
+      errors.push(error);
     }
 
     const lastError = errors[errors.length - 1];
     return res.status(lastError?.status || 404).json(lastError?.payload || {
-      error: "No Binance kline data found",
+      error: "No kline data found",
       symbol: symbolUpper,
       interval,
     });

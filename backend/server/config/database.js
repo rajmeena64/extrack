@@ -8,9 +8,9 @@
 
 // module.exports = pool;
 
+const path = require("path");
 
-
-require("dotenv").config();
+require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
 const { Pool } = require("pg");
 
 const sslEnabled = String(process.env.DB_SSL_ENABLED || "true") === "true";

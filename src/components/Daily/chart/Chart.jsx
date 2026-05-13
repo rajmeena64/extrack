@@ -13,14 +13,14 @@ const FOREX_CURRENCIES = new Set(["USD", "EUR", "GBP", "JPY", "AUD", "NZD", "CAD
 const BINANCE_QUOTES = ["USDT", "USDC", "BUSD"];
 const BROKER_SUFFIXES = ["ECN", "RAW", "PRO", "MINI", "MICRO", "CASH"];
 const METAL_ALIASES = {
-  GOLD: "XAUUSDT",
-  XAU: "XAUUSDT",
-  XAUUSD: "XAUUSDT",
-  XAUUSDC: "XAUUSDT",
-  SILVER: "XAGUSDT",
-  XAG: "XAGUSDT",
-  XAGUSD: "XAGUSDT",
-  XAGUSDC: "XAGUSDT",
+  GOLD: "XAUUSD",
+  XAU: "XAUUSD",
+  XAUUSD: "XAUUSD",
+  XAUUSDC: "XAUUSD",
+  SILVER: "XAGUSD",
+  XAG: "XAGUSD",
+  XAGUSD: "XAGUSD",
+  XAGUSDC: "XAGUSD",
 };
 
 
@@ -80,6 +80,22 @@ function Chart({ darkMode, symbol = "BTCUSDT", tradeDate, tradeTime, showFullDay
     FOREX_CURRENCIES.has(sym.slice(3, 6))
   ), []);
 
+  const normalizeMarketSymbol = useCallback((sym) => {
+    const normalized = String(sym || "").toUpperCase();
+    const forexCandidate = normalized.slice(0, 6);
+    const metalCandidate = normalized.slice(0, 6);
+
+    if (isForexPair(forexCandidate)) {
+      return forexCandidate;
+    }
+
+    if (METAL_SYMBOL_RE.test(metalCandidate)) {
+      return metalCandidate;
+    }
+
+    return normalized;
+  }, [isForexPair]);
+
   const mapToBinanceSymbol = useCallback((sym) => {
     const s = sym?.toUpperCase();
 
@@ -92,9 +108,7 @@ function Chart({ darkMode, symbol = "BTCUSDT", tradeDate, tradeTime, showFullDay
     return s;
   }, [isForexPair]);
 
-  const cleanedSymbol = mapToBinanceSymbol(cleanSymbol(symbol));
-  const isForexOrMetalSymbol = isForexPair(cleanedSymbol);
-  const isBinanceSymbolShape = BINANCE_QUOTES.some((quote) => cleanedSymbol.endsWith(quote));
+  const cleanedSymbol = mapToBinanceSymbol(normalizeMarketSymbol(cleanSymbol(symbol)));
 
   const normalizeMarkerTime = useCallback((value) => {
     if (!value) return null;
@@ -214,14 +228,31 @@ function Chart({ darkMode, symbol = "BTCUSDT", tradeDate, tradeTime, showFullDay
     if (!candleSeriesRef.current) return;
     setLoading(true); setError(null);
 
-    const fetchBinanceCandles = async (symbol, interval, totalCandles = 2000) => {
+    const fetchCandles = async (symbol, interval, totalCandles = 2000) => {
       const limit = 1000;
       const requestsNeeded = Math.ceil(totalCandles / limit);
       let allCandles = [];
-      let endTime = showFullDay && tradeDate ? getDateRange().endTime : Date.now();
+      const range = showFullDay && tradeDate ? getDateRange() : null;
+      const rangeStartTime = range?.startTime;
+      let endTime = range?.endTime || Date.now();
 
       for (let i=0; i<requestsNeeded; i++) {
-        const url = `${API_URL}/api/klines?symbol=${symbol}&interval=${interval}&limit=${limit}&endTime=${endTime}`;
+        if (rangeStartTime && endTime < rangeStartTime) {
+          break;
+        }
+
+        const params = new URLSearchParams({
+          symbol,
+          interval,
+          limit: String(limit),
+          endTime: String(endTime),
+        });
+
+        if (rangeStartTime) {
+          params.set("startTime", String(rangeStartTime));
+        }
+
+        const url = `${API_URL}/api/klines?${params.toString()}`;
         const res = await fetch(url);
         const data = await res.json();
 
@@ -242,65 +273,9 @@ function Chart({ darkMode, symbol = "BTCUSDT", tradeDate, tradeTime, showFullDay
       }));
     };
 
-    const fetchForexCandles = async (symbol, interval, totalCandles = 2000) => {
-      const range = showFullDay && tradeDate ? getDateRange() : null;
-      const params = new URLSearchParams({
-        symbol,
-        period: interval,
-        limit: String(Math.min(totalCandles, 1000)),
-      });
-
-      if (range?.startTime) params.set("from", String(Math.floor(range.startTime / 1000)));
-      if (range?.endTime) params.set("to", String(Math.floor(range.endTime / 1000)));
-
-      const res = await fetch(`${API_URL}/api/forex-ohlc?${params.toString()}`);
-      const data = await res.json();
-
-      if (!res.ok || data?.success === false) {
-        const message = data?.message || data?.error || `Forex chart API error (${res.status})`;
-        throw new Error(message);
-      }
-
-      return (data?.data || []).map((d) => ({
-        time: Number(d.time),
-        open: Number(d.open),
-        high: Number(d.high),
-        low: Number(d.low),
-        close: Number(d.close),
-        volume: Number(d.volume || 0),
-      })).filter((d) =>
-        Number.isFinite(d.time) &&
-        Number.isFinite(d.open) &&
-        Number.isFinite(d.high) &&
-        Number.isFinite(d.low) &&
-        Number.isFinite(d.close)
-      );
-    };
-
     const loadData = async () => {
       try {
-        let candles = [];
-        let binanceError = null;
-
-        if (!isForexOrMetalSymbol && !isBinanceSymbolShape) {
-          setError(`No supported tick data source found for ${cleanedSymbol}.`);
-          candleSeriesRef.current.setData([]);
-          return;
-        }
-
-        if (!isForexOrMetalSymbol) {
-          try {
-            candles = await fetchBinanceCandles(cleanedSymbol, TF_MAP[tf], totalCandles);
-          } catch (err) {
-            binanceError = err;
-          }
-        }
-
-        if (candles.length === 0 && isForexOrMetalSymbol) {
-          candles = await fetchForexCandles(cleanedSymbol, TF_MAP[tf], totalCandles);
-        } else if (binanceError) {
-          throw binanceError;
-        }
+        const candles = await fetchCandles(cleanedSymbol, TF_MAP[tf], totalCandles);
 
         if (candles.length === 0) {
           setError(`No chart data found for ${cleanedSymbol}.`);
@@ -372,7 +347,7 @@ trades.forEach(t => {
     };
 
     loadData();
-  }, [tf, cleanedSymbol, tradeDate, showFullDay, trades, getDateRange, totalCandles, isForexOrMetalSymbol, isBinanceSymbolShape, normalizeMarkerTime]);
+  }, [tf, cleanedSymbol, tradeDate, showFullDay, trades, getDateRange, totalCandles, normalizeMarkerTime]);
 
   const loaderCandles = [
     ["green", "c0"], ["red", "c1"], ["green", "c2"], ["green", "c3"],

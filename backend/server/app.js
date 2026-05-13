@@ -3,7 +3,7 @@ const fs = require('fs');
 const http = require('http');
 const WebSocket = require('ws');
 const path = require('path');
-require('dotenv').config();
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const app = express();
 const missingEnv = [];

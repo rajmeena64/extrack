@@ -15,6 +15,51 @@ let reconnectAttempts = 0;
 const MAX_RECONNECT_ATTEMPTS = 5;
 let isConnecting = false;
 const ADMIN_ACCOUNT_TYPES = new Set(['admin', 'superadmin']);
+const PROTO_DIR = _path.join(__dirname, '..', 'proto');
+const PRICE_SCALE = 100000;
+const CTRADER_PERIODS = {
+  M1: 1,
+  M2: 2,
+  M3: 3,
+  M4: 4,
+  M5: 5,
+  M10: 6,
+  M15: 7,
+  M30: 8,
+  H1: 9,
+  H4: 10,
+  H12: 11,
+  D1: 12,
+  W1: 13,
+  MN1: 14,
+};
+const CTRADER_INTERVALS = {
+  '1m': CTRADER_PERIODS.M1,
+  '3m': CTRADER_PERIODS.M3,
+  '5m': CTRADER_PERIODS.M5,
+  '15m': CTRADER_PERIODS.M15,
+  '30m': CTRADER_PERIODS.M30,
+  '1h': CTRADER_PERIODS.H1,
+  '4h': CTRADER_PERIODS.H4,
+  '1d': CTRADER_PERIODS.D1,
+  '1w': CTRADER_PERIODS.W1,
+  '1M': CTRADER_PERIODS.MN1,
+};
+const RESPONSE_TYPE_NAMES = {
+  2101: 'ProtoOAApplicationAuthRes',
+  2103: 'ProtoOAAccountAuthRes',
+  2115: 'ProtoOASymbolsListRes',
+  2138: 'ProtoOAGetTrendbarsRes',
+  2142: 'ProtoOAErrorRes',
+  2146: 'ProtoOAGetTickDataRes',
+};
+const EXPECTED_RESPONSE_BY_REQUEST = {
+  2100: 2101,
+  2102: 2103,
+  2114: 2115,
+  2137: 2138,
+  2145: 2146,
+};
 
 async function requireCtraderAdmin(req, res, next) {
   try {
@@ -65,6 +110,8 @@ const ctraderConfig = {
   // Store accounts info
   accounts: [],
   currentAccount: null,
+  isAppAuthed: false,
+  isAccountAuthed: false,
 };
 
 // =======================
@@ -72,15 +119,16 @@ const ctraderConfig = {
 // =======================
 function checkProtoFiles() {
   const protoFiles = [
-    "./proto/OpenApiMessages.proto",
-    "./proto/OpenApiModelMessages.proto",
-    "./proto/OpenApiCommonMessages.proto",
-    "./proto/OpenApiCommonModelMessages.proto"
+    "OpenApiMessages.proto",
+    "OpenApiModelMessages.proto",
+    "OpenApiCommonMessages.proto",
+    "OpenApiCommonModelMessages.proto"
   ];
   
   for (const file of protoFiles) {
-    if (!fs.existsSync(file)) {
-      throw new Error(`Proto file not found: ${file}`);
+    const protoPath = _path.join(PROTO_DIR, file);
+    if (!fs.existsSync(protoPath)) {
+      throw new Error(`Proto file not found: ${protoPath}`);
     }
   }
   return true;
@@ -94,10 +142,10 @@ async function loadProtos() {
     checkProtoFiles();
     
     root = await protobuf.load([
-      "./proto/OpenApiMessages.proto",
-      "./proto/OpenApiModelMessages.proto",
-      "./proto/OpenApiCommonMessages.proto",
-      "./proto/OpenApiCommonModelMessages.proto"
+      _path.join(PROTO_DIR, "OpenApiMessages.proto"),
+      _path.join(PROTO_DIR, "OpenApiModelMessages.proto"),
+      _path.join(PROTO_DIR, "OpenApiCommonMessages.proto"),
+      _path.join(PROTO_DIR, "OpenApiCommonModelMessages.proto")
     ]);
 
     console.log("Proto definitions loaded successfully");
@@ -285,6 +333,7 @@ async function ensureValidToken() {
 // =======================
 let requestIdCounter = 1;
 const pendingRequests = new Map();
+let requestQueue = Promise.resolve();
 
 function sendMessage(payloadType, payloadData, waitForResponse = false) {
   if (!ws || ws.readyState !== WebSocket.OPEN) {
@@ -300,15 +349,20 @@ function sendMessage(payloadType, payloadData, waitForResponse = false) {
     switch(payloadType) {
       case 2100: payloadTypeName = "ProtoOAApplicationAuthReq"; break;
       case 2102: payloadTypeName = "ProtoOAAccountAuthReq"; break;
-      case 2104: payloadTypeName = "ProtoOASymbolsListReq"; break;
+      case 2114: payloadTypeName = "ProtoOASymbolsListReq"; break;
       case 2106: payloadTypeName = "ProtoOAPingReq"; break;
       case 2137: payloadTypeName = "ProtoOAGetTrendbarsReq"; break;
+      case 2145: payloadTypeName = "ProtoOAGetTickDataReq"; break;
       default: payloadTypeName = null;
     }
     
     let encodedPayload;
     if (payloadTypeName) {
       const PayloadType = root.lookupType(payloadTypeName);
+      const verificationError = PayloadType.verify(payloadData);
+      if (verificationError) {
+        throw new Error(`${payloadTypeName} ${verificationError}`);
+      }
       encodedPayload = PayloadType.encode(payloadData).finish();
     } else {
       encodedPayload = payloadData;
@@ -336,6 +390,67 @@ function sendMessage(payloadType, payloadData, waitForResponse = false) {
     console.error("Failed to send cTrader message:", err.message);
     return null;
   }
+}
+
+function waitForResponse(requestId, timeoutMs = 15000) {
+  return new Promise((resolve, reject) => {
+    const pending = pendingRequests.get(requestId);
+
+    if (!pending) {
+      reject(new Error('cTrader request was not queued'));
+      return;
+    }
+
+    const timeout = setTimeout(() => {
+      pendingRequests.delete(requestId);
+      reject(new Error('cTrader request timed out'));
+    }, timeoutMs);
+
+    pending.resolve = (value) => {
+      clearTimeout(timeout);
+      resolve(value);
+    };
+
+    pending.reject = (error) => {
+      clearTimeout(timeout);
+      reject(error);
+    };
+  });
+}
+
+function findPendingRequestByResponseType(responsePayloadType) {
+  const matches = [];
+
+  for (const [pendingRequestId, pending] of pendingRequests.entries()) {
+    if (EXPECTED_RESPONSE_BY_REQUEST[pending.payloadType] === responsePayloadType) {
+      matches.push([pendingRequestId, pending]);
+    }
+  }
+
+  if (matches.length === 1) {
+    return {
+      requestId: matches[0][0],
+      pending: matches[0][1],
+    };
+  }
+
+  return null;
+}
+
+async function requestMessage(payloadType, payloadData, timeoutMs = 15000) {
+  const runRequest = async () => {
+    const requestId = sendMessage(payloadType, payloadData, true);
+
+    if (!requestId) {
+      throw new Error('Failed to send cTrader request');
+    }
+
+    return waitForResponse(requestId, timeoutMs);
+  };
+
+  const queuedRequest = requestQueue.catch(() => {}).then(runRequest);
+  requestQueue = queuedRequest.catch(() => {});
+  return queuedRequest;
 }
 
 // =======================
@@ -384,14 +499,28 @@ function requestSymbols() {
     ctidTraderAccountId: parseInt(ctraderConfig.accountId),
   };
   
-  sendMessage(2104, payload);
+  sendMessage(2114, payload);
   console.log("Sent cTrader symbols request");
+}
+
+async function requestSymbolsAsync() {
+  if (!ctraderConfig.accountId) {
+    throw new Error("No cTrader account ID available");
+  }
+
+  const payload = {
+    ctidTraderAccountId: parseInt(ctraderConfig.accountId),
+  };
+
+  const symbolsData = await requestMessage(2114, payload);
+  cacheSymbols(symbolsData);
+  return Array.from(ctraderConfig.symbols.values());
 }
 
 // =======================
 // REQUEST CANDLES
 // =======================
-function requestCandles(symbolId = null, period = "M1", count = 100) {
+function requestCandles(symbolId = null, period = CTRADER_PERIODS.M1, count = 100) {
   const targetSymbolId = symbolId || ctraderConfig.currentSymbolId;
   
   if (!targetSymbolId) {
@@ -413,6 +542,109 @@ function requestCandles(symbolId = null, period = "M1", count = 100) {
   
   sendMessage(2137, payload);
   console.log(`Sent candle request for cTrader symbol ${targetSymbolId}`);
+}
+
+function normalizeSymbolName(symbolName) {
+  return String(symbolName || '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '');
+}
+
+function cacheSymbols(symbolsData) {
+  if (!symbolsData?.symbols?.length && !symbolsData?.symbol?.length) {
+    return;
+  }
+
+  const symbols = symbolsData.symbols || symbolsData.symbol || [];
+  symbols.forEach((symbol) => {
+    const id = Number(symbol.symbolId);
+
+    if (!Number.isFinite(id)) {
+      return;
+    }
+
+    ctraderConfig.symbols.set(id, {
+      id,
+      name: symbol.symbolName,
+      normalizedName: normalizeSymbolName(symbol.symbolName),
+      description: symbol.description,
+    });
+
+    if (!ctraderConfig.currentSymbolId) {
+      ctraderConfig.currentSymbolId = id;
+    }
+  });
+}
+
+function resolveSymbolId(symbol) {
+  const normalized = normalizeSymbolName(symbol);
+  const alternatives = new Set([normalized]);
+
+  if (normalized.endsWith('USDT')) {
+    alternatives.add(`${normalized.slice(0, -4)}USD`);
+  }
+
+  for (const candidate of ctraderConfig.symbols.values()) {
+    if (
+      alternatives.has(candidate.normalizedName) ||
+      alternatives.has(normalizeSymbolName(candidate.name))
+    ) {
+      return candidate.id;
+    }
+  }
+
+  return null;
+}
+
+function trendbarToBinanceKline(trendbar) {
+  const low = Number(trendbar.low) / PRICE_SCALE;
+  const open = (Number(trendbar.low) + Number(trendbar.deltaOpen || 0)) / PRICE_SCALE;
+  const close = (Number(trendbar.low) + Number(trendbar.deltaClose || 0)) / PRICE_SCALE;
+  const high = (Number(trendbar.low) + Number(trendbar.deltaHigh || 0)) / PRICE_SCALE;
+  const openTime = Number(trendbar.utcTimestampInMinutes) * 60 * 1000;
+  const volume = Number(trendbar.volume || 0);
+
+  return [
+    openTime,
+    String(open),
+    String(high),
+    String(low),
+    String(close),
+    String(volume),
+    openTime,
+    '0',
+    volume,
+    '0',
+    '0',
+    '0',
+  ];
+}
+
+async function requestTrendbars(symbolId, period, count, fromTimestamp, toTimestamp) {
+  if (!symbolId) {
+    throw new Error("No cTrader symbol ID available");
+  }
+
+  if (!ctraderConfig.accountId) {
+    throw new Error("No cTrader account ID available");
+  }
+
+  const payload = {
+    ctidTraderAccountId: parseInt(ctraderConfig.accountId),
+    symbolId: Number(symbolId),
+    period,
+    count,
+  };
+
+  if (Number.isFinite(fromTimestamp)) {
+    payload.fromTimestamp = fromTimestamp;
+  }
+
+  if (Number.isFinite(toTimestamp)) {
+    payload.toTimestamp = toTimestamp;
+  }
+
+  return requestMessage(2137, payload);
 }
 
 // =======================
@@ -497,6 +729,8 @@ async function connectSocket() {
       ws.close();
       ws = null;
     }
+    ctraderConfig.isAppAuthed = false;
+    ctraderConfig.isAccountAuthed = false;
     
     stopHeartbeat();
     await ensureValidToken();
@@ -555,6 +789,93 @@ async function connectSocket() {
   }
 }
 
+async function waitForSocketReady(timeoutMs = 20000) {
+  const startedAt = Date.now();
+
+  while (Date.now() - startedAt < timeoutMs) {
+    if (
+      ws &&
+      ws.readyState === WebSocket.OPEN &&
+      ctraderConfig.isAppAuthed &&
+      ctraderConfig.isAccountAuthed
+    ) {
+      return;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+
+  throw new Error('cTrader connection is not ready');
+}
+
+async function ensureCtraderReady() {
+  if (!root) {
+    await loadProtos();
+  }
+
+  if (
+    !ws ||
+    ws.readyState !== WebSocket.OPEN ||
+    !ctraderConfig.isAppAuthed ||
+    !ctraderConfig.isAccountAuthed
+  ) {
+    await connectSocket();
+  }
+
+  await waitForSocketReady();
+
+  if (ctraderConfig.symbols.size === 0) {
+    await requestSymbolsAsync();
+  }
+}
+
+async function fetchCtraderKlines({ symbol, interval = '1m', startTime, endTime, limit = 1000 }) {
+  const period = CTRADER_INTERVALS[interval];
+
+  if (!period) {
+    const error = new Error(`Unsupported cTrader interval: ${interval}`);
+    error.status = 400;
+    throw error;
+  }
+
+  await ensureCtraderReady();
+
+  let symbolId = resolveSymbolId(symbol);
+
+  if (!symbolId) {
+    await requestSymbolsAsync();
+    symbolId = resolveSymbolId(symbol);
+  }
+
+  if (!symbolId) {
+    const error = new Error(`cTrader symbol not found: ${symbol}`);
+    error.status = 404;
+    throw error;
+  }
+
+  const normalizedLimit = Math.min(Math.max(Number.parseInt(limit, 10) || 1000, 1), 1000);
+  const numericStartTime = startTime ? Number(startTime) : undefined;
+  const numericEndTime = endTime ? Number(endTime) : Date.now();
+  const trendData = await requestTrendbars(
+    symbolId,
+    period,
+    normalizedLimit,
+    Number.isFinite(numericStartTime) ? numericStartTime : undefined,
+    Number.isFinite(numericEndTime) ? numericEndTime : undefined
+  );
+
+  return (trendData?.trendbar || trendData?.trendbars || [])
+    .map(trendbarToBinanceKline)
+    .filter((kline) => {
+      const openTime = Number(kline[0]);
+      if (!Number.isFinite(openTime)) return false;
+      if (Number.isFinite(numericStartTime) && openTime < numericStartTime) return false;
+      if (Number.isFinite(numericEndTime) && openTime > numericEndTime) return false;
+      return true;
+    })
+    .sort((a, b) => Number(a[0]) - Number(b[0]));
+}
+
 // =======================
 // HANDLE MESSAGE
 // =======================
@@ -564,10 +885,52 @@ function handleMessage(data) {
     const decoded = Message.decode(new Uint8Array(data));
     
     console.log(`Received cTrader message type ${decoded.payloadType}`);
+    const requestId = Number(decoded.requestId || 0);
+    let resolvedRequestId = requestId;
+    let pending = requestId ? pendingRequests.get(requestId) : null;
+
+    if (!pending && !requestId) {
+      const fallbackPending = findPendingRequestByResponseType(decoded.payloadType);
+      if (fallbackPending) {
+        resolvedRequestId = fallbackPending.requestId;
+        pending = fallbackPending.pending;
+      }
+    }
+
+    if (pending) {
+      pendingRequests.delete(resolvedRequestId);
+
+      if (decoded.payloadType === 2142) {
+        try {
+          const ErrorRes = root.lookupType("ProtoOAErrorRes");
+          const errorData = ErrorRes.decode(decoded.payload);
+          pending.reject(new Error(errorData.description || errorData.errorCode || "cTrader API error"));
+        } catch (error) {
+          pending.reject(error);
+        }
+        return;
+      }
+
+      const responseTypeName = RESPONSE_TYPE_NAMES[decoded.payloadType];
+
+      if (!responseTypeName) {
+        pending.reject(new Error(`Unexpected cTrader response type ${decoded.payloadType}`));
+        return;
+      }
+
+      try {
+        const ResponseType = root.lookupType(responseTypeName);
+        pending.resolve(ResponseType.decode(decoded.payload));
+      } catch (error) {
+        pending.reject(error);
+      }
+      return;
+    }
 
     switch(decoded.payloadType) {
       case 2101:
         console.log("cTrader application authorized successfully");
+        ctraderConfig.isAppAuthed = true;
         setTimeout(() => sendAccountAuth(), 500);
         break;
       
@@ -576,42 +939,26 @@ function handleMessage(data) {
           const AccAuthRes = root.lookupType("ProtoOAAccountAuthRes");
           const accAuthData = AccAuthRes.decode(decoded.payload);
           
-          if (accAuthData.success) {
-            console.log("cTrader account authorized successfully");
-            setTimeout(() => requestSymbols(), 500);
-          } else {
-            console.error("cTrader account authorization failed:", accAuthData.errorMessage);
-          }
+          ctraderConfig.isAccountAuthed = true;
+          console.log("cTrader account authorized successfully");
         } catch (_err) {
+          ctraderConfig.isAccountAuthed = true;
           console.log("cTrader account authorization completed successfully");
-          setTimeout(() => requestSymbols(), 500);
         }
         break;
       
-      case 2105:
+      case 2115:
         try {
           const SymbolsRes = root.lookupType("ProtoOASymbolsListRes");
           const symbolsData = SymbolsRes.decode(decoded.payload);
           
-          if (symbolsData.symbols && symbolsData.symbols.length > 0) {
-            symbolsData.symbols.forEach(symbol => {
-              ctraderConfig.symbols.set(symbol.symbolId, {
-                id: symbol.symbolId,
-                name: symbol.symbolName,
-                description: symbol.description
-              });
-              
-              if (!ctraderConfig.currentSymbolId) {
-                ctraderConfig.currentSymbolId = symbol.symbolId;
-              }
-            });
+          const symbols = symbolsData.symbols || symbolsData.symbol || [];
+
+          if (symbols.length > 0) {
+            cacheSymbols(symbolsData);
             
             console.log(`Loaded ${ctraderConfig.symbols.size} cTrader symbols`);
             console.log(`Available cTrader symbols: ${Array.from(ctraderConfig.symbols.values()).slice(0, 10).map(s => s.name).join(', ')}...`);
-            
-            if (ctraderConfig.currentSymbolId) {
-              requestCandles();
-            }
           }
         } catch (err) {
           console.error("Failed to decode symbols:", err.message);
@@ -698,12 +1045,48 @@ function registerCtraderRoutes(app) {
     });
   });
   
-  app.get("/api/ctrader-symbols", authCheck, requireCtraderAdmin, (req, res) => {
-    res.json({
-      success: true,
-      symbols: Array.from(ctraderConfig.symbols.values()),
-      currentSymbolId: ctraderConfig.currentSymbolId
-    });
+  app.get("/api/ctrader-symbols", authCheck, requireCtraderAdmin, async (req, res) => {
+    try {
+      await ensureCtraderReady();
+
+      res.json({
+        success: true,
+        symbols: Array.from(ctraderConfig.symbols.values()),
+        currentSymbolId: ctraderConfig.currentSymbolId
+      });
+    } catch (err) {
+      res.status(err.status || 500).json({
+        success: false,
+        error: err.message
+      });
+    }
+  });
+
+  app.get("/api/ctrader-klines", async (req, res) => {
+    try {
+      const { symbol, interval, startTime, endTime, limit } = req.query;
+
+      if (!symbol || !interval) {
+        return res.status(400).json({
+          error: "Missing parameters",
+          required: ["symbol", "interval"],
+        });
+      }
+
+      const klines = await fetchCtraderKlines({
+        symbol,
+        interval,
+        startTime,
+        endTime,
+        limit,
+      });
+
+      return res.json(klines);
+    } catch (error) {
+      return res.status(error.status || 500).json({
+        error: error.message,
+      });
+    }
   });
 }
 
@@ -714,11 +1097,14 @@ function cleanup() {
     ws.close();
     ws = null;
   }
+  ctraderConfig.isAppAuthed = false;
+  ctraderConfig.isAccountAuthed = false;
   isConnecting = false;
   reconnectAttempts = 0;
 }
 
 module.exports = {
   registerCtraderRoutes,
+  fetchCtraderKlines,
   cleanup
 };
