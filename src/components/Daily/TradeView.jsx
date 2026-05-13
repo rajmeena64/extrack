@@ -171,8 +171,8 @@ function TradeView({ trades = [] }) {
           setCurrentMonth(data.settings.currentMonth ?? new Date().getMonth());
           setCurrentYear(data.settings.currentYear ?? new Date().getFullYear());
         }
-      } catch (err) {
-        console.error("Error loading settings:", err);
+      } catch {
+        // Defaults remain active if saved settings cannot be loaded.
       } finally {
         setSettingsLoaded(true);
         // Add a small delay to ensure smooth transition
@@ -200,32 +200,9 @@ function TradeView({ trades = [] }) {
 
       if (data.success) {
         alert("Settings saved successfully!");
-      } else {
-        console.error("Failed to save settings:", data.error);
       }
-    } catch (err) {
-      console.error("Error saving settings:", err);
-    }
-  };
-
-  /* =======================
-     MONTH NAV
-  ======================= */
-  const handlePrevMonth = () => {
-    if (currentMonth === 0) {
-      setCurrentMonth(11);
-      setCurrentYear((y) => y - 1);
-    } else {
-      setCurrentMonth((m) => m - 1);
-    }
-  };
-
-  const handleNextMonth = () => {
-    if (currentMonth === 11) {
-      setCurrentMonth(0);
-      setCurrentYear((y) => y + 1);
-    } else {
-      setCurrentMonth((m) => m + 1);
+    } catch {
+      // Settings save failures are non-blocking for the current view.
     }
   };
 

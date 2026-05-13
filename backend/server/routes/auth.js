@@ -123,7 +123,6 @@ const authCheck = async (req, res, next) => {
         next();
 
     } catch (error) {
-        // console.error('Auth error:', error.message);
         
         // Special flag for expired access tokens
         if (error.name === 'TokenExpiredError') {
@@ -146,7 +145,6 @@ const authCheck = async (req, res, next) => {
 router.post('/register', async (req, res) => {
     const { firstName, lastName, email, phone, password, preferred_currency = 'USD' } = req.body;
 
-    // console.log("💰 REGISTER:", { firstName, email, preferred_currency });
 
     try {
         const saltRounds = 10;
@@ -169,7 +167,6 @@ router.post('/register', async (req, res) => {
         res.cookie('refreshToken', refreshToken, COOKIE_OPTIONS);
         res.cookie('accessToken', accessToken, ACCESS_COOKIE_OPTIONS);
 
-        // console.log("Register successful for user:", newUser.ID);
         
         res.json({ 
             success: true, 
@@ -186,7 +183,6 @@ router.post('/register', async (req, res) => {
         });
 
     } catch (error) {
-        // console.log("Database error:", error.message);
         res.status(500).json({ success: false, error: error.message });
     }
 });
@@ -195,7 +191,6 @@ router.post('/register', async (req, res) => {
 router.post('/login', loginRateLimiter, async (req, res) => {
     const { email, phone, password } = req.body;
 
-    // console.log("🔍 LOGIN ATTEMPT:", { email, phone });
 
     try {
         let query = '';
@@ -240,8 +235,6 @@ router.post('/login', loginRateLimiter, async (req, res) => {
         res.cookie('refreshToken', refreshToken, COOKIE_OPTIONS);
         res.cookie('accessToken', accessToken, ACCESS_COOKIE_OPTIONS);
 
-        // console.log("Login successful for user:", user.ID);
-        // console.log("🔐 Refresh expires:", expiresAt);
 
         res.json({
             success: true,
@@ -258,7 +251,6 @@ router.post('/login', loginRateLimiter, async (req, res) => {
         });
 
     } catch (error) {
-        // console.log("Login error:", error.message);
         res.status(500).json({ success: false, error: error.message });
     }
 });
@@ -309,7 +301,6 @@ router.post('/refresh-token', refreshRateLimiter, async (req, res) => {
         res.cookie('refreshToken', newRefreshToken, COOKIE_OPTIONS);
         res.cookie('accessToken', accessToken, ACCESS_COOKIE_OPTIONS);
 
-        // console.log("🔄 REFRESH TOKEN USED - User:", decoded.userId, "New expiry:", expiresAt);
 
         res.json({
             success: true,
@@ -317,7 +308,6 @@ router.post('/refresh-token', refreshRateLimiter, async (req, res) => {
         });
 
     } catch (error) {
-        // console.error("Refresh token error:", error.message);
         
         if (error.name === 'TokenExpiredError') {
             // Delete expired token from database
@@ -369,7 +359,6 @@ router.post('/logout', async (req, res) => {
             path: '/'
         });
 
-        // console.log("🚪 LOGOUT SUCCESSFUL");
 
         return res.json({
             success: true,
@@ -378,7 +367,6 @@ router.post('/logout', async (req, res) => {
         });
 
     } catch (error) {
-        // console.log("Logout error:", error.message);
 
         return res.status(500).json({
             success: false,
@@ -399,7 +387,6 @@ router.post('/update-profile', authCheck, async (req, res) => {
     const userId = req.userId;
     const { firstName, lastName, email, phone, password, preferred_currency } = req.body;
 
-    // console.log("👤 UPDATE PROFILE - Authenticated User ID:", userId);
 
     if (password && password.trim().length < 6) {
         return res.status(400).json({ 
@@ -484,7 +471,6 @@ router.post('/update-profile', authCheck, async (req, res) => {
 
         const updatedUser = result.rows[0];
         
-        // console.log("Profile updated successfully");
         
         let updateMessage = 'Profile updated!';
         if (password) updateMessage += ' Password updated.';
@@ -505,7 +491,6 @@ router.post('/update-profile', authCheck, async (req, res) => {
         });
 
     } catch (error) {
-        // console.log("Update profile error:", error.message);
         res.status(500).json({ success: false, error: error.message });
     }
 });
@@ -514,7 +499,6 @@ router.post('/update-profile', authCheck, async (req, res) => {
 router.get('/user-profile', authCheck, async (req, res) => {
     const userId = req.userId;
 
-    // console.log("👤 GET USER PROFILE - Authenticated User ID:", userId);
 
     try {
         const result = await pool.query(
@@ -530,7 +514,6 @@ router.get('/user-profile', authCheck, async (req, res) => {
 
         const user = result.rows[0];
         
-        // console.log("User profile fetched successfully");
         res.json({
             success: true,
             user: {
@@ -546,7 +529,6 @@ router.get('/user-profile', authCheck, async (req, res) => {
         });
 
     } catch (error) {
-        // console.log("Get user profile error:", error.message);
         res.status(500).json({ success: false, error: error.message });
     }
 });
@@ -556,7 +538,6 @@ router.post('/update-currency', authCheck, async (req, res) => {
     const { currency } = req.body;
     const userId = req.userId;
 
-    // console.log("💰 UPDATE CURRENCY - User:", userId, "Currency:", currency);
 
     if (!currency) {
         return res.status(400).json({ success: false, error: 'currency required' });
@@ -579,7 +560,6 @@ router.post('/update-currency', authCheck, async (req, res) => {
 
         const updatedUser = result.rows[0];
         
-        // console.log("Currency updated successfully");
         res.json({
             success: true,
             message: 'Currency preference updated!',
@@ -593,7 +573,6 @@ router.post('/update-currency', authCheck, async (req, res) => {
         });
 
     } catch (error) {
-        // console.log("Update currency error:", error.message);
         res.status(500).json({ success: false, error: error.message });
     }
 });
@@ -603,7 +582,6 @@ router.delete('/delete-account', authCheck, async (req, res) => {
     const userId = req.userId;
     const { password } = req.body;
 
-    // console.log("🗑️ DELETE ACCOUNT REQUEST - User ID:", userId);
 
     if (!password) {
         return res.status(400).json({ 
@@ -650,7 +628,6 @@ router.delete('/delete-account', authCheck, async (req, res) => {
         res.clearCookie('refreshToken', COOKIE_OPTIONS);
         res.clearCookie('accessToken', ACCESS_COOKIE_OPTIONS);
 
-        // console.log("Account deleted successfully");
         
         res.json({
             success: true,
@@ -658,7 +635,6 @@ router.delete('/delete-account', authCheck, async (req, res) => {
         });
 
     } catch (error) {
-        // console.log("Delete account error:", error.message);
         res.status(500).json({ success: false, error: error.message });
     }
 });

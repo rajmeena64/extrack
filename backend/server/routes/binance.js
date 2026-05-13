@@ -7,10 +7,7 @@ const { normalizeStoredSymbol } = require("../utils/symbols");
 const FUTURES_BASE_URL = "https://fapi.binance.com";
 const SPOT_DATA_BASE_URL = "https://data-api.binance.vision";
 const VISION_BASE_URL = "https://data.binance.vision/data";
-const FOREX_SYMBOL_RE = /^[A-Z]{6}$/;
-const METAL_SYMBOL_RE = /^X(AU|AG)USD$/;
-const FOREX_CURRENCIES = new Set(["USD", "EUR", "GBP", "JPY", "AUD", "NZD", "CAD", "CHF"]);
-const BINANCE_QUOTES = ["USDT", "USDC", "BUSD"];
+const BINANCE_QUOTES = ["USDT", "USDC", "BUSD", "FDUSD"];
 const VALID_INTERVALS = new Set([
   "1m", "3m", "5m", "15m", "30m",
   "1h", "2h", "4h", "6h", "8h", "12h",
@@ -43,32 +40,13 @@ const clampLimit = (value) => {
 
 const normalizeCategory = (value) => String(value || "").trim().toLowerCase();
 
-const isForexPair = (symbol) => (
-  FOREX_SYMBOL_RE.test(symbol) &&
-  FOREX_CURRENCIES.has(symbol.slice(0, 3)) &&
-  FOREX_CURRENCIES.has(symbol.slice(3, 6))
-);
-
-const normalizeKlineSymbol = (symbol) => normalizeStoredSymbol(symbol) || "BTCUSDT";
+const normalizeKlineSymbol = (symbol) => normalizeStoredSymbol(symbol);
 
 const toBinanceSymbol = (symbol) => {
   const normalized = normalizeKlineSymbol(symbol);
-  const forexCandidate = normalized.slice(0, 6);
-  const metalCandidate = normalized.slice(0, 6);
 
-  if (!normalized) return "BTCUSDT";
-  if (isForexPair(forexCandidate)) return forexCandidate;
-  if (METAL_SYMBOL_RE.test(metalCandidate)) return metalCandidate;
-  if (normalized === "GOLD" || normalized === "XAU") return "XAUUSD";
-  if (normalized === "SILVER" || normalized === "XAG") return "XAGUSD";
   if (BINANCE_QUOTES.some((quote) => normalized.endsWith(quote))) return normalized;
-  if (
-    normalized.endsWith("USD") &&
-    !METAL_SYMBOL_RE.test(normalized) &&
-    !isForexPair(normalized)
-  ) {
-    return `${normalized.slice(0, -3)}USDT`;
-  }
+  if (normalized.endsWith("USD")) return `${normalized.slice(0, -3)}USDT`;
 
   return normalized;
 };
@@ -229,32 +207,40 @@ router.get("/klines", async (req, res) => {
       });
     }
 
-    const storedSymbol = normalizeKlineSymbol(symbol);
-    const binanceSymbol = toBinanceSymbol(storedSymbol);
     const normalizedCategory = normalizeCategory(category);
     const normalizedLimit = clampLimit(limit);
     const numericStartTime = startTime ? Number(startTime) : undefined;
     const numericEndTime = endTime ? Number(endTime) : undefined;
-
-    const params = new URLSearchParams({
-      symbol: binanceSymbol,
-      interval,
-      limit: String(normalizedLimit),
-    });
-
-    if (startTime) {
-      params.set("startTime", String(startTime));
-    }
-
-    if (endTime) {
-      params.set("endTime", String(endTime));
-    }
+    const storedSymbol = normalizeKlineSymbol(symbol);
 
     const errors = [];
 
     const useBinanceSource = normalizedCategory === "crypto";
 
     if (useBinanceSource) {
+      if (!storedSymbol) {
+        return res.status(400).json({
+          error: "Invalid symbol",
+          symbol,
+          category: normalizedCategory,
+        });
+      }
+
+      const binanceSymbol = toBinanceSymbol(storedSymbol);
+      const params = new URLSearchParams({
+        symbol: binanceSymbol,
+        interval,
+        limit: String(normalizedLimit),
+      });
+
+      if (startTime) {
+        params.set("startTime", String(startTime));
+      }
+
+      if (endTime) {
+        params.set("endTime", String(endTime));
+      }
+
       try {
         const spotData = await fetchJsonKlines(SPOT_DATA_BASE_URL, "/api/v3/klines", params);
         if (spotData.length) return res.json(spotData);
@@ -315,7 +301,6 @@ router.get("/klines", async (req, res) => {
     return res.status(lastError?.status || 404).json(lastError?.payload || {
       error: "No kline data found",
       symbol: storedSymbol,
-      binanceSymbol,
       category: normalizedCategory,
       interval,
     });

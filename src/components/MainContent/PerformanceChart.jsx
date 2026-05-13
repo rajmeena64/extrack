@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import Chart from '../../utils/chartSetup';
 import './PerformanceChart.css';
 import { formatCompactCurrency, formatCurrency } from '../../utils/Currency';
@@ -7,7 +7,7 @@ function PerformanceChart({ trades, currencyCode = 'USD' }) {
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
 
-  const calculateDailyPnL = () => {
+  const { labels, data } = useMemo(() => {
     const daily = {};
 
     if (!trades || trades.length === 0) {
@@ -25,7 +25,7 @@ function PerformanceChart({ trades, currencyCode = 'USD' }) {
     const data = labels.map((date) => daily[date]);
 
     return { labels, data };
-  };
+  }, [trades]);
 
   const cumulativePnL = (values) => {
     let total = 0;
@@ -43,19 +43,15 @@ function PerformanceChart({ trades, currencyCode = 'USD' }) {
     const isMobile = window.innerWidth <= 768;
     const isDark = document.body.classList.contains('dark-mode');
     const theme = getComputedStyle(document.body);
-    const accentSuccess = theme.getPropertyValue('--accent-success').trim() || '#58d47e';
     const accentSuccessStrong = theme.getPropertyValue('--accent-success-strong').trim() || '#1e8f49';
     const accentDanger = theme.getPropertyValue('--accent-danger').trim() || '#ef4444';
-    const accentDangerSoft = theme.getPropertyValue('--accent-danger-soft').trim() || '#fca5a5';
     const textPrimary = theme.getPropertyValue('--text-primary').trim() || '#111714';
     const textSecondary = theme.getPropertyValue('--text-secondary').trim() || '#6a766d';
-    const dividerStrong = theme.getPropertyValue('--divider-strong').trim() || 'rgba(17, 23, 20, 0.06)';
     const positiveLine = isDark ? '#86efac' : accentSuccessStrong;
     const negativeLine = isDark ? '#f871715b' : accentDanger;
     const positiveFillTop = isDark ? 'rgba(134, 239, 230, 0.26)' : 'rgb(88, 212, 160)';
     const positiveFillMid = isDark ? 'rgba(134, 239, 172, 0.12)' : 'rgba(88, 212, 126, 0.1)';
     const negativeFill = isDark ? 'rgba(248, 113, 113, 0.49)' : 'rgba(68, 79, 239, 0.74)';
-    const { labels, data } = calculateDailyPnL();
     const curveData = cumulativePnL(data);
 
     chartInstance.current = new Chart(ctx, {
@@ -162,7 +158,7 @@ function PerformanceChart({ trades, currencyCode = 'USD' }) {
     });
 
     return () => chartInstance.current?.destroy();
-  }, [currencyCode, trades]);
+  }, [currencyCode, data, labels]);
 
   return (
     <div className="chart-card performance-card">

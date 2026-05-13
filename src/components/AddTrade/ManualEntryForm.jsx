@@ -6,7 +6,7 @@ import api from "../../utils/serve";
 import { useAuth } from '../../context/AuthContext';
 import { normalizeStoredSymbol } from "../../utils/symbols";
 
-function ManualEntryForm({ API_URL, trades }) {
+function ManualEntryForm({ trades }) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const now = new Date();
@@ -122,9 +122,8 @@ function ManualEntryForm({ API_URL, trades }) {
       } else {
         alert('❌ Error: ' + result.error);
       }
-    } catch (error) {
+    } catch {
       alert('❌ Network error: Could not save trade');
-      console.error('Trade save error:', error);
     }
   };
 

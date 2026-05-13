@@ -140,12 +140,11 @@ async function startServer() {
     if (typeof ensureCtraderTokenStore === 'function') {
       await ensureCtraderTokenStore();
     }
-  } catch (error) {
+  } catch {
     process.exit(1);
   }
 
-    server.listen(PORT, () => {
-  });
+  server.listen(PORT);
 }
 
 startServer();

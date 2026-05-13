@@ -7,10 +7,7 @@ module.exports = function wsBroadcast(req, res, next) {
     const wss = req.app.get('wss');
     if (!wss) return;
 
-    // ✅ PURE TRADE ROUTES (tumhare actual paths ke hisaab se)
     if (req.originalUrl.includes('trade')) {
-      // console.log("🔥 BROADCASTING:", req.originalUrl);
-
       wss.clients.forEach(client => {
         if (client.readyState === 1) {
           client.send(JSON.stringify({
@@ -23,4 +20,4 @@ module.exports = function wsBroadcast(req, res, next) {
   });
 
   next();
-};    
+};

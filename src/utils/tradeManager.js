@@ -16,8 +16,7 @@ export class TradeManager {
         await this.loadAllTrades(userId);
       }
       return this.trades;
-    } catch (error) {
-      console.error('Error loading trades:', error);
+    } catch {
       return []; 
     }
   }
@@ -45,8 +44,7 @@ export class TradeManager {
         close_timestamp: t.exit_timestamp || null, // ✅ exit timestamp
         unique_id: t.unique_id
       })) || [];
-    } catch (error) {
-      console.error('Error loading manual trades:', error);
+    } catch {
       this.trades = [];
     }
   }
@@ -57,9 +55,6 @@ export class TradeManager {
       const { data } = await api.get(`/user-api-trades/${userId}`);
 
       this.trades = data.trades?.map(t => ({
-   
-  
-
         id: t.id,
         user_id: t.user_id,
         account_id: t.account_id,
@@ -84,9 +79,7 @@ export class TradeManager {
         is_breakeven: Boolean(t.is_breakeven),
         unique_id: t.unique_id
       })) || [];
-    } catch (error) {
-      console.error('Error loading API trades:', error);
-    
+    } catch {
       this.trades = [];
     }
   }
@@ -155,21 +148,12 @@ export class TradeManager {
       }
 
       this.trades = allTrades;
-    } catch (error) {
-      console.error('Error loading all trades:', error);
-
-
-
-  
+    } catch {
       this.trades = [];
     }
-
-  
   }
 
   setMode(mode) {
     this.mode = mode;
   }
-
-
 }

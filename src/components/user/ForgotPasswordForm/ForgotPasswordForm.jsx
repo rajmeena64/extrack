@@ -1,16 +1,12 @@
 // src/components/user/ForgotPasswordForm/ForgotPasswordForm.jsx
 import React, { useState } from 'react';
-import './ForgotPasswordForm.css';
 
 function ForgotPasswordForm({ onSwitch }) {
   const [email, setEmail] = useState('');
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // TODO: Connect with backend forgot password API
-    console.log('Reset password request for:', email);
     alert(`Password reset link sent to ${email} (mock)`);
-    // After sending reset link, switch to login
     onSwitch('login');
   };
 

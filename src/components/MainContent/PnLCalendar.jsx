@@ -229,8 +229,7 @@ function PnLCalendar({ trades, currencyCode = 'USD' }) {
         throw new Error(data?.error || 'Breakeven update failed');
       }
       await queryClient.invalidateQueries({ queryKey: ['trades'] });
-    } catch (error) {
-      console.error('Failed to update breakeven day:', error);
+    } catch {
       setPendingBreakevenDays((previous) => ({
         ...previous,
         [dateKey]: currentValue,

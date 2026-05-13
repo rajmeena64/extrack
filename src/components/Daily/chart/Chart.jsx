@@ -32,13 +32,15 @@ function Chart({ darkMode, symbol = "BTCUSDT", category = "", tradeDate, tradeTi
 
   const cleanedSymbol = normalizeStoredSymbol(symbol) || "BTCUSDT";
 
-  const normalizeMarkerTime = useCallback((value) => {
+  const normalizeMarkerTime = useCallback((value, interval = tf) => {
     if (!value) return null;
     const numeric = Number(value);
     const timestampMs = Number.isFinite(numeric) ? numeric : new Date(value).getTime();
     if (!Number.isFinite(timestampMs)) return null;
-    return timestampMs > 1e12 ? Math.floor(timestampMs / 1000) : Math.floor(timestampMs);
-  }, []);
+    const timestampSeconds = timestampMs > 1e12 ? Math.floor(timestampMs / 1000) : Math.floor(timestampMs);
+    const intervalSeconds = Math.max((INTERVAL_MS[interval] || INTERVAL_MS["1m"]) / 1000, 1);
+    return Math.floor(timestampSeconds / intervalSeconds) * intervalSeconds;
+  }, [tf]);
 
 
 
@@ -210,47 +212,63 @@ function Chart({ darkMode, symbol = "BTCUSDT", category = "", tradeDate, tradeTi
         }
         candleSeriesRef.current.setData(candles);
 
-        // Markers
-// Markers
-const markers = [];
+        const candleTimes = candles.map((candle) => candle.time);
+        const candleTimeSet = new Set(candleTimes);
+        const intervalSeconds = Math.max((INTERVAL_MS[tf] || INTERVAL_MS["1m"]) / 1000, 1);
+        const resolveMarkerTime = (value) => {
+          const snappedTime = normalizeMarkerTime(value, tf);
+          if (!snappedTime) return null;
+          if (candleTimeSet.has(snappedTime)) return snappedTime;
 
-trades.forEach(t => {
-  const side = String(t.side || "").toLowerCase();
-  const isSell = side === "sell";
-  const entryTime = normalizeMarkerTime(t.entryTime);
-  const exitTime = normalizeMarkerTime(t.exitTime);
+          let nearestTime = null;
+          let nearestDistance = Infinity;
+          for (const candleTime of candleTimes) {
+            const distance = Math.abs(candleTime - snappedTime);
+            if (distance < nearestDistance) {
+              nearestDistance = distance;
+              nearestTime = candleTime;
+            }
+          }
 
-  if (entryTime && t.entryPrice) {
-      markers.push({
-        time: entryTime,
-        position: isSell ? "aboveBar" : "belowBar",
-      color: isSell ? "red" : "green",
-      shape:  isSell ? "arrowDown" :"arrowUp",
-      text: `@${isSell ? "Sell" : "Buy"} ${t.entryPrice}`
-      
-    });
-  }
+          return nearestDistance <= intervalSeconds ? nearestTime : snappedTime;
+        };
 
+        const markers = [];
 
-  if (exitTime && t.exitPrice) {
-    markers.push({
-      time: exitTime,
-      // position: "aboveBar",
-      position: isSell ? "belowBar" : "aboveBar",
-      color: "blue",
-      shape:  isSell ? "arrowUp" :"arrowDown",
-      text: `@Exit ${t.exitPrice}`
-    });
-  }
-});
+        trades.forEach(t => {
+          const side = String(t.side || "").toLowerCase();
+          const isSell = side === "sell";
+          const entryTime = resolveMarkerTime(t.entryTime);
+          const exitTime = resolveMarkerTime(t.exitTime);
+
+          if (entryTime && t.entryPrice) {
+            markers.push({
+              time: entryTime,
+              position: isSell ? "aboveBar" : "belowBar",
+              color: isSell ? "red" : "green",
+              shape: isSell ? "arrowDown" : "arrowUp",
+              text: `@${isSell ? "Sell" : "Buy"} ${t.entryPrice}`
+            });
+          }
+
+          if (exitTime && t.exitPrice) {
+            markers.push({
+              time: exitTime,
+              position: isSell ? "belowBar" : "aboveBar",
+              color: "blue",
+              shape: isSell ? "arrowUp" : "arrowDown",
+              text: `@Exit ${t.exitPrice}`
+            });
+          }
+        });
 
         if (!markersRef.current) markersRef.current = createSeriesMarkers(candleSeriesRef.current, markers);
         else markersRef.current.setMarkers(markers);
 
         // Zoom/scroll to trade window (60-70%)
         if (trades.length > 0) {
-          const entryTimes = trades.map(t => normalizeMarkerTime(t.entryTime)).filter(Boolean);
-          const exitTimes = trades.map(t => normalizeMarkerTime(t.exitTime)).filter(Boolean);
+          const entryTimes = trades.map(t => resolveMarkerTime(t.entryTime)).filter(Boolean);
+          const exitTimes = trades.map(t => resolveMarkerTime(t.exitTime)).filter(Boolean);
           if (entryTimes.length === 0 && exitTimes.length === 0) {
             chartApiRef.current.timeScale().fitContent();
             return;

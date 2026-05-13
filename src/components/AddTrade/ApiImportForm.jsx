@@ -86,8 +86,7 @@ function ApiImportForm({ setSelectedMT5AccountId }) {
       } else {
         setAccounts([]);
       }
-    } catch (error) {
-      console.error('Error loading accounts:', error);
+    } catch {
       setAccounts([]);
     } finally {
       setLoading(false);
@@ -169,7 +168,6 @@ function ApiImportForm({ setSelectedMT5AccountId }) {
       }, 1000);
       
     } catch (error) {
-      console.error('Failed to save MT5 account:', error);
       setConnectionStatus({
         icon: 'fas fa-circle status-disconnected',
         text: 'Error'
@@ -232,14 +230,8 @@ function ApiImportForm({ setSelectedMT5AccountId }) {
       }
     } catch (error) {
       alert('❌ Error deleting account: ' + error.message);
-      console.error('Failed to delete account:', error);
       closeDeleteConfirmation();
     }
-  };
-
-  const toggleAccountPassword = (accountId) => {
-    // Implement password toggle logic
-    console.log('Password visibility toggle requested for account:', accountId);
   };
 
   const formatDate = (dateString) => {
@@ -510,9 +502,6 @@ function ApiImportForm({ setSelectedMT5AccountId }) {
                           {account.connection_status || 'disconnected'}
                         </span>
                         <div className="account-actions">
-                          <button className="btn-icon" onClick={() => toggleAccountPassword(account.account_id)} title="Show/Hide Password">
-                            <LegacyIcon className="fas fa-eye" />
-                          </button>
                           <button 
                             className="btn-icon delete" 
                             onClick={() => confirmDelete(account.account_id, account.broker_name)} 

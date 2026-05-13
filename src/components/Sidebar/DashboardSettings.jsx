@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import './DashboardSettings.css';
 import LegacyIcon from '../Common/LegacyIcon';
 
 
@@ -12,7 +11,6 @@ function DashboardSettings() {
     setRowOrder(value);
     localStorage.setItem('dashboardRowOrder', value);
 
-    // 🔥 Dispatch custom event immediately
     window.dispatchEvent(new Event('dashboard-layout-change'));
   };
 

@@ -8,8 +8,6 @@ import LegacyIcon from "../../Common/LegacyIcon";
 import api from "../../../utils/serve";
 import { normalizeStoredSymbol } from "../../../utils/symbols";
 
-// import TradePnLCurve from "./Tradepnlcurve ";
-
 function ThatTrade({ trades = [] }) {
   const { tradeId } = useParams();
   const navigate = useNavigate();
@@ -68,8 +66,8 @@ function ThatTrade({ trades = [] }) {
           }
         }
       }
-    } catch (error) {
-      console.error("Error fetching trade data:", error);
+    } catch {
+      // Trade details are already available from route state.
     } finally {
       setIsLoading(false);
     }
@@ -98,7 +96,6 @@ function ThatTrade({ trades = [] }) {
 
     // ✅ Sirf tab fetch karo jab unique_id ACTUALLY change hua ho
     if (currentTradeIdRef.current !== trade.unique_id) {
-      console.log("Trade ID changed, fetching new data...");
       currentTradeIdRef.current = trade.unique_id;
       fetchTradeData();
     }
@@ -126,8 +123,7 @@ function ThatTrade({ trades = [] }) {
       } else {
         setSaveMessage("❌ Error saving strategy");
       }
-    } catch (error) {
-      console.error("Error saving strategy:", error);
+    } catch {
       setSaveMessage("❌ Error saving strategy");
     } finally {
       setIsSaving(false);
@@ -154,8 +150,7 @@ function ThatTrade({ trades = [] }) {
       } else {
         setSaveMessage("❌ Error saving notes");
       }
-    } catch (error) {
-      console.error("Error saving notes:", error);
+    } catch {
       setSaveMessage("❌ Error saving notes");
     } finally {
       setIsSaving(false);
@@ -181,8 +176,7 @@ function ThatTrade({ trades = [] }) {
       } else {
         setSaveMessage("❌ Error uploading screenshot");
       }
-    } catch (error) {
-      console.error("Error uploading screenshot:", error);
+    } catch {
       setSaveMessage("❌ Error uploading screenshot");
     } finally {
       setUploading(false);
@@ -217,8 +211,7 @@ function ThatTrade({ trades = [] }) {
       } else {
         setSaveMessage("❌ Error deleting screenshot");
       }
-    } catch (error) {
-      console.error("Error deleting screenshot:", error);
+    } catch {
       setSaveMessage("❌ Error deleting screenshot");
     } finally {
       setDeleting(false);
@@ -276,6 +269,18 @@ function ThatTrade({ trades = [] }) {
       dateObj: d,
       isoDate: d.toISOString().split("T")[0]
     };
+  };
+
+  const toEpochSeconds = (value) => {
+    if (!value) return null;
+    const numeric = Number(value);
+
+    if (Number.isFinite(numeric)) {
+      return numeric > 1e12 ? Math.floor(numeric / 1000) : Math.floor(numeric);
+    }
+
+    const parsed = new Date(value).getTime();
+    return Number.isFinite(parsed) ? Math.floor(parsed / 1000) : null;
   };
 
   const { date, time, dateObj } = formatDateTime(trade.timestamp);
@@ -429,24 +434,14 @@ function ThatTrade({ trades = [] }) {
               tradeTime={time}
               showFullDay={true}
               trades={[{
-                entryTime: trade.open_timestamp || trade.timestamp,
-                exitTime: trade.close_timestamp || trade.exit_timestamp,
+                entryTime: toEpochSeconds(trade.open_timestamp || trade.timestamp),
+                exitTime: toEpochSeconds(trade.close_timestamp || trade.exit_timestamp || trade.timestamp),
                 entryPrice: trade.price,
                 exitPrice: trade.exit_price,
                 side: trade.trade_type
               }]}
             />
 
-            {/* <TradePnLCurve
-              symbol={getBinanceSymbol(trade.symbol)}
-              category={trade.category}
-              entryTime={trade.open_timestamp}
-              exitTime={trade.close_timestamp}
-              entryPrice={Number(trade.price)}
-              exitPrice={Number(trade.exit_price)}
-              quantity={Number(trade.quantity)}
-              side={trade.trade_type}
-            /> */}
           </div>
         </div>
       </div>

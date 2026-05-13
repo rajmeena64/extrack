@@ -20,7 +20,7 @@ const getAlertType = (message) => {
   return 'success';
 };
 
-const normalizeMessage = (message) => String(message ?? '').replace(/^[✅❌⚠️\s]+/u, '').trim();
+const normalizeMessage = (message) => String(message ?? '').replace(/^[^\p{L}\p{N}]+/u, '').trim();
 
 export function AppDialogProvider({ children }) {
   const [alerts, setAlerts] = useState([]);

@@ -9,7 +9,7 @@ function ActivityChart({ trades, currencyCode = 'USD' }) {
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
 
-  const calculateWinLossPnLPerDay = () => {
+  const { wins: winPnlData, losses: lossPnlData } = useMemo(() => {
     const wins = [0, 0, 0, 0, 0, 0, 0];
     const losses = [0, 0, 0, 0, 0, 0, 0];
 
@@ -37,12 +37,7 @@ function ActivityChart({ trades, currencyCode = 'USD' }) {
       wins: [wins[1], wins[2], wins[3], wins[4], wins[5], wins[6], wins[0]],
       losses: [losses[1], losses[2], losses[3], losses[4], losses[5], losses[6], losses[0]],
     };
-  };
-
-  const { wins: winPnlData, losses: lossPnlData } = useMemo(
-    () => calculateWinLossPnLPerDay(),
-    [trades]
-  );
+  }, [trades]);
 
   useEffect(() => {
     if (!chartRef.current) return;

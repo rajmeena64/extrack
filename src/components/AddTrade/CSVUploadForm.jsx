@@ -5,7 +5,7 @@ import api from '../../utils/serve';
 import { useAuth } from '../../context/AuthContext';
 import { normalizeStoredSymbol } from '../../utils/symbols';
 
-function CSVUploadForm({ API_URL, csvData, setCsvData }) {
+function CSVUploadForm({ csvData, setCsvData }) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [previewData, setPreviewData] = useState([]);
