@@ -47,8 +47,10 @@ const isForexPair = (symbol) => (
   FOREX_CURRENCIES.has(symbol.slice(3, 6))
 );
 
-const normalizeKlineSymbol = (symbol) => {
-  const normalized = normalizeStoredSymbol(symbol);
+const normalizeKlineSymbol = (symbol) => normalizeStoredSymbol(symbol) || "BTCUSDT";
+
+const toBinanceSymbol = (symbol) => {
+  const normalized = normalizeKlineSymbol(symbol);
   const forexCandidate = normalized.slice(0, 6);
   const metalCandidate = normalized.slice(0, 6);
 
@@ -57,7 +59,7 @@ const normalizeKlineSymbol = (symbol) => {
   if (METAL_SYMBOL_RE.test(metalCandidate)) return metalCandidate;
   if (normalized === "GOLD" || normalized === "XAU") return "XAUUSD";
   if (normalized === "SILVER" || normalized === "XAG") return "XAGUSD";
-  if (normalized.endsWith("USDC") || normalized.endsWith("BUSD")) return `${normalized.slice(0, -4)}USDT`;
+  if (BINANCE_QUOTES.some((quote) => normalized.endsWith(quote))) return normalized;
   if (
     normalized.endsWith("USD") &&
     !METAL_SYMBOL_RE.test(normalized) &&
@@ -237,13 +239,14 @@ router.get("/klines", async (req, res) => {
       });
     }
 
-    const symbolUpper = normalizeKlineSymbol(symbol);
+    const storedSymbol = normalizeKlineSymbol(symbol);
+    const binanceSymbol = toBinanceSymbol(storedSymbol);
     const normalizedLimit = clampLimit(limit);
     const numericStartTime = startTime ? Number(startTime) : undefined;
     const numericEndTime = endTime ? Number(endTime) : undefined;
 
     const params = new URLSearchParams({
-      symbol: symbolUpper,
+      symbol: binanceSymbol,
       interval,
       limit: String(normalizedLimit),
     });
@@ -258,7 +261,7 @@ router.get("/klines", async (req, res) => {
 
     const errors = [];
 
-    const useBinanceSource = shouldUseBinance(symbolUpper);
+    const useBinanceSource = shouldUseBinance(binanceSymbol);
 
     if (useBinanceSource) {
       try {
@@ -279,7 +282,7 @@ router.get("/klines", async (req, res) => {
       for (const market of visionMarkets) {
         const visionData = await fetchVisionDailyKlines({
           market,
-          symbol: symbolUpper,
+          symbol: binanceSymbol,
           interval,
           startTime: numericStartTime,
           endTime: numericEndTime,
@@ -294,7 +297,7 @@ router.get("/klines", async (req, res) => {
 
     try {
       const ctraderData = await fetchCtraderKlines({
-        symbol: symbolUpper,
+        symbol: storedSymbol,
         interval,
         startTime: numericStartTime,
         endTime: numericEndTime,
@@ -311,7 +314,8 @@ router.get("/klines", async (req, res) => {
     const lastError = errors[errors.length - 1];
     return res.status(lastError?.status || 404).json(lastError?.payload || {
       error: "No kline data found",
-      symbol: symbolUpper,
+      symbol: storedSymbol,
+      binanceSymbol,
       interval,
     });
   } catch (err) {

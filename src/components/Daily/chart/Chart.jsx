@@ -8,21 +8,6 @@ import { normalizeStoredSymbol } from "../../../utils/symbols";
 
 const TF_MAP = { "1m": "1m", "5m": "5m", "15m": "15m", "1h": "1h" };
 const INTERVAL_MS = { "1m": 60*1000, "5m": 5*60*1000, "15m": 15*60*1000, "1h": 60*60*1000 };
-const FOREX_SYMBOL_RE = /^[A-Z]{6}$/;
-const METAL_SYMBOL_RE = /^X(AU|AG)USD$/;
-const FOREX_CURRENCIES = new Set(["USD", "EUR", "GBP", "JPY", "AUD", "NZD", "CAD", "CHF"]);
-const BINANCE_QUOTES = ["USDT", "USDC", "BUSD"];
-const BROKER_SUFFIXES = ["ECN", "RAW", "PRO", "MINI", "MICRO", "CASH"];
-const METAL_ALIASES = {
-  GOLD: "XAUUSD",
-  XAU: "XAUUSD",
-  XAUUSD: "XAUUSD",
-  XAUUSDC: "XAUUSD",
-  SILVER: "XAGUSD",
-  XAG: "XAGUSD",
-  XAGUSD: "XAGUSD",
-  XAGUSDC: "XAGUSD",
-};
 
 
 function Chart({ darkMode, symbol = "BTCUSDT", tradeDate, tradeTime, showFullDay = false, trades = [], totalCandles = 2000 }) {
@@ -45,60 +30,7 @@ function Chart({ darkMode, symbol = "BTCUSDT", tradeDate, tradeTime, showFullDay
     pnlNegative: BEARISH_CANDLE_COLOR
   });
 
-  const cleanSymbol = useCallback((sym) => {
-    let normalized = normalizeStoredSymbol(sym || "BTCUSDT");
-
-    for (const suffix of BROKER_SUFFIXES) {
-      if (normalized.endsWith(suffix) && normalized.length > suffix.length + 3) {
-        normalized = normalized.slice(0, -suffix.length);
-      }
-    }
-
-    for (const quote of [...BINANCE_QUOTES, "USD"]) {
-      const quoteIndex = normalized.indexOf(quote);
-      if (quoteIndex > 0) {
-        return normalized.slice(0, quoteIndex + quote.length);
-      }
-    }
-
-    return normalized || "BTCUSDT";
-  }, []);
-
-  const isForexPair = useCallback((sym) => (
-    FOREX_SYMBOL_RE.test(sym) &&
-    FOREX_CURRENCIES.has(sym.slice(0, 3)) &&
-    FOREX_CURRENCIES.has(sym.slice(3, 6))
-  ), []);
-
-  const normalizeMarketSymbol = useCallback((sym) => {
-    const normalized = normalizeStoredSymbol(sym);
-    const forexCandidate = normalized.slice(0, 6);
-    const metalCandidate = normalized.slice(0, 6);
-
-    if (isForexPair(forexCandidate)) {
-      return forexCandidate;
-    }
-
-    if (METAL_SYMBOL_RE.test(metalCandidate)) {
-      return metalCandidate;
-    }
-
-    return normalized;
-  }, [isForexPair]);
-
-  const mapToBinanceSymbol = useCallback((sym) => {
-    const s = normalizeStoredSymbol(sym);
-
-    if (!s) return "BTCUSDT";
-    if (METAL_ALIASES[s]) return METAL_ALIASES[s];
-    if (s.endsWith("USDC") || s.endsWith("BUSD")) return `${s.slice(0, -4)}USDT`;
-    if (s.endsWith("USDT")) return s;
-    if (s.endsWith("USD") && !METAL_SYMBOL_RE.test(s) && !isForexPair(s)) return `${s.slice(0, -3)}USDT`;
-
-    return s;
-  }, [isForexPair]);
-
-  const cleanedSymbol = mapToBinanceSymbol(normalizeMarketSymbol(cleanSymbol(symbol)));
+  const cleanedSymbol = normalizeStoredSymbol(symbol) || "BTCUSDT";
 
   const normalizeMarkerTime = useCallback((value) => {
     if (!value) return null;
