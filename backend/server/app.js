@@ -72,7 +72,7 @@ const metaRoutes = require('./routes/meta');
 const wsBroadcast = require('./uploads/middleware/ws-broadcast');
 const settingsRoutes = require('./routes/settings');
 
-// const apiRoutes = require('./routes/Api');
+const apiRoutes = require('./routes/Api');
 
 const binanceRoutes = require('./routes/binance');
 
@@ -91,8 +91,8 @@ app.use('/api', mt5Routes);
 app.use('/api', metaRoutes);
 app.use('/api', settingsRoutes);
 app.use('/api', binanceRoutes);
+app.use('/api', apiRoutes);
 
-// app.use('/api', apiRoutes);
 
 
 app.use(express.static(path.join(__dirname, '../../js')));

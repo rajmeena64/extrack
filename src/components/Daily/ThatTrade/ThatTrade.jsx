@@ -18,6 +18,7 @@ function ThatTrade({ trades = [] }) {
   const [strategy, setStrategy] = useState("");
   const [notes, setNotes] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [, setIsLoading] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
   
   // Screenshot states
@@ -426,8 +427,8 @@ function ThatTrade({ trades = [] }) {
               tradeTime={time}
               showFullDay={true}
               trades={[{
-                entryTime: trade.open_timestamp,
-                exitTime: trade.close_timestamp,
+                entryTime: trade.open_timestamp || trade.timestamp,
+                exitTime: trade.close_timestamp || trade.exit_timestamp,
                 entryPrice: trade.price,
                 exitPrice: trade.exit_price,
                 side: trade.trade_type
