@@ -31,7 +31,6 @@ function Chart({ darkMode, symbol = "BTCUSDT", tradeDate, tradeTime, showFullDay
   const chartApiRef = useRef(null);
   const candleSeriesRef = useRef(null);
   const markersRef = useRef(null);
-  const hasLoadedOnceRef = useRef(false);
 
   const [tf, setTf] = useState("1m");
   const [loading, setLoading] = useState(true);
@@ -369,15 +368,26 @@ trades.forEach(t => {
         setError(`Error: ${err.message}`);
       } finally {
         setLoading(false);
-        hasLoadedOnceRef.current = true;
       }
     };
 
     loadData();
   }, [tf, cleanedSymbol, tradeDate, showFullDay, trades, getDateRange, totalCandles, isForexOrMetalSymbol, isBinanceSymbolShape, normalizeMarkerTime]);
 
+  const loaderCandles = [
+    ["green", "c0"], ["red", "c1"], ["green", "c2"], ["green", "c3"],
+    ["red", "c4"], ["red", "c5"], ["green", "c6"], ["green", "c7"],
+    ["red", "c8"], ["green", "c9"], ["green", "c10"],
+  ];
+
   return (
-    <div className="chart">
+    <div
+      className={`chart ${loading ? "chart--loading" : ""}`}
+      style={{
+        "--chart-loader-up": cssVariables.pnlPositive || BULLISH_CANDLE_COLOR,
+        "--chart-loader-down": cssVariables.pnlNegative || BEARISH_CANDLE_COLOR,
+      }}
+    >
       <div className="chart-header">
         <h3 className="markets-title">
           {cleanedSymbol}{tradeDate && ` · ${new Date(tradeDate).toLocaleDateString()}`}{tradeTime && ` · ${tradeTime}`}
@@ -389,8 +399,40 @@ trades.forEach(t => {
         </div>
       </div>
 
-      {loading && !hasLoadedOnceRef.current && <div className="chart-loading">Loading {cleanedSymbol} data...</div>}
-      {error && <div className="chart-error">{error}</div>}
+      {loading && (
+        <div className="chart-loading" role="status" aria-live="polite">
+          <div className="chart-loading__ghost chart-loading__ghost--left" aria-hidden="true">
+            <span className="chart-loading__ghost-candle g1" />
+            <span className="chart-loading__ghost-candle chart-loading__ghost-candle--down g2" />
+            <span className="chart-loading__ghost-candle g3" />
+          </div>
+
+          <div className="chart-loading__ghost chart-loading__ghost--right" aria-hidden="true">
+            <span className="chart-loading__ghost-candle chart-loading__ghost-candle--down g4" />
+            <span className="chart-loading__ghost-candle g5" />
+          </div>
+
+          <section className="chart-loading__wrap" aria-label={`Loading ${cleanedSymbol} chart data`}>
+            <div className="chart-loading__base" />
+            <div className="chart-loading__path" aria-hidden="true">
+              <svg viewBox="0 0 720 260" preserveAspectRatio="none">
+                <path d="M110 138 C150 160, 180 112, 230 126 S300 70, 350 96 S430 118, 470 72 S550 38, 610 62" />
+              </svg>
+            </div>
+
+            <div className="chart-loading__candles" aria-hidden="true">
+              {loaderCandles.map(([direction, className]) => (
+                <div key={className} className={`chart-loading__candle chart-loading__candle--${direction} ${className}`}>
+                  <div className="chart-loading__body" />
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <span className="chart-loading__label">Loading {cleanedSymbol} data...</span>
+        </div>
+      )}
+      {error && !loading && <div className="chart-error">{error}</div>}
 
       <div className="chart-wrapper" ref={chartRef}></div>
     </div>
