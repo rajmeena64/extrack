@@ -6,6 +6,7 @@ import Chart from "../chart/Chart";
 import SymbolWithIcon from "../../Common/SymbolWithIcon";
 import LegacyIcon from "../../Common/LegacyIcon";
 import api from "../../../utils/serve";
+import { normalizeStoredSymbol } from "../../../utils/symbols";
 
 // import TradePnLCurve from "./Tradepnlcurve ";
 
@@ -281,7 +282,7 @@ function ThatTrade({ trades = [] }) {
 
   const getBinanceSymbol = (symbol) => {
     if (!symbol) return "BTCUSDT";
-    return symbol.toUpperCase();
+    return normalizeStoredSymbol(symbol);
   };
 
   return (

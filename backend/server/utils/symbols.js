@@ -36,16 +36,29 @@ function findForexPair(symbol) {
   return "";
 }
 
-function normalizeStoredSymbol(value) {
-  let normalized = String(value || "").toUpperCase().trim();
-
-  if (!normalized) return "";
-
-  if (normalized.includes(":")) {
-    normalized = normalized.split(":").pop();
+function findOriginalCaseQuote(rawSymbol) {
+  for (const quote of KNOWN_QUOTES) {
+    const quoteIndex = rawSymbol.indexOf(quote);
+    if (quoteIndex > 0) {
+      return rawSymbol.slice(0, quoteIndex + quote.length).replace(/[^A-Z0-9]/g, "");
+    }
   }
 
-  normalized = normalized
+  return "";
+}
+
+function normalizeStoredSymbol(value) {
+  let rawSymbol = String(value || "").trim();
+
+  if (!rawSymbol) return "";
+
+  if (rawSymbol.includes(":")) {
+    rawSymbol = rawSymbol.split(":").pop();
+  }
+
+  const originalCaseQuote = findOriginalCaseQuote(rawSymbol.replace(/\s+/g, ""));
+
+  let normalized = rawSymbol
     .replace(/\s+/g, "")
     .replace(/[^A-Z0-9]/g, "");
 
@@ -61,6 +74,10 @@ function normalizeStoredSymbol(value) {
     return metalCandidate[0];
   }
 
+  if (originalCaseQuote) {
+    return originalCaseQuote;
+  }
+
   for (const quote of KNOWN_QUOTES) {
     const quoteIndex = normalized.indexOf(quote);
     if (quoteIndex > 0) {
@@ -70,10 +87,10 @@ function normalizeStoredSymbol(value) {
 
   const indexedCandidate = normalized.match(/^([A-Z]{2,10}\d{2,})[A-Z]*$/);
   if (indexedCandidate) {
-    return indexedCandidate[1].replace(/[^A-Z]/g, "");
+    return indexedCandidate[1];
   }
 
-  return normalized.replace(/[^A-Z]/g, "");
+  return normalized;
 }
 
 module.exports = {

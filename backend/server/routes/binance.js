@@ -2,6 +2,7 @@ const express = require("express");
 const zlib = require("zlib");
 const router = express.Router();
 const { fetchCtraderKlines } = require("./ctrader");
+const { normalizeStoredSymbol } = require("../utils/symbols");
 
 const FUTURES_BASE_URL = "https://fapi.binance.com";
 const SPOT_DATA_BASE_URL = "https://data-api.binance.vision";
@@ -47,7 +48,7 @@ const isForexPair = (symbol) => (
 );
 
 const normalizeKlineSymbol = (symbol) => {
-  const normalized = String(symbol || "").toUpperCase().trim();
+  const normalized = normalizeStoredSymbol(symbol);
   const forexCandidate = normalized.slice(0, 6);
   const metalCandidate = normalized.slice(0, 6);
 

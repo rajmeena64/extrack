@@ -4,6 +4,7 @@ import { createChart, CandlestickSeries, createSeriesMarkers } from "lightweight
 import { CrosshairMode } from "lightweight-charts";
 import "./chart.css";
 import {API_URL} from "../../../utils/constants";
+import { normalizeStoredSymbol } from "../../../utils/symbols";
 
 const TF_MAP = { "1m": "1m", "5m": "5m", "15m": "15m", "1h": "1h" };
 const INTERVAL_MS = { "1m": 60*1000, "5m": 5*60*1000, "15m": 15*60*1000, "1h": 60*60*1000 };
@@ -45,18 +46,7 @@ function Chart({ darkMode, symbol = "BTCUSDT", tradeDate, tradeTime, showFullDay
   });
 
   const cleanSymbol = useCallback((sym) => {
-    const rawValue = String(sym || "BTCUSDT").trim();
-    let normalized = rawValue.toUpperCase();
-
-    if (normalized.includes(":")) {
-      normalized = normalized.split(":").pop();
-    }
-
-    normalized = normalized
-      .replace(/\s+/g, "")
-      .replace(/[._-](PERP|P|M|R|C|ECN|RAW|PRO|MINI|MICRO|CASH)$/i, "")
-      .replace(/(PERP|SWAP|FUTURES)$/i, "")
-      .replace(/[^A-Z0-9]/g, "");
+    let normalized = normalizeStoredSymbol(sym || "BTCUSDT");
 
     for (const suffix of BROKER_SUFFIXES) {
       if (normalized.endsWith(suffix) && normalized.length > suffix.length + 3) {
@@ -81,7 +71,7 @@ function Chart({ darkMode, symbol = "BTCUSDT", tradeDate, tradeTime, showFullDay
   ), []);
 
   const normalizeMarketSymbol = useCallback((sym) => {
-    const normalized = String(sym || "").toUpperCase();
+    const normalized = normalizeStoredSymbol(sym);
     const forexCandidate = normalized.slice(0, 6);
     const metalCandidate = normalized.slice(0, 6);
 
@@ -97,7 +87,7 @@ function Chart({ darkMode, symbol = "BTCUSDT", tradeDate, tradeTime, showFullDay
   }, [isForexPair]);
 
   const mapToBinanceSymbol = useCallback((sym) => {
-    const s = sym?.toUpperCase();
+    const s = normalizeStoredSymbol(sym);
 
     if (!s) return "BTCUSDT";
     if (METAL_ALIASES[s]) return METAL_ALIASES[s];

@@ -7,6 +7,7 @@ const fs = require('fs');
 const _path = require('path');
 const pool = require('../config/database');
 const { authCheck } = require('./auth');
+const { normalizeStoredSymbol } = require('../utils/symbols');
 
 let root;
 let ws;
@@ -489,7 +490,7 @@ function sendAccountAuth() {
 // =======================
 // REQUEST SYMBOLS
 // =======================
-function requestSymbols() {
+function _requestSymbols() {
   if (!ctraderConfig.accountId) {
     console.error("No cTrader account ID available");
     return;
@@ -520,7 +521,7 @@ async function requestSymbolsAsync() {
 // =======================
 // REQUEST CANDLES
 // =======================
-function requestCandles(symbolId = null, period = CTRADER_PERIODS.M1, count = 100) {
+function _requestCandles(symbolId = null, period = CTRADER_PERIODS.M1, count = 100) {
   const targetSymbolId = symbolId || ctraderConfig.currentSymbolId;
   
   if (!targetSymbolId) {
@@ -577,7 +578,7 @@ function cacheSymbols(symbolsData) {
 }
 
 function resolveSymbolId(symbol) {
-  const normalized = normalizeSymbolName(symbol);
+  const normalized = normalizeStoredSymbol(symbol);
   const alternatives = new Set([normalized]);
 
   if (normalized.endsWith('USDT')) {
@@ -937,7 +938,7 @@ function handleMessage(data) {
       case 2103:
         try {
           const AccAuthRes = root.lookupType("ProtoOAAccountAuthRes");
-          const accAuthData = AccAuthRes.decode(decoded.payload);
+          const _accAuthData = AccAuthRes.decode(decoded.payload);
           
           ctraderConfig.isAccountAuthed = true;
           console.log("cTrader account authorized successfully");

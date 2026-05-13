@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import Chart from "chart.js/auto";
 import { API_URL } from "../../utils/constants";
+import { normalizeStoredSymbol } from "../../utils/symbols";
 import "./TradePnLCurve.css";
 
 export default function TradePnLCurve({
@@ -91,7 +92,8 @@ export default function TradePnLCurve({
         );
 
         // ✅ Fixed: Use startMs and endMs directly
-        const url = `${API_URL}/api/klines?symbol=${symbol}` +
+        const cleanSymbol = normalizeStoredSymbol(symbol);
+        const url = `${API_URL}/api/klines?symbol=${encodeURIComponent(cleanSymbol)}` +
           `&interval=${interval}` +
           `&startTime=${startMs}` +
           `&endTime=${endMs}` +
