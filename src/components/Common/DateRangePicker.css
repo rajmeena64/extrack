@@ -3,15 +3,27 @@
   max-width: calc(100vw - 32px);
   border-radius: var(--radius-xl);
   padding: 14px;
-
-
+  background: #ffffff;
+  color: var(--text-primary);
+  border: 1px solid var(--border-light);
+  box-shadow: 0 28px 70px -38px rgba(15, 23, 42, 0.42);
+  overflow: hidden;
 }
 .rdp-nav {
 background-color: transparent;
 }
 .rdp-month {
-background: var(--bg-secondary);
-border-radius: 16px;
+  background: transparent;
+  border-radius: 0;
+}
+
+.dark-mode .trade-date-picker {
+  background: #090909;
+}
+
+.dark-mode .trade-date-picker {
+  border-color: #242424;
+  box-shadow: 0 30px 80px -34px rgba(0, 0, 0, 0.88);
 }
 
 
@@ -38,13 +50,15 @@ border-radius: 16px;
   flex-shrink: 0;
 }
 
-/* calendar root */
-/* .trade-rdp {
-  --rdp-accent-color: var(--primary);
-  --rdp-accent-background-color: color-mix(in srgb, var(--primary) 14%, transparent);
+.trade-rdp {
   margin: 0;
-  color: var(--text-primary);
-} */
+  color: #0f172a;
+  background: transparent;
+}
+
+.dark-mode .trade-rdp {
+  color: #f8fafc;
+}
 
 /* months wrapper */
 .trade-rdp .rdp-months {
@@ -52,6 +66,7 @@ border-radius: 16px;
   grid-template-columns: 1fr 1fr;
   gap: 0;
   align-items: start;
+  background: transparent;
 }
 
 /* month card */
@@ -59,25 +74,21 @@ border-radius: 16px;
   position: relative;
   min-width: 0;
   padding: 18px 22px 16px;
-  /* background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--bg-secondary) 92%, transparent) 0%,
-    color-mix(in srgb, var(--bg-card) 100%, transparent) 100%
-  ); */
-  border-top: 1px solid var(--border-light);
-  border-bottom: 1px solid var(--border-light);
+  border: 0;
+  background: transparent;
 }
 
 .trade-rdp .rdp-month:first-child {
-  border-left: 1px solid var(--border-light);
-  border-right: 1px solid color-mix(in srgb, var(--border-light) 75%, transparent);
-  border-radius: 14px 0 0 14px;
+  border-radius: 0;
 }
 
 .trade-rdp .rdp-month:last-child {
-  border-right: 1px solid var(--border-light);
-  border-left: 1px solid color-mix(in srgb, var(--border-light) 75%, transparent);
-  border-radius: 0 14px 14px 0;
+  border-left: 1px solid var(--border-light);
+  border-radius: 0;
+}
+
+.dark-mode .trade-rdp .rdp-month:last-child {
+  border-left-color: #242424;
 }
 
 /* caption */
@@ -94,8 +105,12 @@ border-radius: 16px;
 .trade-rdp .rdp-caption_label {
   font-size: 14px;
   font-weight: 600;
-  color: var(--heading);
+  color: #0f172a;
   letter-spacing: 0.01em;
+}
+
+.dark-mode .trade-rdp .rdp-caption_label {
+  color: #f8fafc;
 }
 
 /* nav */
@@ -139,9 +154,16 @@ border-radius: 16px;
 .trade-rdp .rdp-button_previous:hover,
 .trade-rdp .rdp-button_next:hover,
 .trade-rdp .rdp-nav_button:hover {
-  background: color-mix(in srgb, var(--bg-secondary) 85%, transparent);
+  background: #f1f5f9;
   border-color: var(--border-medium);
-  color: var(--heading);
+  color: #0f172a;
+}
+
+.dark-mode .trade-rdp .rdp-button_previous:hover,
+.dark-mode .trade-rdp .rdp-button_next:hover,
+.dark-mode .trade-rdp .rdp-nav_button:hover {
+  background: #111827;
+  color: #ffffff;
 }
 
 .trade-rdp__nav-icon {
@@ -159,7 +181,7 @@ border-radius: 16px;
 .trade-rdp .rdp-weekday {
   width: 40px;
   height: 28px;
-  color: var(--text-muted);
+  color: #64748b;
   font-size: 12px;
   font-weight: 500;
   text-transform: none;
@@ -197,8 +219,8 @@ border-radius: 16px;
   margin: 0 auto;
   border: 1px solid transparent;
   border-radius: 999px;
- background: transparent;
-  color: var(--text-primary);
+  background: transparent;
+  color: #0f172a;
   font-size: 13px;
   font-weight: 500;
   display: inline-flex;
@@ -209,21 +231,21 @@ border-radius: 16px;
 
 .trade-rdp .rdp-day_button:hover,
 .trade-rdp .rdp-button_reset:hover {
-  background: color-mix(in srgb, var(--primary) 10%, transparent);
-  color: var(--heading);
+  background: rgba(37, 99, 235, 0.1);
+  color: #0f172a;
 }
 
 /* outside days */
 .trade-rdp .rdp-day_outside .rdp-day_button,
 .trade-rdp .rdp-outside .rdp-day_button {
-  color: color-mix(in srgb, var(--text-muted) 55%, transparent);
+  color: #cbd5e1;
 }
 
 /* today */
 .trade-rdp .rdp-day_today .rdp-day_button,
 .trade-rdp .rdp-today .rdp-day_button {
-  border-color: color-mix(in srgb, var(--primary) 35%, transparent);
-  color: var(--heading);
+  border-color: rgba(37, 99, 235, 0.35);
+  color: #0f172a;
 }
 
 /* selected day / range ends */
@@ -231,43 +253,88 @@ border-radius: 16px;
 .trade-rdp .rdp-selected .rdp-day_button,
 .trade-rdp .rdp-range_start .rdp-day_button,
 .trade-rdp .rdp-range_end .rdp-day_button {
-  background: color-mix(in srgb, var(--primary) 16%, transparent);
-  border-color: color-mix(in srgb, var(--primary) 28%, transparent);
-  color: var(--heading);
+  background: #dbeafe;
+  border-color: #93c5fd;
+  color: #0f172a;
   box-shadow: var(--shadow-sm);
 }
 
 /* middle fill */
 .trade-rdp .rdp-range_middle,
 .trade-rdp .rdp-day_range_middle {
-  background: color-mix(in srgb, var(--primary) 7%, transparent);
+  background: #eff6ff;
 }
 
 .trade-rdp .rdp-range_middle .rdp-day_button,
 .trade-rdp .rdp-day_range_middle .rdp-day_button {
   background: transparent;
-  color: var(--heading);
+  color: #0f172a;
   border-color: transparent;
   border-radius: 0;
 }
 
 /* smooth strip */
 .trade-rdp .rdp-range_start {
-  background: linear-gradient(
-    to right,
-    transparent 0,
-    color-mix(in srgb, var(--primary) 7%, transparent) 100%
-  );
+  background: linear-gradient(to right, transparent 0, #eff6ff 100%);
   border-radius: 999px 0 0 999px;
 }
 
 .trade-rdp .rdp-range_end {
-  background: linear-gradient(
-    to left,
-    transparent 0,
-    color-mix(in srgb, var(--primary) 7%, transparent) 100%
-  );
+  background: linear-gradient(to left, transparent 0, #eff6ff 100%);
   border-radius: 0 999px 999px 0;
+}
+
+.dark-mode .trade-rdp .rdp-weekday {
+  color: #94a3b8;
+}
+
+.dark-mode .trade-rdp .rdp-day_button,
+.dark-mode .trade-rdp .rdp-button_reset,
+.dark-mode .trade-rdp .rdp-day_today .rdp-day_button,
+.dark-mode .trade-rdp .rdp-today .rdp-day_button {
+  color: #f8fafc;
+}
+
+.dark-mode .trade-rdp .rdp-day_outside .rdp-day_button,
+.dark-mode .trade-rdp .rdp-outside .rdp-day_button {
+  color: #475569;
+}
+
+.dark-mode .trade-rdp .rdp-day_button:hover,
+.dark-mode .trade-rdp .rdp-button_reset:hover {
+  background: rgba(96, 165, 250, 0.16);
+  color: #ffffff;
+}
+
+.dark-mode .trade-rdp .rdp-day_selected .rdp-day_button,
+.dark-mode .trade-rdp .rdp-selected .rdp-day_button,
+.dark-mode .trade-rdp .rdp-range_start .rdp-day_button,
+.dark-mode .trade-rdp .rdp-range_end .rdp-day_button {
+  background: #1e3a8a;
+  border-color: #3b82f6;
+  color: #ffffff;
+}
+
+.dark-mode .trade-rdp .rdp-range_middle,
+.dark-mode .trade-rdp .rdp-day_range_middle {
+  background: rgba(37, 99, 235, 0.22);
+  border-radius: 999px;
+}
+
+.dark-mode .trade-rdp .rdp-range_middle .rdp-day_button,
+.dark-mode .trade-rdp .rdp-day_range_middle .rdp-day_button {
+  color: #f8fafc;
+  border-radius: 999px;
+}
+
+.dark-mode .trade-rdp .rdp-range_start {
+  background: linear-gradient(to right, transparent 0, rgba(37, 99, 235, 0.22) 100%);
+  border-radius: 999px;
+}
+
+.dark-mode .trade-rdp .rdp-range_end {
+  background: linear-gradient(to left, transparent 0, rgba(37, 99, 235, 0.22) 100%);
+  border-radius: 999px;
 }
 
 /* .trade-rdp .rdp-range_start.rdp-range_end {

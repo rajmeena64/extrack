@@ -5,9 +5,9 @@ import {
   CalendarRange,
   ChevronDown,
   CircleDollarSign,
-  Download,
   Plus,
   RefreshCw,
+  Rocket,
   Search,
 } from 'lucide-react';
 import './Header.css';
@@ -52,16 +52,7 @@ function Header({
   const compactTradeLabel = tradeMode === 'manual' ? 'Manual' : tradeMode === 'api' ? 'Sync' : 'Trades';
   const selectedCurrency = getCurrencyMeta(currencyCode);
   const defaultCurrency = getCurrencyMeta(defaultCurrencyCode);
-
-  const greeting = useMemo(() => {
-    const hour = new Date().getHours();
-
-    if (hour < 12) return 'Good morning';
-    if (hour < 18) return 'Good afternoon';
-    return 'Good evening';
-  }, []);
-
-  const heroName = currentUser?.firstName || 'Trader';
+  const hasPopupOpen = filterOpen || datePickerOpen || currencyOpen;
 
   const latestTradeLabel = useMemo(() => {
     if (!Array.isArray(trades) || trades.length === 0) {
@@ -158,34 +149,35 @@ function Header({
   }, [profileOpen]);
 
   useEffect(() => {
-    const hasPopupOpen = filterOpen || datePickerOpen || currencyOpen;
     document.body.classList.toggle('dashboard-popup-open', hasPopupOpen);
 
     return () => {
       document.body.classList.remove('dashboard-popup-open');
     };
-  }, [currencyOpen, datePickerOpen, filterOpen]);
+  }, [hasPopupOpen]);
 
   return (
     <>
+      {hasPopupOpen && (
+        <div
+          className="dashboard-popup-overlay"
+          onClick={() => {
+            setFilterOpen(false);
+            setDatePickerOpen(false);
+            setCurrencyOpen(false);
+          }}
+        />
+      )}
+
       <header className="dashboard-header">
         <div className="dashboard-header__hero">
           <div className="dashboard-header__title-row">
             <div className="dashboard-header__headline">
               <span className="dashboard-header__eyebrow">Welcome back</span>
-              <h1 className="app-page-title">
-                {greeting}, {heroName}!
-              </h1>
+              <h1 className="app-page-title">Dashboard</h1>
             </div>
 
             <div className="dashboard-header__top-actions">
-              <div className="dashboard-header__meta">
-              <span className="dashboard-header__meta-pill">
-                <RefreshCw size={14} />
-                {isMobile ? `Last import ${compactLatestTradeLabel}` : `Last import was made: ${latestTradeLabel}`}
-              </span>
-              </div>
-
               {isMobile && (currentUser ? (
                 <div
                   className="header-user header-user--hero"
@@ -221,11 +213,6 @@ function Header({
         </div>
 
         <div className="dashboard-toolbar">
-          <div className="dashboard-toolbar__search">
-            <Search size={16} />
-            <input type="text" placeholder="Search symbols, strategy, setup" />
-          </div>
-
           <div className="dashboard-toolbar__controls">
             <div
               className={`toolbar-date-range ${
@@ -255,13 +242,10 @@ function Header({
                     value={dateRange}
                     onChange={(range) => {
                       setDateRange?.({
-                        from: range?.from || null,
-                        to: range?.to || null,
+                        from: range?.from,
+                        to: range?.to,
                       });
                     }}
-                    showLabel={false}
-                    numberOfMonths={2}
-                    defaultRangeEnabled={false}
                   />
                 </div>
               )}
@@ -357,14 +341,10 @@ function Header({
             </div>
 
             {!isMobile && (
-              <button
-                className="toolbar-chip"
-                type="button"
-                onClick={() => navigate('/add-trade')}
-              >
-                <Download size={15} />
-                Import
-              </button>
+              <div className="dashboard-toolbar__search dashboard-toolbar__search--inline">
+                <Search size={16} />
+                <input type="text" placeholder="Search" />
+              </div>
             )}
 
               <button
@@ -407,6 +387,20 @@ function Header({
               </div>
             ) : null}
           </div>
+        </div>
+
+        <div className="dashboard-header__daily-row">
+          <div className="dashboard-header__meta">
+            <span className="dashboard-header__meta-pill">
+              <RefreshCw size={14} />
+              {isMobile ? `Last import ${compactLatestTradeLabel}` : `Last import was made: ${latestTradeLabel}`}
+            </span>
+          </div>
+
+          <button className="start-day-btn" type="button">
+            <Rocket size={16} />
+            <span>Start my day</span>
+          </button>
         </div>
       </header>
 

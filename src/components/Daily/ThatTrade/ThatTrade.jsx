@@ -292,13 +292,23 @@ function ThatTrade({ trades = [] }) {
 
   return (
     <div className="main-content">
+      <div className="app-page-header trade-detail-header">
+        <div className="app-page-header__left">
+          <button onClick={goBack} className="back-btn trade-detail-back">Back</button>
+          <h1 className="app-page-title">Trade Detail</h1>
+        </div>
+
+        <div className="app-page-header__right trade-detail-symbol">
+          <SymbolWithIcon symbol={trade.symbol} size="sm" />
+          <span>{date}</span>
+        </div>
+      </div>
+
       <div className="trade-page">
 
         {/* LEFT PANEL - STATS */}
         <div className="trade-stats-panel">
           <div className="trade-top">
-            <button onClick={goBack} className="back-btn">← Back</button>
-
             <h3 className="trade-title">
               <div className="SymbolSize">
                 <SymbolWithIcon symbol={trade.symbol} size="lg" />

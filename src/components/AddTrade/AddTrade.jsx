@@ -23,25 +23,19 @@ function AddTrade({ trades }) {
   return (
     <div className="main-content add-trade-page">
       <section className="add-trade-shell">
-        <div className="add-trade-hero">
+        <div className="add-trade-hero app-page-header">
           <div className="add-trade-hero__content">
-            <div className="add-trade-hero__headline">
+            <div className="add-trade-hero__headline app-page-header__left">
               <button className="back-btn" onClick={() => navigate('/')}>
                 <LegacyIcon className="fas fa-arrow-left" />
               </button>
 
               <div className="add-trade-hero__title-wrap">
-                <span className="add-trade-hero__eyebrow">Trade Journal</span>
                 <h1 className="app-page-title">{activeTab === 'manual' ? 'Add Trade' : 'Trade Import'}</h1>
-                <p className="add-trade-hero__copy">
-                  {activeTab === 'manual'
-                    ? 'Capture entries with cleaner fields, quick screenshots, and broker-aware context.'
-                    : 'Connect accounts or import trade history with the same dashboard theme and workflow.'}
-                </p>
               </div>
             </div>
 
-            <div className="add-trade-hero__actions">
+            <div className="add-trade-hero__actions app-page-header__right">
               <label className="broker-select-card">
                 <span className="broker-select-card__label">Broker</span>
                 <select

@@ -32,10 +32,12 @@ function Analytics() {
     <div className= "main-content" >
       
       {/* ===== HEADER ===== */}
-      <div className="analytics-topbar">
-        <h1 className="analytics-title app-page-title">Analytics</h1>
+      <div className="analytics-topbar app-page-header">
+        <div className="app-page-header__left">
+          <h1 className="analytics-title app-page-title">Analytics</h1>
+        </div>
 
-        <div className="analytics-tabs">
+        <div className="analytics-tabs app-page-header__right">
           <button
             className={`analytics-tab ${
               activeTab === "calendar" ? "active" : ""

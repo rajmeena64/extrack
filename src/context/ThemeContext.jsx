@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useLayoutEffect } from 'react';
 
 const ThemeContext = createContext();
 
@@ -7,13 +7,16 @@ export function ThemeProvider({ children }) {
     return localStorage.getItem('darkMode') === 'true';
   });
 
-  useEffect(() => {
-    localStorage.setItem('darkMode', darkMode);
+  useLayoutEffect(() => {
     if (darkMode) {
       document.body.classList.add('dark-mode');
     } else {
       document.body.classList.remove('dark-mode');
     }
+  }, [darkMode]);
+
+  useEffect(() => {
+    localStorage.setItem('darkMode', darkMode);
   }, [darkMode]);
 
   const toggleDarkMode = () => {

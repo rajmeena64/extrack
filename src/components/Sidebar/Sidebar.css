@@ -6,8 +6,7 @@
   --sidebar-collapsed-width: 64px;
   --sidebar-expanded-width: 188px;
   width: 60px;
-background: var(--bg-primary);
-
+  background: #ffffff;
   border-right: 1px solid var(--border-light);
   padding: 24px 0;
   display: flex;
@@ -17,7 +16,7 @@ background: var(--bg-primary);
   left: 0;
   height: 100vh;
   z-index: 1000;
-  box-shadow: var(--shadow-md);
+  box-shadow: 10px 0 30px -28px rgba(15, 23, 42, 0.24);
   overflow: hidden;
   transition: width 0.34s ease, transform 0.3s ease, box-shadow 0.3s ease;
 }
@@ -240,7 +239,7 @@ background: var(--bg-primary);
   color: var(--text-secondary);
   text-decoration: none;
   font-weight: 500;
-  border-left: 4px solid transparent;
+  border-left: 0;
   margin: 6px 8px;
   border-radius: var(--radius-md);
   white-space: nowrap;
@@ -274,9 +273,8 @@ background: var(--bg-primary);
 
 
 .nav-item:hover {
-  background: var(--bg-secondary);
+  background: var(--bg-hover);
   color: var(--primary);
-  border-left-color: var(--primary);
   transform: translateX(4px);
 }
 
@@ -390,7 +388,7 @@ background: var(--bg-primary);
 }
 
 .sub-nav-item:hover {
-  background: var(--bg-secondary);
+  background: var(--bg-hover);
   color: var(--primary);
 }
 
@@ -566,5 +564,9 @@ input:checked + .slider::before {
 .nav-item.active {
   background: var(--primary);
   color: white;
-  border-left-color: white;
+  box-shadow: 0 14px 28px -20px rgba(37, 99, 235, 0.6);
 }                      
+
+.dark-mode .sidebar {
+  background: var(--bg-secondary);
+}

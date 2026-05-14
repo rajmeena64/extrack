@@ -6,9 +6,23 @@
   display: grid;
   grid-template-columns: 320px 1fr;
   gap: 20px;
-  height: calc(100vh - 40px);
+  height: calc(100vh - 122px);
   min-height: 0;
   background: var(--bg-secondary);
+}
+
+.trade-detail-header {
+  flex-shrink: 0;
+}
+
+.trade-detail-symbol {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.trade-detail-back {
+  margin: 0;
 }
 
 /* LEFT PANEL - STATS */

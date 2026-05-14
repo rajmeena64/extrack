@@ -3,7 +3,7 @@
   height: 100%;
   min-height: var(--dashboard-chart-slot);
   max-height: var(--dashboard-chart-slot);
-  padding: var(--dashboard-card-padding);
+  padding: 0;
   border-radius: var(--dashboard-card-radius);
   border: var(--dashboard-card-border);
   background: var(--bg-card);
@@ -18,7 +18,10 @@
   justify-content: space-between;
   align-items: center;
   gap: 14px;
-  margin-bottom: 12px;
+  min-height: 52px;
+  margin-bottom: 0;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border-light);
 }
 
 .activity-card__title-wrap {
@@ -44,6 +47,10 @@
   color: var(--heading);
 }
 
+.activity-card__title-row svg {
+  color: var(--text-muted);
+}
+
 .activity-card__title-row h3::before {
   display: none;
 }
@@ -63,7 +70,8 @@
 .activity-card__title-wrap p {
   margin: 5px 0 0;
   font-size: 12px;
-  color: var(--text-secondary);
+  color: #334155;
+  font-weight: 500;
 }
 
 .activity-card__legend {
@@ -104,26 +112,27 @@
 }
 
 .activity-card__legend-item--loss {
-  background: color-mix(in srgb, var(--accent-ink) 8%, transparent);
+  background: var(--accent-danger-soft);
 }
 
 .activity-card__legend-item--loss i {
-  background: linear-gradient(180deg, var(--accent-ink), var(--accent-ink-soft));
+  background: linear-gradient(180deg, #f87171, var(--loss-color));
 }
 
 .activity-card__chart-shell {
   flex: 1;
   min-height: 0;
   height: auto;
-  padding: 6px 8px 0;
-  border-radius: 16px;
-  background: color-mix(in srgb, var(--surface-subtle) 75%, transparent);
-  border: 1px solid var(--divider-strong);
+  padding: 18px 12px 14px 6px;
+  border-radius: 0;
+  background: var(--bg-card);
+  border: 0;
 }
 
 .activity-card__chart-shell canvas {
   width: 100% !important;
   height: 100% !important;
+  filter: none;
 }
 
 .dark-mode .activity-card--daily-pnl {
@@ -149,29 +158,31 @@
 }
 
 .dark-mode .activity-card__legend-item--loss {
-  background: rgba(168, 179, 199, 0.12);
+  background: rgba(248, 113, 113, 0.14);
 }
 
 .dark-mode .activity-card__legend-item--loss i {
-  background: linear-gradient(180deg, #a8b3c7, #6f7c93);
+  background: linear-gradient(180deg, #fca5a5, var(--accent-danger));
 }
 
 @media (max-width: 768px) {
   .activity-card--daily-pnl {
-    padding: 14px;
+    padding: 0;
     min-height: 260px;
   }
 
   .activity-card__header {
-    margin-bottom: 8px;
+    min-height: 48px;
+    margin-bottom: 0;
+    padding: 0 14px;
   }
 
   .activity-card__chart-shell {
     min-height: 200px;
     height: 212px;
-    padding: 0;
+    padding: 12px 8px 10px 4px;
     border: none;
-    background: transparent;
+    background: var(--bg-card);
     border-radius: 0;
   }
 

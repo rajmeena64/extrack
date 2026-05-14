@@ -21,9 +21,10 @@
 }
 
 .performance-card .chart-container {
-  padding: 6px 10px 12px;
+  padding: 6px 8px 12px 4px;
   flex: 1;
   min-height: 0;
+  background: transparent;
 }
 
 .performance-card canvas {
@@ -54,7 +55,7 @@
   }
 
   .performance-card .chart-container {
-    padding: 4px 10px 8px;
+    padding: 4px 8px 8px 4px;
     min-height: 148px;
   }
 }
@@ -74,7 +75,7 @@
   }
 
   .performance-card .chart-container {
-    padding: 2px 8px 6px;
+    padding: 2px 6px 6px 2px;
     min-height: 132px;
   }
 }

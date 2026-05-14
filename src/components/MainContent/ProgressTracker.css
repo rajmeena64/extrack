@@ -45,8 +45,8 @@
   justify-content: center;
   padding: 5px 12px;
   border-radius: 999px;
-  background: var(--accent-success-soft);
-  color: var(--accent-success-strong);
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--primary);
   font-size: 11px;
   font-weight: 800;
 }
@@ -110,27 +110,27 @@
 .progress-card__cell {
   border-radius: 3px;
   background: var(--surface-muted);
-  border: 1px solid color-mix(in srgb, var(--divider-strong) 65%, transparent);
+  border: 1px solid color-mix(in srgb, var(--divider-strong) 75%, transparent);
 }
 
 .progress-card__cell.level-0 {
-  background: color-mix(in srgb, var(--surface-muted-strong) 70%, transparent);
+  background: #f1f5f9;
 }
 
 .progress-card__cell.level-1 {
-  background: color-mix(in srgb, var(--surface-muted-strong) 86%, var(--accent-success-soft));
+  background: #dbeafe;
 }
 
 .progress-card__cell.level-2 {
-  background: color-mix(in srgb, var(--accent-success-soft) 68%, white);
+  background: #93c5fd;
 }
 
 .progress-card__cell.level-3 {
-  background: var(--accent-success);
+  background: #3b82f6;
 }
 
 .progress-card__cell.level-4 {
-  background: var(--accent-ink);
+  background: var(--primary);
 }
 
 .dark-mode .progress-card__title-wrap svg,
@@ -144,19 +144,19 @@
 }
 
 .dark-mode .progress-card__cell.level-1 {
-  background: color-mix(in srgb, var(--surface-muted-strong) 88%, var(--accent-success-soft));
+  background: rgba(37, 99, 235, 0.28);
 }
 
 .dark-mode .progress-card__cell.level-2 {
-  background: color-mix(in srgb, var(--accent-success) 58%, var(--surface-subtle));
+  background: rgba(59, 130, 246, 0.55);
 }
 
 .dark-mode .progress-card__cell.level-3 {
-  background: var(--accent-success);
+  background: #3b82f6;
 }
 
 .dark-mode .progress-card__cell.level-4 {
-  background: var(--accent-success-strong);
+  background: #60a5fa;
 }
 
 @media (max-width: 768px) {

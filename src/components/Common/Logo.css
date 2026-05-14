@@ -14,7 +14,7 @@
   overflow: visible;
   border-radius: 10px;
   background: transparent;
-  box-shadow: 0 12px 24px -18px rgba(59, 48, 196, 0.65);
+  box-shadow: 0 12px 24px -18px rgba(37, 99, 235, 0.52);
 }
 
 .app-brand__image {
@@ -41,7 +41,7 @@
   line-height: 1;
   color: var(--text-primary);
   white-space: nowrap;
-  letter-spacing: 0.01em;
+  letter-spacing: 0;
 }
 
 .app-brand--compact {

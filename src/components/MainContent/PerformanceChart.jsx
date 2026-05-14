@@ -1,11 +1,21 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import Chart from '../../utils/chartSetup';
 import './PerformanceChart.css';
-import { formatCompactCurrency, formatCurrency } from '../../utils/Currency';
+import { formatCurrency } from '../../utils/Currency';
+import { useTheme } from '../../context/ThemeContext';
+
+const formatCompactNumber = (value) => (
+  new Intl.NumberFormat('en-US', {
+    notation: 'compact',
+    maximumFractionDigits: 1,
+    style: 'decimal',
+  }).format(value)
+);
 
 function PerformanceChart({ trades, currencyCode = 'USD' }) {
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
+  const { darkMode = false } = useTheme() || {};
 
   const { labels, data } = useMemo(() => {
     const daily = {};
@@ -41,17 +51,19 @@ function PerformanceChart({ trades, currencyCode = 'USD' }) {
 
     const ctx = chartRef.current.getContext('2d');
     const isMobile = window.innerWidth <= 768;
-    const isDark = document.body.classList.contains('dark-mode');
+    const isDark = Boolean(darkMode);
     const theme = getComputedStyle(document.body);
-    const accentSuccessStrong = theme.getPropertyValue('--accent-success-strong').trim() || '#1e8f49';
     const accentDanger = theme.getPropertyValue('--accent-danger').trim() || '#ef4444';
-    const textPrimary = theme.getPropertyValue('--text-primary').trim() || '#111714';
-    const textSecondary = theme.getPropertyValue('--text-secondary').trim() || '#6a766d';
-    const positiveLine = isDark ? '#86efac' : accentSuccessStrong;
-    const negativeLine = isDark ? '#f871715b' : accentDanger;
-    const positiveFillTop = isDark ? 'rgba(134, 239, 230, 0.26)' : 'rgb(88, 212, 160)';
-    const positiveFillMid = isDark ? 'rgba(134, 239, 172, 0.12)' : 'rgba(88, 212, 126, 0.1)';
-    const negativeFill = isDark ? 'rgba(248, 113, 113, 0.49)' : 'rgba(68, 79, 239, 0.74)';
+    const textPrimary = isDark ? '#f8fafc' : '#0f172a';
+    const textSecondary = isDark ? '#f8fafc' : '#0f172a';
+    const positiveLine = isDark ? '#4fb889' : '#2f8f63';
+    const negativeLine = isDark ? '#f87171' : accentDanger;
+    const positiveFillTop = isDark ? 'rgba(47, 143, 99, 0.42)' : 'rgba(47, 143, 99, 0.32)';
+    const positiveFillMid = isDark ? 'rgba(47, 143, 99, 0.2)' : 'rgba(47, 143, 99, 0.14)';
+    const negativeFill = isDark ? 'rgba(248, 113, 113, 0.18)' : 'rgba(220, 38, 38, 0.12)';
+    const tooltipBg = isDark ? '#0b0b0b' : '#ffffff';
+    const tooltipText = isDark ? '#f8fafc' : '#0f172a';
+    const tooltipBorder = isDark ? '#2a2a2a' : '#cbd5e1';
     const curveData = cumulativePnL(data);
 
     chartInstance.current = new Chart(ctx, {
@@ -62,11 +74,15 @@ function PerformanceChart({ trades, currencyCode = 'USD' }) {
           {
             data: curveData,
             borderColor: positiveLine,
-            borderWidth: isMobile ? 0.6 : 0.6,
-            fill: true,
-            tension: 0.3,
+            borderWidth: isMobile ? 0.9 : 1,
+            fill: 'origin',
+            tension: 0.18,
             pointRadius: 0,
-            pointHitRadius: 10,
+            pointHoverRadius: 4,
+            pointHitRadius: 18,
+            pointHoverBackgroundColor: textPrimary,
+            pointHoverBorderColor: '#ffffff',
+            pointHoverBorderWidth: 2,
             segment: {
               borderColor: (context) => (context.p1.parsed.y >= 0 ? positiveLine : negativeLine),
               backgroundColor: (context) =>
@@ -86,7 +102,7 @@ function PerformanceChart({ trades, currencyCode = 'USD' }) {
 
               const gradient = chartCtx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
               gradient.addColorStop(0, positiveFillTop);
-              gradient.addColorStop(0.55, positiveFillMid);
+              gradient.addColorStop(0.62, positiveFillMid);
               gradient.addColorStop(1, negativeFill);
               return gradient;
             },
@@ -101,29 +117,41 @@ function PerformanceChart({ trades, currencyCode = 'USD' }) {
             top: isMobile ? 4 : 0,
             right: isMobile ? 2 : 0,
             bottom: isMobile ? 2 : 0,
-            left: isMobile ? 2 : 0,
+            left: 0,
           },
         },
         plugins: {
           legend: { display: false },
           tooltip: {
-            backgroundColor: textPrimary,
+            backgroundColor: tooltipBg,
+            titleColor: tooltipText,
+            bodyColor: tooltipText,
+            borderColor: tooltipBorder,
+            borderWidth: 1,
             padding: 10,
             displayColors: false,
+            intersect: false,
             callbacks: {
+              title: (items) => items?.[0]?.label || '',
               label: (tooltip) => formatCurrency(tooltip.parsed.y, currencyCode),
             },
           },
         },
         scales: {
           x: {
+            offset: true,
             grid: { display: false, drawBorder: false, drawOnChartArea: false, drawTicks: false },
             border: { display: false },
             ticks: {
               color: textSecondary,
-              font: { size: isMobile ? 10 : 11 },
+              font: { size: isMobile ? 10 : 11, weight: '600' },
               autoSkip: true,
-              maxTicksLimit: isMobile ? 4 : 6,
+              maxTicksLimit: isMobile ? 5 : 7,
+              padding: 6,
+              callback: function (value, index) {
+                if (index === 0) return '';
+                return this.getLabelForValue(value);
+              },
             },
           },
           y: {
@@ -140,25 +168,27 @@ function PerformanceChart({ trades, currencyCode = 'USD' }) {
             ticks: {
               color: textSecondary,
               display: true,
-              font: { size: 11 },
-              callback: (value) => formatCompactCurrency(value, currencyCode),
+              padding: 3,
+              maxTicksLimit: isMobile ? 5 : 7,
+              font: { size: 11, weight: '600' },
+              callback: (value) => formatCompactNumber(value),
             },
           },
         },
         interaction: {
           intersect: false,
-          mode: 'index',
+          mode: 'nearest',
         },
         elements: {
           line: {
-            borderWidth: isMobile ? 2.2 : 1.8,
+            borderWidth: isMobile ? 0.9 : 1,
           },
         },
       },
     });
 
     return () => chartInstance.current?.destroy();
-  }, [currencyCode, data, labels]);
+  }, [currencyCode, darkMode, data, labels]);
 
   return (
     <div className="chart-card performance-card">

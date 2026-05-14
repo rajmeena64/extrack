@@ -1,10 +1,8 @@
 .landing-page {
   min-height: 100vh;
   padding: 22px clamp(18px, 4vw, 56px) 34px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.76), rgba(234, 240, 247, 0.92)),
-    var(--bg-primary);
-  color: #101527;
+  background: var(--bg-primary);
+  color: var(--text-primary);
   overflow-x: hidden;
 }
 
@@ -43,11 +41,11 @@
 .landing-nav__login {
   min-height: 38px;
   padding: 0 16px;
-  border-radius: 10px;
+  border-radius: 8px;
   background: #ffffff;
-  color: #1b2340;
-  border: 1px solid rgba(27, 35, 64, 0.1);
-  box-shadow: 0 14px 28px -24px rgba(27, 35, 64, 0.32);
+  color: var(--text-primary);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-sm);
 }
 
 .landing-hero {
@@ -68,7 +66,7 @@
 .landing-hero__eyebrow {
   display: inline-flex;
   margin-bottom: 16px;
-  color: #3b30c4;
+  color: var(--primary);
   font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.1em;
@@ -77,16 +75,16 @@
 
 .landing-hero h1 {
   margin: 0;
-  color: #0f172a;
+  color: var(--heading);
   font-size: clamp(42px, 5.8vw, 78px);
-  line-height: 0.95;
+  line-height: 0.98;
   letter-spacing: 0;
 }
 
 .landing-hero p {
   max-width: 520px;
   margin: 20px 0 0;
-  color: #4b5876;
+  color: var(--text-secondary);
   font-size: clamp(16px, 1.4vw, 19px);
   line-height: 1.65;
 }
@@ -102,20 +100,20 @@
 .landing-secondary {
   min-height: 48px;
   padding: 0 20px;
-  border-radius: 12px;
+  border-radius: 8px;
   font-size: 14px;
 }
 
 .landing-primary {
-  background: #111714;
+  background: var(--primary);
   color: #ffffff;
-  box-shadow: 0 22px 34px -22px rgba(17, 23, 20, 0.48);
+  box-shadow: 0 18px 30px -18px rgba(37, 99, 235, 0.42);
 }
 
 .landing-secondary {
   background: #ffffff;
-  color: #1b2340;
-  border: 1px solid rgba(27, 35, 64, 0.1);
+  color: var(--text-primary);
+  border: 1px solid var(--border-light);
 }
 
 .landing-primary:hover,
@@ -126,10 +124,10 @@
 
 .landing-preview {
   min-width: 0;
-  border-radius: 20px;
+  border-radius: 16px;
   background: #ffffff;
-  border: 1px solid rgba(27, 35, 64, 0.1);
-  box-shadow: 0 28px 64px -38px rgba(31, 41, 80, 0.4);
+  border: 1px solid var(--border-light);
+  box-shadow: 0 28px 58px -36px rgba(15, 23, 42, 0.3);
   overflow: hidden;
 }
 
@@ -137,8 +135,8 @@
   display: flex;
   gap: 7px;
   padding: 15px 18px;
-  border-bottom: 1px solid rgba(27, 35, 64, 0.08);
-  background: #f8fbff;
+  border-bottom: 1px solid var(--border-light);
+  background: #f8fafc;
 }
 
 .landing-preview__topbar span {
@@ -158,9 +156,9 @@
 .landing-preview__metrics div,
 .landing-preview__chart,
 .landing-preview__trades {
-  border-radius: 14px;
-  border: 1px solid rgba(27, 35, 64, 0.08);
-  background: #fbfdff;
+  border-radius: 12px;
+  border: 1px solid var(--border-light);
+  background: #ffffff;
 }
 
 .landing-preview__metrics div {
@@ -173,19 +171,19 @@
 
 .landing-preview small,
 .landing-preview__trade span {
-  color: #6b7895;
+  color: var(--text-muted);
   font-size: 11px;
   font-weight: 700;
 }
 
 .landing-preview__metrics strong {
-  color: #0f172a;
+  color: var(--heading);
   font-size: clamp(20px, 2.2vw, 30px);
   line-height: 1;
 }
 
 .landing-preview__metrics span {
-  color: #1e8f49;
+  color: var(--profit-color);
   font-size: 11px;
   font-weight: 800;
 }
@@ -202,9 +200,9 @@
   min-height: 250px;
   overflow: hidden;
   background:
-    linear-gradient(rgba(59, 130, 246, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(59, 130, 246, 0.08) 1px, transparent 1px),
-    #fbfdff;
+    linear-gradient(rgba(37, 99, 235, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(37, 99, 235, 0.08) 1px, transparent 1px),
+    #f8fafc;
   background-size: 44px 44px;
 }
 
@@ -212,14 +210,14 @@
   position: absolute;
   inset: 28px 22px;
   clip-path: polygon(0 72%, 18% 54%, 32% 62%, 48% 32%, 64% 44%, 82% 18%, 100% 28%, 100% 100%, 0 100%);
-  background: linear-gradient(180deg, rgba(59, 48, 196, 0.55), rgba(88, 212, 126, 0.08));
+  background: linear-gradient(180deg, rgba(37, 99, 235, 0.36), rgba(22, 163, 74, 0.08));
 }
 
 .landing-preview__chart-line::before {
   content: "";
   position: absolute;
   inset: 0 0 38%;
-  border-top: 4px solid #3b30c4;
+  border-top: 4px solid var(--primary);
   transform: skewY(-8deg);
 }
 
@@ -236,9 +234,9 @@
   justify-content: space-between;
   gap: 12px;
   padding: 12px;
-  border-radius: 12px;
+  border-radius: 10px;
   background: #ffffff;
-  border: 1px solid rgba(27, 35, 64, 0.08);
+  border: 1px solid var(--border-light);
 }
 
 .landing-preview__trade div {
@@ -249,7 +247,7 @@
 }
 
 .landing-preview__trade strong {
-  color: #101527;
+  color: var(--heading);
   font-size: 13px;
 }
 
@@ -261,11 +259,11 @@
 }
 
 .landing-preview__pnl--profit {
-  color: #1e8f49;
+  color: var(--profit-color);
 }
 
 .landing-preview__pnl--loss {
-  color: #ef4444;
+  color: var(--loss-color);
 }
 
 .landing-features {
@@ -279,14 +277,14 @@
 .landing-features article {
   min-width: 0;
   padding: 16px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.74);
-  border: 1px solid rgba(27, 35, 64, 0.08);
-  box-shadow: 0 18px 38px -34px rgba(27, 35, 64, 0.34);
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid var(--border-light);
+  box-shadow: 0 18px 36px -30px rgba(15, 23, 42, 0.26);
 }
 
 .landing-features svg {
-  color: #3b30c4;
+  color: var(--primary);
   margin-bottom: 10px;
 }
 
@@ -296,13 +294,13 @@
 }
 
 .landing-features strong {
-  color: #101527;
+  color: var(--heading);
   font-size: 13px;
   margin-bottom: 5px;
 }
 
 .landing-features span {
-  color: #5f6b87;
+  color: var(--text-secondary);
   font-size: 12px;
   line-height: 1.45;
 }

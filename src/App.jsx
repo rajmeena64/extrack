@@ -46,8 +46,12 @@ function Profile() {
   }
 
   return (
-    <div style={{ padding: '40px' }}>
-      <h1>User Profile</h1>
+    <div className="main-content">
+      <div className="app-page-header">
+        <div className="app-page-header__left">
+          <h1 className="app-page-title">Profile</h1>
+        </div>
+      </div>
       {currentUser ? (
         <>
           <p><strong>Name:</strong> {currentUser.firstName} {currentUser.lastName}</p>

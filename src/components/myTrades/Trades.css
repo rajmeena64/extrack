@@ -45,7 +45,8 @@
   gap: 4px;
   padding: 2px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--surface-subtle) 72%, transparent);
+  background: var(--surface-subtle);
+  border: 1px solid var(--border-light);
   align-self: auto;
 }
 
@@ -68,10 +69,10 @@
 }
 
 .tabs button.active {
-  /* color: #ffffff; */
-  color: var(--text-primary);
+  color: var(--primary);
   font-weight: 600;
-  background: var(--bg-primary);
+  background: #ffffff;
+  box-shadow: var(--shadow-sm);
 }
 
 .tabs button.active::after {
@@ -128,7 +129,7 @@
 }
 
 .settings-dropdown label:hover {
-  color: var(--accent-success-strong);
+  color: var(--primary);
 }
 
 .settings-dropdown label.disabled {
@@ -140,7 +141,7 @@
   width: 12px;
   height: 12px;
   cursor: pointer;
-  accent-color: var(--accent-success-strong);
+  accent-color: var(--primary);
 }
 
 .settings-dropdown label.disabled input[type="checkbox"] {
@@ -224,7 +225,7 @@
 }
 
 .trade-item:hover {
-  background-color: color-mix(in srgb, var(--accent-success-soft) 60%, transparent);
+  background-color: rgba(37, 99, 235, 0.04);
   border-radius: 3px;
 }
 

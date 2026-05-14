@@ -18,7 +18,7 @@
   justify-content: space-between;
   align-items: center;
   min-height: var(--title-card-row-height);
-  margin-bottom: 4px;
+  margin-bottom: 8px;
 }
 
 .radar-title-text {
@@ -26,8 +26,15 @@
 }
 
 .radar-score {
-  font-size: 16px;
-  font-weight: 700;
+  min-width: 36px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 800;
+  background: var(--accent-info-soft);
 }
 
 .radar-score-empty {
@@ -36,10 +43,10 @@
   color: var(--text-muted);
 }
 
-.grade-excellent { color: var(--accent-success-strong); }
-.grade-good { color: var(--accent-success); }
-.grade-average { color: var(--accent-success); }
-.grade-poor { color: var(--accent-ink); }
+.grade-excellent { color: var(--primary-dark); }
+.grade-good { color: var(--primary-dark); }
+.grade-average { color: var(--primary-dark); }
+.grade-poor { color: var(--accent-danger); }
 
 .radar-empty {
   display: flex;
@@ -52,47 +59,49 @@
 
 .radar-body {
   display: grid;
-  grid-template-columns: minmax(150px, 1fr) minmax(112px, 128px);
+  grid-template-columns: minmax(260px, 1fr) minmax(128px, 148px);
   gap: 10px;
-  align-items: center;
+  align-items: stretch;
   flex: 1;
   min-height: 0;
 }
 
 .radar-chart {
   width: 100%;
-  height: min(100%, 168px);
+  height: min(100%, 238px);
   min-width: 0;
   min-height: 0;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   position: relative;
+  padding-top: 2px;
 }
 
 .radar-chart canvas {
   display: block;
   width: 100% !important;
   height: 100% !important;
-  max-width: 176px;
-  max-height: 168px;
+  max-width: 320px;
+  max-height: 238px;
 }
 
 .radar-overall {
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 5px;
   justify-content: center;
   align-self: center;
+  padding: 4px 0;
 }
 
 .radar-overall-label {
   font-size: 10px;
-  font-weight: 500;
+  font-weight: 700;
   color: var(--text-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.4px;
+  letter-spacing: 0.06em;
 }
 
 .radar-bar {
@@ -105,7 +114,7 @@
 .radar-bar-fill {
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--accent-ink), var(--accent-success), var(--accent-success-strong));
+  background: linear-gradient(90deg, #0f172a, #1d4ed8, #60a5fa);
 }
 
 .radar-scale {
@@ -117,26 +126,28 @@
 
 .radar-scale-num {
   font-size: 10px;
-  color: var(--text-secondary);
+  font-weight: 600;
+  color: var(--text-muted);
 }
 
 .radar-grade {
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .radar-metrics-list {
-  margin-top: 6px;
+  margin-top: 8px;
   display: flex;
   flex-direction: column;
+  border-top: 1px solid var(--divider-strong);
 }
 
 .radar-metric-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 4px 0;
-  border-bottom: 1px solid rgba(51, 65, 85, 0.1);
+  padding: 5px 0;
+  border-bottom: 1px solid var(--divider-strong);
 }
 
 .radar-metric-row:last-child {
@@ -144,7 +155,8 @@
 }
 
 .radar-metric-label {
-  font-size: 10px;
+  font-size: 10.5px;
+  font-weight: 600;
   color: var(--text-secondary);
   min-width: 0;
   overflow: hidden;
@@ -153,22 +165,38 @@
 }
 
 .radar-metric-value {
-  font-size: 10px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 800;
 }
 
-.val-good { color: var(--accent-success-strong); }
-.val-mid { color: var(--accent-success); }
+.val-good { color: var(--primary-dark); }
+.val-mid { color: var(--primary); }
 .val-poor { color: var(--accent-ink); }
 
 .dark-mode .radar-overall-label,
 .dark-mode .radar-scale-num,
 .dark-mode .radar-metric-label {
-  color: var(--accent-ink-soft);
+  color: var(--text-secondary);
 }
 
 .dark-mode .radar-metric-row {
-  border-bottom-color: rgba(148, 163, 184, 0.1);
+  border-bottom-color: var(--divider-strong);
+}
+
+.dark-mode .radar-score {
+  background: rgba(96, 165, 250, 0.14);
+}
+
+.dark-mode .grade-excellent,
+.dark-mode .grade-good,
+.dark-mode .grade-average,
+.dark-mode .val-good,
+.dark-mode .val-mid {
+  color: #93c5fd;
+}
+
+.dark-mode .radar-bar-fill {
+  background: linear-gradient(90deg, #1e293b, #2563eb, #93c5fd);
 }
 
 @container (max-width: 300px) {

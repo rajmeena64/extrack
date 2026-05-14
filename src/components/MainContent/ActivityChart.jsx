@@ -1,41 +1,45 @@
 import React, { useEffect, useMemo, useRef } from 'react';
+import { Info } from 'lucide-react';
 import Chart from '../../utils/chartSetup';
 import './ActivityChart.css';
-import { formatCompactCurrency, formatCurrency } from '../../utils/Currency';
+import { formatCurrency } from '../../utils/Currency';
+import { useTheme } from '../../context/ThemeContext';
 
-const WEEK_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const formatCompactNumber = (value) => (
+  new Intl.NumberFormat('en-US', {
+    notation: 'compact',
+    maximumFractionDigits: 1,
+    style: 'decimal',
+  }).format(value)
+);
 
 function ActivityChart({ trades, currencyCode = 'USD' }) {
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
+  const { darkMode = false } = useTheme() || {};
 
-  const { wins: winPnlData, losses: lossPnlData } = useMemo(() => {
-    const wins = [0, 0, 0, 0, 0, 0, 0];
-    const losses = [0, 0, 0, 0, 0, 0, 0];
-
-    if (!trades || trades.length === 0) {
-      return {
-        wins,
-        losses,
-      };
+  const { labels, dailyPnlData } = useMemo(() => {
+    if (!Array.isArray(trades) || trades.length === 0) {
+      return { labels: [], dailyPnlData: [] };
     }
 
+    const daily = {};
     trades.forEach((trade) => {
       if (!trade.timestamp || trade.pnl == null) return;
 
-      const pnl = parseFloat(trade.pnl) || 0;
-      const day = new Date(trade.timestamp).getDay();
+      const date = new Date(trade.timestamp);
+      if (Number.isNaN(date.getTime())) return;
 
-      if (pnl > 0) {
-        wins[day] += pnl;
-      } else if (pnl < 0) {
-        losses[day] += Math.abs(pnl);
-      }
+      const key = date.toISOString().split('T')[0];
+      daily[key] = (daily[key] || 0) + (Number(trade.pnl) || 0);
     });
 
+    const sortedLabels = Object.keys(daily).sort();
+    const visibleLabels = sortedLabels.slice(-30);
+
     return {
-      wins: [wins[1], wins[2], wins[3], wins[4], wins[5], wins[6], wins[0]],
-      losses: [losses[1], losses[2], losses[3], losses[4], losses[5], losses[6], losses[0]],
+      labels: visibleLabels,
+      dailyPnlData: visibleLabels.map((date) => daily[date]),
     };
   }, [trades]);
 
@@ -45,47 +49,37 @@ function ActivityChart({ trades, currencyCode = 'USD' }) {
 
     const ctx = chartRef.current.getContext('2d');
     const theme = getComputedStyle(document.body);
-    const isDarkMode = document.body.classList.contains('dark-mode');
-    const accentSuccess = theme.getPropertyValue('--accent-success').trim() || '#58d47e';
-    const accentSuccessStrong = theme.getPropertyValue('--accent-success-strong').trim() || '#1e8f49';
-    const accentInk = theme.getPropertyValue('--accent-ink').trim() || '#111714';
-    const accentInkSoft = theme.getPropertyValue('--accent-ink-soft').trim() || '#2b332d';
-    const textSecondary = theme.getPropertyValue('--text-secondary').trim() || '#7b8a7d';
-    const dividerStrong = theme.getPropertyValue('--divider-strong').trim() || 'rgba(22, 34, 25, 0.08)';
-    const winPnlGradient = ctx.createLinearGradient(0, 0, 0, 220);
-    winPnlGradient.addColorStop(0, accentSuccess);
-    winPnlGradient.addColorStop(1, accentSuccessStrong);
-
-    const lossPnlGradient = ctx.createLinearGradient(0, 0, 0, 220);
-    lossPnlGradient.addColorStop(0, isDarkMode ? '#a8b3c7' : accentInkSoft);
-    lossPnlGradient.addColorStop(1, isDarkMode ? '#6f7c93' : accentInk);
+    const isDarkMode = Boolean(darkMode);
+    const profitColor = theme.getPropertyValue('--profit-color').trim() || '#16a34a';
+    const lossColor = theme.getPropertyValue('--loss-color').trim() || '#dc2626';
+    const textPrimary = isDarkMode ? '#f8fafc' : '#0f172a';
+    const textSecondary = isDarkMode ? '#f8fafc' : '#0f172a';
+    const tooltipBg = isDarkMode ? '#0b0b0b' : '#ffffff';
+    const tooltipBorder = isDarkMode ? '#2a2a2a' : '#cbd5e1';
 
     chartInstance.current = new Chart(ctx, {
       type: 'bar',
       data: {
-        labels: WEEK_LABELS,
+        labels,
         datasets: [
           {
-            label: 'Win P&L',
-            data: winPnlData,
-            backgroundColor: winPnlGradient,
-            borderRadius: 999,
+            label: 'Net Daily P&L',
+            data: dailyPnlData,
+            backgroundColor: (context) => {
+              const value = context.raw || 0;
+              return value >= 0 ? profitColor : lossColor;
+            },
+            hoverBackgroundColor: (context) => {
+              const value = context.raw || 0;
+              return value >= 0 ? '#15803d' : '#b91c1c';
+            },
+            borderRadius: 4,
             borderSkipped: false,
-            barThickness: 10,
-            maxBarThickness: 10,
-            categoryPercentage: 0.58,
-            barPercentage: 0.92,
-          },
-          {
-            label: 'Loss P&L',
-            data: lossPnlData,
-            backgroundColor: lossPnlGradient,
-            borderRadius: 999,
-            borderSkipped: false,
-            barThickness: 10,
-            maxBarThickness: 10,
-            categoryPercentage: 0.58,
-            barPercentage: 0.92,
+            borderWidth: 0,
+            barThickness: 8,
+            maxBarThickness: 9,
+            categoryPercentage: 0.72,
+            barPercentage: 0.86,
           },
         ],
       },
@@ -99,11 +93,13 @@ function ActivityChart({ trades, currencyCode = 'USD' }) {
         layout: {
           padding: {
             top: 8,
+            right: 0,
+            left: 0,
           },
         },
         scales: {
           x: {
-            stacked: false,
+            offset: true,
             grid: {
               display: false,
               drawBorder: false,
@@ -114,8 +110,18 @@ function ActivityChart({ trades, currencyCode = 'USD' }) {
             ticks: {
               color: textSecondary,
               font: {
-                size: 11,
-                weight: '600',
+                size: 12,
+                weight: '700',
+              },
+              maxRotation: 0,
+              autoSkip: true,
+              maxTicksLimit: 7,
+              padding: 6,
+              callback: function (_value, index) {
+                const label = labels[index];
+                if (!label) return '';
+                const [, month, day] = label.split('-');
+                return `${month}/${day}`;
               },
             },
           },
@@ -126,14 +132,19 @@ function ActivityChart({ trades, currencyCode = 'USD' }) {
             },
             grid: {
               display: false,
-              color: dividerStrong,
+              color: 'transparent',
               drawTicks: false,
             },
             ticks: {
               color: textSecondary,
-              padding: 8,
+              padding: 3,
+              maxTicksLimit: 7,
+              font: {
+                size: 12,
+                weight: '700',
+              },
               callback: function (value) {
-                return formatCompactCurrency(value, currencyCode);
+                return formatCompactNumber(value);
               },
             },
           },
@@ -143,35 +154,53 @@ function ActivityChart({ trades, currencyCode = 'USD' }) {
             display: false,
           },
           tooltip: {
-            backgroundColor: theme.getPropertyValue('--text-primary').trim() || '#111714',
+            backgroundColor: tooltipBg,
+            titleColor: textPrimary,
+            bodyColor: textPrimary,
+            borderColor: tooltipBorder,
+            borderWidth: 1,
             cornerRadius: 10,
             padding: 12,
+            displayColors: true,
+            boxWidth: 8,
+            boxHeight: 8,
+            boxPadding: 6,
             callbacks: {
+              title: (items) => items?.[0]?.label || '',
+              labelColor: function (context) {
+                const value = context.parsed.y || 0;
+                const color = value >= 0 ? profitColor : lossColor;
+                return {
+                  borderColor: color,
+                  backgroundColor: color,
+                };
+              },
               label: function (context) {
-                let label = context.dataset.label || '';
-                if (label) {
-                  label += ': ';
-                }
-                label += formatCurrency(context.parsed.y, currencyCode);
-                return label;
+                const value = context.parsed.y || 0;
+                const sign = value > 0 ? '+' : '';
+                return `Net P&L: ${sign}${formatCurrency(value, currencyCode)}`;
               },
             },
           },
+        },
+        interaction: {
+          intersect: false,
+          mode: 'nearest',
         },
       },
     });
 
     return () => chartInstance.current?.destroy();
-  }, [currencyCode, lossPnlData, winPnlData]);
+  }, [currencyCode, dailyPnlData, darkMode, labels]);
 
   return (
     <div className="activity-card--daily-pnl">
       <div className="activity-card__header">
         <div className="activity-card__title-wrap">
           <div className="activity-card__title-row">
-            <h3 className="app-panel-title">Weekly Activity</h3>
+            <h3 className="app-panel-title">Net Daily P&L</h3>
+            <Info size={14} />
           </div>
-          <p>Win P&amp;L & Loss P&amp;L</p>
         </div>
 
       </div>

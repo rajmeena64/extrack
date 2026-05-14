@@ -168,8 +168,8 @@ function TradeView({ trades = [] }) {
             }
           );
 
-          setCurrentMonth(data.settings.currentMonth ?? new Date().getMonth());
-          setCurrentYear(data.settings.currentYear ?? new Date().getFullYear());
+          setCurrentMonth(new Date().getMonth());
+          setCurrentYear(new Date().getFullYear());
         }
       } catch {
         // Defaults remain active if saved settings cannot be loaded.
@@ -190,8 +190,6 @@ function TradeView({ trades = [] }) {
     const settingsToSave = {
       filters,
       columns: visibleColumns,
-      currentMonth,
-      currentYear,
     };
 
     try {
@@ -373,21 +371,17 @@ function TradeView({ trades = [] }) {
       )}
 
       {/* HEADER */}
-      <div className="trade-header-shell">
+      <div className="trade-header-shell app-page-header">
         <div className="trade-header">
-          <div className="trade-header-left">
+          <div className="trade-header-left app-page-header__left">
             <div className="trade-title-block">
               <div className="trade-title-row">
-                <Ratio className="trade-title-icon" />
                 <h1 className="trade-page-title app-page-title">Trade Log</h1>
               </div>
-              <p className="trade-page-subtitle">
-                Review, filter and analyze all your trades in one place
-              </p>
             </div>
           </div>
 
-          <div className="trade-header-right">
+          <div className="trade-header-right app-page-header__right">
             {/* FILTERS */}
             <div className="toolbar-group" ref={filterRef}>
               <button

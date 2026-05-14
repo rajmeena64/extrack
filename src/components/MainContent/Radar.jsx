@@ -1,23 +1,12 @@
-import React, { useEffect, useRef, useMemo, useState } from "react";
+import React, { useEffect, useRef, useMemo } from "react";
 import Chart from "../../utils/chartSetup";
 import "./Radar.css";
+import { useTheme } from "../../context/ThemeContext";
 
 export default function Radar({ trades = [] }) {
   const radarRef    = useRef(null);
   const chartRef    = useRef(null);
-
-  // ── Track dark mode so chart rebuilds on toggle
-  const [isDark, setIsDark] = useState(
-    () => document.body.classList.contains("dark-mode")
-  );
-
-  useEffect(() => {
-    const obs = new MutationObserver(() => {
-      setIsDark(document.body.classList.contains("dark-mode"));
-    });
-    obs.observe(document.body, { attributes: true, attributeFilter: ["class"] });
-    return () => obs.disconnect();
-  }, []);
+  const { darkMode = false } = useTheme() || {};
 
   // =============================================
   // REAL METRIC CALCULATIONS
@@ -102,9 +91,16 @@ export default function Radar({ trades = [] }) {
       label === "Profit Factor" ? ["Profit", "Factor"] : label
     ));
 
-    // Hardcoded per mode because canvas cannot use CSS vars.
-    const labelColor = isDark ? "#d7e2d8" : "#233126";
-    const gridColor  = isDark ? "rgba(113,224,152,0.12)" : "rgba(17,23,20,0.08)";
+    const isDark = Boolean(darkMode);
+    const labelColor = isDark ? "#f8fafc" : "#0f172a";
+    const gridColor  = isDark ? "rgba(148,163,184,0.18)" : "rgba(15,23,42,0.12)";
+    const angleColor = isDark ? "rgba(148,163,184,0.16)" : "rgba(15,23,42,0.1)";
+    const fillColor = isDark ? "rgba(96,165,250,0.18)" : "rgba(37,99,235,0.12)";
+    const borderColor = isDark ? "#93c5fd" : "#1d4ed8";
+    const pointColor = isDark ? "#bfdbfe" : "#2563eb";
+    const tooltipBg = isDark ? "#0b0b0b" : "#ffffff";
+    const tooltipText = isDark ? "#f8fafc" : "#0f172a";
+    const tooltipBorder = isDark ? "#2a2a2a" : "#cbd5e1";
 
     chartRef.current = new Chart(radarRef.current, {
       type: "radar",
@@ -113,14 +109,14 @@ export default function Radar({ trades = [] }) {
         datasets: [{
           data:                 Object.values(metrics),
           fill:                 true,
-          backgroundColor:      isDark ? "rgba(113,224,152,0.16)" : "rgba(88,212,126,0.12)",
-          borderColor:          isDark ? "#9df0bb" : "#111714",
+          backgroundColor:      fillColor,
+          borderColor:          borderColor,
           borderWidth:          2,
-          pointRadius:          3,
-          pointHoverRadius:     4,
-          pointBackgroundColor: isDark ? "#9df0bb" : "#58d47e",
-          pointBorderColor:     isDark ? "#0f140f" : "#ffffff",
-          pointBorderWidth:     1.5,
+          pointRadius:          3.5,
+          pointHoverRadius:     5,
+          pointBackgroundColor: pointColor,
+          pointBorderColor:     isDark ? "#050505" : "#ffffff",
+          pointBorderWidth:     2,
         }],
       },
       options: {
@@ -128,15 +124,22 @@ export default function Radar({ trades = [] }) {
         maintainAspectRatio: false,
         layout: {
           padding: {
-            top: 16,
-            right: 18,
-            bottom: 14,
-            left: 18,
+            top: 0,
+            right: 8,
+            bottom: 12,
+            left: 8,
           },
         },
         plugins: {
           legend:  { display: false },
           tooltip: {
+            backgroundColor: tooltipBg,
+            titleColor: tooltipText,
+            bodyColor: tooltipText,
+            borderColor: tooltipBorder,
+            borderWidth: 1,
+            displayColors: false,
+            padding: 10,
             callbacks: {
               label: (ctx) => ` ${ctx.label}: ${ctx.parsed.r}`,
             },
@@ -149,12 +152,12 @@ export default function Radar({ trades = [] }) {
             beginAtZero: true,
             ticks:       { display: false, stepSize: 25 },
             grid:        { color: gridColor  },
-            angleLines:  { color: gridColor  },
+            angleLines:  { color: angleColor },
             pointLabels: {
               color: labelColor,
               centerPointLabels: true,
-              padding: 10,
-              font:  { size: 10, weight: "600", lineHeight: 1.2 },
+              padding: 8,
+              font:  { size: 11, weight: "700", lineHeight: 1.2 },
             },
           },
         },
@@ -162,7 +165,7 @@ export default function Radar({ trades = [] }) {
     });
 
     return () => chartRef.current?.destroy();
-  }, [metrics, isDark]);   // ← rebuilds on dark/light toggle too
+  }, [metrics, darkMode]);
 
   const metricRows = [
     { label: "Win %",        value: metrics.win         },
@@ -177,7 +180,7 @@ export default function Radar({ trades = [] }) {
     return (
       <div className="radar-card">
         <div className="radar-header">
-          <span className="radar-title-text dashboard-card-title">Zella Score</span>
+          <span className="radar-title-text dashboard-card-title">Score</span>
           <strong className="radar-score-empty">—</strong>
         </div>
         <div className="radar-empty">No trade data yet</div>
@@ -190,7 +193,7 @@ export default function Radar({ trades = [] }) {
 
       {/* HEADER */}
       <div className="radar-header">
-        <span className="radar-title-text dashboard-card-title">Zella Score</span>
+        <span className="radar-title-text dashboard-card-title">Score</span>
         <strong className={`radar-score ${grade.cls}`}>{overallScore}</strong>
       </div>
 
