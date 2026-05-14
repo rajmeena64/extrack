@@ -15,9 +15,8 @@ function NEWS() {
         key={src} // 🔥 force reload when theme changes
         title="TradingView Economic Calendar"
         src={src}
-        frameborder="0"
+        frameBorder="0"
         scrolling="no"
-        allowtransparency="true"
         style={{
           width: "100%",
           height: "100%",

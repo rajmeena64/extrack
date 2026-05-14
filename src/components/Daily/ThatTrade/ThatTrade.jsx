@@ -19,6 +19,9 @@ function ThatTrade({ trades = [] }) {
   const [isSaving, setIsSaving] = useState(false);
   const [, setIsLoading] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
+  const [aiAnalysis, setAiAnalysis] = useState("");
+  const [aiError, setAiError] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
   
   // Screenshot states
   const [screenshots, setScreenshots] = useState([]);
@@ -271,6 +274,41 @@ function ThatTrade({ trades = [] }) {
     };
   };
 
+  const generateTradeAnalysis = async () => {
+    if (!trade) return;
+
+    setAiAnalysis("");
+    setAiError("");
+    setAiLoading(true);
+
+    try {
+      const analysisTrade = {
+        ...trade,
+        notes,
+        strategy,
+        screenshots,
+      };
+
+      const { data } = await api.post("/ai-trade-analysis", {
+        date: formatDateTime(trade.timestamp).isoDate,
+        trades: [analysisTrade],
+        currencyCode: "USD",
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        analysisMode: "single-trade",
+      });
+
+      if (!data?.success) {
+        throw new Error(data?.error || "AI trade analysis failed.");
+      }
+
+      setAiAnalysis(data.analysis);
+    } catch (error) {
+      setAiError(error.response?.data?.error || error.message || "AI trade analysis failed.");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   const toEpochSeconds = (value) => {
     if (!value) return null;
     const numeric = Number(value);
@@ -426,6 +464,29 @@ function ThatTrade({ trades = [] }) {
                 <LegacyIcon className="fas fa-spinner fa-spin" /> Uploading...
               </div>
             )}
+          </div>
+
+          <div className="ai-trade-section">
+            <div className="section-header">
+              <div className="section-title">
+                <LegacyIcon className="fas fa-chart-line" /> AI Trade Review
+              </div>
+              <button className="edit-btn" onClick={generateTradeAnalysis} disabled={aiLoading}>
+                {aiLoading ? "Reviewing..." : "Review"}
+              </button>
+            </div>
+
+            {aiError && <div className="save-message error">{aiError}</div>}
+
+            <div className={`ai-trade-output ${!aiAnalysis ? "empty" : ""}`}>
+              {aiAnalysis ? (
+                <pre>{aiAnalysis}</pre>
+              ) : (
+                screenshots.length > 0
+                  ? "AI will review chart structure, timing, event exposure, execution quality, and what should improve."
+                  : "Add a screenshot for chart reading. Without it, AI will review timing, behavior, event exposure, and execution quality from trade data."
+              )}
+            </div>
           </div>
 
           {/* Save message */}

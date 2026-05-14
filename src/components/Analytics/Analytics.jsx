@@ -3,10 +3,11 @@ import "./Analytics.css";
 
 import NEWS from "./NEWS";
 import Heatmap from "./heatmap";
+import AIAnalysis from "./AIAnalysis";
 
-import { Calendar, Ratio } from "../Common/icons";
+import { Calendar, Ratio, ChartBar } from "../Common/icons";
 
-function Analytics() {
+function Analytics({ trades = [], currencyCode = "USD" }) {
   const [activeTab, setActiveTab] = useState("calendar");
   // const [darkMode, setDarkMode] = useState(false);
   const IconSize= 15;
@@ -57,6 +58,16 @@ function Analytics() {
             <Ratio size={IconSize} />
             <span>Heatmap</span>
           </button>
+
+          <button
+            className={`analytics-tab ${
+              activeTab === "ai" ? "active" : ""
+            }`}
+            onClick={() => setActiveTab("ai")}
+          >
+            <ChartBar size={IconSize} />
+            <span>AI Analysis</span>
+          </button>
         </div>
       </div>
 
@@ -64,6 +75,7 @@ function Analytics() {
       <div className="analytics-content">
         {activeTab === "calendar" && <NEWS />}
         {activeTab === "heatmap" && <Heatmap />}
+        {activeTab === "ai" && <AIAnalysis trades={trades} currencyCode={currencyCode} />}
       </div>
 
     </div>

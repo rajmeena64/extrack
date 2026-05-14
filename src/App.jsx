@@ -285,7 +285,10 @@ function App() {
               />
 
               <Route path="/add-trade" element={<AddTrade trades={trades} />} />
-              <Route path="/analytics" element={<Analytics />} />
+              <Route
+                path="/analytics"
+                element={<Analytics trades={convertedDashboardTrades} currencyCode={dashboardCurrency} />}
+              />
               <Route path="/profile" element={<Profile />} />
               <Route
                 path="/day-review"
