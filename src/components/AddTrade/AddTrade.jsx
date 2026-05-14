@@ -23,51 +23,51 @@ function AddTrade({ trades }) {
   return (
     <div className="main-content add-trade-page">
       <section className="add-trade-shell">
-        <div className="add-trade-hero app-page-header">
-          <div className="add-trade-hero__content">
-            <div className="add-trade-hero__headline app-page-header__left">
-              <button className="back-btn" onClick={() => navigate('/')}>
-                <LegacyIcon className="fas fa-arrow-left" />
+        <header className="app-page-header add-trade-header">
+          <div className="app-page-header__left">
+            <button className="back-btn" onClick={() => navigate('/')}>
+              <LegacyIcon className="fas fa-arrow-left" />
+            </button>
+
+            <h1 className="app-page-title">
+              {activeTab === 'manual' ? 'Add Trade' : 'Trade Import'}
+            </h1>
+          </div>
+
+          <div className="app-page-header__right">
+            <label className="broker-select-card">
+              <LegacyIcon className="fas fa-network-wired broker-select-icon" />
+              <span className="broker-select-card__label">Broker</span>
+              <select
+                className="broker-dropdown"
+                value={selectedBrokerId}
+                onChange={(e) => setSelectedBrokerId(parseInt(e.target.value, 10))}
+              >
+                {brokers.map((broker) => (
+                  <option key={broker.id} value={broker.id}>
+                    {broker.name}
+                  </option>
+                ))}
+              </select>
+              <LegacyIcon className="fas fa-chevron-down broker-select-chevron" />
+            </label>
+
+            <div className="trade-tabs">
+              <button
+                className={`tab-btn ${activeTab === 'manual' ? 'active' : ''}`}
+                onClick={() => setActiveTab('manual')}
+              >
+                <LegacyIcon className="fas fa-keyboard" /> Manually
               </button>
-
-              <div className="add-trade-hero__title-wrap">
-                <h1 className="app-page-title">{activeTab === 'manual' ? 'Add Trade' : 'Trade Import'}</h1>
-              </div>
-            </div>
-
-            <div className="add-trade-hero__actions app-page-header__right">
-              <label className="broker-select-card">
-                <span className="broker-select-card__label">Broker</span>
-                <select
-                  className="broker-dropdown"
-                  value={selectedBrokerId}
-                  onChange={(e) => setSelectedBrokerId(parseInt(e.target.value, 10))}
-                >
-                  {brokers.map((broker) => (
-                    <option key={broker.id} value={broker.id}>
-                      {broker.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <div className="trade-tabs">
-                <button
-                  className={`tab-btn ${activeTab === 'manual' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('manual')}
-                >
-                  Manual Trade
-                </button>
-                <button
-                  className={`tab-btn ${activeTab === 'api' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('api')}
-                >
-                  Sync Import
-                </button>
-              </div>
+              <button
+                className={`tab-btn ${activeTab === 'api' ? 'active' : ''}`}
+                onClick={() => setActiveTab('api')}
+              >
+                <LegacyIcon className="fas fa-sync-alt" /> Exact Sync
+              </button>
             </div>
           </div>
-        </div>
+        </header>
 
         <section className="add-trade-stage">
           {activeTab === 'manual' ? (

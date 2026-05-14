@@ -483,31 +483,98 @@
 
 @media (max-width: 560px) {
   .day-review-header {
-    align-items: flex-start;
     flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+    padding: 16px;
+    margin: -16px -16px 10px;
+    min-height: auto;
+  }
+
+  .day-review-back {
+    align-self: flex-start;
+    width: auto;
+  }
+
+  .day-review-title {
+    text-align: left;
+    gap: 2px;
   }
 
   .day-review-title .app-page-title {
     font-size: 18px;
+    line-height: 1.2;
   }
 
   .day-review-date-nav {
     width: 100%;
     margin-left: 0;
+    display: flex;
+    gap: 8px;
   }
 
   .day-review-date-nav button {
     flex: 1;
     justify-content: center;
+    height: 38px;
+    font-size: 13px;
+  }
+
+  .day-review-table {
+    border: none;
+    gap: 12px;
+    background: transparent;
   }
 
   .day-review-trade-row {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 10px;
+    padding: 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: 16px;
+    margin-bottom: 4px;
+    min-height: auto;
+    box-shadow: 0 4px 12px -8px rgba(0,0,0,0.1);
   }
 
-  .day-review-trade-main,
+  .day-review-trade-main {
+    grid-column: 1;
+    order: 1;
+    align-items: flex-start;
+  }
+
+  .day-review-trade-pnl {
+    grid-column: 2;
+    order: 2;
+    align-items: flex-end;
+    text-align: right;
+  }
+
+  .day-review-trade-detail {
+    order: 3;
+    padding: 8px 12px;
+    background: var(--surface-subtle);
+    border-radius: 10px;
+    border: 1px solid var(--border-light);
+  }
+
   .day-review-trade-context {
     grid-column: 1 / -1;
+    order: 10;
+    margin-top: 4px;
+    padding: 12px 0 0;
+    border-top: 1px dashed var(--border-light);
+  }
+
+  .day-review-trade-context span {
+    white-space: normal;
+  }
+
+  .day-review-trade-context small {
+    white-space: normal;
+    display: block;
+    margin-top: 4px;
   }
 }

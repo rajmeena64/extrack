@@ -886,6 +886,19 @@
 }
 
 @media (max-width: 480px) {
+  .app-page-header {
+    min-height: 54px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .app-page-header .app-page-title {
+    font-size: 16px !important;
+  }
+
+  .trade-detail-symbol {
+    font-size: 10px;
+  }
+
   .trade-page {
     gap: 12px;
   }

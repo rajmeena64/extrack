@@ -99,18 +99,25 @@ function Chart({ darkMode, symbol = "BTCUSDT", category = "", tradeDate, tradeTi
       pnlNegative: getVar("--pnl-negative") || BEARISH_CANDLE_COLOR
     };
 
+    const isMobile = window.innerWidth < 480;
+
     const chart = createChart(chartRef.current, {
       width: chartRef.current.clientWidth,
       height: chartRef.current.clientHeight || 400,
-      layout: { background: { color: initialCss.bgCard }, textColor: initialCss.textMuted },
+      layout: {
+        background: { color: initialCss.bgCard },
+        textColor: initialCss.textMuted,
+        fontSize: isMobile ? 10 : 12,
+      },
       grid: { vertLines: { color: initialCss.borderLight }, horzLines: { color: initialCss.borderLight } },
-      rightPriceScale: { borderColor: initialCss.borderMedium },
+      rightPriceScale: {
+        borderColor: initialCss.borderMedium,
+        entireTextOnly: true,
+        borderVisible: !isMobile,
+        width: isMobile ? 45 : undefined,
+      },
       timeScale: { borderColor: initialCss.borderMedium, timeVisible: true },
-  
-  // ✅ ADD THIS
-  crosshair: { mode: CrosshairMode.Normal}, // 👈 IMPORTANT (no snapping)
-
-
+      crosshair: { mode: CrosshairMode.Normal },
     });
 
     const candleSeries = chart.addSeries(CandlestickSeries, {
@@ -134,10 +141,19 @@ function Chart({ darkMode, symbol = "BTCUSDT", category = "", tradeDate, tradeTi
   // Update chart on CSS variables change
   useEffect(() => {
     if (!chartApiRef.current || !candleSeriesRef.current) return;
+    const isMobile = window.innerWidth < 480;
     chartApiRef.current.applyOptions({
-      layout: { background: { color: cssVariables.bgCard }, textColor: cssVariables.textMuted },
+      layout: {
+        background: { color: cssVariables.bgCard },
+        textColor: cssVariables.textMuted,
+        fontSize: isMobile ? 10 : 12,
+      },
       grid: { vertLines: { color: cssVariables.borderLight }, horzLines: { color: cssVariables.borderLight } },
-      rightPriceScale: { borderColor: cssVariables.borderMedium },
+      rightPriceScale: {
+        borderColor: cssVariables.borderMedium,
+        entireTextOnly: true,
+        width: isMobile ? 45 : undefined,
+      },
       timeScale: { borderColor: cssVariables.borderMedium },
     });
     candleSeriesRef.current.applyOptions({

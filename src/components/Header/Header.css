@@ -614,7 +614,7 @@
   .dashboard-header {
     position: relative;
     gap: 12px;
-    margin-bottom: 8px;
+    margin: 0 0 8px 0;
     padding: 18px 16px 18px;
     border-radius: 18px;
     background: var(--primary);
@@ -640,6 +640,9 @@
 
   .start-day-btn {
     width: 100%;
+    background: rgba(255, 255, 255, 0.95);
+    color: var(--primary);
+    box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.2);
   }
 
   .dashboard-header__hero {
@@ -655,8 +658,8 @@
 
   .dashboard-header__top-actions {
     width: 100%;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    display: flex;
+    justify-content: space-between;
     align-items: center;
     gap: 10px;
   }
@@ -732,7 +735,7 @@
   .dashboard-toolbar__controls {
     width: 100%;
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
     align-items: stretch;
   }
@@ -921,7 +924,7 @@ body.dashboard-popup-open .currency-filter-wrapper:has(.currency-filter-menu) {
   }
 
   .dashboard-toolbar__controls {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: 1.1fr 0.9fr 0.8fr;
     gap: 6px;
   }
 
@@ -929,7 +932,7 @@ body.dashboard-popup-open .currency-filter-wrapper:has(.currency-filter-menu) {
   .toolbar-primary {
     width: 100%;
     min-height: 38px;
-    padding: 7px 8px;
+    padding: 7px 4px;
     gap: 4px;
     font-size: 10px;
   }

@@ -208,6 +208,16 @@ function Header({
                   </div>
                 </div>
               ))}
+              {isMobile && (
+                <button
+                  className="header-user header-user--hero header-action-btn--import"
+                  type="button"
+                  onClick={() => navigate('/add-trade')}
+                  style={{ border: 'none', cursor: 'pointer' }}
+                >
+                  <Plus size={20} color="#ffffff" />
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -347,14 +357,16 @@ function Header({
               </div>
             )}
 
+            {!isMobile && (
               <button
                 className={`toolbar-primary ${datePickerOpen || filterOpen || currencyOpen ? 'toolbar-primary--dimmed' : ''}`}
                 type="button"
                 onClick={() => navigate('/add-trade')}
               >
                 <Plus size={16} />
-                <span className="toolbar-primary__text">{isMobile ? 'Import' : 'Import trades'}</span>
+                <span className="toolbar-primary__text">Import trades</span>
               </button>
+            )}
 
             {!isMobile && currentUser ? (
               <div
