@@ -12,17 +12,37 @@ const formatCompactNumber = (value) => (
   }).format(value)
 );
 
-function PerformanceChart({ trades, currencyCode = 'USD' }) {
+function PerformanceChart({
+  trades,
+  currencyCode = 'USD',
+  title = 'Daily Net Cumulative P&L',
+  groupBy = 'day',
+}) {
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
   const { darkMode = false } = useTheme() || {};
 
   const { labels, data } = useMemo(() => {
-    const daily = {};
-
     if (!trades || trades.length === 0) {
       return { labels: [], data: [] };
     }
+
+    if (groupBy === 'trade') {
+      const sortedTrades = [...trades]
+        .filter((trade) => trade?.timestamp && trade.pnl != null)
+        .sort((left, right) => new Date(left.timestamp) - new Date(right.timestamp));
+
+      return {
+        labels: sortedTrades.map((trade, index) => {
+          const date = new Date(trade.timestamp);
+          if (Number.isNaN(date.getTime())) return `Trade ${index + 1}`;
+          return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }),
+        data: sortedTrades.map((trade) => Number(trade.pnl) || 0),
+      };
+    }
+
+    const daily = {};
 
     trades.forEach((trade) => {
       if (!trade.timestamp || trade.pnl == null) return;
@@ -35,7 +55,7 @@ function PerformanceChart({ trades, currencyCode = 'USD' }) {
     const data = labels.map((date) => daily[date]);
 
     return { labels, data };
-  }, [trades]);
+  }, [groupBy, trades]);
 
   const cumulativePnL = (values) => {
     let total = 0;
@@ -193,7 +213,7 @@ function PerformanceChart({ trades, currencyCode = 'USD' }) {
   return (
     <div className="chart-card performance-card">
       <div className="performance-header">
-        <h3 className="app-panel-title">Daily Net Cumulative P&L</h3>
+        <h3 className="app-panel-title">{title}</h3>
       </div>
 
       <div className="chart-container">

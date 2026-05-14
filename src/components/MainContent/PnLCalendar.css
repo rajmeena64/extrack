@@ -140,7 +140,7 @@
   border: 1px solid #e7e9f2;
   background: #f1f1f4;
   overflow: hidden;
-  cursor: context-menu;
+  cursor: pointer;
 }
 
 .calendar-day-card--empty {
@@ -151,6 +151,7 @@
 .calendar-day-card--muted {
   background: #efeff2;
   border-color: #e5e7ef;
+  cursor: default;
 }
 
 .calendar-day-card--positive {

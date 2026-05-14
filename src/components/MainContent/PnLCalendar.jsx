@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import {
   Camera,
   BadgeCheck,
@@ -32,6 +33,7 @@ const WEEKDAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 function PnLCalendar({ trades, currencyCode = 'USD' }) {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const calendarShellRef = useRef(null);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isWeeklyOpen, setIsWeeklyOpen] = useState(false);
@@ -260,6 +262,11 @@ function PnLCalendar({ trades, currencyCode = 'USD' }) {
     });
   };
 
+  const openDayReview = (cell) => {
+    if (!cell?.dateKey || cell.trades <= 0) return;
+    navigate(`/day-review/${cell.dateKey}`);
+  };
+
   const showWeeklyCards = !isCompactWeeks || isWeeklyOpen;
 
   return (
@@ -343,8 +350,18 @@ function PnLCalendar({ trades, currencyCode = 'USD' }) {
                 <div
                   key={cell.dateKey}
                   className={`calendar-day-card ${toneClass} ${cell.isToday ? 'calendar-day-card--today' : ''}`}
+                  onClick={() => openDayReview(cell)}
                   onContextMenu={(event) => openBreakevenMenu(event, cell)}
-                  title="Right-click for day options"
+                  role="button"
+                  tabIndex={cell.trades > 0 ? 0 : -1}
+                  onKeyDown={(event) => {
+                    if (cell.trades <= 0) return;
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      openDayReview(cell);
+                    }
+                  }}
+                  title={cell.trades > 0 ? 'Open day review. Right-click for day options' : 'No trades on this day'}
                 >
                   <span className="calendar-day-card__date">{cell.day}</span>
                   {(cell.hasBadge || isBreakeven) && (

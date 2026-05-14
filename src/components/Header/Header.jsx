@@ -397,7 +397,7 @@ function Header({
             </span>
           </div>
 
-          <button className="start-day-btn" type="button">
+          <button className="start-day-btn" type="button" onClick={() => navigate('/day-review')}>
             <Rocket size={16} />
             <span>Start my day</span>
           </button>

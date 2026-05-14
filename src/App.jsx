@@ -25,6 +25,7 @@ const Analytics = lazy(() => import('./components/Analytics/Analytics'));
 const TradeView = lazy(() => import('./components/Daily/TradeView'));
 const ThatTrade = lazy(() => import('./components/Daily/ThatTrade/ThatTrade'));
 const LandingPage = lazy(() => import('./components/Landing/LandingPage'));
+const DayReview = lazy(() => import('./components/DayReview/DayReview'));
 
 // Loading component shown while page is loading
 const PageLoader = () => (
@@ -286,6 +287,14 @@ function App() {
               <Route path="/add-trade" element={<AddTrade trades={trades} />} />
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/profile" element={<Profile />} />
+              <Route
+                path="/day-review"
+                element={<DayReview trades={convertedDashboardTrades} currencyCode={dashboardCurrency} />}
+              />
+              <Route
+                path="/day-review/:dateKey"
+                element={<DayReview trades={convertedDashboardTrades} currencyCode={dashboardCurrency} />}
+              />
               <Route path="/TradeView" element={<TradeView trades={trades} />} />
               <Route path="/trade/:tradeId" element={<ThatTrade />} />
               <Route path="*" element={<Navigate to="/dashboard" />} />
