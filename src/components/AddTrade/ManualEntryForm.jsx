@@ -5,6 +5,7 @@ import LegacyIcon from "../Common/LegacyIcon";
 import api from "../../utils/serve";
 import { useAuth } from '../../context/AuthContext';
 import { normalizeStoredSymbol } from "../../utils/symbols";
+import { parseTradeNumber, sanitizeDecimalInput, sanitizeSignedDecimalInput } from "../../utils/fieldValidation";
 
 function ManualEntryForm({ trades }) {
   const navigate = useNavigate();
@@ -42,11 +43,24 @@ function ManualEntryForm({ trades }) {
   const handleInputChange = (e) => {
     const { id, value } = e.target;
     
-    // Capitalize symbol input
     if (id === 'symbol') {
       setFormData(prev => ({
         ...prev,
         [id]: normalizeStoredSymbol(value)
+      }));
+    } else if (['quantity', 'entryPrice', 'exitPrice'].includes(id)) {
+      const sanitizedValue = sanitizeDecimalInput(value);
+      if (sanitizedValue === null) return;
+      setFormData(prev => ({
+        ...prev,
+        [id]: sanitizedValue
+      }));
+    } else if (id === 'manualPNL') {
+      const sanitizedValue = sanitizeSignedDecimalInput(value);
+      if (sanitizedValue === null) return;
+      setFormData(prev => ({
+        ...prev,
+        [id]: sanitizedValue
       }));
     } else {
       setFormData(prev => ({
@@ -96,6 +110,16 @@ function ManualEntryForm({ trades }) {
       return;
     }
 
+    const quantity = parseTradeNumber(formData.quantity, { min: 0.0000001 });
+    const entryPrice = parseTradeNumber(formData.entryPrice, { min: 0.0000001 });
+    const exitPrice = parseTradeNumber(formData.exitPrice, { min: 0.0000001 });
+    const pnl = parseTradeNumber(formData.manualPNL);
+
+    if ([quantity, entryPrice, exitPrice, pnl].includes(null)) {
+      alert('Quantity, entry, exit, and P&L must be valid numbers.');
+      return;
+    }
+
     // Convert IST to UTC
     const istDateTime = `${formData.tradeDate}T${formData.tradeTime}:00+05:30`;
     const dateObj = new Date(istDateTime);
@@ -105,10 +129,10 @@ function ManualEntryForm({ trades }) {
       symbol: normalizeStoredSymbol(formData.symbol),
       trade_type: formData.tradeType,
       category: formData.category,
-      quantity: parseFloat(formData.quantity),
-      price: parseFloat(formData.entryPrice),
-      exit_price: parseFloat(formData.exitPrice),
-      pnl: parseFloat(formData.manualPNL),
+      quantity,
+      price: entryPrice,
+      exit_price: exitPrice,
+      pnl,
       strategy: formData.strategy,
       timestamp: utcTimestamp
     };
@@ -213,22 +237,22 @@ function ManualEntryForm({ trades }) {
 
         <div className="form-group">
           <label htmlFor="quantity" className="required">Qty</label>
-          <input type="number" id="quantity" value={formData.quantity} onChange={handleInputChange}/>
+          <input type="text" inputMode="decimal" id="quantity" value={formData.quantity} onChange={handleInputChange}/>
         </div>
 
         <div className="form-group">
           <label htmlFor="entryPrice" className="required">Entry</label>
-          <input type="number" id="entryPrice" value={formData.entryPrice} onChange={handleInputChange}/>
+          <input type="text" inputMode="decimal" id="entryPrice" value={formData.entryPrice} onChange={handleInputChange}/>
         </div>
 
         <div className="form-group">
           <label htmlFor="exitPrice" className="required">Exit</label>
-          <input type="number" id="exitPrice" value={formData.exitPrice} onChange={handleInputChange}/>
+          <input type="text" inputMode="decimal" id="exitPrice" value={formData.exitPrice} onChange={handleInputChange}/>
         </div>
 
         <div className="form-group">
           <label htmlFor="manualPNL" className="required">P&L</label>
-          <input type="number" id="manualPNL" value={formData.manualPNL} onChange={handleInputChange}/>
+          <input type="text" inputMode="decimal" id="manualPNL" value={formData.manualPNL} onChange={handleInputChange}/>
         </div>
 
         <div className="form-group">

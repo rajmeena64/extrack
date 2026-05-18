@@ -5,6 +5,7 @@ import "./TradeView.css";
 import SymbolWithIcon from "../Common/SymbolWithIcon";
 import api from "../../utils/serve";
 import DateRangePicker from "../Common/DateRangePicker";
+import { sanitizeSignedDecimalInput } from "../../utils/fieldValidation";
 
 
 
@@ -450,21 +451,25 @@ function TradeView({ trades = [] }) {
                   </label>
 
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="decimal"
                     placeholder="Min P&L"
                     value={filters.minPnl}
-                    onChange={(e) =>
-                      setFilters({ ...filters, minPnl: e.target.value })
-                    }
+                    onChange={(e) => {
+                      const value = sanitizeSignedDecimalInput(e.target.value);
+                      if (value !== null) setFilters({ ...filters, minPnl: value });
+                    }}
                   />
 
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="decimal"
                     placeholder="Max P&L"
                     value={filters.maxPnl}
-                    onChange={(e) =>
-                      setFilters({ ...filters, maxPnl: e.target.value })
-                    }
+                    onChange={(e) => {
+                      const value = sanitizeSignedDecimalInput(e.target.value);
+                      if (value !== null) setFilters({ ...filters, maxPnl: value });
+                    }}
                   />
 
                   <select

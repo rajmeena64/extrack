@@ -1,5 +1,5 @@
 function normalizeStoredSymbol(value) {
-  let rawSymbol = String(value || "").trim();
+  let rawSymbol = String(value || "").trim().toUpperCase();
 
   if (!rawSymbol) return "";
 

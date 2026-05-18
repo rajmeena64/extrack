@@ -100,6 +100,12 @@ function toFiniteNumber(value) {
     return Number.isFinite(numericValue) ? numericValue : null;
 }
 
+function parseRequiredNumber(value, { min = -Infinity } = {}) {
+    const numericValue = toFiniteNumber(value);
+    if (numericValue === null || numericValue < min) return null;
+    return numericValue;
+}
+
 function roundToScale(value, scale = 5) {
     const numericValue = toFiniteNumber(value);
     if (numericValue === null) return null;
@@ -133,11 +139,25 @@ router.post('/save-trade', authCheck, async (req, res) => {
             return res.status(400).json({ success: false, error: 'Invalid symbol' });
         }
 
+        const normalizedQuantity = parseRequiredNumber(quantity, { min: 0.0000001 });
+        const normalizedPrice = parseRequiredNumber(price, { min: 0.0000001 });
+        const normalizedExitPrice = parseRequiredNumber(exit_price, { min: 0.0000001 });
+        const normalizedPnl = parseRequiredNumber(pnl);
+
+        if (
+            normalizedQuantity === null
+            || normalizedPrice === null
+            || normalizedExitPrice === null
+            || normalizedPnl === null
+        ) {
+            return res.status(400).json({ success: false, error: 'Invalid numeric trade values' });
+        }
+
         await pool.query(
             `INSERT INTO trades
              (user_id, symbol, trade_type, category, quantity, price, exit_price, pnl, strategy, timestamp, notes, screenshots)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
-            [req.userId, normalizedSymbol, trade_type, category, quantity, price, exit_price, pnl, strategy, timestamp, notes, screenshotsJson]
+            [req.userId, normalizedSymbol, trade_type, category, normalizedQuantity, normalizedPrice, normalizedExitPrice, normalizedPnl, strategy, timestamp, notes, screenshotsJson]
         );
 
         res.json({
@@ -179,6 +199,10 @@ router.post('/save-bulk-trades', authCheck, async (req, res) => {
             const tradePNL = trade.pnl || trade.profit_usd || 0;
             const screenshotsJson = normalizeScreenshots(trade.screenshots || null);
             const normalizedSymbol = normalizeStoredSymbol(trade.symbol);
+            const normalizedQuantity = parseRequiredNumber(tradeQuantity, { min: 0.0000001 });
+            const normalizedEntryPrice = parseRequiredNumber(entryPrice, { min: 0.0000001 });
+            const normalizedExitPrice = parseRequiredNumber(exitPrice, { min: 0.0000001 });
+            const normalizedPNL = parseRequiredNumber(tradePNL) ?? 0;
 
             if (!normalizedSymbol) {
                 results.push({ success: false, trade: 'Unknown', error: 'Missing symbol' });
@@ -190,17 +214,17 @@ router.post('/save-bulk-trades', authCheck, async (req, res) => {
                 errorCount++;
                 continue;
             }
-            if (!tradeQuantity || tradeQuantity <= 0) {
+            if (normalizedQuantity === null) {
                 results.push({ success: false, trade: trade.symbol, error: 'Invalid quantity' });
                 errorCount++;
                 continue;
             }
-            if (!entryPrice || entryPrice <= 0) {
+            if (normalizedEntryPrice === null) {
                 results.push({ success: false, trade: trade.symbol, error: 'Invalid price' });
                 errorCount++;
                 continue;
             }
-            if (!exitPrice || exitPrice <= 0) {
+            if (normalizedExitPrice === null) {
                 results.push({ success: false, trade: trade.symbol, error: 'Invalid exit_price' });
                 errorCount++;
                 continue;
@@ -226,10 +250,10 @@ router.post('/save-bulk-trades', authCheck, async (req, res) => {
                     normalizedSymbol,
                     normalizedTradeType,
                     trade.category || 'forex',
-                    parseFloat(tradeQuantity),
-                    parseFloat(entryPrice),
-                    parseFloat(exitPrice),
-                    parseFloat(tradePNL) || 0,
+                    normalizedQuantity,
+                    normalizedEntryPrice,
+                    normalizedExitPrice,
+                    normalizedPNL,
                     trade.strategy || null,
                     tradeTimestamp,
                     trade.notes || null,
@@ -280,9 +304,9 @@ async function ingestApiTrades(req, res) {
                     entry_price,
                     exit_price,
                     profit,
-                    close_time,
                     open_timestamp,
                     close_timestamp,
+                    timestamp,
                     balance,
                     account_currency,
                     symbol_category,
@@ -317,7 +341,7 @@ async function ingestApiTrades(req, res) {
 
                 if (!open_timestamp || !close_timestamp) {
                     errorCount++;
-                    results.push({ success: false, ticket, error: 'missing timestamps' });
+                    results.push({ success: false, ticket, error: 'missing open_timestamp or close_timestamp' });
                     continue;
                 }
 
@@ -380,7 +404,7 @@ async function ingestApiTrades(req, res) {
                     normalizedEntryPrice,
                     normalizedExitPrice,
                     normalizedProfit,
-                    close_time,
+                    timestamp || null,
                     open_timestamp,
                     close_timestamp,
                     ticket,

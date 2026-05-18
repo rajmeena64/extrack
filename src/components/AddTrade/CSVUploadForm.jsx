@@ -4,6 +4,7 @@ import LegacyIcon from '../Common/LegacyIcon';
 import api from '../../utils/serve';
 import { useAuth } from '../../context/AuthContext';
 import { normalizeStoredSymbol } from '../../utils/symbols';
+import { parseTradeNumber } from '../../utils/fieldValidation';
 
 function CSVUploadForm({ csvData, setCsvData }) {
   const navigate = useNavigate();
@@ -152,7 +153,8 @@ function CSVUploadForm({ csvData, setCsvData }) {
             const value = values[index];
             
             if (['quantity', 'price', 'exit_price', 'pnl'].includes(standardName)) {
-              trade[standardName] = parseFloat(value) || 0;
+              const min = standardName === 'pnl' ? -Infinity : 0.0000001;
+              trade[standardName] = parseTradeNumber(value, { min, required: standardName !== 'pnl' });
             } else if (standardName === 'symbol') {
               trade[standardName] = normalizeStoredSymbol(value);
             } else {
@@ -170,7 +172,14 @@ function CSVUploadForm({ csvData, setCsvData }) {
           }
         }
         
-        if (trade.symbol && trade.trade_type && trade.quantity && trade.price && trade.exit_price && trade.timestamp) {
+        if (
+          trade.symbol
+          && trade.trade_type
+          && trade.quantity !== null
+          && trade.price !== null
+          && trade.exit_price !== null
+          && trade.timestamp
+        ) {
           trades.push(trade);
         }
       }
@@ -256,8 +265,10 @@ function CSVUploadForm({ csvData, setCsvData }) {
               </thead>
               <tbody id="previewTableBody">
                 {previewData.map((trade, index) => {
-                  const pnlValue = trade.pnl ? parseFloat(trade.pnl).toFixed(2) : '';
-                  const pnlClass = trade.pnl ? (parseFloat(trade.pnl) >= 0 ? 'profit' : 'loss') : '';
+                  const parsedPnl = parseTradeNumber(trade.pnl, { required: false });
+                  const hasPnl = trade.pnl !== undefined && trade.pnl !== null && trade.pnl !== '';
+                  const pnlValue = hasPnl && parsedPnl !== null ? parsedPnl.toFixed(2) : '';
+                  const pnlClass = hasPnl && parsedPnl !== null ? (parsedPnl >= 0 ? 'profit' : 'loss') : '';
                   
                   return (
                     <tr key={index}>

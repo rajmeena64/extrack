@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import LegacyIcon from '../Common/LegacyIcon';
 import api from '../../utils/serve';
 import { useAuth } from '../../context/AuthContext';
+import { sanitizeDecimalInput } from '../../utils/fieldValidation';
 
 const BROKER_ICONS = [
   { key: 'exness', label: 'Exness', src: '/assets/broker/exness image.svg' },
@@ -100,6 +101,16 @@ function ApiImportForm({ setSelectedMT5AccountId }) {
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
+    if (id === 'loginId') {
+      const sanitizedValue = sanitizeDecimalInput(value);
+      if (sanitizedValue === null || sanitizedValue.includes('.')) return;
+      setFormData(prev => ({
+        ...prev,
+        [id]: sanitizedValue
+      }));
+      return;
+    }
+
     setFormData(prev => ({
       ...prev,
       [id]: value
@@ -383,7 +394,8 @@ function ApiImportForm({ setSelectedMT5AccountId }) {
                     MT5 Account ID
                   </label>
                   <input 
-                    type="number" 
+                    type="text"
+                    inputMode="numeric"
                     id="loginId" 
                     value={formData.loginId}
                     onChange={handleInputChange}
