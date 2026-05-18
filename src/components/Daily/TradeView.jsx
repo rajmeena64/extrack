@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import "./TradeView.css";
 
 import SymbolWithIcon from "../Common/SymbolWithIcon";
+import { getTradeDisplayDate, getTradeDisplayTime } from "../../utils/tradeTime";
 import api from "../../utils/serve";
 import DateRangePicker from "../Common/DateRangePicker";
 import { sanitizeSignedDecimalInput } from "../../utils/fieldValidation";
@@ -239,7 +240,7 @@ function TradeView({ trades = [] }) {
 
     result = result.filter((trade) => {
       const pnl = Number(trade.pnl) || 0;
-      const tradeDate = trade.timestamp ? new Date(trade.timestamp) : null;
+      const tradeDate = getTradeDisplayDate(trade);
 
       if (filters.symbol && !trade.symbol?.toLowerCase().includes(filters.symbol.toLowerCase())) return false;
 
@@ -277,8 +278,8 @@ function TradeView({ trades = [] }) {
         }
 
         if (filters.sortBy === "date") {
-          valA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
-          valB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+          valA = getTradeDisplayTime(a);
+          valB = getTradeDisplayTime(b);
         }
 
         return filters.order === "asc" ? valA - valB : valB - valA;
@@ -625,7 +626,7 @@ function TradeView({ trades = [] }) {
                 </tr>
               ) : filteredTrades.map((trade, i) => {
                 const pnl = Number(trade.pnl) || 0;
-                const tradeDate = trade.timestamp ? new Date(trade.timestamp) : null;
+                const tradeDate = getTradeDisplayDate(trade);
 
                 return (
                   <tr

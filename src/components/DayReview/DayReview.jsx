@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import SymbolWithIcon from '../Common/SymbolWithIcon';
 import { formatCurrency } from '../../utils/Currency';
+import { getTradeDisplayDate, getTradeDisplayTime, getTradeOpenDate, toTradeDateKey } from '../../utils/tradeTime';
 import './DayReview.css';
 
 const PerformanceChart = lazy(() => import('../MainContent/PerformanceChart'));
@@ -39,8 +40,10 @@ const formatDateTitle = (dateKey) => {
   }).format(date);
 };
 
-const getSession = (timestamp) => {
-  const hour = new Date(timestamp).getHours();
+const getSession = (trade) => {
+  const date = getTradeDisplayDate(trade);
+  if (!date) return 'Unknown';
+  const hour = date.getHours();
   if (hour < 8) return 'Asia';
   if (hour < 13) return 'London';
   if (hour < 18) return 'New York';
@@ -62,7 +65,7 @@ const toDateFromTimestamp = (timestamp) => {
 
 const formatTime = (timestamp) => {
   const date = toDateFromTimestamp(timestamp);
-  if (Number.isNaN(date.getTime())) return '-';
+  if (!date || Number.isNaN(date.getTime())) return '-';
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
 
@@ -107,8 +110,8 @@ function DayReview({ trades = [], currencyCode = 'USD' }) {
 
   const dayTrades = useMemo(() => (
     (Array.isArray(trades) ? trades : [])
-      .filter((trade) => trade?.timestamp && toDateKey(trade.timestamp) === selectedDateKey)
-      .sort((left, right) => new Date(left.timestamp) - new Date(right.timestamp))
+      .filter((trade) => toTradeDateKey(trade) === selectedDateKey)
+      .sort((left, right) => getTradeDisplayTime(left) - getTradeDisplayTime(right))
   ), [selectedDateKey, trades]);
 
   const stats = useMemo(() => {
@@ -161,7 +164,7 @@ function DayReview({ trades = [], currencyCode = 'USD' }) {
       if (!bestTrade || value > Number(bestTrade.pnl || 0)) bestTrade = trade;
       if (!worstTrade || value < Number(worstTrade.pnl || 0)) worstTrade = trade;
 
-      const session = getSession(trade.timestamp);
+      const session = getSession(trade);
       sessions[session] = (sessions[session] || 0) + value;
 
       const symbol = trade.symbol || 'Unknown';
@@ -407,7 +410,7 @@ function DayReview({ trades = [], currencyCode = 'USD' }) {
           ) : (
             dayTrades.map((trade) => (
               <button
-                key={trade.unique_id || trade.id || trade.timestamp}
+                key={trade.unique_id || trade.id || `${trade.open_timestamp || ''}-${trade.close_timestamp || ''}`}
                 className="day-review-trade-row"
                 type="button"
                 onClick={() => navigate(`/trade/${trade.unique_id || trade.id}`, { state: { tradeData: trade } })}
@@ -420,9 +423,9 @@ function DayReview({ trades = [], currencyCode = 'USD' }) {
                 <TradeDetail label="Side" value={trade.trade_type || '-'} />
                 <TradeDetail label="Entry" value={trade.price ?? trade.entry_price ?? '-'} />
                 <TradeDetail label="Exit" value={trade.exit_price ?? '-'} />
-                <TradeDetail label="Open" value={formatTime(trade.open_timestamp || trade.timestamp)} />
+                <TradeDetail label="Open" value={formatTime(trade.open_timestamp)} />
                 <TradeDetail label="Close" value={formatTime(trade.close_timestamp || trade.exit_timestamp)} />
-                <TradeDetail label="Duration" value={formatDuration(trade.open_timestamp || trade.timestamp, trade.close_timestamp || trade.exit_timestamp)} />
+                <TradeDetail label="Duration" value={formatDuration(trade.open_timestamp, trade.close_timestamp || trade.exit_timestamp)} />
                 <TradeDetail label="Qty" value={trade.quantity ?? trade.volume ?? trade.lots ?? '-'} />
                 <div className="day-review-trade-pnl">
                   <span>P&L</span>
@@ -488,9 +491,7 @@ function TradeSummary({ trade, currencyCode }) {
       </strong>
       <span>{trade.trade_type || '-'}</span>
       <small>
-        {trade.timestamp
-          ? new Date(trade.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-          : '-'}
+        {getTradeOpenDate(trade)?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || '-'}
       </small>
     </div>
   );

@@ -4,10 +4,11 @@ import "./Trades.css";
 import SymbolWithIcon from "../Common/SymbolWithIcon";
 import { EllipsisVertical } from "../Common/icons";
 import { formatCurrency } from "../../utils/Currency";
+import { getTradeDisplayDate, getTradeDisplayTime } from "../../utils/tradeTime";
 
 const FIELDS = [
   { key: "symbol", label: "Symbol" },
-  { key: "timestamp", label: "Date & Time" },
+  { key: "trade_time", label: "Date & Time" },
   { key: "pnl", label: "PnL" },
   { key: "price", label: "Entry" },
   { key: "exit_price", label: "Exit" },
@@ -26,7 +27,8 @@ function TradesList({ trades = [], currencyCode = "USD" }) {
   // Load visible fields from localStorage or default
   const [visibleFields, setVisibleFields] = useState(() => {
     const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-    return saved ? JSON.parse(saved) : ["symbol", "timestamp", "pnl"];
+    const parsed = saved ? JSON.parse(saved) : ["symbol", "trade_time", "pnl"];
+    return parsed.map((field) => (field === "timestamp" ? "trade_time" : field));
   });
 
   const dropdownRef = useRef();
@@ -49,7 +51,7 @@ function TradesList({ trades = [], currencyCode = "USD" }) {
   const filteredTrades = useMemo(() => {
     return trades
       .filter((t) => (activeTab === "open" ? !t.exit_price : !!t.exit_price))
-      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+      .sort((a, b) => getTradeDisplayTime(b) - getTradeDisplayTime(a))
       .slice(0, 12);
   }, [trades, activeTab]);
 
@@ -86,8 +88,10 @@ function TradesList({ trades = [], currencyCode = "USD" }) {
       case "symbol":
         return <SymbolWithIcon symbol={t.symbol} size="md" />;
 
-      case "timestamp": {
-        const d = new Date(t.timestamp);
+      case "trade_time": {
+        const d = getTradeDisplayDate(t);
+        if (!d) return "--";
+
         return (
           <div>
             <div>{d.toLocaleDateString("en-GB")}</div>
@@ -178,7 +182,7 @@ function TradesList({ trades = [], currencyCode = "USD" }) {
           ) : (
             filteredTrades.map((t) => (
               <div
-                key={t.unique_id || t.id || t.timestamp}
+                key={t.unique_id || t.id || `${t.open_timestamp || ""}-${t.close_timestamp || ""}`}
                 className="trade-item"
                 data-columns={visibleFields.length}
                 onClick={() => handleTradeClick(t)} // <-- added click here

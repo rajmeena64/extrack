@@ -2,6 +2,7 @@ import React, { useMemo, useState } from "react";
 import { Calendar, ChartBar } from "../Common/icons";
 import api from "../../utils/serve";
 import { formatCurrency } from "../../utils/Currency";
+import { getTradeDisplayTime, toTradeDateKey } from "../../utils/tradeTime";
 
 const toDateKey = (value) => {
   const date = value instanceof Date ? value : new Date(value);
@@ -45,13 +46,13 @@ function AIAnalysis({ trades = [], currencyCode = "USD" }) {
   const dayTrades = useMemo(
     () =>
       (Array.isArray(trades) ? trades : [])
-        .filter((trade) => trade?.timestamp && toDateKey(trade.timestamp) === selectedDate)
-        .sort((left, right) => new Date(left.timestamp) - new Date(right.timestamp)),
+        .filter((trade) => toTradeDateKey(trade) === selectedDate)
+        .sort((left, right) => getTradeDisplayTime(left) - getTradeDisplayTime(right)),
     [selectedDate, trades]
   );
 
   const dashboardTrades = useMemo(
-    () => (Array.isArray(trades) ? trades : []).sort((left, right) => new Date(left.timestamp) - new Date(right.timestamp)),
+    () => (Array.isArray(trades) ? trades : []).sort((left, right) => getTradeDisplayTime(left) - getTradeDisplayTime(right)),
     [trades]
   );
   const activeTrades = analysisScope === "dashboard" ? dashboardTrades : dayTrades;

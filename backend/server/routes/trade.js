@@ -195,7 +195,7 @@ router.post('/save-bulk-trades', authCheck, async (req, res) => {
             const entryPrice = trade.price || trade.opening_price;
             const tradeType = trade.trade_type || trade.type;
             const tradeQuantity = trade.quantity || trade.lots;
-            const tradeTimestamp = trade.timestamp || trade.opening_time_utc;
+            const tradeTimestamp = trade.open_timestamp || trade.opening_time_utc || trade.timestamp;
             const tradePNL = trade.pnl || trade.profit_usd || 0;
             const screenshotsJson = normalizeScreenshots(trade.screenshots || null);
             const normalizedSymbol = normalizeStoredSymbol(trade.symbol);
@@ -461,7 +461,10 @@ router.post('/mt5/receive-trades', requireIngestSecret, ingestApiTrades);
 router.get('/user-trades/:userid?', authCheck, async (req, res) => {
     try {
         const result = await pool.query(
-            `SELECT * FROM trades WHERE user_id = $1 ORDER BY timestamp DESC`,
+            `SELECT *, timestamp AS open_timestamp, timestamp AS close_timestamp
+             FROM trades
+             WHERE user_id = $1
+             ORDER BY timestamp DESC`,
             [req.userId]
         );
 
@@ -474,7 +477,7 @@ router.get('/user-trades/:userid?', authCheck, async (req, res) => {
 router.get('/user-api-trades/:userid?', authCheck, async (req, res) => {
     try {
         const result = await pool.query(
-            `SELECT * FROM api_trades WHERE user_id = $1 ORDER BY timestamp DESC`,
+            `SELECT * FROM api_trades WHERE user_id = $1 ORDER BY close_timestamp DESC NULLS LAST, open_timestamp DESC NULLS LAST`,
             [req.userId]
         );
 

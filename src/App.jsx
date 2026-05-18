@@ -15,6 +15,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import { useAuth } from './context/AuthContext';
 import api from './utils/serve';
 import { convertCurrency, normalizeCurrencyCode } from './utils/Currency';
+import { getTradeDisplayDate } from './utils/tradeTime';
 
 
 /* ---------------- LAZY LOADED PAGES ---------------- */
@@ -229,10 +230,9 @@ function App() {
     const to = dashboardDateRange?.to ? endOfDay(new Date(dashboardDateRange.to)) : null;
 
     return trades.filter((trade) => {
-      if (!trade?.timestamp) return false;
+      const tradeDate = getTradeDisplayDate(trade);
 
-      const tradeDate = new Date(trade.timestamp);
-      if (Number.isNaN(tradeDate.getTime())) return false;
+      if (!tradeDate) return false;
       if (from && tradeDate < from) return false;
       if (to && tradeDate > to) return false;
 

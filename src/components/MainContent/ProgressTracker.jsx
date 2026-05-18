@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Info } from 'lucide-react';
 import './ProgressTracker.css';
+import { getTradeDisplayDate, getTradeDisplayTime } from '../../utils/tradeTime';
 
 const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 function buildHeatmap(trades = []) {
@@ -14,21 +15,21 @@ function buildHeatmap(trades = []) {
   }
 
   const sortedTrades = [...trades]
-    .filter((trade) => trade?.timestamp)
-    .sort((left, right) => new Date(left.timestamp) - new Date(right.timestamp));
+    .filter((trade) => getTradeDisplayDate(trade))
+    .sort((left, right) => getTradeDisplayTime(left) - getTradeDisplayTime(right));
 
   if (sortedTrades.length === 0) {
     return { cells, monthMarkers: [], columns: fallbackColumns };
   }
 
-  const firstTradeDate = new Date(sortedTrades[0].timestamp);
+  const firstTradeDate = getTradeDisplayDate(sortedTrades[0]);
   const startMonday = new Date(firstTradeDate);
   const firstDay = startMonday.getDay();
   const offset = firstDay === 0 ? -6 : 1 - firstDay;
   startMonday.setDate(startMonday.getDate() + offset);
   startMonday.setHours(0, 0, 0, 0);
 
-  const lastTradeDate = new Date(sortedTrades[sortedTrades.length - 1].timestamp);
+  const lastTradeDate = getTradeDisplayDate(sortedTrades[sortedTrades.length - 1]);
   const endSunday = new Date(lastTradeDate);
   const endDay = endSunday.getDay();
   const endOffset = endDay === 0 ? 0 : 7 - endDay;
@@ -58,8 +59,8 @@ function buildHeatmap(trades = []) {
   }
 
   sortedTrades.forEach((trade) => {
-    const timestamp = new Date(trade.timestamp);
-    if (Number.isNaN(timestamp.getTime())) return;
+    const timestamp = getTradeDisplayDate(trade);
+    if (!timestamp) return;
 
     const diffDays = Math.floor((timestamp - startMonday) / 86400000);
     if (diffDays < 0) return;

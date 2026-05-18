@@ -51,7 +51,7 @@ function CSVUploadForm({ csvData, setCsvData }) {
       'price': ['opening_price', 'price', 'entry_price', 'entryprice', 'open_price', 'openprice'],
       'exit_price': ['closing_price', 'exit_price', 'exitprice', 'close_price', 'closeprice', 'closing_price'],
       'pnl': ['profit_usd', 'pnl', 'profit', 'pl', 'net_pnl', 'profit_loss', "profit_usc"],
-      'timestamp': ['opening_time_utc', 'timestamp', 'date_time', 'datetime', 'time', 'trade_time', 'execution_time']
+      'open_timestamp': ['opening_time_utc', 'open_timestamp', 'timestamp', 'date_time', 'datetime', 'time', 'trade_time', 'execution_time']
     };
 
     const headerMap = {};
@@ -178,7 +178,7 @@ function CSVUploadForm({ csvData, setCsvData }) {
           && trade.quantity !== null
           && trade.price !== null
           && trade.exit_price !== null
-          && trade.timestamp
+          && trade.open_timestamp
         ) {
           trades.push(trade);
         }
@@ -260,7 +260,7 @@ function CSVUploadForm({ csvData, setCsvData }) {
                   <th>Entry Price</th>
                   <th>Exit Price</th>
                   <th>P&L</th>
-                  <th>Timestamp</th>
+                  <th>Open Time</th>
                 </tr>
               </thead>
               <tbody id="previewTableBody">
@@ -278,7 +278,7 @@ function CSVUploadForm({ csvData, setCsvData }) {
                       <td>{trade.price || ''}</td>
                       <td>{trade.exit_price || ''}</td>
                       <td className={pnlClass}>{pnlValue ? '' + pnlValue : ''}</td>
-                      <td>{trade.timestamp ? trade.timestamp.substring(0, 19) : ''}</td>
+                      <td>{trade.open_timestamp ? String(trade.open_timestamp).substring(0, 19) : ''}</td>
                     </tr>
                   );
                 })}

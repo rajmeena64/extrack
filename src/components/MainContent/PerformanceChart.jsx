@@ -3,6 +3,7 @@ import Chart from '../../utils/chartSetup';
 import './PerformanceChart.css';
 import { formatCurrency } from '../../utils/Currency';
 import { useTheme } from '../../context/ThemeContext';
+import { getTradeDisplayDate, getTradeDisplayTime, toTradeDateKey } from '../../utils/tradeTime';
 
 const formatCompactNumber = (value) => (
   new Intl.NumberFormat('en-US', {
@@ -29,13 +30,13 @@ function PerformanceChart({
 
     if (groupBy === 'trade') {
       const sortedTrades = [...trades]
-        .filter((trade) => trade?.timestamp && trade.pnl != null)
-        .sort((left, right) => new Date(left.timestamp) - new Date(right.timestamp));
+        .filter((trade) => getTradeDisplayDate(trade) && trade.pnl != null)
+        .sort((left, right) => getTradeDisplayTime(left) - getTradeDisplayTime(right));
 
       return {
         labels: sortedTrades.map((trade, index) => {
-          const date = new Date(trade.timestamp);
-          if (Number.isNaN(date.getTime())) return `Trade ${index + 1}`;
+          const date = getTradeDisplayDate(trade);
+          if (!date) return `Trade ${index + 1}`;
           return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         }),
         data: sortedTrades.map((trade) => Number(trade.pnl) || 0),
@@ -45,10 +46,11 @@ function PerformanceChart({
     const daily = {};
 
     trades.forEach((trade) => {
-      if (!trade.timestamp || trade.pnl == null) return;
+      if (trade.pnl == null) return;
 
-      const date = new Date(trade.timestamp).toISOString().split('T')[0];
-      daily[date] = (daily[date] || 0) + Number(trade.pnl);
+      const dateKey = toTradeDateKey(trade);
+      if (!dateKey) return;
+      daily[dateKey] = (daily[dateKey] || 0) + Number(trade.pnl);
     });
 
     const labels = Object.keys(daily).sort();

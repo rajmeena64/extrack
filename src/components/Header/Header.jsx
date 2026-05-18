@@ -14,6 +14,7 @@ import './Header.css';
 import DateRangePicker from '../Common/DateRangePicker';
 import { useAuth } from '../../context/AuthContext';
 import { DASHBOARD_CURRENCIES, getCurrencyMeta } from '../../utils/Currency';
+import { getTradeDisplayDate, getTradeDisplayTime } from '../../utils/tradeTime';
 
 const UserLoginModal = lazy(() => import('../user/UserLoginModal/UserLoginModal'));
 const Profile = lazy(() => import('./profile'));
@@ -60,11 +61,11 @@ function Header({
     }
 
     const sortedTrades = [...trades].sort(
-      (left, right) => new Date(right.timestamp) - new Date(left.timestamp)
+      (left, right) => getTradeDisplayTime(right) - getTradeDisplayTime(left)
     );
 
-    const latestTrade = sortedTrades[0];
-    if (!latestTrade?.timestamp) {
+    const latestTradeDate = getTradeDisplayDate(sortedTrades[0]);
+    if (!latestTradeDate) {
       return 'No imports yet';
     }
 
@@ -74,7 +75,7 @@ function Header({
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-    }).format(new Date(latestTrade.timestamp));
+    }).format(latestTradeDate);
   }, [trades]);
 
   const compactLatestTradeLabel = useMemo(() => {
@@ -83,11 +84,11 @@ function Header({
     }
 
     const sortedTrades = [...trades].sort(
-      (left, right) => new Date(right.timestamp) - new Date(left.timestamp)
+      (left, right) => getTradeDisplayTime(right) - getTradeDisplayTime(left)
     );
 
-    const latestTrade = sortedTrades[0];
-    if (!latestTrade?.timestamp) {
+    const latestTradeDate = getTradeDisplayDate(sortedTrades[0]);
+    if (!latestTradeDate) {
       return 'No imports yet';
     }
 
@@ -96,7 +97,7 @@ function Header({
       month: 'short',
       hour: '2-digit',
       minute: '2-digit',
-    }).format(new Date(latestTrade.timestamp));
+    }).format(latestTradeDate);
   }, [trades]);
 
   const dateRangeLabel = useMemo(() => {

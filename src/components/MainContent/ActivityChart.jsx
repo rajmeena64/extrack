@@ -4,6 +4,7 @@ import Chart from '../../utils/chartSetup';
 import './ActivityChart.css';
 import { formatCurrency } from '../../utils/Currency';
 import { useTheme } from '../../context/ThemeContext';
+import { toTradeDateKey } from '../../utils/tradeTime';
 
 const formatCompactNumber = (value) => (
   new Intl.NumberFormat('en-US', {
@@ -25,12 +26,11 @@ function ActivityChart({ trades, currencyCode = 'USD' }) {
 
     const daily = {};
     trades.forEach((trade) => {
-      if (!trade.timestamp || trade.pnl == null) return;
+      if (trade.pnl == null) return;
 
-      const date = new Date(trade.timestamp);
-      if (Number.isNaN(date.getTime())) return;
+      const key = toTradeDateKey(trade);
+      if (!key) return;
 
-      const key = date.toISOString().split('T')[0];
       daily[key] = (daily[key] || 0) + (Number(trade.pnl) || 0);
     });
 

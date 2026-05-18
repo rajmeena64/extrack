@@ -13,6 +13,7 @@ import {
 import './PnLCalendar.css';
 import { formatCompactCurrency } from '../../utils/Currency';
 import api from '../../utils/serve';
+import { getTradeDisplayDate } from '../../utils/tradeTime';
 
 const MONTH_NAMES = [
   'January',
@@ -80,10 +81,10 @@ function PnLCalendar({ trades, currencyCode = 'USD' }) {
     const summary = {};
 
     (trades || []).forEach((trade) => {
-      if (!trade?.timestamp || trade?.pnl === undefined || trade?.pnl === null) return;
+      if (trade?.pnl === undefined || trade?.pnl === null) return;
 
-      const date = new Date(trade.timestamp);
-      if (Number.isNaN(date.getTime())) return;
+      const date = getTradeDisplayDate(trade);
+      if (!date) return;
 
       const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
         date.getDate()
@@ -206,10 +207,8 @@ function PnLCalendar({ trades, currencyCode = 'USD' }) {
     queryClient.setQueriesData({ queryKey: ['trades'] }, (previousTrades) => (
       Array.isArray(previousTrades)
         ? previousTrades.map((trade) => {
-            if (!trade?.timestamp) return trade;
-
-            const tradeDate = new Date(trade.timestamp);
-            if (Number.isNaN(tradeDate.getTime())) return trade;
+            const tradeDate = getTradeDisplayDate(trade);
+            if (!tradeDate) return trade;
 
             const tradeDateKey = `${tradeDate.getFullYear()}-${String(tradeDate.getMonth() + 1).padStart(2, '0')}-${String(
               tradeDate.getDate()

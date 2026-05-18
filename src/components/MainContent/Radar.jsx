@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useMemo } from "react";
 import Chart from "../../utils/chartSetup";
 import "./Radar.css";
 import { useTheme } from "../../context/ThemeContext";
+import { getTradeDisplayDate } from "../../utils/tradeTime";
 
 export default function Radar({ trades = [] }) {
   const radarRef    = useRef(null);
@@ -47,8 +48,8 @@ export default function Radar({ trades = [] }) {
 
     const weekMap = {};
     closed.forEach((t) => {
-      if (!t.timestamp) return;
-      const d    = new Date(t.timestamp);
+      const d = getTradeDisplayDate(t);
+      if (!d) return;
       const jan1 = new Date(d.getFullYear(), 0, 1);
       const week = Math.ceil(((d - jan1) / 86400000 + jan1.getDay() + 1) / 7);
       const key  = `${d.getFullYear()}-W${week}`;

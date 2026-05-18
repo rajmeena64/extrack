@@ -7,6 +7,7 @@ import SymbolWithIcon from "../../Common/SymbolWithIcon";
 import LegacyIcon from "../../Common/LegacyIcon";
 import api from "../../../utils/serve";
 import { normalizeStoredSymbol } from "../../../utils/symbols";
+import { getTradeDisplayDate } from "../../../utils/tradeTime";
 
 function ThatTrade({ trades = [] }) {
   const { tradeId } = useParams();
@@ -254,23 +255,22 @@ function ThatTrade({ trades = [] }) {
   const pnl = Number(trade.pnl) || 0;
   const isProfit = pnl >= 0;
 
-  const formatDateTime = (timestamp) => {
-    if (!timestamp) return { date: "--", time: "--" };
-
-    const d = new Date(timestamp);
+  const formatTradeDateTime = (currentTrade) => {
+    const tradeDate = getTradeDisplayDate(currentTrade);
+    if (!tradeDate) return { date: "--", time: "--" };
 
     return {
-      date: d.toLocaleDateString("en-GB", {
+      date: tradeDate.toLocaleDateString("en-GB", {
         day: "2-digit",
         month: "short",
         year: "numeric"
       }),
-      time: d.toLocaleTimeString("en-GB", {
+      time: tradeDate.toLocaleTimeString("en-GB", {
         hour: "2-digit",
         minute: "2-digit"
       }),
-      dateObj: d,
-      isoDate: d.toISOString().split("T")[0]
+      dateObj: tradeDate,
+      isoDate: tradeDate.toISOString().split("T")[0]
     };
   };
 
@@ -290,7 +290,7 @@ function ThatTrade({ trades = [] }) {
       };
 
       const { data } = await api.post("/ai-trade-analysis", {
-        date: formatDateTime(trade.timestamp).isoDate,
+        date: formatTradeDateTime(trade).isoDate,
         trades: [analysisTrade],
         currencyCode: "USD",
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -321,7 +321,7 @@ function ThatTrade({ trades = [] }) {
     return Number.isFinite(parsed) ? Math.floor(parsed / 1000) : null;
   };
 
-  const { date, time, dateObj } = formatDateTime(trade.timestamp);
+  const { date, time, dateObj } = formatTradeDateTime(trade);
 
   const getBinanceSymbol = (symbol) => {
     if (!symbol) return "BTCUSDT";
@@ -505,8 +505,8 @@ function ThatTrade({ trades = [] }) {
               tradeTime={time}
               showFullDay={true}
               trades={[{
-                entryTime: toEpochSeconds(trade.open_timestamp || trade.timestamp),
-                exitTime: toEpochSeconds(trade.close_timestamp || trade.exit_timestamp || trade.timestamp),
+                entryTime: toEpochSeconds(trade.open_timestamp),
+                exitTime: toEpochSeconds(trade.close_timestamp || trade.exit_timestamp),
                 entryPrice: trade.price,
                 exitPrice: trade.exit_price,
                 side: trade.trade_type

@@ -39,9 +39,8 @@ export class TradeManager {
         notes: t.notes,
         screenshots: t.screenshots,
         is_breakeven: Boolean(t.is_breakeven),
-        timestamp: t.timestamp,          // ✅ entry timestamp
         open_timestamp: t.open_timestamp,
-        close_timestamp: t.exit_timestamp || null, // ✅ exit timestamp
+        close_timestamp: t.close_timestamp || t.exit_timestamp || null,
         unique_id: t.unique_id
       })) || [];
     } catch {
@@ -68,7 +67,6 @@ export class TradeManager {
         price: t.price,
         exit_price: t.exit_price,
         pnl: t.pnl,
-        timestamp: t.timestamp,   
         open_timestamp: t.open_timestamp,          // ✅ entry timestamp
         close_timestamp: t.close_timestamp || t.exit_timestamp || null, // ✅ exit timestamp
         created_at: t.created_at,
@@ -109,9 +107,8 @@ export class TradeManager {
           notes: t.notes,
           screenshots: t.screenshots,
           is_breakeven: Boolean(t.is_breakeven),
-          timestamp: t.timestamp,
           open_timestamp: t.open_timestamp,
-          close_timestamp: t.exit_timestamp || null,
+          close_timestamp: t.close_timestamp || t.exit_timestamp || null,
           unique_id: t.unique_id
         }));
         allTrades.push(...manualTrades);
@@ -133,7 +130,6 @@ export class TradeManager {
           price: t.price,
           exit_price: t.exit_price,
           pnl: t.pnl,
-          timestamp: t.timestamp,
           open_timestamp: t.open_timestamp,
           close_timestamp: t.close_timestamp || t.exit_timestamp || null,
           created_at: t.created_at,
