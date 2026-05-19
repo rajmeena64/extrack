@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { useQueryClient } from '@tanstack/react-query';
 
 import api from '../utils/serve';
+import { clearClientStorage } from '../utils/clientStorage';
 import { markPerf, measurePerf } from '../utils/perfMarks';
 
 const AuthContext = createContext(null);
@@ -12,7 +13,7 @@ const readStoredUser = () => {
     const storedUser = localStorage.getItem(AUTH_STORAGE_KEY);
     return storedUser ? JSON.parse(storedUser) : null;
   } catch {
-    localStorage.removeItem(AUTH_STORAGE_KEY);
+    clearClientStorage();
     return null;
   }
 };
@@ -88,6 +89,7 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const handleLogout = () => {
+      clearClientStorage();
       queryClient.removeQueries({ queryKey: ['trades'] });
       setUser(null);
       setIsAuthLoading(false);

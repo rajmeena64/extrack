@@ -1,9 +1,11 @@
-import React, { useMemo, useEffect, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ArrowDownRight, ArrowUpRight, CircleDollarSign, Gauge, Percent, Sigma } from 'lucide-react';
 import './StatsCards.css';
 import { formatCurrency as formatDashboardCurrency } from '../../utils/Currency';
+import { decodeStorageValue, encodeStorageValue } from '../../utils/obfuscatedStorage';
 
-const STATS_CACHE_KEY = 'extrack:dashboard_stats';
+const STATS_CACHE_KEY = 'm5$ds.4';
+const LEGACY_STATS_CACHE_KEY = 'extrack:dashboard_stats';
 
 function formatNumber(value) {
   const num = Number(value);
@@ -12,11 +14,25 @@ function formatNumber(value) {
 }
 
 function StatsCards({ trades, currencyCode = 'USD', isLoading = false }) {
-  const [cachedStats, setCachedStats] = useState(() => {
+  const [cachedStats] = useState(() => {
     try {
       const saved = localStorage.getItem(STATS_CACHE_KEY);
-      return saved ? JSON.parse(saved) : null;
+      if (saved) {
+        return decodeStorageValue(saved);
+      }
+
+      const legacySaved = localStorage.getItem(LEGACY_STATS_CACHE_KEY);
+      if (legacySaved) {
+        const stats = JSON.parse(legacySaved);
+        localStorage.setItem(STATS_CACHE_KEY, encodeStorageValue(stats));
+        localStorage.removeItem(LEGACY_STATS_CACHE_KEY);
+        return stats;
+      }
+
+      return null;
     } catch {
+      localStorage.removeItem(STATS_CACHE_KEY);
+      localStorage.removeItem(LEGACY_STATS_CACHE_KEY);
       return null;
     }
   });
@@ -66,7 +82,8 @@ function StatsCards({ trades, currencyCode = 'USD', isLoading = false }) {
 
       // Cache the result
       try {
-        localStorage.setItem(STATS_CACHE_KEY, JSON.stringify(result));
+        localStorage.setItem(STATS_CACHE_KEY, encodeStorageValue(result));
+        localStorage.removeItem(LEGACY_STATS_CACHE_KEY);
       } catch {
         // Silently ignore
       }

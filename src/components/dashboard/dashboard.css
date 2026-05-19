@@ -229,7 +229,6 @@
 
 @media (min-width: 769px) and (max-width: 1023px) {
   .dashboard-main-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-template-rows: none;
     grid-template-areas:
       "zella performance"
@@ -245,6 +244,13 @@
 
   .chart-container {
     min-height: 128px;
+  }
+
+  .dashboard-grid-card--progress,
+  .dashboard-grid-card--progress .radar-card {
+    height: auto;
+    min-height: var(--dashboard-chart-slot);
+    max-height: none;
   }
 
   .dashboard-grid-card--trades .my-trades {

@@ -4,6 +4,8 @@ import {
   CalendarDays,
   ChartLine,
   ChevronDown,
+  ChevronsLeft,
+  ChevronsRight,
   Grid2x2,
   Home,
   LogOut,
@@ -11,6 +13,7 @@ import {
   PieChart,
   Plus,
   Settings,
+  Sun,
   X,
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';  // ✅ ADDED
@@ -20,6 +23,7 @@ import Logo from '../Common/Logo';
 import { API_URL } from '../../utils/constants';
 import { useAuth } from '../../context/AuthContext';
 import { loadUserSettings, saveUserSettings } from '../../utils/userSettings';
+import { clearClientStorage } from '../../utils/clientStorage';
 
 const DashboardSettings = lazy(() => import('./DashboardSettings'));
 
@@ -27,6 +31,7 @@ function Sidebar() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [layoutOpen, setLayoutOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [hoverLocked, setHoverLocked] = useState(false);
   const { isAuthenticated, setUser } = useAuth();
 
   const settingsRef = useRef(null);
@@ -130,6 +135,7 @@ function Sidebar() {
     })
       .catch(() => null)
       .finally(() => {
+        clearClientStorage();
         setUser(null);
         window.dispatchEvent(new Event('auth:logout'));
       });
@@ -148,7 +154,7 @@ function Sidebar() {
       </button>
 
       {/* 🔹 SIDEBAR */}
-      <div className={`sidebar ${sidebarOpen || settingsOpen ? 'open' : ''} ${settingsOpen ? 'settings-open' : ''}`}>
+      <div className={`sidebar ${sidebarOpen || settingsOpen ? 'open' : ''} ${settingsOpen ? 'settings-open' : ''} ${hoverLocked ? 'sidebar-hover-locked' : ''}`}>
         {/* LOGO */}
         <div className="sidebar-logo">
           <Logo className="sidebar-logo__brand" />
@@ -226,7 +232,7 @@ function Sidebar() {
 
         {settingsOpen && (
           <div className="sub-menu" ref={settingsRef} role="menu">
-            <div className="sub-nav-item">
+            <div className="sub-nav-item settings-dark-mode-item">
               <Moon size={16} aria-hidden="true" />
               <span>Dark mode</span>
               <label className="switch">
@@ -262,6 +268,31 @@ function Sidebar() {
             )}
           </div>
         )}
+
+        <button
+          className="nav-item sidebar-theme-toggle"
+          type="button"
+          onClick={handleDarkModeChange}
+          aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+          title={darkMode ? 'Light mode' : 'Dark mode'}
+        >
+          {darkMode ? <Sun size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />}
+          <span className="nav-label">{darkMode ? 'Light mode' : 'Dark mode'}</span>
+        </button>
+
+        <button
+          className="nav-item sidebar-collapse-toggle"
+          type="button"
+          onClick={() => {
+            setHoverLocked((prev) => !prev);
+            setSettingsOpen(false);
+          }}
+          aria-label={hoverLocked ? 'Enable sidebar hover expand' : 'Keep sidebar icon only'}
+          title={hoverLocked ? 'Enable hover expand' : 'Keep icon only'}
+        >
+          {hoverLocked ? <ChevronsRight size={16} aria-hidden="true" /> : <ChevronsLeft size={16} aria-hidden="true" />}
+          <span className="nav-label">{hoverLocked ? 'Expand on hover' : 'Icon only'}</span>
+        </button>
       </div>
 
       {/* 🔹 DASHBOARD LAYOUT PANEL */}

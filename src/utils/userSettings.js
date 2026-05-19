@@ -1,20 +1,38 @@
 import api from "./serve";
+import { decodeStorageValue, encodeStorageValue } from "./obfuscatedStorage";
 
-const SETTINGS_STORAGE_KEY = "extrack:userSettings";
+export const SETTINGS_STORAGE_KEY = "x9$eA.7";
+export const LEGACY_SETTINGS_STORAGE_KEY = "extrack:userSettings";
+let settingsSaveVersion = 0;
+let activeSettingsSaves = 0;
 
 export function loadCachedUserSettings() {
   try {
     const cached = localStorage.getItem(SETTINGS_STORAGE_KEY);
-    return cached ? JSON.parse(cached) : {};
+    if (cached) {
+      return decodeStorageValue(cached) || {};
+    }
+
+    const legacyCached = localStorage.getItem(LEGACY_SETTINGS_STORAGE_KEY);
+    if (legacyCached) {
+      const settings = JSON.parse(legacyCached);
+      cacheUserSettings(settings);
+      localStorage.removeItem(LEGACY_SETTINGS_STORAGE_KEY);
+      return settings || {};
+    }
+
+    return {};
   } catch {
     localStorage.removeItem(SETTINGS_STORAGE_KEY);
+    localStorage.removeItem(LEGACY_SETTINGS_STORAGE_KEY);
     return {};
   }
 }
 
 function cacheUserSettings(settings) {
   try {
-    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings || {}));
+    localStorage.setItem(SETTINGS_STORAGE_KEY, encodeStorageValue(settings || {}));
+    localStorage.removeItem(LEGACY_SETTINGS_STORAGE_KEY);
   } catch {
     // Storage can fail in private mode; backend settings still work.
   }
@@ -34,22 +52,35 @@ function mergeSettings(base, patch) {
 }
 
 export async function loadUserSettings() {
+  const loadVersion = settingsSaveVersion;
   const { data } = await api.get("/settings");
   const settings = data?.settings || {};
-  cacheUserSettings(settings);
+  if (activeSettingsSaves === 0 && loadVersion === settingsSaveVersion) {
+    cacheUserSettings(settings);
+  }
   return settings;
 }
 
 export async function saveUserSettings(settings) {
+  const saveVersion = settingsSaveVersion + 1;
+  settingsSaveVersion = saveVersion;
+  activeSettingsSaves += 1;
+
   cacheUserSettings(mergeSettings(loadCachedUserSettings(), settings));
 
-  const { data } = await api.post("/settings", settings);
+  try {
+    const { data } = await api.post("/settings", settings);
 
-  if (!data?.success) {
-    throw new Error(data?.error || "Settings save failed");
+    if (!data?.success) {
+      throw new Error(data?.error || "Settings save failed");
+    }
+
+    const savedSettings = mergeSettings(loadCachedUserSettings(), data?.settings || {});
+    if (saveVersion === settingsSaveVersion) {
+      cacheUserSettings(savedSettings);
+    }
+    return savedSettings;
+  } finally {
+    activeSettingsSaves = Math.max(0, activeSettingsSaves - 1);
   }
-
-  const savedSettings = mergeSettings(loadCachedUserSettings(), data?.settings || {});
-  cacheUserSettings(savedSettings);
-  return savedSettings;
 }

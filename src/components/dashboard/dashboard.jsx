@@ -6,7 +6,7 @@ import StatsCards from '@/components/StatsCards/StatsCards';
 import TradesList from '@/components/myTrades/TradesList';
 import ProgressTracker from '@/components/MainContent/ProgressTracker';
 import { markPerf, measurePerf } from '@/utils/perfMarks';
-import { loadUserSettings } from '../../utils/userSettings';
+import { loadCachedUserSettings, loadUserSettings } from '../../utils/userSettings';
 
 const ActivityChart = lazy(() => import('@/components/MainContent/ActivityChart'));
 const Radar = lazy(() => import('@/components/MainContent/Radar'));
@@ -16,6 +16,25 @@ const PnLCalendar = lazy(() => import('@/components/MainContent/PnLCalendar'));
 
 // Global tracker to persist loaded state across page switches
 const LOADED_SECTIONS = new Set();
+const DEFAULT_DASHBOARD_LAYOUT = {
+  rowOrder: 'overview-first',
+  columnOrder: 'normal',
+};
+
+const getCachedDashboardLayout = () => {
+  const cachedLayout = loadCachedUserSettings()?.dashboard || {};
+
+  return {
+    rowOrder: cachedLayout.rowOrder || DEFAULT_DASHBOARD_LAYOUT.rowOrder,
+    columnOrder: cachedLayout.columnOrder || DEFAULT_DASHBOARD_LAYOUT.columnOrder,
+  };
+};
+
+const getDashboardLayoutMode = () => {
+  if (window.innerWidth <= 768) return 'mobile';
+  if (window.innerWidth <= 1023) return 'tablet';
+  return 'desktop';
+};
 
 function LazyDashboardSection({ children, sectionKey, fallback, perfName, delay = 100 }) {
   const sectionRef = useRef(null);
@@ -123,27 +142,47 @@ function Dashboard({
   onCurrencyChange,
   isLoading = false,
 }) {
-  const [layout, setLayout] = useState({ rowOrder: 'overview-first', columnOrder: 'normal' });
+  const [layout, setLayout] = useState(getCachedDashboardLayout);
 
-  const [isMobileWidth, setIsMobileWidth] = useState(window.innerWidth <= 768);
+  const [layoutMode, setLayoutMode] = useState(getDashboardLayoutMode);
+  const layoutChangeVersion = useRef(0);
 
   const loadLayout = () => {
+    const requestVersion = layoutChangeVersion.current;
+
     loadUserSettings().then(settings => {
+      if (requestVersion !== layoutChangeVersion.current) return;
+
       setLayout({
-        rowOrder: settings?.dashboard?.rowOrder || 'overview-first',
-        columnOrder: settings?.dashboard?.columnOrder || 'normal'
+        rowOrder: settings?.dashboard?.rowOrder || DEFAULT_DASHBOARD_LAYOUT.rowOrder,
+        columnOrder: settings?.dashboard?.columnOrder || DEFAULT_DASHBOARD_LAYOUT.columnOrder
       });
     }).catch(() => null);
   };
 
   useEffect(() => {
     loadLayout();
-    const handleResize = () => setIsMobileWidth(window.innerWidth <= 768);
+    const handleResize = () => setLayoutMode(getDashboardLayoutMode());
+    const handleLayoutChange = (event) => {
+      layoutChangeVersion.current += 1;
+      const eventLayout = event.detail?.layout;
+
+      if (eventLayout) {
+        setLayout({
+          rowOrder: eventLayout.rowOrder || DEFAULT_DASHBOARD_LAYOUT.rowOrder,
+          columnOrder: eventLayout.columnOrder || DEFAULT_DASHBOARD_LAYOUT.columnOrder,
+        });
+        return;
+      }
+
+      setLayout(getCachedDashboardLayout());
+    };
+
     window.addEventListener('resize', handleResize);
-    window.addEventListener('dashboard-layout-change', loadLayout);
+    window.addEventListener('dashboard-layout-change', handleLayoutChange);
     return () => {
       window.removeEventListener('resize', handleResize);
-      window.removeEventListener('dashboard-layout-change', loadLayout);
+      window.removeEventListener('dashboard-layout-change', handleLayoutChange);
     };
   }, []);
 
@@ -160,9 +199,59 @@ function Dashboard({
   }, [isLoading]);
 
   const gridAreas = useMemo(() => {
-    if (isMobileWidth) return undefined;
-
     const { rowOrder, columnOrder } = layout;
+
+    if (layoutMode === 'mobile') {
+      return rowOrder === 'charts-first'
+        ? `
+          "performance"
+          "activity"
+          "progress"
+          "zella"
+          "calendar"
+          "trades"
+        `
+        : `
+          "zella"
+          "calendar"
+          "trades"
+          "performance"
+          "activity"
+          "progress"
+        `;
+    }
+
+    if (layoutMode === 'tablet') {
+      if (rowOrder === 'charts-first') {
+        return columnOrder === 'flipped'
+          ? `
+            "activity performance"
+            "progress progress"
+            "calendar zella"
+            "calendar trades"
+          `
+          : `
+            "performance activity"
+            "progress progress"
+            "zella calendar"
+            "trades calendar"
+          `;
+      }
+
+      return columnOrder === 'flipped'
+        ? `
+          "calendar zella"
+          "calendar trades"
+          "activity performance"
+          "progress progress"
+        `
+        : `
+          "zella calendar"
+          "trades calendar"
+          "performance activity"
+          "progress progress"
+        `;
+    }
     
     let areas;
     if (rowOrder === 'overview-first') {
@@ -195,12 +284,23 @@ function Dashboard({
       }
     }
     return areas;
-  }, [layout, isMobileWidth]);
+  }, [layout, layoutMode]);
+
+  const gridColumns = useMemo(() => {
+    if (layoutMode !== 'tablet') return undefined;
+
+    return layout.columnOrder === 'flipped'
+      ? 'minmax(0, 1.32fr) minmax(220px, 0.68fr)'
+      : 'minmax(220px, 0.68fr) minmax(0, 1.32fr)';
+  }, [layout.columnOrder, layoutMode]);
 
   const MainGrid = (
     <section 
       className="dashboard-layout dashboard-main-grid" 
-      style={gridAreas ? { gridTemplateAreas: gridAreas } : {}}
+      style={{
+        ...(gridAreas ? { gridTemplateAreas: gridAreas } : {}),
+        ...(gridColumns ? { gridTemplateColumns: gridColumns } : {}),
+      }}
     >
       {/* 1st Row Left: Non-chart Progress Tracker */}
       <div className="dashboard-grid-card dashboard-grid-card--zella left-charts">

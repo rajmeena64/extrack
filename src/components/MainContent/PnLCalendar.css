@@ -441,6 +441,37 @@
   }
 }
 
+@media (min-width: 769px) and (max-width: 1023px) {
+  .calendar-shell__body {
+    grid-template-columns: minmax(0, 1fr) 104px;
+    gap: 6px;
+    padding: 8px;
+  }
+
+  .calendar-shell__toolbar {
+    gap: 8px;
+    padding: 8px 10px;
+  }
+
+  .calendar-shell__toolbar-left,
+  .calendar-shell__toolbar-right {
+    gap: 6px;
+  }
+
+  .calendar-shell__month {
+    min-width: 84px;
+  }
+
+  .calendar-day-card {
+    min-height: 66px;
+  }
+
+  .calendar-week-card {
+    min-height: 66px;
+    padding: 7px 8px;
+  }
+}
+
 @media (max-width: 768px) {
   .calendar-shell__toolbar {
     flex-direction: column;

@@ -7,6 +7,7 @@ import Logo from '../../Common/Logo';
 import { API_URL } from "../../../utils/constants";
 import { useAuth } from '../../../context/AuthContext';
 import { useAppDialog } from '../../../context/AppDialogContext';
+import { clearClientStorage } from '../../../utils/clientStorage';
 
 function UserLoginModal({ isOpen, onClose }) {
   const { user: currentUser, setUser } = useAuth();
@@ -200,8 +201,10 @@ function UserLoginModal({ isOpen, onClose }) {
       })
         .catch(() => null)
         .finally(() => {
+          clearClientStorage();
           setUser(null);
           setActiveTab('login');
+          window.dispatchEvent(new Event('auth:logout'));
           window.alert('Logged out successfully!');
         });
     }
@@ -273,9 +276,11 @@ function UserLoginModal({ isOpen, onClose }) {
 
       if (data.success) {
         alert('Account deleted successfully!');
+        clearClientStorage();
         setUser(null);
         setActiveTab('login');
         setIsDeleteModalOpen(false);
+        window.dispatchEvent(new Event('auth:logout'));
       } else {
         alert('Error: ' + data.error);
       }

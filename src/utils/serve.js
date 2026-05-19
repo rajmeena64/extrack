@@ -1,5 +1,6 @@
 import axios from "axios";
 import { API_URL } from "./constants";
+import { clearClientStorage } from "./clientStorage";
 
 // =====================
 // Axios Instance
@@ -80,15 +81,7 @@ const forceLogout = async () => {
   } catch {
     // Ignore logout cleanup failures and continue clearing local auth state.
   } finally {
-    [
-      "authUser",
-      "darkMode",
-      "tradeMode",
-      "dashboardRowOrder",
-      "trades_visible_fields",
-      "extrack:userSettings",
-    ].forEach((key) => localStorage.removeItem(key));
-    sessionStorage.clear();
+    clearClientStorage();
     notifyLogout();
     isForceLoggingOut = false;
   }

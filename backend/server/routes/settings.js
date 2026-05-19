@@ -3,6 +3,10 @@ const router = express.Router();
 const pool = require('../config/database');
 const { authCheck } = require('./auth');
 
+const SETTINGS_BLOB_KEY = 'x9$eA.7';
+const OBFUSCATION_PREFIX = 'v1.';
+const OBFUSCATION_SALT = 'Extrack.Settings.2026';
+
 async function ensureUserSettingsTable() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS public.user_settings (
@@ -48,6 +52,56 @@ const normalizeSettingsBody = (body) => {
   return JSON.parse(JSON.stringify(body));
 };
 
+const toBase64Url = (buffer) => buffer
+  .toString('base64')
+  .replaceAll('+', '-')
+  .replaceAll('/', '_')
+  .replaceAll('=', '');
+
+const fromBase64Url = (value) => {
+  const base64 = String(value || '')
+    .replaceAll('-', '+')
+    .replaceAll('_', '/');
+  return Buffer.from(base64.padEnd(Math.ceil(base64.length / 4) * 4, '='), 'base64');
+};
+
+const xorBuffer = (buffer) => {
+  const saltBuffer = Buffer.from(OBFUSCATION_SALT, 'utf8');
+  const nextBuffer = Buffer.alloc(buffer.length);
+
+  for (let index = 0; index < buffer.length; index += 1) {
+    nextBuffer[index] = buffer[index] ^ saltBuffer[index % saltBuffer.length];
+  }
+
+  return nextBuffer;
+};
+
+const encodeSettingsForStorage = (settings) => ({
+  [SETTINGS_BLOB_KEY]: `${OBFUSCATION_PREFIX}${toBase64Url(
+    xorBuffer(Buffer.from(JSON.stringify(settings || {}), 'utf8'))
+  )}`,
+});
+
+const decodeSettingsFromStorage = (storedSettings) => {
+  if (!isPlainObject(storedSettings)) return {};
+
+  const codedSettings = storedSettings[SETTINGS_BLOB_KEY];
+  if (typeof codedSettings !== 'string') {
+    return storedSettings;
+  }
+
+  try {
+    const encoded = codedSettings.startsWith(OBFUSCATION_PREFIX)
+      ? codedSettings.slice(OBFUSCATION_PREFIX.length)
+      : codedSettings;
+    const decodedJson = xorBuffer(fromBase64Url(encoded)).toString('utf8');
+    const decodedSettings = JSON.parse(decodedJson);
+    return isPlainObject(decodedSettings) ? decodedSettings : {};
+  } catch {
+    return {};
+  }
+};
+
 router.get('/settings', authCheck, async (req, res) => {
   try {
     await ensureUserSettingsTable();
@@ -61,7 +115,10 @@ router.get('/settings', authCheck, async (req, res) => {
       return res.json({ success: true, settings: {} });
     }
 
-    res.json({ success: true, settings: result.rows[0].settings });
+    res.json({
+      success: true,
+      settings: decodeSettingsFromStorage(result.rows[0].settings),
+    });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -85,10 +142,10 @@ const saveSettings = async (req, res) => {
       [req.userId]
     );
 
-    const currentSettings = exists.rows[0]?.settings || {};
+    const currentSettings = decodeSettingsFromStorage(exists.rows[0]?.settings || {});
     const mergedSettings = deepMerge(currentSettings, incomingSettings);
 
-    const serializedSettings = JSON.stringify(mergedSettings);
+    const serializedSettings = JSON.stringify(encodeSettingsForStorage(mergedSettings));
     let result;
 
     if (exists.rows.length === 0) {
@@ -108,7 +165,10 @@ const saveSettings = async (req, res) => {
       );
     }
 
-    res.json({ success: true, settings: result.rows[0].settings });
+    res.json({
+      success: true,
+      settings: decodeSettingsFromStorage(result.rows[0].settings),
+    });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

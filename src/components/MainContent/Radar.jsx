@@ -157,8 +157,8 @@ export default function Radar({ trades = [] }) {
             pointLabels: {
               color: labelColor,
               centerPointLabels: true,
-              padding: 8,
-              font:  { size: 11, weight: "700", lineHeight: 1.2 },
+              padding: 6,
+              font:  { size: 10, weight: "700", lineHeight: 1.15 },
             },
           },
         },

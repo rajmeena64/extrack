@@ -93,10 +93,13 @@ const RouteSkeleton = () => {
 
 const LEGACY_LOCAL_STORAGE_KEYS = [
   'darkMode',
+  'tradeanalytics:darkMode',
   'economic_calendar_provider',
   'tradeMode',
   'dashboardRowOrder',
   'trades_visible_fields',
+  'extrack:userSettings',
+  'extrack:dashboard_stats',
 ];
 
 function Profile() {

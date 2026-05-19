@@ -173,9 +173,9 @@
 }
 
 .dashboard-toolbar__search--inline {
-  flex: 0 1 220px;
-  min-width: 180px;
-  max-width: 220px;
+  flex: 1 1 180px;
+  min-width: 140px;
+  max-width: 300px;
   min-height: 32px;
   padding: 6px 10px;
 }
@@ -488,7 +488,7 @@
 @media (min-width: 769px) {
   .dashboard-header {
     display: grid;
-    grid-template-columns: minmax(180px, 1fr) max-content;
+    grid-template-columns: minmax(116px, 0.22fr) minmax(0, 1fr);
     grid-template-rows: auto auto;
     align-items: center;
     gap: 12px 16px;
@@ -552,32 +552,89 @@
 
 @media (min-width: 769px) and (max-width: 1180px) {
   .dashboard-header {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto auto auto;
-  }
-
-  .dashboard-header__hero,
-  .dashboard-toolbar__controls,
-  .dashboard-header__daily-row {
-    grid-column: 1;
+    grid-template-columns: minmax(106px, auto) minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    column-gap: 10px;
   }
 
   .dashboard-header__hero {
+    grid-column: 1;
     grid-row: 1;
   }
 
   .dashboard-toolbar__controls {
-    grid-row: 2;
-    justify-content: flex-start;
+    grid-column: 2;
+    grid-row: 1;
+    justify-content: flex-end;
+    gap: 5px;
   }
 
   .dashboard-toolbar__search--inline {
-    flex: 1 1 180px;
-    max-width: 260px;
+    flex: 1 1 150px;
+    min-width: 118px;
+    max-width: 220px;
   }
 
   .dashboard-header__daily-row {
-    grid-row: 3;
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .toolbar-chip,
+  .toolbar-primary {
+    padding-inline: 8px;
+  }
+
+  .dashboard-toolbar__controls > .toolbar-primary {
+    min-width: 116px;
+  }
+
+  .header-user .user-name,
+  .header-user .user-role {
+    max-width: 72px;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 980px) {
+  .dashboard-header {
+    grid-template-columns: minmax(96px, auto) minmax(0, 1fr);
+    gap: 10px 8px;
+  }
+
+  .dashboard-toolbar__controls {
+    gap: 4px;
+  }
+
+  .toolbar-chip,
+  .toolbar-primary {
+    min-height: 30px;
+    padding-inline: 6px;
+    gap: 4px;
+    font-size: 11px;
+  }
+
+  .dashboard-toolbar__search--inline {
+    flex-basis: 104px;
+    min-width: 96px;
+    max-width: 160px;
+    padding-inline: 8px;
+  }
+
+  .dashboard-toolbar__controls > .toolbar-primary {
+    min-width: 40px;
+  }
+
+  .toolbar-primary__text {
+    display: none;
+  }
+
+  .header-user {
+    padding-right: 4px;
+  }
+
+  .header-user .user-name,
+  .header-user .user-role {
+    max-width: 54px;
   }
 }
 

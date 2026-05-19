@@ -1,13 +1,34 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import LegacyIcon from '../Common/LegacyIcon';
 import { useAuth } from '../../context/AuthContext';
-import { loadUserSettings, saveUserSettings } from '../../utils/userSettings';
+import { loadCachedUserSettings, loadUserSettings, saveUserSettings } from '../../utils/userSettings';
+
+const DEFAULT_DASHBOARD_LAYOUT = {
+  rowOrder: 'overview-first',
+  columnOrder: 'normal',
+};
+
+const getCachedDashboardLayout = () => {
+  const cachedLayout = loadCachedUserSettings()?.dashboard || {};
+
+  return {
+    rowOrder: cachedLayout.rowOrder || DEFAULT_DASHBOARD_LAYOUT.rowOrder,
+    columnOrder: cachedLayout.columnOrder || DEFAULT_DASHBOARD_LAYOUT.columnOrder,
+  };
+};
+
+const notifyDashboardLayoutChange = (layout) => {
+  window.dispatchEvent(new CustomEvent('dashboard-layout-change', {
+    detail: { layout },
+  }));
+};
 
 
 function DashboardSettings() {
   const { isAuthenticated } = useAuth();
-  const [rowOrder, setRowOrder] = useState('overview-first');
-  const [columnOrder, setColumnOrder] = useState('normal');
+  const hasLocalLayoutChange = useRef(false);
+  const [rowOrder, setRowOrder] = useState(() => getCachedDashboardLayout().rowOrder);
+  const [columnOrder, setColumnOrder] = useState(() => getCachedDashboardLayout().columnOrder);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -16,12 +37,15 @@ function DashboardSettings() {
 
     loadUserSettings()
       .then((settings) => {
-        const savedOrder = settings?.dashboard?.rowOrder || 'overview-first';
-        const savedColOrder = settings?.dashboard?.columnOrder || 'normal';
-        if (isCurrent) {
+        const savedOrder = settings?.dashboard?.rowOrder || DEFAULT_DASHBOARD_LAYOUT.rowOrder;
+        const savedColOrder = settings?.dashboard?.columnOrder || DEFAULT_DASHBOARD_LAYOUT.columnOrder;
+        if (isCurrent && !hasLocalLayoutChange.current) {
           setRowOrder(savedOrder);
           setColumnOrder(savedColOrder);
-          window.dispatchEvent(new Event('dashboard-layout-change'));
+          notifyDashboardLayoutChange({
+            rowOrder: savedOrder,
+            columnOrder: savedColOrder,
+          });
         }
       })
       .catch(() => null);
@@ -34,20 +58,21 @@ function DashboardSettings() {
   const updateLayout = (updates) => {
     const nextRowOrder = updates.rowOrder !== undefined ? updates.rowOrder : rowOrder;
     const nextColOrder = updates.columnOrder !== undefined ? updates.columnOrder : columnOrder;
+    const nextLayout = {
+      rowOrder: nextRowOrder,
+      columnOrder: nextColOrder,
+    };
 
+    hasLocalLayoutChange.current = true;
     setRowOrder(nextRowOrder);
     setColumnOrder(nextColOrder);
+    notifyDashboardLayoutChange(nextLayout);
 
     if (isAuthenticated) {
       saveUserSettings({ 
-        dashboard: { 
-          rowOrder: nextRowOrder,
-          columnOrder: nextColOrder 
-        } 
+        dashboard: nextLayout,
       }).catch(() => null);
     }
-
-    window.dispatchEvent(new Event('dashboard-layout-change'));
   };
 
   return (
