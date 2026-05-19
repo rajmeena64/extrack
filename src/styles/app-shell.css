@@ -60,7 +60,7 @@
   --font-caption: 11px;
   --stat-value-size: clamp(20px, 1.65vw, 26px);
 
-  --dashboard-grid-gap: 14px;
+  --dashboard-grid-gap: 10px;
   --dashboard-chart-slot: 280px;
   --dashboard-calendar-min: 300px;
   --dashboard-card-radius: 12px;

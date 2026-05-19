@@ -11,11 +11,20 @@ const CALENDAR_OPTIONS = [
   { value: "metatrader", label: "MetaTrader Calendar" },
 ];
 
+// Global tracker to persist calendar source loading
+const LOADED_CALENDARS = new Set();
+
 function EconomicCalendar() {
   const { isAuthenticated } = useAuth();
   const [provider, setProvider] = useState("tradingview");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsRef = useRef(null);
+
+  useEffect(() => {
+    if (provider) {
+      LOADED_CALENDARS.add(provider);
+    }
+  }, [provider]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -103,7 +112,12 @@ function EconomicCalendar() {
         </div>
 
         <div className="analytics-content">
-          {provider === "metatrader" ? <EconomicCalendarWidget /> : <NEWS />}
+          <div style={{ display: provider === "metatrader" ? "block" : "none", height: "100%" }}>
+            <EconomicCalendarWidget />
+          </div>
+          <div style={{ display: provider === "tradingview" ? "block" : "none", height: "100%" }}>
+            <NEWS />
+          </div>
         </div>
       </main>
     </div>

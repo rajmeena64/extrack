@@ -3,7 +3,7 @@
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
   gap: var(--dashboard-grid-gap);
   width: 100%;
-  margin-bottom: 14px;
+  margin-bottom: 10px;
 }
 
 .metric-card {
@@ -176,7 +176,7 @@
     align-items: stretch;
     position: relative;
     z-index: 2;
-    margin-top: 8px;
+    margin-top: 4px;
   }
 
   .metric-card {

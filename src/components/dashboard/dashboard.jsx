@@ -13,32 +13,38 @@ const PerformanceChart = lazy(() => import('@/components/MainContent/Performance
 const PnLCalendar = lazy(() => import('@/components/MainContent/PnLCalendar'));
 
 
-function LazyDashboardSection({ children, fallback, perfName, delay = 100 }) {
+// Global tracker to persist loaded state across page switches
+const LOADED_SECTIONS = new Set();
+
+function LazyDashboardSection({ children, sectionKey, fallback, perfName, delay = 100 }) {
   const sectionRef = useRef(null);
-  const [shouldRender, setShouldRender] = useState(false);
+  const [shouldRender, setShouldRender] = useState(LOADED_SECTIONS.has(sectionKey));
 
   useEffect(() => {
     if (shouldRender) return undefined;
 
     const section = sectionRef.current;
     if (!section || typeof IntersectionObserver === 'undefined') {
-      const frameId = window.requestAnimationFrame(() => setShouldRender(true));
+      const frameId = window.requestAnimationFrame(() => {
+        setShouldRender(true);
+        if (sectionKey) LOADED_SECTIONS.add(sectionKey);
+      });
       return () => window.cancelAnimationFrame(frameId);
     }
 
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          // Add a small delay to ensure shell/main content takes priority
           const timer = setTimeout(() => {
             setShouldRender(true);
+            if (sectionKey) LOADED_SECTIONS.add(sectionKey);
           }, delay);
           observer.disconnect();
           return () => clearTimeout(timer);
         }
       },
       { 
-        rootMargin: '0px 0px 50px 0px', // Strict intersection with small bottom buffer
+        rootMargin: '100px 0px 100px 0px', 
         threshold: 0.01 
       }
     );
@@ -46,7 +52,7 @@ function LazyDashboardSection({ children, fallback, perfName, delay = 100 }) {
     observer.observe(section);
 
     return () => observer.disconnect();
-  }, [shouldRender, delay]);
+  }, [shouldRender, delay, sectionKey]);
 
   useEffect(() => {
     if (!shouldRender || !perfName) return;
@@ -144,7 +150,7 @@ function Dashboard({
         {isLoading ? (
           <SkeletonPnLCalendar />
         ) : (
-          <LazyDashboardSection fallback={<SkeletonPnLCalendar />} delay={0}>
+          <LazyDashboardSection sectionKey="pnl-calendar" fallback={<SkeletonPnLCalendar />} delay={0}>
             <Suspense fallback={<SkeletonPnLCalendar />}>
               <PnLCalendar trades={trades} currencyCode={currencyCode} />
             </Suspense>
@@ -157,7 +163,7 @@ function Dashboard({
         {isLoading ? (
           <SkeletonTradesList />
         ) : (
-          <LazyDashboardSection fallback={<SkeletonTradesList />} delay={0}>
+          <LazyDashboardSection sectionKey="trades-list" fallback={<SkeletonTradesList />} delay={0}>
             <TradesList trades={trades} currentTradeMode={tradeMode} currencyCode={currencyCode} />
           </LazyDashboardSection>
         )}
@@ -168,7 +174,7 @@ function Dashboard({
         {isLoading ? (
           <SkeletonChartCard />
         ) : (
-          <LazyDashboardSection fallback={<SkeletonChartCard />} perfName="charts-ready" delay={800}>
+          <LazyDashboardSection sectionKey="performance-chart" fallback={<SkeletonChartCard />} perfName="charts-ready" delay={800}>
             <Suspense fallback={<SkeletonChartCard />}>
               <PerformanceChart trades={trades} currencyCode={currencyCode} />
             </Suspense>
@@ -180,7 +186,7 @@ function Dashboard({
         {isLoading ? (
           <SkeletonChartCard />
         ) : (
-          <LazyDashboardSection fallback={<SkeletonChartCard />} delay={1000}>
+          <LazyDashboardSection sectionKey="activity-chart" fallback={<SkeletonChartCard />} delay={1000}>
             <Suspense fallback={<SkeletonChartCard />}>
               <ActivityChart trades={trades} currencyCode={currencyCode} />
             </Suspense>
@@ -192,7 +198,7 @@ function Dashboard({
         {isLoading ? (
           <SkeletonChartCard />
         ) : (
-          <LazyDashboardSection fallback={<SkeletonChartCard />} delay={1200}>
+          <LazyDashboardSection sectionKey="radar-chart" fallback={<SkeletonChartCard />} delay={1200}>
             <Suspense fallback={<SkeletonChartCard />}>
               <Radar trades={trades} />
             </Suspense>

@@ -3,7 +3,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin: -16px -16px 14px;
+  margin: -16px -16px 8px;
   padding: 14px 16px;
   background: var(--bg-card);
   border-bottom: 1px solid var(--border-light);
@@ -88,29 +88,29 @@
 }
 
 .dashboard-header__daily-row {
-  min-height: 34px;
+  min-height: 28px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding-top: 2px;
+  padding-top: 0px;
 }
 
 .start-day-btn {
-  height: 34px;
+  height: 28px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 0 14px;
+  gap: 6px;
+  padding: 0 12px;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   background: #2563eb;
   color: #ffffff;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 14px 28px -18px rgba(37, 99, 235, 0.65);
+  box-shadow: 0 10px 20px -12px rgba(37, 99, 235, 0.65);
   transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
