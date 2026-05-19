@@ -1,7 +1,9 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { ArrowDownRight, ArrowUpRight, CircleDollarSign, Gauge, Percent, Sigma } from 'lucide-react';
 import './StatsCards.css';
 import { formatCurrency as formatDashboardCurrency } from '../../utils/Currency';
+
+const STATS_CACHE_KEY = 'extrack:dashboard_stats';
 
 function formatNumber(value) {
   const num = Number(value);
@@ -9,65 +11,93 @@ function formatNumber(value) {
   return num.toFixed(2);
 }
 
-function StatsCards({ trades, currencyCode = 'USD' }) {
+function StatsCards({ trades, currencyCode = 'USD', isLoading = false }) {
+  const [cachedStats, setCachedStats] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STATS_CACHE_KEY);
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
   const stats = useMemo(() => {
-    if (!Array.isArray(trades)) {
-      return {
-        totalPnL: 0,
-        totalTrades: 0,
-        winRate: 0,
-        profitFactor: 0,
-        avgPnL: 0,
-        avgWin: 0,
-        avgLoss: 0,
-        wins: 0,
-        losses: 0,
+    // If we have trades, calculate fresh stats and cache them
+    if (Array.isArray(trades) && trades.length > 0) {
+      let totalPnL = 0;
+      let wins = 0;
+      let losses = 0;
+      let grossProfit = 0;
+      let grossLoss = 0;
+
+      trades.forEach((trade) => {
+        const pnl = Number(trade?.pnl);
+
+        if (Number.isNaN(pnl)) return;
+        totalPnL += pnl;
+
+        if (pnl > 0) {
+          wins += 1;
+          grossProfit += pnl;
+        } else if (pnl < 0) {
+          losses += 1;
+          grossLoss += Math.abs(pnl);
+        }
+      });
+
+      const totalTrades = trades.length;
+      const avgPnL = totalTrades > 0 ? totalPnL / totalTrades : 0;
+      const winRate = totalTrades > 0 ? (wins / totalTrades) * 100 : 0;
+      const avgWin = wins > 0 ? grossProfit / wins : 0;
+      const avgLoss = losses > 0 ? grossLoss / losses : 0;
+      const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? grossProfit : 0;
+
+      const result = {
+        totalPnL,
+        totalTrades,
+        winRate,
+        profitFactor,
+        avgPnL,
+        avgWin,
+        avgLoss,
+        wins,
+        losses,
       };
+
+      // Cache the result
+      try {
+        localStorage.setItem(STATS_CACHE_KEY, JSON.stringify(result));
+      } catch {
+        // Silently ignore
+      }
+
+      return result;
     }
 
-    let totalPnL = 0;
-    let wins = 0;
-    let losses = 0;
-    let grossProfit = 0;
-    let grossLoss = 0;
+    // If loading and we have cached stats, use them for immediate rendering (LCP)
+    if (isLoading && cachedStats) {
+      return cachedStats;
+    }
 
-    trades.forEach((trade) => {
-      const pnl = Number(trade?.pnl);
-
-      if (Number.isNaN(pnl)) return;
-      totalPnL += pnl;
-
-      if (pnl > 0) {
-        wins += 1;
-        grossProfit += pnl;
-      } else if (pnl < 0) {
-        losses += 1;
-        grossLoss += Math.abs(pnl);
-      }
-    });
-
-    const totalTrades = trades.length;
-    const avgPnL = totalTrades > 0 ? totalPnL / totalTrades : 0;
-    const winRate = totalTrades > 0 ? (wins / totalTrades) * 100 : 0;
-    const avgWin = wins > 0 ? grossProfit / wins : 0;
-    const avgLoss = losses > 0 ? grossLoss / losses : 0;
-    const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? grossProfit : 0;
-
+    // Otherwise, return zero stats
     return {
-      totalPnL,
-      totalTrades,
-      winRate,
-      profitFactor,
-      avgPnL,
-      avgWin,
-      avgLoss,
-      wins,
-      losses,
+      totalPnL: 0,
+      totalTrades: 0,
+      winRate: 0,
+      profitFactor: 0,
+      avgPnL: 0,
+      avgWin: 0,
+      avgLoss: 0,
+      wins: 0,
+      losses: 0,
+      isPlaceholder: true
     };
-  }, [trades]);
+  }, [trades, cachedStats, isLoading]);
 
   const netPnlTone = stats.totalPnL >= 0 ? 'positive' : 'negative';
   const avgTone = stats.avgPnL >= 0 ? 'positive' : 'negative';
+
+  const showSkeleton = isLoading && !cachedStats;
 
   const cards = [
     {
@@ -136,7 +166,7 @@ function StatsCards({ trades, currencyCode = 'USD' }) {
         return (
           <article
             key={card.key}
-            className={`metric-card metric-card--${card.tone}${card.key === 'net' ? ' metric-card--featured' : ''}`}
+            className={`metric-card metric-card--${card.tone}${card.key === 'net' ? ' metric-card--featured' : ''}${showSkeleton ? ' skeleton-pulse' : ''}`}
           >
             <div className="metric-card__top">
               <div className="metric-card__label-row">
@@ -144,11 +174,19 @@ function StatsCards({ trades, currencyCode = 'USD' }) {
                   <span className="metric-card__label-full">{card.title}</span>
                   <span className="metric-card__label-short">{card.shortTitle ?? card.title}</span>
                 </p>
-                <span className={`metric-card__badge metric-card__badge--${card.badgeTone ?? 'neutral'}`}>{card.badge}</span>
+                {showSkeleton ? (
+                  <span className="skeleton-text" style={{ width: '60px', height: '18px' }} />
+                ) : (
+                  <span className={`metric-card__badge metric-card__badge--${card.badgeTone ?? 'neutral'}`}>{card.badge}</span>
+                )}
               </div>
 
               <div className="metric-card__value-row">
-                <h3>{card.value}</h3>
+                {showSkeleton ? (
+                  <span className="skeleton-text" style={{ width: '100px', height: '28px' }} />
+                ) : (
+                  <span className="metric-card__value">{card.value}</span>
+                )}
                 <span className="metric-card__icon">
                   {card.tone === 'negative' ? <ArrowDownRight size={15} /> : <ArrowUpRight size={15} />}
                   <Icon size={15} />
@@ -157,14 +195,23 @@ function StatsCards({ trades, currencyCode = 'USD' }) {
             </div>
 
             <div className="metric-card__bottom">
-              <span>
-                <span className="metric-card__meta-full">{card.meta}</span>
-                <span className="metric-card__meta-short">{card.mobileMeta ?? card.meta}</span>
-              </span>
-              <span>
-                <span className="metric-card__detail-full">{card.detail}</span>
-                <span className="metric-card__detail-short">{card.mobileDetail ?? card.detail}</span>
-              </span>
+              {showSkeleton ? (
+                <>
+                  <span className="skeleton-text" style={{ width: '80px', height: '12px' }} />
+                  <span className="skeleton-text" style={{ width: '60px', height: '12px' }} />
+                </>
+              ) : (
+                <>
+                  <span>
+                    <span className="metric-card__meta-full">{card.meta}</span>
+                    <span className="metric-card__meta-short">{card.mobileMeta ?? card.meta}</span>
+                  </span>
+                  <span>
+                    <span className="metric-card__detail-full">{card.detail}</span>
+                    <span className="metric-card__detail-short">{card.mobileDetail ?? card.detail}</span>
+                  </span>
+                </>
+              )}
             </div>
           </article>
         );

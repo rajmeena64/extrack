@@ -1,11 +1,26 @@
-import React, { createContext, useState, useContext, useEffect, useLayoutEffect } from 'react';
+import React, { createContext, useState, useContext, useLayoutEffect, useCallback } from 'react';
 
 const ThemeContext = createContext();
+const THEME_STORAGE_KEY = 'tradeanalytics:darkMode';
+
+function getStoredDarkMode() {
+  try {
+    return localStorage.getItem(THEME_STORAGE_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+function storeDarkMode(value) {
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, String(Boolean(value)));
+  } catch {
+    // Theme still works for this session if storage is unavailable.
+  }
+}
 
 export function ThemeProvider({ children }) {
-  const [darkMode, setDarkMode] = useState(() => {
-    return localStorage.getItem('darkMode') === 'true';
-  });
+  const [darkMode, setDarkMode] = useState(getStoredDarkMode);
 
   useLayoutEffect(() => {
     if (darkMode) {
@@ -15,16 +30,22 @@ export function ThemeProvider({ children }) {
     }
   }, [darkMode]);
 
-  useEffect(() => {
-    localStorage.setItem('darkMode', darkMode);
-  }, [darkMode]);
+  const toggleDarkMode = useCallback(() => {
+    setDarkMode(prev => {
+      const nextDarkMode = !prev;
+      storeDarkMode(nextDarkMode);
+      return nextDarkMode;
+    });
+  }, []);
 
-  const toggleDarkMode = () => {
-    setDarkMode(prev => !prev);
-  };
+  const setDarkModePreference = useCallback((value) => {
+    const nextDarkMode = Boolean(value);
+    storeDarkMode(nextDarkMode);
+    setDarkMode(nextDarkMode);
+  }, []);
 
   return (
-    <ThemeContext.Provider value={{ darkMode, toggleDarkMode }}>
+    <ThemeContext.Provider value={{ darkMode, toggleDarkMode, setDarkModePreference }}>
       {children}
     </ThemeContext.Provider>
   );

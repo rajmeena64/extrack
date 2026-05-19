@@ -55,21 +55,20 @@
   flex: 1; /* Take remaining space */
   padding: 14px;
   min-height: 0; /* Important for flex children to scroll properly */
-  overflow: auto; /* Add scroll if content overflows */
+  overflow: hidden; /* Prevent double scrollbars, children should handle scroll */
 
   display: flex;
   flex-direction: column;
   gap: 14px;
-  height: calc(100% - 68px);
- 
 }
 
 /* ===== CALENDAR PANEL ===== */
 .analytics-panel {
   width: 100%;
-  flex: 1; /* Take full height of parent */
+  height: 100%; /* Ensure it takes full height of parent */
+  flex: 1; /* Take full height of parent in flex container */
   min-height: 0; /* Important for iframe containment */
-  
+
   border-radius: 12px;
   overflow: hidden;
 
@@ -83,6 +82,132 @@
   height: 100%;
   border: none;
   display: block;
+}
+
+.economic-calendar-settings {
+  position: relative;
+  margin-left: auto;
+}
+
+.economic-calendar-settings__button {
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.economic-calendar-settings__button:hover {
+  background: var(--bg-hover);
+  color: var(--primary);
+  transform: translateY(-1px);
+}
+
+.economic-calendar-settings__menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 20;
+  min-width: 220px;
+  padding: 8px;
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  background: var(--bg-card);
+  box-shadow: var(--shadow-md);
+}
+
+.economic-calendar-settings__eyebrow {
+  display: block;
+  padding: 6px 8px 8px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.economic-calendar-settings__option {
+  width: 100%;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 9px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.economic-calendar-settings__option:hover,
+.economic-calendar-settings__option.active {
+  background: var(--bg-hover);
+  color: var(--primary);
+}
+
+.economic-calendar-settings__option strong {
+  color: var(--primary);
+  font-size: 11px;
+}
+
+.economic-calendar-widget-panel {
+  position: relative;
+  padding: 0;
+  background: var(--bg-card);
+  border-color: var(--border-light);
+
+}
+
+.economic-calendar-widget-panel #economicCalendarWidget {
+  width: 100%;
+  height: calc(100% - 24px);
+  min-height: 0;
+  background: var(--bg-card);
+}
+
+.economic-calendar-widget-panel .ecw-copyright {
+  height: 24px;
+  display: none;
+  /* display: flex; */
+  align-items: center;
+  padding: 0 10px;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border-light);
+  font-size: 11px;
+}
+
+.economic-calendar-widget-panel .ecw-copyright a {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.dark-mode .economic-calendar-widget-panel {
+  background: #000000;
+  border-color: #1f1f1f;
+}
+
+.dark-mode .economic-calendar-widget-panel #economicCalendarWidget {
+  background: #000000;
+}
+
+.dark-mode .economic-calendar-widget-panel iframe {
+  background: #000000;
+  color-scheme: dark;
+}
+
+.dark-mode .economic-calendar-widget-panel .ecw-copyright {
+  background: #000000;
+  border-top-color: #1f1f1f;
 }
 
 /* ===== HEATMAP GRID ===== */

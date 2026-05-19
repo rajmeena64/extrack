@@ -1,12 +1,25 @@
 import React, { lazy, Suspense, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import {
+  CalendarDays,
+  ChartLine,
+  ChevronDown,
+  Grid2x2,
+  Home,
+  LogOut,
+  Moon,
+  PieChart,
+  Plus,
+  Settings,
+  X,
+} from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';  // ✅ ADDED
 
 import './Sidebar.css';
-import LegacyIcon from '../Common/LegacyIcon';
 import Logo from '../Common/Logo';
 import { API_URL } from '../../utils/constants';
 import { useAuth } from '../../context/AuthContext';
+import { loadUserSettings, saveUserSettings } from '../../utils/userSettings';
 
 const DashboardSettings = lazy(() => import('./DashboardSettings'));
 
@@ -20,7 +33,8 @@ function Sidebar() {
   const settingsToggleRef = useRef(null);
 
   // ✅ ADDED - from context
-  const { darkMode, toggleDarkMode } = useTheme();
+  const { darkMode, setDarkModePreference } = useTheme();
+  const hasUserChangedDarkMode = useRef(false);
 
 
 
@@ -74,6 +88,40 @@ function Sidebar() {
     return () => document.removeEventListener('keydown', escHandler);
   }, []);
 
+  React.useEffect(() => {
+    if (!isAuthenticated || !setDarkModePreference) {
+      hasUserChangedDarkMode.current = false;
+      return;
+    }
+
+    let isCurrent = true;
+    hasUserChangedDarkMode.current = false;
+
+    loadUserSettings()
+      .then((settings) => {
+        const savedDarkMode = settings?.preferences?.darkMode;
+        if (isCurrent && !hasUserChangedDarkMode.current && typeof savedDarkMode === 'boolean') {
+          setDarkModePreference(savedDarkMode);
+        }
+      })
+      .catch(() => null);
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [isAuthenticated, setDarkModePreference]);
+
+  const handleDarkModeChange = () => {
+    const nextDarkMode = !darkMode;
+    hasUserChangedDarkMode.current = true;
+    setDarkModePreference(nextDarkMode);
+
+    if (isAuthenticated) {
+      saveUserSettings({ preferences: { darkMode: nextDarkMode } })
+        .catch(() => null);
+    }
+  };
+
   const handleLogout = (e) => {
     e.preventDefault();
     fetch(`${API_URL}/api/logout`, {
@@ -82,8 +130,6 @@ function Sidebar() {
     })
       .catch(() => null)
       .finally(() => {
-        localStorage.removeItem('tradeMode');
-        localStorage.removeItem('authUser');
         setUser(null);
         window.dispatchEvent(new Event('auth:logout'));
       });
@@ -98,7 +144,7 @@ function Sidebar() {
         aria-label={sidebarOpen ? 'Close navigation menu' : 'Open navigation menu'}
         title={sidebarOpen ? 'Close navigation menu' : 'Open navigation menu'}
       >
-        <span className="sidebar-toggle__icon">☰</span>
+        <span className="sidebar-toggle__icon" aria-hidden="true">☰</span>
       </button>
 
       {/* 🔹 SIDEBAR */}
@@ -116,7 +162,7 @@ function Sidebar() {
           aria-label="Go to Dashboard"
           title="Dashboard"
         >
-                <LegacyIcon className="fas fa-home" />  <span className="nav-label">Dashboard</span>
+          <Home size={16} aria-hidden="true" />  <span className="nav-label">Dashboard</span>
         </Link>
 
         <Link
@@ -126,7 +172,7 @@ function Sidebar() {
           aria-label="Go to Add Trade"
           title="Add Trade"
         >
-                <LegacyIcon className="fas fa-plus" /> <span className="nav-label">Add tarde</span>
+          <Plus size={16} aria-hidden="true" /> <span className="nav-label">Add tarde</span>
         </Link>
 
         <Link
@@ -136,7 +182,18 @@ function Sidebar() {
           aria-label="Go to Analytics"
           title="Analytics"
         >
-                <LegacyIcon className="fas fa-chart-pie" /> <span className="nav-label">Analytics</span>
+          <PieChart size={16} aria-hidden="true" /> <span className="nav-label">Analytics</span>
+        </Link>
+
+        <Link
+          to="/economic-calendar"
+          className="nav-item"
+          onClick={() => setSidebarOpen(false)}
+          aria-label="Go to Economic Calendar"
+          title="Economic Calendar"
+        >
+          <CalendarDays size={16} aria-hidden="true" />
+          <span className="nav-label">Economic Calendar</span>
         </Link>
 
         <Link
@@ -146,7 +203,7 @@ function Sidebar() {
           aria-label="Go to Trades"
           title="Trades"
         >
-          <LegacyIcon className="fas fa-chart-line" />
+          <ChartLine size={16} aria-hidden="true" />
           <span className="nav-label">Trades</span>
         </Link>
 
@@ -155,19 +212,25 @@ function Sidebar() {
           className="nav-item"
           ref={settingsToggleRef}
           onClick={() => setSettingsOpen(!settingsOpen)}
+          role="button"
+          tabIndex="0"
+          aria-haspopup="true"
+          aria-expanded={settingsOpen}
+          aria-label="Settings"
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSettingsOpen(!settingsOpen); } }}
         >
-          <LegacyIcon className="fas fa-cog" />
+          <Settings size={16} aria-hidden="true" />
           <span className="nav-label">Settings</span>
-              <LegacyIcon className="fas fa-chevron-down dropdown-arrow" />
+          <ChevronDown className="dropdown-arrow" size={16} aria-hidden="true" />
         </div>
 
         {settingsOpen && (
-          <div className="sub-menu" ref={settingsRef}>
+          <div className="sub-menu" ref={settingsRef} role="menu">
             <div className="sub-nav-item">
-                  <LegacyIcon className="fas fa-moon" />
+              <Moon size={16} aria-hidden="true" />
               <span>Dark mode</span>
               <label className="switch">
-                <input type="checkbox" checked={darkMode} onChange={toggleDarkMode} />
+                <input type="checkbox" checked={darkMode} onChange={handleDarkModeChange} aria-label="Toggle dark mode" />
                 <span className="slider round"></span>
               </label>
             </div>
@@ -178,14 +241,23 @@ function Sidebar() {
                 setLayoutOpen(true);
                 setSettingsOpen(false);
               }}
+              role="menuitem"
+              tabIndex="0"
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setLayoutOpen(true); setSettingsOpen(false); } }}
             >
-                    <LegacyIcon className="fas fa-th-large" />
+              <Grid2x2 size={16} aria-hidden="true" />
               <span>Dashboard Layout</span>
             </div>
 
             {isAuthenticated && (
-              <div className="sub-nav-item" onClick={handleLogout}>
-                    <LegacyIcon className="fas fa-sign-out-alt" /> Logout
+              <div
+                className="sub-nav-item"
+                onClick={handleLogout}
+                role="menuitem"
+                tabIndex="0"
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleLogout(e); } }}
+              >
+                <LogOut size={16} aria-hidden="true" /> Logout
               </div>
             )}
           </div>
@@ -199,7 +271,9 @@ function Sidebar() {
           <div className="layout-panel">
             <div className="layout-panel-header">
               <span>Dashboard Layout</span>
-              <button onClick={() => setLayoutOpen(false)}>✖</button>
+              <button onClick={() => setLayoutOpen(false)} aria-label="Close dashboard layout">
+                <X size={16} aria-hidden="true" />
+              </button>
             </div>
             <Suspense fallback={null}>
               <DashboardSettings />

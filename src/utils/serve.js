@@ -9,6 +9,41 @@ const api = axios.create({
   withCredentials: true,
 });
 
+if (import.meta.env.DEV) {
+  api.interceptors.request.use((config) => {
+    config.metadata = { startTime: performance.now() };
+    return config;
+  });
+
+  api.interceptors.response.use(
+    (response) => {
+      const startedAt = response.config?.metadata?.startTime;
+      if (typeof startedAt === "number") {
+        console.info(
+          "[api]",
+          response.config.method?.toUpperCase(),
+          response.config.url,
+          `${Math.round(performance.now() - startedAt)}ms`
+        );
+      }
+      return response;
+    },
+    (error) => {
+      const startedAt = error.config?.metadata?.startTime;
+      if (typeof startedAt === "number") {
+        console.info(
+          "[api]",
+          error.config.method?.toUpperCase(),
+          error.config.url,
+          `${Math.round(performance.now() - startedAt)}ms`,
+          "failed"
+        );
+      }
+      return Promise.reject(error);
+    }
+  );
+}
+
 // =====================
 // Refresh control
 // =====================
@@ -45,7 +80,14 @@ const forceLogout = async () => {
   } catch {
     // Ignore logout cleanup failures and continue clearing local auth state.
   } finally {
-    localStorage.clear();
+    [
+      "authUser",
+      "darkMode",
+      "tradeMode",
+      "dashboardRowOrder",
+      "trades_visible_fields",
+      "extrack:userSettings",
+    ].forEach((key) => localStorage.removeItem(key));
     sessionStorage.clear();
     notifyLogout();
     isForceLoggingOut = false;

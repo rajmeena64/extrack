@@ -1,15 +1,38 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import LegacyIcon from '../Common/LegacyIcon';
+import { useAuth } from '../../context/AuthContext';
+import { loadUserSettings, saveUserSettings } from '../../utils/userSettings';
 
 
 function DashboardSettings() {
-  const [rowOrder, setRowOrder] = useState(
-    localStorage.getItem('dashboardRowOrder') || 'charts-first'
-  );
+  const { isAuthenticated } = useAuth();
+  const [rowOrder, setRowOrder] = useState('charts-first');
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    let isCurrent = true;
+
+    loadUserSettings()
+      .then((settings) => {
+        const savedOrder = settings?.dashboard?.rowOrder;
+        if (isCurrent && savedOrder) {
+          setRowOrder(savedOrder);
+          window.dispatchEvent(new Event('dashboard-layout-change'));
+        }
+      })
+      .catch(() => null);
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [isAuthenticated]);
 
   const updateRowOrder = (value) => {
     setRowOrder(value);
-    localStorage.setItem('dashboardRowOrder', value);
+    if (isAuthenticated) {
+      saveUserSettings({ dashboard: { rowOrder: value } }).catch(() => null);
+    }
 
     window.dispatchEvent(new Event('dashboard-layout-change'));
   };

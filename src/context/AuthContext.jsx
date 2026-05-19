@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
 import api from '../utils/serve';
+import { markPerf, measurePerf } from '../utils/perfMarks';
 
 const AuthContext = createContext(null);
 const AUTH_STORAGE_KEY = 'authUser';
@@ -18,10 +19,23 @@ const readStoredUser = () => {
 
 export function AuthProvider({ children }) {
   const queryClient = useQueryClient();
-  const [user, setUser] = useState(null);
-  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const initialStoredUser = useMemo(() => readStoredUser(), []);
+  const [user, setUser] = useState(initialStoredUser);
+  const [isAuthLoading, setIsAuthLoading] = useState(() => !initialStoredUser);
+  const userRef = useRef(null);
 
-  const refreshUser = async () => {
+  useEffect(() => {
+    userRef.current = user;
+
+    if (user) {
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
+      return;
+    }
+
+    localStorage.removeItem(AUTH_STORAGE_KEY);
+  }, [user]);
+
+  const refreshUser = useCallback(async () => {
     try {
       const { data } = await api.get('/user-profile');
 
@@ -35,19 +49,14 @@ export function AuthProvider({ children }) {
         status === 401 ||
         error?.response?.data?.logout === true;
 
-      // Preserve the last known session on transient/network failures.
       if (!shouldLogout) {
-        const fallbackUser = readStoredUser();
-        if (fallbackUser) {
-          setUser(fallbackUser);
-        }
-        return fallbackUser;
+        return userRef.current;
       }
     }
 
     setUser(null);
     return null;
-  };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -58,6 +67,8 @@ export function AuthProvider({ children }) {
       } finally {
         if (isMounted) {
           setIsAuthLoading(false);
+          markPerf('auth-ready');
+          measurePerf('auth-from-start', 'app-start', 'auth-ready');
         }
       }
     };
@@ -67,16 +78,12 @@ export function AuthProvider({ children }) {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [refreshUser]);
 
   useEffect(() => {
-    if (user) {
-      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
-      return;
+    if (!user) {
+      queryClient.removeQueries({ queryKey: ['trades'] });
     }
-
-    localStorage.removeItem(AUTH_STORAGE_KEY);
-    queryClient.removeQueries({ queryKey: ['trades'] });
   }, [queryClient, user]);
 
   useEffect(() => {
@@ -99,7 +106,7 @@ export function AuthProvider({ children }) {
     refreshUser,
     isAuthenticated: Boolean(user),
     isAuthLoading,
-  }), [user, isAuthLoading]);
+  }), [user, refreshUser, isAuthLoading]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

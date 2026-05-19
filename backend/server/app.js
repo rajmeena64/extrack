@@ -142,6 +142,10 @@ async function startServer() {
     if (typeof ensureCtraderTokenStore === 'function') {
       await ensureCtraderTokenStore();
     }
+
+    if (typeof settingsRoutes.ensureUserSettingsTable === 'function') {
+      await settingsRoutes.ensureUserSettingsTable();
+    }
   } catch {
     process.exit(1);
   }

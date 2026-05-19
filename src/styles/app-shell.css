@@ -25,9 +25,9 @@
   --button-bg: #2563eb;
   --value-bg: #1d4ed8;
 
-  --profit-color: #16a34a;
-  --loss-color: #dc2626;
-  --pnl-negative: #dc2626;
+  --profit-color: #15803d; /* Darker green for contrast */
+  --loss-color: #b91c1c;   /* Darker red for contrast */
+  --pnl-negative: #b91c1c;
 
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
@@ -150,41 +150,115 @@ html,
 body,
 #root {
   width: 100%;
-  height: 100%;
+  min-height: 100%;
+  height: auto;
 }
 
 body {
-  font-family: 'Roboto', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: var(--font-body);
   color: var(--text-primary);
   line-height: 1.5;
   background: var(--bg-primary);
   transition: var(--transition-slow);
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   scroll-behavior: auto;
   text-rendering: geometricPrecision;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
+.dashboard-boot-shell {
+  min-height: 100vh;
+}
+
+.dashboard-boot-shell__main {
+  height: 100vh;
+  overflow: hidden;
+}
+
+.dashboard-boot-shell__header {
+  min-height: 188px;
+  margin: -16px -16px 14px;
+  padding: 22px 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 18px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.dashboard-boot-shell__controls,
+.dashboard-boot-shell__stats {
+  display: grid;
+  gap: var(--dashboard-grid-gap);
+}
+
+.dashboard-boot-shell__controls {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.dashboard-boot-shell__controls span,
+.dashboard-boot-shell__card {
+  border: var(--dashboard-card-border);
+  border-radius: var(--dashboard-card-radius);
+  background: var(--bg-card);
+}
+
+.dashboard-boot-shell__controls span {
+  min-height: 44px;
+}
+
+.dashboard-boot-shell__stats {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.dashboard-boot-shell__card {
+  min-height: 112px;
+  padding: var(--dashboard-card-padding);
+}
+
+.dashboard-boot-shell__card--featured {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dashboard-boot-shell__card--featured small {
+  color: var(--text-secondary);
+  font-size: var(--title-card-size);
+  font-weight: var(--title-weight);
+  letter-spacing: var(--title-tight-tracking);
+  text-transform: uppercase;
+}
+
+.dashboard-boot-shell__card--featured strong {
+  display: block;
+  width: 48%;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--surface-muted);
+}
+
 .dashboard {
   width: 100%;
-  height: 100%;
+  min-height: 100vh;
   background: var(--bg-primary);
 }
 
 .main-content {
   position: relative;
-  min-height: 0;
-  height: 100%;
+  min-height: 100vh;
+  height: auto;
   margin-left: 60px;
   padding: 16px;
-  overflow-y: auto;
+  overflow: visible;
   scroll-behavior: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
   -webkit-overflow-scrolling: touch;
-  contain: layout paint;
 }
 
 .light-text {
@@ -333,8 +407,27 @@ body,
 }
 
 @media (min-width: 769px) and (max-width: 1023px) {
+  html,
+  body,
+  #root {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .dashboard {
+    height: 100dvh;
+    min-height: 100dvh;
+    overflow: hidden;
+  }
+
   .main-content {
+    height: 100dvh;
+    min-height: 100dvh;
     margin-left: 12px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    touch-action: pan-y;
+    overscroll-behavior-y: contain;
   }
 }
 
@@ -342,6 +435,36 @@ body,
   .main-content {
     margin-left: 10px;
     padding: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-boot-shell__header {
+    min-height: 284px;
+    padding: 22px 18px 20px;
+  }
+
+  .dashboard-boot-shell__controls {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-boot-shell__stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .dashboard-boot-shell__card--featured {
+    grid-column: 1 / -1;
+    min-height: 132px;
+    background: var(--primary);
+  }
+
+  .dashboard-boot-shell__card--featured small {
+    color: rgba(255, 255, 255, 0.78);
+  }
+
+  .dashboard-boot-shell__card--featured strong {
+    background: rgba(255, 255, 255, 0.16);
   }
 }
 

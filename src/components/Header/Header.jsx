@@ -1,6 +1,5 @@
 import React, { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { format } from 'date-fns';
 import {
   CalendarRange,
   ChevronDown,
@@ -11,13 +10,19 @@ import {
   Search,
 } from 'lucide-react';
 import './Header.css';
-import DateRangePicker from '../Common/DateRangePicker';
 import { useAuth } from '../../context/AuthContext';
 import { DASHBOARD_CURRENCIES, getCurrencyMeta } from '../../utils/Currency';
 import { getTradeDisplayDate, getTradeDisplayTime } from '../../utils/tradeTime';
 
 const UserLoginModal = lazy(() => import('../user/UserLoginModal/UserLoginModal'));
 const Profile = lazy(() => import('./profile'));
+const DateRangePicker = lazy(() => import('../Common/DateRangePicker'));
+
+const formatDateLabel = (value) => new Intl.DateTimeFormat('en-GB', {
+  day: '2-digit',
+  month: 'short',
+  year: 'numeric',
+}).format(new Date(value));
 
 function Header({
   tradeMode,
@@ -55,16 +60,19 @@ function Header({
   const defaultCurrency = getCurrencyMeta(defaultCurrencyCode);
   const hasPopupOpen = filterOpen || datePickerOpen || currencyOpen;
 
-  const latestTradeLabel = useMemo(() => {
+  const latestTradeDate = useMemo(() => {
     if (!Array.isArray(trades) || trades.length === 0) {
-      return 'No imports yet';
+      return null;
     }
 
     const sortedTrades = [...trades].sort(
       (left, right) => getTradeDisplayTime(right) - getTradeDisplayTime(left)
     );
 
-    const latestTradeDate = getTradeDisplayDate(sortedTrades[0]);
+    return getTradeDisplayDate(sortedTrades[0]);
+  }, [trades]);
+
+  const latestTradeLabel = useMemo(() => {
     if (!latestTradeDate) {
       return 'No imports yet';
     }
@@ -76,18 +84,9 @@ function Header({
       hour: '2-digit',
       minute: '2-digit',
     }).format(latestTradeDate);
-  }, [trades]);
+  }, [latestTradeDate]);
 
   const compactLatestTradeLabel = useMemo(() => {
-    if (!Array.isArray(trades) || trades.length === 0) {
-      return 'No imports yet';
-    }
-
-    const sortedTrades = [...trades].sort(
-      (left, right) => getTradeDisplayTime(right) - getTradeDisplayTime(left)
-    );
-
-    const latestTradeDate = getTradeDisplayDate(sortedTrades[0]);
     if (!latestTradeDate) {
       return 'No imports yet';
     }
@@ -98,14 +97,11 @@ function Header({
       hour: '2-digit',
       minute: '2-digit',
     }).format(latestTradeDate);
-  }, [trades]);
+  }, [latestTradeDate]);
 
   const dateRangeLabel = useMemo(() => {
     if (dateRange?.from && dateRange?.to) {
-      return `${format(new Date(dateRange.from), 'dd MMM yyyy')} - ${format(
-        new Date(dateRange.to),
-        'dd MMM yyyy'
-      )}`;
+      return `${formatDateLabel(dateRange.from)} - ${formatDateLabel(dateRange.to)}`;
     }
 
     return 'All time';
@@ -180,12 +176,13 @@ function Header({
 
             <div className="dashboard-header__top-actions">
               {isMobile && (currentUser ? (
-                <div
+                <button
                   className="header-user header-user--hero"
-                  style={{ cursor: 'pointer' }}
+                  type="button"
+                  aria-label="Open profile"
                   onClick={() => setProfileOpen(true)}
                 >
-                  <div className="user-avatar">
+                  <div className="user-avatar" aria-hidden="true">
                     {currentUser.firstName?.[0]}
                     {currentUser.lastName?.[0]}
                   </div>
@@ -195,26 +192,27 @@ function Header({
                     </span>
                     <span className="user-role">Active account</span>
                   </div>
-                </div>
+                </button>
               ) : (
-                <div
+                <button
                   className="header-user header-user--hero"
+                  type="button"
+                  aria-label="Login"
                   onClick={() => setShowLoginModal(true)}
-                  style={{ cursor: 'pointer' }}
                 >
-                  <div className="user-avatar">Ur</div>
+                  <div className="user-avatar" aria-hidden="true">Ur</div>
                   <div className="header-user__text">
                     <span className="user-name">Login</span>
                     <span className="user-role">Open your profile</span>
                   </div>
-                </div>
+                </button>
               ))}
               {isMobile && (
                 <button
                   className="header-user header-user--hero header-action-btn--import"
                   type="button"
+                  aria-label="Import trades"
                   onClick={() => navigate('/add-trade')}
-                  style={{ border: 'none', cursor: 'pointer' }}
                 >
                   <Plus size={20} color="#ffffff" />
                 </button>
@@ -234,30 +232,33 @@ function Header({
               <button
                 className={`toolbar-chip ${datePickerOpen ? 'toolbar-chip--active' : ''}`}
                 type="button"
+                aria-label={`Date range: ${dateRangeLabel}`}
                 onClick={() => setDatePickerOpen((prev) => !prev)}
                 onMouseDown={() => {
                   setFilterOpen(false);
                   setCurrencyOpen(false);
                 }}
               >
-                <CalendarRange size={15} />
+                <CalendarRange size={15} aria-hidden="true" />
                 <span className="toolbar-chip__text">
                   {isMobile ? 'All Time' : dateRangeLabel}
                 </span>
-                <ChevronDown size={15} />
+                <ChevronDown size={15} aria-hidden="true" />
               </button>
 
               {datePickerOpen && (
                 <div className="toolbar-date-range__panel">
-                  <DateRangePicker
-                    value={dateRange}
-                    onChange={(range) => {
-                      setDateRange?.({
-                        from: range?.from,
-                        to: range?.to,
-                      });
-                    }}
-                  />
+                  <Suspense fallback={null}>
+                    <DateRangePicker
+                      value={dateRange}
+                      onChange={(range) => {
+                        setDateRange?.({
+                          from: range?.from,
+                          to: range?.to,
+                        });
+                      }}
+                    />
+                  </Suspense>
                 </div>
               )}
             </div>
@@ -269,33 +270,36 @@ function Header({
               ref={filterRef}
             >
               <button
-                className="toolbar-chip"
+                className={`toolbar-chip ${filterOpen ? 'toolbar-chip--active' : ''}`}
                 type="button"
+                aria-label={`Trade filter: ${currentLabel}`}
                 onClick={() => {
                   setFilterOpen((prev) => !prev);
                   setDatePickerOpen(false);
                   setCurrencyOpen(false);
                 }}
               >
+                <RefreshCw size={15} aria-hidden="true" />
                 <span className="toolbar-chip__text">
                   {isMobile ? compactTradeLabel : currentLabel}
                 </span>
-                <ChevronDown size={15} />
+                <ChevronDown size={15} aria-hidden="true" />
               </button>
 
               {filterOpen && (
-                <div className="trade-filter-menu">
+                <div className="trade-filter-menu" role="menu">
                   {modes.map((mode) => (
-                    <div
+                    <button
                       key={mode.value}
                       className={`filter-menu-item ${tradeMode === mode.value ? 'active' : ''}`}
                       onClick={() => {
                         setTradeMode(mode.value);
                         setFilterOpen(false);
                       }}
+                      role="menuitem"
                     >
                       {mode.label}
-                    </div>
+                    </button>
                   ))}
                 </div>
               )}
@@ -310,6 +314,7 @@ function Header({
               <button
                 className={`toolbar-chip currency-chip ${currencyOpen ? 'toolbar-chip--active' : ''}`}
                 type="button"
+                aria-label={`Dashboard currency: ${selectedCurrency.label}`}
                 onClick={() => {
                   setCurrencyOpen((prev) => !prev);
                   setDatePickerOpen(false);
@@ -317,15 +322,15 @@ function Header({
                 }}
                 title={`Dashboard currency: ${selectedCurrency.label}`}
               >
-                <CircleDollarSign size={15} />
+                <CircleDollarSign size={15} aria-hidden="true" />
                 <span className="toolbar-chip__text">
                   {isMobile ? selectedCurrency.code : `${selectedCurrency.symbol} ${selectedCurrency.code}`}
                 </span>
-                <ChevronDown size={15} />
+                <ChevronDown size={15} aria-hidden="true" />
               </button>
 
               {currencyOpen && (
-                <div className="currency-filter-menu">
+                <div className="currency-filter-menu" role="menu">
                   <div className="currency-filter-menu__eyebrow">
                     Default from MT5: {defaultCurrency.code}
                   </div>
@@ -338,13 +343,14 @@ function Header({
                         onCurrencyChange?.(currency.code);
                         setCurrencyOpen(false);
                       }}
+                      role="menuitem"
                     >
-                      <img src={currency.flag} alt="" className="currency-menu-item__flag" />
+                      <img src={currency.flag} alt="" className="currency-menu-item__flag" aria-hidden="true" />
                       <span className="currency-menu-item__text">
                         <strong>{currency.code}</strong>
                         <small>{currency.shortLabel}</small>
                       </span>
-                      <span className="currency-menu-item__symbol">{currency.symbol}</span>
+                      <span className="currency-menu-item__symbol" aria-hidden="true">{currency.symbol}</span>
                     </button>
                   ))}
                 </div>
@@ -353,8 +359,8 @@ function Header({
 
             {!isMobile && (
               <div className="dashboard-toolbar__search dashboard-toolbar__search--inline">
-                <Search size={16} />
-                <input type="text" placeholder="Search" />
+                <Search size={16} aria-hidden="true" />
+                <input type="text" placeholder="Search" aria-label="Search trades" />
               </div>
             )}
 
@@ -364,18 +370,19 @@ function Header({
                 type="button"
                 onClick={() => navigate('/add-trade')}
               >
-                <Plus size={16} />
+                <Plus size={16} aria-hidden="true" />
                 <span className="toolbar-primary__text">Import trades</span>
               </button>
             )}
 
             {!isMobile && currentUser ? (
-              <div
+              <button
                 className="header-user"
-                style={{ cursor: 'pointer' }}
+                type="button"
+                aria-label="Open profile"
                 onClick={() => setProfileOpen(true)}
               >
-                <div className="user-avatar">
+                <div className="user-avatar" aria-hidden="true">
                   {currentUser.firstName?.[0]}
                   {currentUser.lastName?.[0]}
                 </div>
@@ -385,19 +392,20 @@ function Header({
                   </span>
                   <span className="user-role">Active account</span>
                 </div>
-              </div>
+              </button>
             ) : !isMobile ? (
-              <div
+              <button
                 className="header-user"
+                type="button"
+                aria-label="Login"
                 onClick={() => setShowLoginModal(true)}
-                style={{ cursor: 'pointer' }}
               >
-                <div className="user-avatar">Ur</div>
+                <div className="user-avatar" aria-hidden="true">Ur</div>
                 <div className="header-user__text">
                   <span className="user-name">Login</span>
                   <span className="user-role">Open your profile</span>
                 </div>
-              </div>
+              </button>
             ) : null}
           </div>
         </div>
@@ -405,13 +413,13 @@ function Header({
         <div className="dashboard-header__daily-row">
           <div className="dashboard-header__meta">
             <span className="dashboard-header__meta-pill">
-              <RefreshCw size={14} />
+              <RefreshCw size={14} aria-hidden="true" />
               {isMobile ? `Last import ${compactLatestTradeLabel}` : `Last import was made: ${latestTradeLabel}`}
             </span>
           </div>
 
           <button className="start-day-btn" type="button" onClick={() => navigate('/day-review')}>
-            <Rocket size={16} />
+            <Rocket size={16} aria-hidden="true" />
             <span>Start my day</span>
           </button>
         </div>

@@ -1,51 +1,64 @@
-import React, { lazy, Suspense, useEffect, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import './dashboard.css';
 
 import Header from '@/components/Header/Header';
 import StatsCards from '@/components/StatsCards/StatsCards';
 import TradesList from '@/components/myTrades/TradesList';
+import ProgressTracker from '@/components/MainContent/ProgressTracker';
+import { markPerf, measurePerf } from '@/utils/perfMarks';
 
 const ActivityChart = lazy(() => import('@/components/MainContent/ActivityChart'));
 const Radar = lazy(() => import('@/components/MainContent/Radar'));
 const PerformanceChart = lazy(() => import('@/components/MainContent/PerformanceChart'));
-const ProgressTracker = lazy(() => import('@/components/MainContent/ProgressTracker'));
 const PnLCalendar = lazy(() => import('@/components/MainContent/PnLCalendar'));
 
 
-function DeferredRender({ delay = 0, children, fallback = null }) {
-  const [isReady, setIsReady] = useState(false);
+function LazyDashboardSection({ children, fallback, perfName, delay = 100 }) {
+  const sectionRef = useRef(null);
+  const [shouldRender, setShouldRender] = useState(false);
 
   useEffect(() => {
-    const timeoutId = window.setTimeout(() => setIsReady(true), delay);
+    if (shouldRender) return undefined;
 
-    return () => {
-      window.clearTimeout(timeoutId);
-    };
-  }, [delay]);
+    const section = sectionRef.current;
+    if (!section || typeof IntersectionObserver === 'undefined') {
+      const frameId = window.requestAnimationFrame(() => setShouldRender(true));
+      return () => window.cancelAnimationFrame(frameId);
+    }
 
-  return isReady ? children : fallback;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          // Add a small delay to ensure shell/main content takes priority
+          const timer = setTimeout(() => {
+            setShouldRender(true);
+          }, delay);
+          observer.disconnect();
+          return () => clearTimeout(timer);
+        }
+      },
+      { 
+        rootMargin: '0px 0px 50px 0px', // Strict intersection with small bottom buffer
+        threshold: 0.01 
+      }
+    );
+
+    observer.observe(section);
+
+    return () => observer.disconnect();
+  }, [shouldRender, delay]);
+
+  useEffect(() => {
+    if (!shouldRender || !perfName) return;
+
+    markPerf(perfName);
+    if (perfName === 'charts-ready') {
+      measurePerf('charts-from-start', 'app-start', 'charts-ready');
+    }
+  }, [perfName, shouldRender]);
+
+  return <div className="dashboard-lazy-section" ref={sectionRef}>{shouldRender ? children : fallback}</div>;
 }
-
-const SkeletonStatsCards = () => (
-  <div className="stats-grid">
-    {[...Array(5)].map((_, i) => (
-      <div key={i} className="stat-card skeleton-box skeleton-stat-card">
-        <div
-          className="skeleton-text"
-          style={{ width: '100px', height: '14px', marginBottom: '12px' }}
-        />
-        <div
-          className="skeleton-text"
-          style={{ width: '80px', height: '28px', marginBottom: '8px' }}
-        />
-        <div
-          className="skeleton-text"
-          style={{ width: '120px', height: '12px' }}
-        />
-      </div>
-    ))}
-  </div>
-);
 
 const SkeletonChartCard = () => (
   <div className="chart-card skeleton-box skeleton-chart-card">
@@ -103,41 +116,63 @@ function Dashboard({
   onCurrencyChange,
   isLoading = false,
 }) {
+  useEffect(() => {
+    markPerf('dashboard-shell-visible');
+    measurePerf('dashboard-shell-from-start', 'app-start', 'dashboard-shell-visible');
+  }, []);
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    markPerf('dashboard-visible');
+    measurePerf('dashboard-visible-from-start', 'app-start', 'dashboard-visible');
+  }, [isLoading]);
+
   const MainGrid = (
     <>
+      {/* 1st Row Left: Non-chart Progress Tracker */}
       <div className="dashboard-grid-card dashboard-grid-card--zella left-charts">
         {isLoading ? (
           <SkeletonChartCard />
         ) : (
-          <DeferredRender delay={0} fallback={<SkeletonChartCard />}>
-            <Suspense fallback={<SkeletonChartCard />}>
-            <ProgressTracker trades={trades} />
-            </Suspense>
-          </DeferredRender>
+          <ProgressTracker trades={trades} />
         )}
       </div>
 
+      {/* 1st & 2nd Row Right: PnL Calendar (Large, non-chart) */}
+      <div className="dashboard-grid-card dashboard-grid-card--calendar chart-cardx calendar-panel">
+        {isLoading ? (
+          <SkeletonPnLCalendar />
+        ) : (
+          <LazyDashboardSection fallback={<SkeletonPnLCalendar />} delay={0}>
+            <Suspense fallback={<SkeletonPnLCalendar />}>
+              <PnLCalendar trades={trades} currencyCode={currencyCode} />
+            </Suspense>
+          </LazyDashboardSection>
+        )}
+      </div>
+
+      {/* 2nd Row Left: Trades List (Non-chart) */}
+      <section className="dashboard-grid-card dashboard-grid-card--trades trades-section">
+        {isLoading ? (
+          <SkeletonTradesList />
+        ) : (
+          <LazyDashboardSection fallback={<SkeletonTradesList />} delay={0}>
+            <TradesList trades={trades} currentTradeMode={tradeMode} currencyCode={currencyCode} />
+          </LazyDashboardSection>
+        )}
+      </section>
+
+      {/* 3rd Row: Charts (Below the fold) */}
       <div className="dashboard-grid-card dashboard-grid-card--performance">
         {isLoading ? (
           <SkeletonChartCard />
         ) : (
-          <DeferredRender delay={40} fallback={<SkeletonChartCard />}>
+          <LazyDashboardSection fallback={<SkeletonChartCard />} perfName="charts-ready" delay={800}>
             <Suspense fallback={<SkeletonChartCard />}>
               <PerformanceChart trades={trades} currencyCode={currencyCode} />
             </Suspense>
-          </DeferredRender>
-        )}
-      </div>
-
-      <div className="dashboard-grid-card dashboard-grid-card--progress">
-        {isLoading ? (
-          <SkeletonChartCard />
-        ) : (
-          <DeferredRender delay={80} fallback={<SkeletonChartCard />}>
-            <Suspense fallback={<SkeletonChartCard />}>
-                 <Radar trades={trades} />
-            </Suspense>
-          </DeferredRender>
+          </LazyDashboardSection>
         )}
       </div>
 
@@ -145,149 +180,47 @@ function Dashboard({
         {isLoading ? (
           <SkeletonChartCard />
         ) : (
-          <DeferredRender delay={120} fallback={<SkeletonChartCard />}>
+          <LazyDashboardSection fallback={<SkeletonChartCard />} delay={1000}>
             <Suspense fallback={<SkeletonChartCard />}>
               <ActivityChart trades={trades} currencyCode={currencyCode} />
             </Suspense>
-          </DeferredRender>
+          </LazyDashboardSection>
         )}
       </div>
 
-      <div className="dashboard-grid-card dashboard-grid-card--calendar chart-cardx calendar-panel">
+      <div className="dashboard-grid-card dashboard-grid-card--progress">
         {isLoading ? (
-          <SkeletonPnLCalendar />
+          <SkeletonChartCard />
         ) : (
-          <DeferredRender delay={160} fallback={<SkeletonPnLCalendar />}>
-            <Suspense fallback={<SkeletonPnLCalendar />}>
-              <PnLCalendar trades={trades} currencyCode={currencyCode} />
+          <LazyDashboardSection fallback={<SkeletonChartCard />} delay={1200}>
+            <Suspense fallback={<SkeletonChartCard />}>
+              <Radar trades={trades} />
             </Suspense>
-          </DeferredRender>
+          </LazyDashboardSection>
         )}
       </div>
-
-      <section className="dashboard-grid-card dashboard-grid-card--trades trades-section">
-        {isLoading ? (
-          <SkeletonTradesList />
-        ) : (
-          <TradesList trades={trades} currentTradeMode={tradeMode} currencyCode={currencyCode} />
-        )}
-      </section>
     </>
   );
 
   return (
     <main className="main-content">
-      {isLoading ? (
-        <div className="header-skeleton">
-          <div
-            className="skeleton-text"
-            style={{ width: '150px', height: '32px' }}
-          />
-          <div
-            className="skeleton-button"
-            style={{ width: '100px', height: '38px' }}
-          />
-        </div>
-      ) : (
-        <Header
-          tradeMode={tradeMode}
-          setTradeMode={setTradeMode}
-          trades={trades}
-          dateRange={dateRange}
-          setDateRange={setDateRange}
-          currencyCode={currencyCode}
-          defaultCurrencyCode={defaultCurrencyCode}
-          onCurrencyChange={onCurrencyChange}
-        />
-      )}
+      <Header
+        tradeMode={tradeMode}
+        setTradeMode={setTradeMode}
+        trades={trades}
+        dateRange={dateRange}
+        setDateRange={setDateRange}
+        currencyCode={currencyCode}
+        defaultCurrencyCode={defaultCurrencyCode}
+        onCurrencyChange={onCurrencyChange}
+      />
 
-      {isLoading ? <SkeletonStatsCards /> : <StatsCards trades={trades} currencyCode={currencyCode} />}
+      <StatsCards trades={trades} currencyCode={currencyCode} isLoading={isLoading} />
 
       <section className="dashboard-layout dashboard-main-grid">
         {MainGrid}
       </section>
 
-      <style>{`
-        @keyframes skeleton-pulse {
-          0% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.5;
-          }
-          100% {
-            opacity: 1;
-          }
-        }
-
-        .skeleton-box {
-          background: var(--bg-card);
-          border-radius: 12px;
-          padding: 10px;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-          height: 100%;
-        }
-
-        .skeleton-text {
-          background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
-          background-size: 200% 100%;
-          animation: skeleton-pulse 1.5s ease-in-out infinite;
-          border-radius: 4px;
-        }
-
-        .skeleton-button {
-          background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
-          background-size: 200% 100%;
-          animation: skeleton-pulse 1.5s ease-in-out infinite;
-          border-radius: 6px;
-        }
-
-        .skeleton-chart {
-          background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
-          background-size: 200% 100%;
-          animation: skeleton-pulse 1.5s ease-in-out infinite;
-        }
-
-        .skeleton-stat-card,
-        .skeleton-chart-card,
-        .skeleton-trades,
-        .skeleton-calendar {
-          min-width: 0;
-          width: 100%;
-        }
-
-        .calendar-grid-skeleton {
-          display: grid;
-          grid-template-columns: repeat(7, 1fr);
-          gap: 8px;
-        }
-
-        .skeleton-calendar-day {
-          aspect-ratio: 1;
-          background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
-          background-size: 200% 100%;
-          animation: skeleton-pulse 1.5s ease-in-out infinite;
-          border-radius: 8px;
-        }
-
-        .header-skeleton {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 20px 24px;
-          background: var(--bg-card);
-          border-bottom: 1px solid var(--border-light);
-          margin-bottom: 10px;
-          border-radius: 8px;
-        }
-
-        .stats-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: 14px;
-          padding: 4px 0;
-        }
-      `}</style>
     </main>
   );
 }

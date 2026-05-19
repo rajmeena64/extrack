@@ -1,10 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import '@fontsource/roboto/400.css';
-import '@fontsource/roboto/500.css';
-import '@fontsource/roboto/700.css';
-import { endOfDay, startOfDay } from 'date-fns';
 import './styles/app-shell.css';
 import './styles/mobile.css';
 
@@ -16,6 +12,8 @@ import { useAuth } from './context/AuthContext';
 import api from './utils/serve';
 import { convertCurrency, normalizeCurrencyCode } from './utils/Currency';
 import { getTradeDisplayDate } from './utils/tradeTime';
+import { loadCachedUserSettings, loadUserSettings, saveUserSettings } from './utils/userSettings';
+import { markPerf, measurePerf } from './utils/perfMarks';
 
 
 /* ---------------- LAZY LOADED PAGES ---------------- */
@@ -23,22 +21,83 @@ import { getTradeDisplayDate } from './utils/tradeTime';
 const Dashboard = lazy(() => import('./components/dashboard/dashboard'));
 const AddTrade = lazy(() => import('./components/AddTrade/AddTrade'));
 const Analytics = lazy(() => import('./components/Analytics/Analytics'));
+const EconomicCalendar = lazy(() => import('./components/EconomicCalendar/EconomicCalendar'));
 const TradeView = lazy(() => import('./components/Daily/TradeView'));
 const ThatTrade = lazy(() => import('./components/Daily/ThatTrade/ThatTrade'));
 const LandingPage = lazy(() => import('./components/Landing/LandingPage'));
 const DayReview = lazy(() => import('./components/DayReview/DayReview'));
 
-// Loading component shown while page is loading
+const startOfLocalDay = (date) => {
+  const nextDate = new Date(date);
+  nextDate.setHours(0, 0, 0, 0);
+  return nextDate;
+};
+
+const endOfLocalDay = (date) => {
+  const nextDate = new Date(date);
+  nextDate.setHours(23, 59, 59, 999);
+  return nextDate;
+};
+
 const PageLoader = () => (
-  <div style={{ 
-    display: 'flex', 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    height: '100vh' 
-  }}>
-    <div>Loading page...</div>
+  <div className="dashboard dashboard-boot-shell" aria-hidden="true">
+    <main className="main-content dashboard-boot-shell__main">
+      <header className="dashboard-boot-shell__header">
+        <h1 className="app-page-title">Dashboard</h1>
+        <div className="dashboard-boot-shell__controls">
+          <span />
+          <span />
+          <span />
+        </div>
+      </header>
+      <section className="dashboard-boot-shell__stats">
+        <article className="dashboard-boot-shell__card dashboard-boot-shell__card--featured">
+          <small>Total P&amp;L</small>
+          <strong>&nbsp;</strong>
+        </article>
+        <article className="dashboard-boot-shell__card" />
+        <article className="dashboard-boot-shell__card" />
+        <article className="dashboard-boot-shell__card" />
+      </section>
+    </main>
   </div>
 );
+
+const RouteSkeleton = () => {
+  useEffect(() => {
+    markPerf('stats-skeleton-visible');
+  }, []);
+
+  return (
+    <main className="main-content dashboard-boot-shell__main" aria-hidden="true">
+      <header className="dashboard-boot-shell__header">
+        <h1 className="app-page-title">Dashboard</h1>
+        <div className="dashboard-boot-shell__controls">
+          <span />
+          <span />
+          <span />
+        </div>
+      </header>
+      <section className="dashboard-boot-shell__stats">
+        <article className="dashboard-boot-shell__card dashboard-boot-shell__card--featured">
+          <small>Total P&amp;L</small>
+          <strong>&nbsp;</strong>
+        </article>
+        <article className="dashboard-boot-shell__card" />
+        <article className="dashboard-boot-shell__card" />
+        <article className="dashboard-boot-shell__card" />
+      </section>
+    </main>
+  );
+};
+
+const LEGACY_LOCAL_STORAGE_KEYS = [
+  'darkMode',
+  'economic_calendar_provider',
+  'tradeMode',
+  'dashboardRowOrder',
+  'trades_visible_fields',
+];
 
 function Profile() {
   const { user: currentUser, isAuthLoading } = useAuth();
@@ -68,8 +127,18 @@ function Profile() {
 
 function App() {
   const { user, isAuthLoading } = useAuth();
-  const [tradeMode, setTradeMode] = useState(() => localStorage.getItem('tradeMode') || 'all');
-  const [dashboardDateRange, setDashboardDateRange] = useState({ from: null, to: null });
+  const cachedSettings = useMemo(() => loadCachedUserSettings(), []);
+  const cachedDashboardSettings = cachedSettings?.dashboard || {};
+  const [tradeMode, setTradeMode] = useState(
+    ['all', 'manual', 'api'].includes(cachedDashboardSettings.tradeMode)
+      ? cachedDashboardSettings.tradeMode
+      : 'all'
+  );
+  const [dashboardDateRange, setDashboardDateRange] = useState(
+    cachedDashboardSettings.dateRange && typeof cachedDashboardSettings.dateRange === 'object'
+      ? cachedDashboardSettings.dateRange
+      : { from: null, to: null }
+  );
   const [dashboardCurrency, setDashboardCurrency] = useState('USD');
 
   const tradeManager = useMemo(() => new TradeManager(), []);
@@ -77,11 +146,80 @@ function App() {
   const ws = useRef(null);
   const updatingTrades = useRef(false);
   const hasHydratedDashboardCurrency = useRef(false);
+  const hasHydratedUserSettings = useRef(false);
+
+  useEffect(() => {
+    markPerf('shell-visible');
+    measurePerf('visible-shell-from-start', 'app-start', 'shell-visible');
+  }, []);
+
+  useEffect(() => {
+    if (!user?.ID || typeof window === 'undefined') return undefined;
+
+    const preloadRoutes = () => {
+      // Priority routes only
+      import('./components/AddTrade/AddTrade');
+      
+      // Secondary routes delayed further
+      window.setTimeout(() => {
+        import('./components/DayReview/DayReview');
+        import('./components/Analytics/Analytics');
+      }, 5000);
+    };
+
+    const idleId = 'requestIdleCallback' in window
+      ? window.requestIdleCallback(preloadRoutes, { timeout: 6000 })
+      : window.setTimeout(preloadRoutes, 4000);
+
+    return () => {
+      if ('cancelIdleCallback' in window) {
+        window.cancelIdleCallback(idleId);
+      } else {
+        window.clearTimeout(idleId);
+      }
+    };
+  }, [user?.ID]);
+
+  useEffect(() => {
+    LEGACY_LOCAL_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
+  }, []);
 
   useEffect(() => {
     hasHydratedDashboardCurrency.current = false;
     setDashboardCurrency('USD');
   }, [user?.ID]);
+
+  useEffect(() => {
+    if (isAuthLoading || !user?.ID) return;
+
+    let isCurrent = true;
+
+    loadUserSettings()
+      .then((settings) => {
+        if (!isCurrent) return;
+
+        const savedTradeMode = settings?.dashboard?.tradeMode;
+        if (['all', 'manual', 'api'].includes(savedTradeMode)) {
+          setTradeMode(savedTradeMode);
+        }
+
+        if (settings?.dashboard?.dateRange && typeof settings.dashboard.dateRange === 'object') {
+          setDashboardDateRange(settings.dashboard.dateRange);
+        }
+      })
+      .catch(() => null)
+      .finally(() => {
+        if (isCurrent) {
+          hasHydratedUserSettings.current = true;
+          markPerf('settings-ready');
+          measurePerf('settings-from-start', 'app-start', 'settings-ready');
+        }
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [isAuthLoading, user?.ID]);
 
   const tradesQuery = useQuery({
     queryKey: ['trades', user?.ID, tradeMode],
@@ -100,11 +238,19 @@ function App() {
     placeholderData: (previousData) => previousData,
   });
 
+  useEffect(() => {
+    if (!tradesQuery.isSuccess) return;
+
+    markPerf('trades-ready');
+    measurePerf('trades-from-start', 'app-start', 'trades-ready');
+  }, [tradesQuery.isSuccess]);
+
   // WebSocket
   useEffect(() => {
     if (isAuthLoading || !user?.ID || !API_URL || !WS_URL) return undefined;
 
     let isDisposed = false;
+    let connectTimer = null;
 
     const connectWebSocket = async () => {
       try {
@@ -158,21 +304,48 @@ function App() {
       }
     };
 
-    connectWebSocket();
+    const scheduleConnection = () => {
+      connectTimer = window.setTimeout(connectWebSocket, 2500);
+    };
 
-    return () => {
-      isDisposed = true;
+    const closeSocket = () => {
+      if (connectTimer) {
+        window.clearTimeout(connectTimer);
+        connectTimer = null;
+      }
+
       if (ws.current) {
         ws.current.close();
         ws.current = null;
       }
     };
+
+    const handlePageHide = () => {
+      isDisposed = true;
+      closeSocket();
+    };
+
+    window.addEventListener('pagehide', handlePageHide);
+    scheduleConnection();
+
+    return () => {
+      isDisposed = true;
+      window.removeEventListener('pagehide', handlePageHide);
+      closeSocket();
+    };
   }, [isAuthLoading, user?.ID, tradeMode, queryClient]);
 
   const handleTradeModeChange = (mode) => {
-    localStorage.setItem('tradeMode', mode);
     setTradeMode(mode);
+    if (user?.ID) {
+      saveUserSettings({ dashboard: { tradeMode: mode } }).catch(() => null);
+    }
   };
+
+  useEffect(() => {
+    if (!user?.ID || !hasHydratedUserSettings.current) return;
+    saveUserSettings({ dashboard: { dateRange: dashboardDateRange } }).catch(() => null);
+  }, [dashboardDateRange, user?.ID]);
 
   const trades = useMemo(() => (
     user?.ID ? (tradesQuery.data || []) : []
@@ -226,8 +399,8 @@ function App() {
 
   const dashboardTrades = useMemo(() => {
     if (!Array.isArray(trades)) return [];
-    const from = dashboardDateRange?.from ? startOfDay(new Date(dashboardDateRange.from)) : null;
-    const to = dashboardDateRange?.to ? endOfDay(new Date(dashboardDateRange.to)) : null;
+    const from = dashboardDateRange?.from ? startOfLocalDay(new Date(dashboardDateRange.from)) : null;
+    const to = dashboardDateRange?.to ? endOfLocalDay(new Date(dashboardDateRange.to)) : null;
 
     return trades.filter((trade) => {
       const tradeDate = getTradeDisplayDate(trade);
@@ -249,21 +422,20 @@ function App() {
     }))
   ), [dashboardCurrency, dashboardTrades, defaultDashboardCurrency]);
   const isTradesLoading =
-    (isAuthLoading && !user) ||
-    (Boolean(user?.ID) &&
-      tradesQuery.isPending &&
-      !Array.isArray(tradesQuery.data));
+    Boolean(user?.ID) &&
+    tradesQuery.isPending &&
+    !Array.isArray(tradesQuery.data);
 
   return (
     <BrowserRouter>
     <ThemeProvider>
-      {isAuthLoading ? (
+      {!user && isAuthLoading ? (
         <PageLoader />
       ) : user ? (
         <div className="dashboard">
           <Sidebar />
 
-          <Suspense fallback={<PageLoader />}>
+          <Suspense fallback={<RouteSkeleton />}>
             <Routes>
               <Route path="/" element={<Navigate to="/dashboard" />} />
 
@@ -289,6 +461,7 @@ function App() {
                 path="/analytics"
                 element={<Analytics trades={convertedDashboardTrades} currencyCode={dashboardCurrency} />}
               />
+              <Route path="/economic-calendar" element={<EconomicCalendar />} />
               <Route path="/profile" element={<Profile />} />
               <Route
                 path="/day-review"

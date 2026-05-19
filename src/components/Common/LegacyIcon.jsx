@@ -2,6 +2,7 @@ import React from 'react';
 import {
   ArrowLeft,
   Camera,
+  CalendarDays,
   ChartColumn,
   ChartLine,
   ChevronDown,
@@ -41,6 +42,7 @@ import './LegacyIcon.css';
 const ICON_MAP = {
   'fa-arrow-left': ArrowLeft,
   'fa-camera': Camera,
+  'fa-calendar-alt': CalendarDays,
   'fa-chart-line': ChartLine,
   'fa-chart-pie': PieChart,
   'fa-check-circle': CircleCheck,

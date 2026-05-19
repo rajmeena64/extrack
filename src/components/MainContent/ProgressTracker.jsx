@@ -84,7 +84,7 @@ function ProgressTracker({ trades }) {
       <div className="progress-card__header">
         <div className="progress-card__title-wrap">
           <h3 className="dashboard-card-title">Progress Tracker</h3>
-          <Info size={15} />
+          <Info size={15} aria-hidden="true" />
         </div>
         <span className="progress-card__badge">BETA</span>
       </div>

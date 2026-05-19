@@ -1,10 +1,12 @@
-import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-import AppBootstrap from './AppBootstrap';
+import App from './App';
 import { AuthProvider } from './context/AuthContext';
 import { AppDialogProvider } from './context/AppDialogContext';
+import { markPerf } from './utils/perfMarks';
+
+markPerf('app-start');
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -20,13 +22,11 @@ const queryClient = new QueryClient({
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
-  <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <AppDialogProvider>
-        <AuthProvider>
-          <AppBootstrap />
-        </AuthProvider>
-      </AppDialogProvider>
-    </QueryClientProvider>
-  </React.StrictMode>
+  <QueryClientProvider client={queryClient}>
+    <AppDialogProvider>
+      <AuthProvider>
+        <App />
+      </AuthProvider>
+    </AppDialogProvider>
+  </QueryClientProvider>
 );

@@ -1,14 +1,13 @@
 import React, { useState } from "react";
 import "./Analytics.css";
 
-import NEWS from "./NEWS";
 import Heatmap from "./heatmap";
 import AIAnalysis from "./AIAnalysis";
 
-import { Calendar, Ratio, ChartBar } from "../Common/icons";
+import { Ratio, ChartBar } from "../Common/icons";
 
 function Analytics({ trades = [], currencyCode = "USD" }) {
-  const [activeTab, setActiveTab] = useState("calendar");
+  const [activeTab, setActiveTab] = useState("heatmap");
   // const [darkMode, setDarkMode] = useState(false);
   const IconSize= 15;
 
@@ -41,16 +40,6 @@ function Analytics({ trades = [], currencyCode = "USD" }) {
         <div className="analytics-tabs app-page-header__right">
           <button
             className={`analytics-tab ${
-              activeTab === "calendar" ? "active" : ""
-            }`}
-            onClick={() => setActiveTab("calendar")}
-          >
-            <Calendar size={IconSize} />
-            <span>Calendar</span>
-          </button>
-
-          <button
-            className={`analytics-tab ${
               activeTab === "heatmap" ? "active" : ""
             }`}
             onClick={() => setActiveTab("heatmap")}
@@ -73,7 +62,6 @@ function Analytics({ trades = [], currencyCode = "USD" }) {
 
       {/* ===== CONTENT ===== */}
       <div className="analytics-content">
-        {activeTab === "calendar" && <NEWS />}
         {activeTab === "heatmap" && <Heatmap />}
         {activeTab === "ai" && <AIAnalysis trades={trades} currencyCode={currencyCode} />}
       </div>

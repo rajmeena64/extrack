@@ -5,6 +5,7 @@ import "./TradeView.css";
 import SymbolWithIcon from "../Common/SymbolWithIcon";
 import { getTradeDisplayDate, getTradeDisplayTime } from "../../utils/tradeTime";
 import api from "../../utils/serve";
+import { saveUserSettings } from "../../utils/userSettings";
 import DateRangePicker from "../Common/DateRangePicker";
 import { sanitizeSignedDecimalInput } from "../../utils/fieldValidation";
 
@@ -143,8 +144,10 @@ function TradeView({ trades = [] }) {
         const data = res.data;
 
         if (data.success && data.settings) {
+          const tradeViewSettings = data.settings.tradeView || data.settings;
+
           setFilters(
-            data.settings.filters || {
+            tradeViewSettings.filters || {
               symbol: "",
               tradeType: "",
               winTrades: false,
@@ -157,7 +160,7 @@ function TradeView({ trades = [] }) {
           );
 
           setVisibleColumns(
-            data.settings.columns || {
+            tradeViewSettings.columns || {
               date: true,
               symbol: true,
               type: true,
@@ -170,8 +173,27 @@ function TradeView({ trades = [] }) {
             }
           );
 
-          setCurrentMonth(new Date().getMonth());
-          setCurrentYear(new Date().getFullYear());
+          setCurrentMonth(
+            Number.isInteger(tradeViewSettings.currentMonth)
+              ? tradeViewSettings.currentMonth
+              : new Date().getMonth()
+          );
+          setCurrentYear(
+            Number.isInteger(tradeViewSettings.currentYear)
+              ? tradeViewSettings.currentYear
+              : new Date().getFullYear()
+          );
+
+          if (tradeViewSettings.dateRange) {
+            setDateRange({
+              from: tradeViewSettings.dateRange.from || "",
+              to: tradeViewSettings.dateRange.to || "",
+            });
+          }
+
+          if (tradeViewSettings.selectedAccount) {
+            setSelectedAccount(tradeViewSettings.selectedAccount);
+          }
         }
       } catch {
         // Defaults remain active if saved settings cannot be loaded.
@@ -190,21 +212,42 @@ function TradeView({ trades = [] }) {
   ======================= */
   const saveSettings = async () => {
     const settingsToSave = {
-      filters,
-      columns: visibleColumns,
+      tradeView: {
+        filters,
+        columns: visibleColumns,
+        currentMonth,
+        currentYear,
+        dateRange,
+        selectedAccount,
+      },
     };
 
     try {
-      const res = await api.post("/settings", settingsToSave);
-      const data = res.data;
-
-      if (data.success) {
-        alert("Settings saved successfully!");
-      }
+      await saveUserSettings(settingsToSave);
+      alert("Settings saved successfully!");
     } catch {
       // Settings save failures are non-blocking for the current view.
     }
   };
+
+  useEffect(() => {
+    if (!settingsLoaded) return undefined;
+
+    const timeoutId = setTimeout(() => {
+      saveUserSettings({
+        tradeView: {
+          filters,
+          columns: visibleColumns,
+          currentMonth,
+          currentYear,
+          dateRange,
+          selectedAccount,
+        },
+      }).catch(() => null);
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [currentMonth, currentYear, dateRange, filters, selectedAccount, settingsLoaded, visibleColumns]);
 
   const monthNames = [
     "January", "February", "March", "April", "May", "June",

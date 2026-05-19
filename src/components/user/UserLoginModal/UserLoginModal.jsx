@@ -200,7 +200,6 @@ function UserLoginModal({ isOpen, onClose }) {
       })
         .catch(() => null)
         .finally(() => {
-          localStorage.removeItem('authUser');
           setUser(null);
           setActiveTab('login');
           window.alert('Logged out successfully!');
@@ -274,7 +273,6 @@ function UserLoginModal({ isOpen, onClose }) {
 
       if (data.success) {
         alert('Account deleted successfully!');
-        localStorage.removeItem('authUser');
         setUser(null);
         setActiveTab('login');
         setIsDeleteModalOpen(false);

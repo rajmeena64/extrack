@@ -48,20 +48,32 @@ export default defineConfig({
       output: {
         // Change THIS 👇 from object to function
         manualChunks(id) {
-          if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
-              return 'vendor-react'
+          const normalizedId = id.replace(/\\/g, '/')
+
+          if (normalizedId.includes('node_modules')) {
+            // Core vendors needed for the dashboard shell and initial paint
+            if (
+              normalizedId.includes('/node_modules/react/') ||
+              normalizedId.includes('/node_modules/react-dom/') ||
+              normalizedId.includes('/node_modules/react-router-dom/') ||
+              normalizedId.includes('@tanstack/react-query') ||
+              normalizedId.includes('axios')
+            ) {
+              return 'vendor-core'
             }
-            if (id.includes('chart.js') || id.includes('lightweight-charts')) {
+
+            // Heavy dependencies that are lazy-loaded or route-specific
+            if (normalizedId.includes('chart.js') || normalizedId.includes('lightweight-charts')) {
               return 'vendor-charts'
             }
-            if (id.includes('@mui')) {
+            if (normalizedId.includes('@mui') || normalizedId.includes('@emotion')) {
               return 'vendor-ui'
             }
-            if (id.includes('@tanstack/react-query')) {
-              return 'vendor-query'
+            if (normalizedId.includes('react-day-picker') || normalizedId.includes('date-fns')) {
+              return 'vendor-date'
             }
-            return 'vendor'  // all other node_modules
+            
+            return 'vendor'
           }
         }
       }

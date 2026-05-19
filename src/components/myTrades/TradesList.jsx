@@ -1,10 +1,12 @@
-import React, { useMemo, useState, useEffect, useRef } from "react";
+import React, { useCallback, useMemo, useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom"; // <-- added
 import "./Trades.css";
 import SymbolWithIcon from "../Common/SymbolWithIcon";
 import { EllipsisVertical } from "../Common/icons";
 import { formatCurrency } from "../../utils/Currency";
 import { getTradeDisplayDate, getTradeDisplayTime } from "../../utils/tradeTime";
+import { useAuth } from "../../context/AuthContext";
+import { loadCachedUserSettings, loadUserSettings, saveUserSettings } from "../../utils/userSettings";
 
 const FIELDS = [
   { key: "symbol", label: "Symbol" },
@@ -16,19 +18,23 @@ const FIELDS = [
   { key: "strategy", label: "Strategy" },
 ];
 const ICON_SIZE = 25;
-const LOCAL_STORAGE_KEY = "trades_visible_fields";
+const DEFAULT_VISIBLE_FIELDS = ["symbol", "trade_time", "pnl"];
 
 function TradesList({ trades = [], currencyCode = "USD" }) {
   const navigate = useNavigate(); // <-- added
+  const { isAuthenticated } = useAuth();
 
   const [activeTab, setActiveTab] = useState("closed"); // "open" or "closed"
   const [showSettings, setShowSettings] = useState(false);
 
-  // Load visible fields from localStorage or default
   const [visibleFields, setVisibleFields] = useState(() => {
-    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-    const parsed = saved ? JSON.parse(saved) : ["symbol", "trade_time", "pnl"];
-    return parsed.map((field) => (field === "timestamp" ? "trade_time" : field));
+    const savedFields = loadCachedUserSettings()?.dashboardTrades?.visibleFields;
+
+    if (!Array.isArray(savedFields) || savedFields.length === 0) {
+      return DEFAULT_VISIBLE_FIELDS;
+    }
+
+    return savedFields.map((field) => (field === "timestamp" ? "trade_time" : field));
   });
 
   const dropdownRef = useRef();
@@ -44,6 +50,26 @@ function TradesList({ trades = [], currencyCode = "USD" }) {
     return () =>
       document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    let isCurrent = true;
+
+    loadUserSettings()
+      .then((settings) => {
+        const savedFields = settings?.dashboardTrades?.visibleFields;
+        if (isCurrent && Array.isArray(savedFields) && savedFields.length > 0) {
+          const normalizedFields = savedFields.map((field) => (field === "timestamp" ? "trade_time" : field));
+          setVisibleFields(normalizedFields);
+        }
+      })
+      .catch(() => null);
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [isAuthenticated]);
 
   // =======================
   // Filter trades by tab
@@ -66,7 +92,9 @@ function TradesList({ trades = [], currencyCode = "USD" }) {
       } else if (prev.length < 5) {
         updated = [...prev, key];
       } else return prev;
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+      if (isAuthenticated) {
+        saveUserSettings({ dashboardTrades: { visibleFields: updated } }).catch(() => null);
+      }
       return updated;
     });
   };
@@ -83,7 +111,7 @@ function TradesList({ trades = [], currencyCode = "USD" }) {
   // =======================
   // Render cell value
   // =======================
-  const renderValue = (t, key) => {
+  const renderValue = useCallback((t, key) => {
     switch (key) {
       case "symbol":
         return <SymbolWithIcon symbol={t.symbol} size="md" />;
@@ -111,7 +139,7 @@ function TradesList({ trades = [], currencyCode = "USD" }) {
       default:
         return t[key];
     }
-  };
+  }, [currencyCode]);
 
   return (
     <div className="my-trades">
