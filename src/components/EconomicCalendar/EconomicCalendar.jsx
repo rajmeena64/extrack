@@ -4,7 +4,7 @@ import LegacyIcon from "../Common/LegacyIcon";
 import EconomicCalendarWidget from "./EconomicCalendarWidget";
 import "../Analytics/Analytics.css";
 import { useAuth } from "../../context/AuthContext";
-import { loadUserSettings, saveUserSettings } from "../../utils/userSettings";
+import { loadCachedUserSettings, loadUserSettings, saveUserSettings } from "../../utils/userSettings";
 
 const CALENDAR_OPTIONS = [
   { value: "tradingview", label: "TradingView" },
@@ -14,11 +14,21 @@ const CALENDAR_OPTIONS = [
 // Global tracker to persist calendar source loading
 const LOADED_CALENDARS = new Set();
 
+const isValidProvider = (provider) => (
+  CALENDAR_OPTIONS.some((option) => option.value === provider)
+);
+
+const getCachedProvider = () => {
+  const provider = loadCachedUserSettings()?.economicCalendar?.provider;
+  return isValidProvider(provider) ? provider : "tradingview";
+};
+
 function EconomicCalendar() {
   const { isAuthenticated } = useAuth();
-  const [provider, setProvider] = useState("tradingview");
+  const [provider, setProvider] = useState(getCachedProvider);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsRef = useRef(null);
+  const providerChangeVersion = useRef(0);
 
   useEffect(() => {
     if (provider) {
@@ -45,9 +55,8 @@ function EconomicCalendar() {
     loadUserSettings()
       .then((settings) => {
         const savedProvider = settings?.economicCalendar?.provider;
-        const isValidProvider = CALENDAR_OPTIONS.some((option) => option.value === savedProvider);
 
-        if (isCurrent && isValidProvider) {
+        if (isCurrent && providerChangeVersion.current === 0 && isValidProvider(savedProvider)) {
           setProvider(savedProvider);
         }
       })
@@ -59,18 +68,14 @@ function EconomicCalendar() {
   }, [isAuthenticated]);
 
   const handleProviderChange = (nextProvider) => {
-    if (isAuthenticated) {
-      saveUserSettings({ economicCalendar: { provider: nextProvider } })
-        .then(() => {
-          setProvider(nextProvider);
-          setSettingsOpen(false);
-        })
-        .catch(() => null);
-      return;
-    }
-
+    providerChangeVersion.current += 1;
     setProvider(nextProvider);
     setSettingsOpen(false);
+
+    if (isAuthenticated) {
+      saveUserSettings({ economicCalendar: { provider: nextProvider } })
+        .catch(() => null);
+    }
   };
 
   return (

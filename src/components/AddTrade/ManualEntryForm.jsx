@@ -120,6 +120,12 @@ function ManualEntryForm({ trades }) {
       return;
     }
 
+    const today = new Date().toISOString().split('T')[0];
+    if (formData.tradeDate > today) {
+      alert('❌ Future trades are not allowed. Please select today or a past date.');
+      return;
+    }
+
     // Convert IST to UTC
     const istDateTime = `${formData.tradeDate}T${formData.tradeTime}:00+05:30`;
     const dateObj = new Date(istDateTime);
@@ -227,7 +233,13 @@ function ManualEntryForm({ trades }) {
 
         <div className="form-group">
           <label htmlFor="tradeDate" className="required">Date</label>
-          <input type="date" id="tradeDate" value={formData.tradeDate} onChange={handleInputChange}/>
+          <input 
+            type="date" 
+            id="tradeDate" 
+            value={formData.tradeDate} 
+            onChange={handleInputChange}
+            max={new Date().toISOString().split('T')[0]}
+          />
         </div>
 
         <div className="form-group">

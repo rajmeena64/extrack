@@ -36,6 +36,12 @@ const getDashboardLayoutMode = () => {
   return 'desktop';
 };
 
+const getDateScopePart = (value) => {
+  if (!value) return 'all';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? 'all' : date.toISOString().slice(0, 10);
+};
+
 function LazyDashboardSection({ children, sectionKey, fallback, perfName, delay = 100 }) {
   const sectionRef = useRef(null);
   const [shouldRender, setShouldRender] = useState(LOADED_SECTIONS.has(sectionKey));
@@ -197,6 +203,12 @@ function Dashboard({
     markPerf('dashboard-visible');
     measurePerf('dashboard-visible-from-start', 'app-start', 'dashboard-visible');
   }, [isLoading]);
+
+  const statsScopeKey = useMemo(() => {
+    const from = getDateScopePart(dateRange?.from);
+    const to = getDateScopePart(dateRange?.to);
+    return `dashboard:${tradeMode}:${currencyCode}:${from}:${to}`;
+  }, [currencyCode, dateRange?.from, dateRange?.to, tradeMode]);
 
   const gridAreas = useMemo(() => {
     const { rowOrder, columnOrder } = layout;
@@ -387,7 +399,12 @@ function Dashboard({
         onCurrencyChange={onCurrencyChange}
       />
 
-      <StatsCards trades={trades} currencyCode={currencyCode} isLoading={isLoading} />
+      <StatsCards
+        trades={trades}
+        currencyCode={currencyCode}
+        isLoading={isLoading}
+        statsScopeKey={statsScopeKey}
+      />
 
       {MainGrid}
 

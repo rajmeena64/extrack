@@ -206,7 +206,10 @@ function TradesList({ trades = [], currencyCode = "USD" }) {
         {/* ================= ROWS ================= */}
         <div className="trades-list scrollable">
           {filteredTrades.length === 0 ? (
-            <div className="empty-state">No {activeTab} trades</div>
+            <div className="empty-state dashboard-empty-state">
+              <strong>No {activeTab} trades</strong>
+              <span>Trades matching this tab will appear here.</span>
+            </div>
           ) : (
             filteredTrades.map((t) => (
               <div

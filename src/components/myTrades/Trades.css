@@ -316,15 +316,14 @@ color: var(--accent-danger);
   display: flex;
   justify-content: center;
   align-items: center;
+  flex-direction: column;
+  gap: 6px;
   height: 100px;
   font-size: 12px;
   color: var(--text-secondary);
   text-align: center;
-  background: var(--bg-light);
-  border-radius: 5px;
   margin: 6px 0;
   padding: 16px;
-  opacity: 0.7;
 }
 
 /* ===============================
@@ -541,7 +540,6 @@ color: var(--accent-danger);
     gap: 10px;
   }
 }
-
 
 
 

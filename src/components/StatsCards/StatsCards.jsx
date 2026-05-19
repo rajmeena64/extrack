@@ -6,6 +6,7 @@ import { decodeStorageValue, encodeStorageValue } from '../../utils/obfuscatedSt
 
 const STATS_CACHE_KEY = 'm5$ds.4';
 const LEGACY_STATS_CACHE_KEY = 'extrack:dashboard_stats';
+const DEFAULT_STATS_SCOPE = 'dashboard:all';
 
 function formatNumber(value) {
   const num = Number(value);
@@ -13,81 +14,113 @@ function formatNumber(value) {
   return num.toFixed(2);
 }
 
-function StatsCards({ trades, currencyCode = 'USD', isLoading = false }) {
-  const [cachedStats] = useState(() => {
-    try {
-      const saved = localStorage.getItem(STATS_CACHE_KEY);
-      if (saved) {
-        return decodeStorageValue(saved);
-      }
+const emptyStats = {
+  totalPnL: 0,
+  totalTrades: 0,
+  winRate: 0,
+  profitFactor: 0,
+  avgPnL: 0,
+  avgWin: 0,
+  avgLoss: 0,
+  wins: 0,
+  losses: 0,
+};
 
-      const legacySaved = localStorage.getItem(LEGACY_STATS_CACHE_KEY);
-      if (legacySaved) {
-        const stats = JSON.parse(legacySaved);
-        localStorage.setItem(STATS_CACHE_KEY, encodeStorageValue(stats));
-        localStorage.removeItem(LEGACY_STATS_CACHE_KEY);
-        return stats;
-      }
+const calculateStats = (trades = []) => {
+  let totalPnL = 0;
+  let wins = 0;
+  let losses = 0;
+  let grossProfit = 0;
+  let grossLoss = 0;
 
-      return null;
-    } catch {
-      localStorage.removeItem(STATS_CACHE_KEY);
-      localStorage.removeItem(LEGACY_STATS_CACHE_KEY);
-      return null;
+  trades.forEach((trade) => {
+    const pnl = Number(trade?.pnl);
+
+    if (Number.isNaN(pnl)) return;
+    totalPnL += pnl;
+
+    if (pnl > 0) {
+      wins += 1;
+      grossProfit += pnl;
+    } else if (pnl < 0) {
+      losses += 1;
+      grossLoss += Math.abs(pnl);
     }
   });
 
+  const totalTrades = trades.length;
+  const avgPnL = totalTrades > 0 ? totalPnL / totalTrades : 0;
+  const winRate = totalTrades > 0 ? (wins / totalTrades) * 100 : 0;
+  const avgWin = wins > 0 ? grossProfit / wins : 0;
+  const avgLoss = losses > 0 ? grossLoss / losses : 0;
+  const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? grossProfit : 0;
+
+  return {
+    totalPnL,
+    totalTrades,
+    winRate,
+    profitFactor,
+    avgPnL,
+    avgWin,
+    avgLoss,
+    wins,
+    losses,
+  };
+};
+
+const readStatsCache = () => {
+  try {
+    const saved = localStorage.getItem(STATS_CACHE_KEY);
+    if (saved) {
+      const decoded = decodeStorageValue(saved);
+      return decoded?.scopes ? decoded : { scopes: { [DEFAULT_STATS_SCOPE]: decoded } };
+    }
+
+    const legacySaved = localStorage.getItem(LEGACY_STATS_CACHE_KEY);
+    if (legacySaved) {
+      const stats = JSON.parse(legacySaved);
+      const nextCache = { scopes: { [DEFAULT_STATS_SCOPE]: stats } };
+      localStorage.setItem(STATS_CACHE_KEY, encodeStorageValue(nextCache));
+      localStorage.removeItem(LEGACY_STATS_CACHE_KEY);
+      return nextCache;
+    }
+
+    return { scopes: {} };
+  } catch {
+    localStorage.removeItem(STATS_CACHE_KEY);
+    localStorage.removeItem(LEGACY_STATS_CACHE_KEY);
+    return { scopes: {} };
+  }
+};
+
+const writeStatsCache = (scopeKey, stats) => {
+  try {
+    const cache = readStatsCache();
+    const nextCache = {
+      ...cache,
+      scopes: {
+        ...(cache.scopes || {}),
+        [scopeKey]: stats,
+      },
+    };
+    localStorage.setItem(STATS_CACHE_KEY, encodeStorageValue(nextCache));
+    localStorage.removeItem(LEGACY_STATS_CACHE_KEY);
+  } catch {
+    // Cache is a performance hint only.
+  }
+};
+
+function StatsCards({ trades, currencyCode = 'USD', isLoading = false, statsScopeKey = DEFAULT_STATS_SCOPE }) {
+  const [initialCache] = useState(() => readStatsCache());
+
+  const cachedStats = useMemo(() => (
+    readStatsCache().scopes?.[statsScopeKey] || initialCache.scopes?.[statsScopeKey] || null
+  ), [initialCache.scopes, statsScopeKey]);
+
   const stats = useMemo(() => {
-    // If we have trades, calculate fresh stats and cache them
-    if (Array.isArray(trades) && trades.length > 0) {
-      let totalPnL = 0;
-      let wins = 0;
-      let losses = 0;
-      let grossProfit = 0;
-      let grossLoss = 0;
-
-      trades.forEach((trade) => {
-        const pnl = Number(trade?.pnl);
-
-        if (Number.isNaN(pnl)) return;
-        totalPnL += pnl;
-
-        if (pnl > 0) {
-          wins += 1;
-          grossProfit += pnl;
-        } else if (pnl < 0) {
-          losses += 1;
-          grossLoss += Math.abs(pnl);
-        }
-      });
-
-      const totalTrades = trades.length;
-      const avgPnL = totalTrades > 0 ? totalPnL / totalTrades : 0;
-      const winRate = totalTrades > 0 ? (wins / totalTrades) * 100 : 0;
-      const avgWin = wins > 0 ? grossProfit / wins : 0;
-      const avgLoss = losses > 0 ? grossLoss / losses : 0;
-      const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? grossProfit : 0;
-
-      const result = {
-        totalPnL,
-        totalTrades,
-        winRate,
-        profitFactor,
-        avgPnL,
-        avgWin,
-        avgLoss,
-        wins,
-        losses,
-      };
-
-      // Cache the result
-      try {
-        localStorage.setItem(STATS_CACHE_KEY, encodeStorageValue(result));
-        localStorage.removeItem(LEGACY_STATS_CACHE_KEY);
-      } catch {
-        // Silently ignore
-      }
-
+    if (Array.isArray(trades) && (!isLoading || trades.length > 0)) {
+      const result = calculateStats(trades);
+      writeStatsCache(statsScopeKey, result);
       return result;
     }
 
@@ -98,18 +131,10 @@ function StatsCards({ trades, currencyCode = 'USD', isLoading = false }) {
 
     // Otherwise, return zero stats
     return {
-      totalPnL: 0,
-      totalTrades: 0,
-      winRate: 0,
-      profitFactor: 0,
-      avgPnL: 0,
-      avgWin: 0,
-      avgLoss: 0,
-      wins: 0,
-      losses: 0,
+      ...emptyStats,
       isPlaceholder: true
     };
-  }, [trades, cachedStats, isLoading]);
+  }, [trades, cachedStats, isLoading, statsScopeKey]);
 
   const netPnlTone = stats.totalPnL >= 0 ? 'positive' : 'negative';
   const avgTone = stats.avgPnL >= 0 ? 'positive' : 'negative';

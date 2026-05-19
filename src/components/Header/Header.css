@@ -2,9 +2,9 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin: -16px -16px 8px;
-  padding: 14px 16px;
+  gap: 5px;
+  margin: -16px -16px 0;
+  padding: 10px 16px 5px;
   background: var(--bg-card);
   border-bottom: 1px solid var(--border-light);
   border-radius: 0;
@@ -54,7 +54,8 @@
 
 .dashboard-header__title-row .app-page-title {
   color: var(--heading);
-  font-size: 22px;
+  font-size: var(--title-page-size);
+  font-weight: 650;
   text-transform: none;
   letter-spacing: 0;
 }
@@ -88,7 +89,7 @@
 }
 
 .dashboard-header__daily-row {
-  min-height: 28px;
+  min-height: 22px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -491,7 +492,7 @@
     grid-template-columns: minmax(116px, 0.22fr) minmax(0, 1fr);
     grid-template-rows: auto auto;
     align-items: center;
-    gap: 12px 16px;
+    gap: 4px 16px;
     background: transparent;
     border-bottom: none;
     isolation: isolate;
@@ -501,7 +502,7 @@
     content: "";
     position: absolute;
     inset: 0 0 auto;
-    height: 62px;
+    height: 56px;
     background: var(--bg-card);
     border-bottom: 1px solid var(--border-light);
     z-index: -1;
@@ -677,9 +678,9 @@
 @media (max-width: 768px) {
   .dashboard-header {
     position: relative;
-    gap: 12px;
-    margin: 0 0 8px 0;
-    padding: 18px 16px 18px;
+    gap: 8px;
+    margin: 0 0 4px 0;
+    padding: 14px 16px 14px;
     border-radius: 18px;
     background: var(--primary);
     box-shadow: 0 24px 50px -34px rgba(37, 99, 235, 0.72);

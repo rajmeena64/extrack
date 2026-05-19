@@ -46,8 +46,8 @@
   --transition-bounce: all 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
   --title-line-height: 1.2;
-  --title-weight: 700;
-  --title-page-size: clamp(15px, 1.2vw, 17px);
+  --title-weight: 650;
+  --title-page-size: clamp(17px, 1.12vw, 20px);
   --title-section-size: clamp(12px, 0.95vw, 13px);
   --title-panel-size: 11px;
   --title-card-size: 11px;
@@ -295,8 +295,8 @@ body,
 
 .app-page-title {
   font-size: var(--title-page-size);
-  text-transform: uppercase;
-  letter-spacing: var(--title-page-tracking);
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 .app-section-title {
@@ -365,8 +365,8 @@ body,
 
 .app-page-header .app-page-title {
   color: var(--heading);
-  font-size: 22px;
-  font-weight: 700;
+  font-size: var(--title-page-size);
+  font-weight: 650;
   line-height: 1.2;
   letter-spacing: 0;
   text-transform: none;

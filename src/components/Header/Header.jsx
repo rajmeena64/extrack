@@ -59,6 +59,7 @@ function Header({
   const selectedCurrency = getCurrencyMeta(currencyCode);
   const defaultCurrency = getCurrencyMeta(defaultCurrencyCode);
   const hasPopupOpen = filterOpen || datePickerOpen || currencyOpen;
+  const hasActiveDateRange = Boolean(dateRange?.from && dateRange?.to);
 
   const latestTradeDate = useMemo(() => {
     if (!Array.isArray(trades) || trades.length === 0) {
@@ -241,7 +242,7 @@ function Header({
               >
                 <CalendarRange size={15} aria-hidden="true" />
                 <span className="toolbar-chip__text">
-                  {isMobile ? 'All Time' : dateRangeLabel}
+                  {isMobile && hasActiveDateRange ? dateRangeLabel : isMobile ? 'All time' : dateRangeLabel}
                 </span>
                 <ChevronDown size={15} aria-hidden="true" />
               </button>

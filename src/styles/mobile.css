@@ -5,7 +5,7 @@
 
   .dashboard-header {
     gap: 10px;
-    margin-bottom: 10px;
+    margin-bottom: 4px;
   }
 
   .dashboard-header__title-row {
@@ -66,7 +66,7 @@
   .dashboard-header {
     position: relative;
     gap: 8px;
-    margin-bottom: 10px;
+    margin-bottom: 4px;
     padding-top: 0;
   }
 
@@ -76,7 +76,7 @@
 
   .dashboard-header__title-row .app-page-title {
     font-size: clamp(16px, 4.6vw, 20px);
-    letter-spacing: -0.04em;
+    letter-spacing: 0;
     text-transform: none;
     line-height: 1.05;
     width: 100%;

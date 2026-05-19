@@ -22,16 +22,17 @@ import './Sidebar.css';
 import Logo from '../Common/Logo';
 import { API_URL } from '../../utils/constants';
 import { useAuth } from '../../context/AuthContext';
-import { loadUserSettings, saveUserSettings } from '../../utils/userSettings';
+import { loadCachedUserSettings, loadUserSettings, saveUserSettings } from '../../utils/userSettings';
 import { clearClientStorage } from '../../utils/clientStorage';
 
 const DashboardSettings = lazy(() => import('./DashboardSettings'));
 
 function Sidebar() {
+  const cachedPreferences = loadCachedUserSettings()?.preferences || {};
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [layoutOpen, setLayoutOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [hoverLocked, setHoverLocked] = useState(false);
+  const [hoverLocked, setHoverLocked] = useState(Boolean(cachedPreferences.sidebarHoverLocked));
   const { isAuthenticated, setUser } = useAuth();
 
   const settingsRef = useRef(null);
@@ -40,6 +41,7 @@ function Sidebar() {
   // ✅ ADDED - from context
   const { darkMode, setDarkModePreference } = useTheme();
   const hasUserChangedDarkMode = useRef(false);
+  const hasUserChangedHoverLock = useRef(false);
 
 
 
@@ -96,17 +98,24 @@ function Sidebar() {
   React.useEffect(() => {
     if (!isAuthenticated || !setDarkModePreference) {
       hasUserChangedDarkMode.current = false;
+      hasUserChangedHoverLock.current = false;
       return;
     }
 
     let isCurrent = true;
     hasUserChangedDarkMode.current = false;
+    hasUserChangedHoverLock.current = false;
 
     loadUserSettings()
       .then((settings) => {
         const savedDarkMode = settings?.preferences?.darkMode;
         if (isCurrent && !hasUserChangedDarkMode.current && typeof savedDarkMode === 'boolean') {
           setDarkModePreference(savedDarkMode);
+        }
+
+        const savedHoverLocked = settings?.preferences?.sidebarHoverLocked;
+        if (isCurrent && !hasUserChangedHoverLock.current && typeof savedHoverLocked === 'boolean') {
+          setHoverLocked(savedHoverLocked);
         }
       })
       .catch(() => null);
@@ -125,6 +134,21 @@ function Sidebar() {
       saveUserSettings({ preferences: { darkMode: nextDarkMode } })
         .catch(() => null);
     }
+  };
+
+  const handleHoverLockChange = () => {
+    setHoverLocked((previous) => {
+      const nextHoverLocked = !previous;
+      hasUserChangedHoverLock.current = true;
+
+      if (isAuthenticated) {
+        saveUserSettings({ preferences: { sidebarHoverLocked: nextHoverLocked } })
+          .catch(() => null);
+      }
+
+      return nextHoverLocked;
+    });
+    setSettingsOpen(false);
   };
 
   const handleLogout = (e) => {
@@ -178,7 +202,7 @@ function Sidebar() {
           aria-label="Go to Add Trade"
           title="Add Trade"
         >
-          <Plus size={16} aria-hidden="true" /> <span className="nav-label">Add tarde</span>
+          <Plus size={16} aria-hidden="true" /> <span className="nav-label">Add trade</span>
         </Link>
 
         <Link
@@ -214,60 +238,62 @@ function Sidebar() {
         </Link>
 
         {/* SETTINGS */}
-        <div
-          className="nav-item"
-          ref={settingsToggleRef}
-          onClick={() => setSettingsOpen(!settingsOpen)}
-          role="button"
-          tabIndex="0"
-          aria-haspopup="true"
-          aria-expanded={settingsOpen}
-          aria-label="Settings"
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSettingsOpen(!settingsOpen); } }}
-        >
-          <Settings size={16} aria-hidden="true" />
-          <span className="nav-label">Settings</span>
-          <ChevronDown className="dropdown-arrow" size={16} aria-hidden="true" />
-        </div>
+        <div className="sidebar-settings-group">
+          <div
+            className="nav-item"
+            ref={settingsToggleRef}
+            onClick={() => setSettingsOpen(!settingsOpen)}
+            role="button"
+            tabIndex="0"
+            aria-haspopup="true"
+            aria-expanded={settingsOpen}
+            aria-label="Settings"
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSettingsOpen(!settingsOpen); } }}
+          >
+            <Settings size={16} aria-hidden="true" />
+            <span className="nav-label">Settings</span>
+            <ChevronDown className="dropdown-arrow" size={16} aria-hidden="true" />
+          </div>
 
-        {settingsOpen && (
-          <div className="sub-menu" ref={settingsRef} role="menu">
-            <div className="sub-nav-item settings-dark-mode-item">
-              <Moon size={16} aria-hidden="true" />
-              <span>Dark mode</span>
-              <label className="switch">
-                <input type="checkbox" checked={darkMode} onChange={handleDarkModeChange} aria-label="Toggle dark mode" />
-                <span className="slider round"></span>
-              </label>
-            </div>
+          {settingsOpen && (
+            <div className="sub-menu" ref={settingsRef} role="menu">
+              <div className="sub-nav-item settings-dark-mode-item">
+                <Moon size={16} aria-hidden="true" />
+                <span>Dark mode</span>
+                <label className="switch">
+                  <input type="checkbox" checked={darkMode} onChange={handleDarkModeChange} aria-label="Toggle dark mode" />
+                  <span className="slider round"></span>
+                </label>
+              </div>
 
-            <div
-              className="sub-nav-item"
-              onClick={() => {
-                setLayoutOpen(true);
-                setSettingsOpen(false);
-              }}
-              role="menuitem"
-              tabIndex="0"
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setLayoutOpen(true); setSettingsOpen(false); } }}
-            >
-              <Grid2x2 size={16} aria-hidden="true" />
-              <span>Dashboard Layout</span>
-            </div>
-
-            {isAuthenticated && (
               <div
                 className="sub-nav-item"
-                onClick={handleLogout}
+                onClick={() => {
+                  setLayoutOpen(true);
+                  setSettingsOpen(false);
+                }}
                 role="menuitem"
                 tabIndex="0"
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleLogout(e); } }}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setLayoutOpen(true); setSettingsOpen(false); } }}
               >
-                <LogOut size={16} aria-hidden="true" /> Logout
+                <Grid2x2 size={16} aria-hidden="true" />
+                <span>Dashboard Layout</span>
               </div>
-            )}
-          </div>
-        )}
+
+              {isAuthenticated && (
+                <div
+                  className="sub-nav-item"
+                  onClick={handleLogout}
+                  role="menuitem"
+                  tabIndex="0"
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleLogout(e); } }}
+                >
+                  <LogOut size={16} aria-hidden="true" /> Logout
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
         <button
           className="nav-item sidebar-theme-toggle"
@@ -283,10 +309,7 @@ function Sidebar() {
         <button
           className="nav-item sidebar-collapse-toggle"
           type="button"
-          onClick={() => {
-            setHoverLocked((prev) => !prev);
-            setSettingsOpen(false);
-          }}
+          onClick={handleHoverLockChange}
           aria-label={hoverLocked ? 'Enable sidebar hover expand' : 'Keep sidebar icon only'}
           title={hoverLocked ? 'Enable hover expand' : 'Keep icon only'}
         >

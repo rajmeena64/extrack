@@ -59,6 +59,10 @@
   min-height: 0;
 }
 
+.progress-card__body > .dashboard-empty-state {
+  margin-top: 2px;
+}
+
 .progress-card__months {
   position: relative;
   flex: 0 0 18px;

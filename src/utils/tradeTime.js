@@ -1,4 +1,22 @@
 export const dateFromEpoch = (value) => {
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+
+  if (typeof value === 'string') {
+    const trimmedValue = value.trim();
+
+    if (!trimmedValue) return null;
+
+    const numericValue = Number(trimmedValue);
+    if (!Number.isNaN(numericValue)) {
+      return dateFromEpoch(numericValue);
+    }
+
+    const date = new Date(trimmedValue);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
   const numericValue = Number(value);
   if (!Number.isFinite(numericValue) || numericValue <= 0) return null;
 

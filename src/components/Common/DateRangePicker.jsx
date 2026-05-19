@@ -4,12 +4,24 @@ import { format, startOfMonth, endOfMonth } from "date-fns";
 import "./DateRangePicker.css";
 import { Calendar, ChevronLeft, ChevronRight } from "../Common/icons";
 
+const toPickerDate = (value) => {
+  if (!value) return null;
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const normalizeRange = (value) => {
+  const from = toPickerDate(value?.from);
+  const to = toPickerDate(value?.to);
+  return from && to ? { from, to } : null;
+};
+
 export default function DateRangePicker({
   value,
   onChange,
   showLabel = true,
   numberOfMonths = 2,
-  defaultRangeEnabled = true,
+  defaultRangeEnabled = false,
 }) {
   const getDefaultRange = () => ({
     from: startOfMonth(new Date()),
@@ -17,12 +29,15 @@ export default function DateRangePicker({
   });
 
   const fallbackRange = useMemo(() => getDefaultRange(), []);
-  const controlledRange = value?.from && value?.to ? value : null;
+  const isControlled = value !== undefined;
+  const controlledRange = normalizeRange(value);
   const [range, setRange] = useState(controlledRange || (defaultRangeEnabled ? fallbackRange : undefined));
   const [month, setMonth] = useState(
     (controlledRange && controlledRange.from) || fallbackRange.from
   );
-  const selectedRange = controlledRange || range;
+  const selectedRange = isControlled
+    ? controlledRange || (defaultRangeEnabled ? fallbackRange : undefined)
+    : range;
 
   const handleSelect = (selectedRange) => {
     if (!selectedRange) {
@@ -38,13 +53,21 @@ export default function DateRangePicker({
       return;
     }
 
-    setRange(selectedRange);
+    if (!isControlled) {
+      setRange(selectedRange);
+    }
 
     if (selectedRange.from) {
       setMonth(selectedRange.from);
     }
 
     onChange?.(selectedRange);
+  };
+
+  const resetRange = () => {
+    setRange(undefined);
+    setMonth(fallbackRange.from);
+    onChange?.({ from: null, to: null });
   };
 
   const label = useMemo(() => {
@@ -56,7 +79,7 @@ export default function DateRangePicker({
     }
 
     if (!defaultRangeEnabled) {
-      return "Select date range";
+      return "All dates";
     }
 
     return `${format(fallbackRange.from, "MMM dd, yyyy")} - ${format(
@@ -71,6 +94,14 @@ export default function DateRangePicker({
         <div className="trade-date-picker__label">
           <Calendar className="trade-date-picker__label-icon" />
           <span>{label}</span>
+          <button
+            className="trade-date-picker__reset"
+            type="button"
+            onClick={resetRange}
+            aria-label="Reset filters to all dates"
+          >
+            Reset filters
+          </button>
         </div>
       )}
 

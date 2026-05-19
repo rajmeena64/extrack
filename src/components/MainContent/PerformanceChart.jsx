@@ -68,7 +68,12 @@ function PerformanceChart({
   };
 
   useEffect(() => {
-    if (!chartRef.current) return;
+    if (!chartRef.current) {
+      chartInstance.current?.destroy();
+      chartInstance.current = null;
+      return undefined;
+    }
+
     chartInstance.current?.destroy();
 
     const ctx = chartRef.current.getContext('2d');
@@ -219,7 +224,14 @@ function PerformanceChart({
       </div>
 
       <div className="chart-container">
-        <canvas ref={chartRef} />
+        {labels.length === 0 ? (
+          <div className="dashboard-empty-state">
+            <strong>No trades yet</strong>
+            <span>Cumulative P&L will appear here once trades match the current filter.</span>
+          </div>
+        ) : (
+          <canvas ref={chartRef} />
+        )}
       </div>
     </div>
   );

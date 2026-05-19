@@ -44,7 +44,12 @@ function ActivityChart({ trades, currencyCode = 'USD' }) {
   }, [trades]);
 
   useEffect(() => {
-    if (!chartRef.current) return;
+    if (!chartRef.current) {
+      chartInstance.current?.destroy();
+      chartInstance.current = null;
+      return undefined;
+    }
+
     chartInstance.current?.destroy();
 
     const ctx = chartRef.current.getContext('2d');
@@ -206,7 +211,14 @@ function ActivityChart({ trades, currencyCode = 'USD' }) {
       </div>
 
       <div className="activity-card__chart-shell">
-        <canvas ref={chartRef} />
+        {labels.length === 0 ? (
+          <div className="dashboard-empty-state">
+            <strong>No trades yet</strong>
+            <span>Daily P&L will appear here once trades match the current filter.</span>
+          </div>
+        ) : (
+          <canvas ref={chartRef} />
+        )}
       </div>
     </div>
   );

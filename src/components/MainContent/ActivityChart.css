@@ -21,7 +21,6 @@
   min-height: 52px;
   margin-bottom: 0;
   padding: 0 16px;
-  border-bottom: 1px solid var(--border-light);
 }
 
 .activity-card__title-wrap {
@@ -127,6 +126,7 @@
   border-radius: 0;
   background: var(--bg-card);
   border: 0;
+  display: flex;
 }
 
 .activity-card__chart-shell canvas {
@@ -147,10 +147,14 @@
   color: var(--accent-ink-soft);
 }
 
-.dark-mode .activity-card__legend,
-.dark-mode .activity-card__chart-shell {
+.dark-mode .activity-card__legend {
   background: var(--surface-subtle);
   border-color: var(--divider-strong);
+}
+
+.dark-mode .activity-card__chart-shell {
+  background: var(--bg-card);
+  border-color: transparent;
 }
 
 .dark-mode .activity-card__title-row h3 {

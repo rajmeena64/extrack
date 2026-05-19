@@ -180,6 +180,12 @@ function CSVUploadForm({ csvData, setCsvData }) {
           && trade.exit_price !== null
           && trade.open_timestamp
         ) {
+          const tradeDate = new Date(trade.open_timestamp);
+          const now = new Date();
+          if (tradeDate > now) {
+            alert(`❌ CSV contains future trades (e.g., ${trade.symbol} on ${trade.open_timestamp}). Future trades are not allowed.`);
+            return;
+          }
           trades.push(trade);
         }
       }

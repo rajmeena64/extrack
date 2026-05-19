@@ -4,6 +4,7 @@
   gap: var(--dashboard-grid-gap);
   width: 100%;
   margin-bottom: 10px;
+  margin-top: 0;
 }
 
 .metric-card {
@@ -176,7 +177,7 @@
     align-items: stretch;
     position: relative;
     z-index: 2;
-    margin-top: 4px;
+    margin-top: 0;
   }
 
   .metric-card {
@@ -351,7 +352,7 @@
   .stats-grid-layout {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
-    margin-top: 8px;
+    margin-top: 2px;
   }
 
   .metric-card {

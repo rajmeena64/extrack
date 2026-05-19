@@ -107,7 +107,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: color-mix(in srgb, var(--surface-elevated) 90%, white 10%);
+  background: var(--bg-card);
   color: var(--text-secondary);
   cursor: pointer;
   box-shadow: 0 12px 24px -20px rgba(15, 23, 42, 0.42);
@@ -142,7 +142,7 @@
   min-width: unset;
   height: 44px;
   padding: 4px 14px;
-  background: color-mix(in srgb, var(--surface-elevated) 84%, white 16%);
+  background: var(--bg-card);
   border: var(--dashboard-card-border);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.48);
   position: relative;
@@ -150,7 +150,7 @@
 }
 
 .dark-mode .add-trade-header .broker-select-card {
-  background: color-mix(in srgb, var(--surface-subtle) 92%, transparent);
+  background: var(--bg-card);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
@@ -220,14 +220,14 @@
   min-height: 38px;
   height: 38px;
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--bg-card);
   border: 1px solid var(--border-light);
   font-size: 12px;
   font-weight: 600;
 }
 
 .dark-mode .add-trade-hero .broker-dropdown {
-  background: #0d0d0d;
+  background: var(--bg-card);
   border-color: #242424;
 }
 
@@ -256,7 +256,7 @@
   padding: 6px 10px;
   border-radius: 12px;
   border: var(--dashboard-card-border);
-  background: color-mix(in srgb, var(--surface-subtle) 90%, white 10%);
+  background: var(--bg-card);
   color: var(--text-primary);
   font-size: 11px;
 }
@@ -269,12 +269,12 @@
   height: 44px;
   border: var(--dashboard-card-border);
   border-radius: 16px;
-  background: color-mix(in srgb, var(--surface-elevated) 84%, white 16%);
+  background: var(--bg-card);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.48);
 }
 
 .dark-mode .trade-tabs {
-  background: color-mix(in srgb, var(--surface-subtle) 92%, transparent);
+  background: var(--bg-card);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
@@ -323,9 +323,9 @@
 .form-container,
 .form-card,
 .api-card {
-  background: var(--surface-elevated);
+  background: var(--bg-card);
   border: var(--dashboard-card-border);
-  border-radius: 26px;
+  border-radius: var(--dashboard-card-radius);
   box-shadow: var(--dashboard-card-shadow);
 }
 
@@ -338,9 +338,9 @@
 
 .horizontal-entry-form,
 .api-section {
-  background: var(--surface-elevated);
+  background: var(--bg-card);
   border: var(--dashboard-card-border);
-  border-radius: 24px;
+  border-radius: var(--dashboard-card-radius);
 }
 
 .form-container.manual-section {
@@ -399,7 +399,7 @@
   padding: 12px 14px;
   border-radius: 16px;
   border: var(--dashboard-card-border);
-  background: color-mix(in srgb, var(--surface-subtle) 88%, white 12%);
+  background: var(--bg-card);
   color: var(--text-primary);
   font-size: 12px;
   line-height: 1.25;
@@ -411,7 +411,7 @@
 .dark-mode .form-group input,
 .dark-mode .form-group select,
 .dark-mode .form-group textarea {
-  background: color-mix(in srgb, var(--surface-subtle) 92%, transparent);
+  background: var(--bg-card);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
 }
 
@@ -453,14 +453,14 @@
   gap: 8px;
   padding: 6px;
   border-radius: 18px;
-  background: color-mix(in srgb, var(--surface-subtle) 82%, white 18%);
+  background: var(--bg-card);
   border: var(--dashboard-card-border);
   width: fit-content;
   max-width: 100%;
 }
 
 .dark-mode .upload-options {
-  background: color-mix(in srgb, var(--surface-subtle) 92%, transparent);
+  background: var(--bg-card);
 }
 
 .upload-option-btn {
@@ -572,11 +572,11 @@
   padding: 18px;
   border: 1px dashed var(--divider-strong);
   border-radius: 24px;
-  background: color-mix(in srgb, var(--surface-subtle) 84%, white 16%);
+  background: var(--bg-card);
 }
 
 .dark-mode .screenshot-section-horizontal {
-  background: color-mix(in srgb, var(--surface-subtle) 92%, transparent);
+  background: var(--bg-card);
 }
 
 .screenshot-upload {
@@ -592,7 +592,7 @@
   text-align: center;
   background:
     radial-gradient(circle at top, rgba(88, 212, 126, 0.08), transparent 48%),
-    color-mix(in srgb, var(--surface-subtle) 90%, white 10%);
+    var(--bg-card);
   cursor: pointer;
   transition: border-color 0.2s ease, transform 0.2s ease, background-color 0.2s ease;
 }
@@ -713,13 +713,13 @@
 }
 
 .btn-secondary {
-  background: color-mix(in srgb, var(--surface-subtle) 84%, white 16%);
+  background: var(--bg-card);
   border-color: var(--divider-strong);
   color: var(--text-primary);
 }
 
 .btn-secondary:hover {
-  background: color-mix(in srgb, var(--surface-subtle) 76%, white 24%);
+  background: color-mix(in srgb, var(--bg-card) 92%, white 8%);
 }
 
 .btn-warning {
@@ -768,7 +768,7 @@
   text-align: center;
   background:
     radial-gradient(circle at top, rgba(59, 130, 246, 0.08), transparent 46%),
-    color-mix(in srgb, var(--surface-subtle) 90%, white 10%);
+    var(--bg-card);
   transition: border-color 0.2s ease, transform 0.2s ease;
 }
 
@@ -813,7 +813,7 @@
 }
 
 .preview-table thead {
-  background: color-mix(in srgb, var(--surface-subtle) 70%, var(--primary) 30%);
+  background: color-mix(in srgb, var(--bg-card) 70%, var(--primary) 30%);
 }
 
 .preview-table th,
@@ -830,7 +830,7 @@
 }
 
 .preview-table tbody tr:nth-child(even) {
-  background: color-mix(in srgb, var(--surface-subtle) 88%, white 12%);
+  background: color-mix(in srgb, var(--bg-card) 88%, white 12%);
 }
 
 .preview-table tbody tr:hover {
@@ -933,7 +933,7 @@
   padding: 8px 12px;
   border-radius: 999px;
   border: var(--dashboard-card-border);
-  background: color-mix(in srgb, var(--surface-subtle) 84%, white 16%);
+  background: var(--bg-card);
   color: var(--text-secondary);
   font-size: 11px;
   font-weight: 700;
@@ -979,7 +979,7 @@
   gap: 10px;
   background:
     linear-gradient(135deg, rgba(88, 212, 126, 0.08), transparent 44%),
-    color-mix(in srgb, var(--surface-subtle) 90%, white 10%);
+    var(--bg-card);
   color: var(--text-primary);
   font-size: 12px;
   font-weight: 700;
