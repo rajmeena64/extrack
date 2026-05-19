@@ -6,7 +6,8 @@ import { loadUserSettings, saveUserSettings } from '../../utils/userSettings';
 
 function DashboardSettings() {
   const { isAuthenticated } = useAuth();
-  const [rowOrder, setRowOrder] = useState('charts-first');
+  const [rowOrder, setRowOrder] = useState('overview-first');
+  const [columnOrder, setColumnOrder] = useState('normal');
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -15,9 +16,11 @@ function DashboardSettings() {
 
     loadUserSettings()
       .then((settings) => {
-        const savedOrder = settings?.dashboard?.rowOrder;
-        if (isCurrent && savedOrder) {
+        const savedOrder = settings?.dashboard?.rowOrder || 'overview-first';
+        const savedColOrder = settings?.dashboard?.columnOrder || 'normal';
+        if (isCurrent) {
           setRowOrder(savedOrder);
+          setColumnOrder(savedColOrder);
           window.dispatchEvent(new Event('dashboard-layout-change'));
         }
       })
@@ -28,10 +31,20 @@ function DashboardSettings() {
     };
   }, [isAuthenticated]);
 
-  const updateRowOrder = (value) => {
-    setRowOrder(value);
+  const updateLayout = (updates) => {
+    const nextRowOrder = updates.rowOrder !== undefined ? updates.rowOrder : rowOrder;
+    const nextColOrder = updates.columnOrder !== undefined ? updates.columnOrder : columnOrder;
+
+    setRowOrder(nextRowOrder);
+    setColumnOrder(nextColOrder);
+
     if (isAuthenticated) {
-      saveUserSettings({ dashboard: { rowOrder: value } }).catch(() => null);
+      saveUserSettings({ 
+        dashboard: { 
+          rowOrder: nextRowOrder,
+          columnOrder: nextColOrder 
+        } 
+      }).catch(() => null);
     }
 
     window.dispatchEvent(new Event('dashboard-layout-change'));
@@ -39,32 +52,59 @@ function DashboardSettings() {
 
   return (
     <div className="dashboard-settings">
-      <div className="sub-nav-item">
-        <LegacyIcon className="fas fa-th-large" />
-        <span>Dashboard Layout</span>
+      <div className="sub-nav-item" style={{ fontWeight: 'bold', borderBottom: '1px solid var(--border-light)', marginBottom: '8px' }}>
+        <span>Vertical Arrangement</span>
       </div>
 
       <div className="sub-nav-item">
-        <label style={{ display: 'flex', gap: '8px', cursor: 'pointer' }}>
-          <input
-            type="radio"
-            name="dashboard-row"
-            checked={rowOrder === 'charts-first'}
-            onChange={() => updateRowOrder('charts-first')}
-          />
-          Charts on top
-        </label>
-      </div>
-
-      <div className="sub-nav-item">
-        <label style={{ display: 'flex', gap: '8px', cursor: 'pointer' }}>
+        <label style={{ display: 'flex', gap: '8px', cursor: 'pointer', width: '100%' }}>
           <input
             type="radio"
             name="dashboard-row"
             checked={rowOrder === 'overview-first'}
-            onChange={() => updateRowOrder('overview-first')}
+            onChange={() => updateLayout({ rowOrder: 'overview-first' })}
           />
-          Overview on top
+          Overview First (Standard)
+        </label>
+      </div>
+
+      <div className="sub-nav-item">
+        <label style={{ display: 'flex', gap: '8px', cursor: 'pointer', width: '100%' }}>
+          <input
+            type="radio"
+            name="dashboard-row"
+            checked={rowOrder === 'charts-first'}
+            onChange={() => updateLayout({ rowOrder: 'charts-first' })}
+          />
+          Charts First
+        </label>
+      </div>
+
+      <div className="sub-nav-item" style={{ fontWeight: 'bold', borderBottom: '1px solid var(--border-light)', margin: '16px 0 8px' }}>
+        <span>Horizontal Arrangement</span>
+      </div>
+
+      <div className="sub-nav-item">
+        <label style={{ display: 'flex', gap: '8px', cursor: 'pointer', width: '100%' }}>
+          <input
+            type="radio"
+            name="dashboard-col"
+            checked={columnOrder === 'normal'}
+            onChange={() => updateLayout({ columnOrder: 'normal' })}
+          />
+          Standard (Sidebar Left)
+        </label>
+      </div>
+
+      <div className="sub-nav-item">
+        <label style={{ display: 'flex', gap: '8px', cursor: 'pointer', width: '100%' }}>
+          <input
+            type="radio"
+            name="dashboard-col"
+            checked={columnOrder === 'flipped'}
+            onChange={() => updateLayout({ columnOrder: 'flipped' })}
+          />
+          Flipped (Sidebar Right)
         </label>
       </div>
     </div>

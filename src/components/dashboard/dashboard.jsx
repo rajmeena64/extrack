@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import './dashboard.css';
 
 import Header from '@/components/Header/Header';
@@ -6,6 +6,7 @@ import StatsCards from '@/components/StatsCards/StatsCards';
 import TradesList from '@/components/myTrades/TradesList';
 import ProgressTracker from '@/components/MainContent/ProgressTracker';
 import { markPerf, measurePerf } from '@/utils/perfMarks';
+import { loadUserSettings } from '../../utils/userSettings';
 
 const ActivityChart = lazy(() => import('@/components/MainContent/ActivityChart'));
 const Radar = lazy(() => import('@/components/MainContent/Radar'));
@@ -122,6 +123,30 @@ function Dashboard({
   onCurrencyChange,
   isLoading = false,
 }) {
+  const [layout, setLayout] = useState({ rowOrder: 'overview-first', columnOrder: 'normal' });
+
+  const [isMobileWidth, setIsMobileWidth] = useState(window.innerWidth <= 768);
+
+  const loadLayout = () => {
+    loadUserSettings().then(settings => {
+      setLayout({
+        rowOrder: settings?.dashboard?.rowOrder || 'overview-first',
+        columnOrder: settings?.dashboard?.columnOrder || 'normal'
+      });
+    }).catch(() => null);
+  };
+
+  useEffect(() => {
+    loadLayout();
+    const handleResize = () => setIsMobileWidth(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('dashboard-layout-change', loadLayout);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('dashboard-layout-change', loadLayout);
+    };
+  }, []);
+
   useEffect(() => {
     markPerf('dashboard-shell-visible');
     measurePerf('dashboard-shell-from-start', 'app-start', 'dashboard-shell-visible');
@@ -134,8 +159,49 @@ function Dashboard({
     measurePerf('dashboard-visible-from-start', 'app-start', 'dashboard-visible');
   }, [isLoading]);
 
+  const gridAreas = useMemo(() => {
+    if (isMobileWidth) return undefined;
+
+    const { rowOrder, columnOrder } = layout;
+    
+    let areas;
+    if (rowOrder === 'overview-first') {
+      if (columnOrder === 'normal') {
+        areas = `
+          "zella calendar calendar"
+          "trades calendar calendar"
+          "performance activity progress"
+        `;
+      } else {
+        areas = `
+          "calendar calendar zella"
+          "calendar calendar trades"
+          "progress activity performance"
+        `;
+      }
+    } else { // charts-first
+      if (columnOrder === 'normal') {
+        areas = `
+          "performance activity progress"
+          "zella calendar calendar"
+          "trades calendar calendar"
+        `;
+      } else {
+        areas = `
+          "progress activity performance"
+          "calendar calendar zella"
+          "calendar calendar trades"
+        `;
+      }
+    }
+    return areas;
+  }, [layout, isMobileWidth]);
+
   const MainGrid = (
-    <>
+    <section 
+      className="dashboard-layout dashboard-main-grid" 
+      style={gridAreas ? { gridTemplateAreas: gridAreas } : {}}
+    >
       {/* 1st Row Left: Non-chart Progress Tracker */}
       <div className="dashboard-grid-card dashboard-grid-card--zella left-charts">
         {isLoading ? (
@@ -205,7 +271,7 @@ function Dashboard({
           </LazyDashboardSection>
         )}
       </div>
-    </>
+    </section>
   );
 
   return (
@@ -223,9 +289,7 @@ function Dashboard({
 
       <StatsCards trades={trades} currencyCode={currencyCode} isLoading={isLoading} />
 
-      <section className="dashboard-layout dashboard-main-grid">
-        {MainGrid}
-      </section>
+      {MainGrid}
 
     </main>
   );

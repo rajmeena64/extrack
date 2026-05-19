@@ -241,6 +241,7 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  flex: 1; /* Take full height of parent */
   width: 100%;
   background: var(--bg-primary);
   min-height: 0; /* Important for flex children */
@@ -306,6 +307,7 @@
   flex-direction: column;
   gap: 12px;
   min-height: 100%;
+  flex: 1; /* Take full height */
 }
 
 .ai-analysis-toolbar {
