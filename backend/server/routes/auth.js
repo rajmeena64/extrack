@@ -33,6 +33,39 @@ const ACCESS_COOKIE_OPTIONS = {
     ...COOKIE_OPTIONS,
     maxAge: 15 * 60 * 1000 // 15 minutes
 };
+const CLEAR_COOKIE_OPTIONS = {
+    httpOnly: COOKIE_OPTIONS.httpOnly,
+    secure: COOKIE_OPTIONS.secure,
+    sameSite: COOKIE_OPTIONS.sameSite,
+    domain: COOKIE_OPTIONS.domain,
+    path: COOKIE_OPTIONS.path,
+};
+
+const expireCookie = (res, name, options) => {
+    res.clearCookie(name, options);
+    res.cookie(name, '', {
+        ...options,
+        expires: new Date(0),
+        maxAge: 0,
+    });
+};
+
+const clearAuthCookies = (res) => {
+    const baseOptions = {
+        httpOnly: COOKIE_OPTIONS.httpOnly,
+        secure: COOKIE_OPTIONS.secure,
+        sameSite: COOKIE_OPTIONS.sameSite,
+        path: COOKIE_OPTIONS.path,
+    };
+    const optionVariants = COOKIE_OPTIONS.domain
+        ? [CLEAR_COOKIE_OPTIONS, baseOptions]
+        : [baseOptions];
+
+    optionVariants.forEach((options) => {
+        expireCookie(res, 'refreshToken', options);
+        expireCookie(res, 'accessToken', options);
+    });
+};
 
 const ADMIN_ACCOUNT_TYPES = new Set(['admin', 'superadmin']);
 const loginRateLimiter = createRateLimiter({
@@ -377,8 +410,7 @@ router.post('/logout', async (req, res) => {
         }
 
         // 🍪 Clear cookie (IMPORTANT)
-        res.clearCookie('refreshToken', COOKIE_OPTIONS);
-        res.clearCookie('accessToken', ACCESS_COOKIE_OPTIONS);
+        clearAuthCookies(res);
 
 
         return res.json({
@@ -679,8 +711,7 @@ router.delete('/delete-account', authCheck, async (req, res) => {
         );
 
         // Clear cookie
-        res.clearCookie('refreshToken', COOKIE_OPTIONS);
-        res.clearCookie('accessToken', ACCESS_COOKIE_OPTIONS);
+        clearAuthCookies(res);
 
         
         res.json({

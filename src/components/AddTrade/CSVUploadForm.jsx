@@ -6,6 +6,7 @@ import api from '../../utils/serve';
 import { useAuth } from '../../context/AuthContext';
 import { normalizeStoredSymbol } from '../../utils/symbols';
 import { parseTradeNumber } from '../../utils/fieldValidation';
+import TradeSaveOverlay from './TradeSaveOverlay';
 
 function CSVUploadForm({ csvData, setCsvData }) {
   const navigate = useNavigate();
@@ -13,6 +14,7 @@ function CSVUploadForm({ csvData, setCsvData }) {
   const { user } = useAuth();
   const [previewData, setPreviewData] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [isUploadingTrades, setIsUploadingTrades] = useState(false);
   const fileInputRef = useRef(null);
 
   const handleCSVFile = (file) => {
@@ -124,6 +126,8 @@ function CSVUploadForm({ csvData, setCsvData }) {
   };
 
   const submitCSVTrades = async () => {
+    if (isUploadingTrades) return;
+
     if (!csvData) {
       alert('No CSV data to upload.');
       return;
@@ -135,6 +139,8 @@ function CSVUploadForm({ csvData, setCsvData }) {
       return;
     }
     
+    setIsUploadingTrades(true);
+
     try {
       const trades = [];
       const headers = csvData.headers;
@@ -185,6 +191,7 @@ function CSVUploadForm({ csvData, setCsvData }) {
           const tradeDate = new Date(trade.open_timestamp);
           const now = new Date();
           if (tradeDate > now) {
+            setIsUploadingTrades(false);
             alert(`❌ CSV contains future trades (e.g., ${trade.symbol} on ${trade.open_timestamp}). Future trades are not allowed.`);
             return;
           }
@@ -199,20 +206,26 @@ function CSVUploadForm({ csvData, setCsvData }) {
       const { data: result } = await api.post('/save-bulk-trades', { trades });
       
       if (result.success) {
+        await queryClient.invalidateQueries({ queryKey: ['trades'] });
+        await queryClient.refetchQueries({
+          queryKey: ['trades'],
+          type: 'active',
+        });
         alert(`✅ Successfully uploaded ${trades.length} trades!`);
-        // Invalidate queries to refresh dashboard data
-        queryClient.invalidateQueries({ queryKey: ['trades'] });
-        navigate('/');
+        navigate('/dashboard');
       } else {
         throw new Error(result.error || 'Failed to save trades');
       }
       
     } catch (error) {
+      setIsUploadingTrades(false);
       alert('❌ CSV Upload failed: ' + error.message);
     }
   };
 
   return (
+    <>
+    {isUploadingTrades ? <TradeSaveOverlay label="Uploading trades and refreshing dashboard..." /> : null}
     <div id="csv-upload-form">
       <div className="form-card csv-upload-section">
         <div className="section-title">
@@ -303,19 +316,22 @@ function CSVUploadForm({ csvData, setCsvData }) {
 
       {/* CSV Upload Buttons */}
       <div className="btn-group">
-        <button className="btn btn-secondary" onClick={() => navigate('/')}>
+        <button className="btn btn-secondary" onClick={() => navigate('/')} disabled={isUploadingTrades}>
           <LegacyIcon className="fas fa-times" /> Cancel
         </button>
         <button
           className="btn btn-primary"
           onClick={submitCSVTrades}
-          disabled={!csvData}
+          disabled={!csvData || isUploadingTrades}
           id="submitCSVBtn"
+          aria-busy={isUploadingTrades}
         >
-          <LegacyIcon className="fas fa-upload" /> Upload CSV Trades
+          <LegacyIcon className={isUploadingTrades ? "fas fa-spinner fa-spin" : "fas fa-upload"} />
+          {isUploadingTrades ? 'Uploading trades...' : 'Upload CSV Trades'}
         </button>
       </div>
     </div>
+    </>
   );
 }
 

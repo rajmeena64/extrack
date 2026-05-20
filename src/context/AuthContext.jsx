@@ -83,14 +83,14 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     if (!user) {
-      queryClient.removeQueries({ queryKey: ['trades'] });
+      queryClient.clear();
     }
   }, [queryClient, user]);
 
   useEffect(() => {
     const handleLogout = () => {
       clearClientStorage();
-      queryClient.removeQueries({ queryKey: ['trades'] });
+      queryClient.clear();
       setUser(null);
       setIsAuthLoading(false);
     };

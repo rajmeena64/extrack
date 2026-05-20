@@ -102,6 +102,39 @@ const LEGACY_LOCAL_STORAGE_KEYS = [
   'extrack:dashboard_stats',
 ];
 
+const getCachedDashboardCurrency = (fallback = 'USD') => {
+  const cachedCurrency = loadCachedUserSettings()?.dashboard?.currency;
+  return cachedCurrency ? normalizeCurrencyCode(cachedCurrency, fallback) : null;
+};
+
+const isApiTrade = (trade) => Boolean(trade?.account_id || trade?.ticket || trade?.platform);
+
+const deriveCachedTradesForMode = (queryClient, userId, mode) => {
+  const exactCachedTrades = queryClient.getQueryData(['trades', userId, mode]);
+  if (Array.isArray(exactCachedTrades)) return exactCachedTrades;
+
+  const allCachedTrades = queryClient.getQueryData(['trades', userId, 'all']);
+  if (Array.isArray(allCachedTrades)) {
+    if (mode === 'manual') return allCachedTrades.filter((trade) => !isApiTrade(trade));
+    if (mode === 'api') return allCachedTrades.filter(isApiTrade);
+    return allCachedTrades;
+  }
+
+  if (mode === 'all') {
+    const manualCachedTrades = queryClient.getQueryData(['trades', userId, 'manual']);
+    const apiCachedTrades = queryClient.getQueryData(['trades', userId, 'api']);
+
+    if (Array.isArray(manualCachedTrades) || Array.isArray(apiCachedTrades)) {
+      return [
+        ...(Array.isArray(manualCachedTrades) ? manualCachedTrades : []),
+        ...(Array.isArray(apiCachedTrades) ? apiCachedTrades : []),
+      ];
+    }
+  }
+
+  return undefined;
+};
+
 function Profile() {
   const { user: currentUser, isAuthLoading } = useAuth();
 
@@ -142,7 +175,9 @@ function App() {
       ? cachedDashboardSettings.dateRange
       : { from: null, to: null }
   );
-  const [dashboardCurrency, setDashboardCurrency] = useState('USD');
+  const [dashboardCurrency, setDashboardCurrency] = useState(
+    getCachedDashboardCurrency('USD') || 'USD'
+  );
 
   const tradeManager = useMemo(() => new TradeManager(), []);
   const queryClient = useQueryClient();
@@ -189,7 +224,7 @@ function App() {
 
   useEffect(() => {
     hasHydratedDashboardCurrency.current = false;
-    setDashboardCurrency('USD');
+    setDashboardCurrency(getCachedDashboardCurrency('USD') || 'USD');
   }, [user?.ID]);
 
   useEffect(() => {
@@ -208,6 +243,10 @@ function App() {
 
         if (settings?.dashboard?.dateRange && typeof settings.dashboard.dateRange === 'object') {
           setDashboardDateRange(settings.dashboard.dateRange);
+        }
+
+        if (settings?.dashboard?.currency) {
+          setDashboardCurrency(normalizeCurrencyCode(settings.dashboard.currency));
         }
       })
       .catch(() => null)
@@ -228,7 +267,9 @@ function App() {
     queryKey: ['trades', user?.ID, tradeMode],
     enabled: !isAuthLoading && Boolean(user?.ID),
     queryFn: () => tradeManager.loadTrades(user.ID, tradeMode),
-    placeholderData: (previousData) => previousData,
+    initialData: () => (
+      user?.ID ? deriveCachedTradesForMode(queryClient, user.ID, tradeMode) : undefined
+    ),
     staleTime: 0,
     refetchOnWindowFocus: true,
   });
@@ -397,13 +438,18 @@ function App() {
     if (hasHydratedDashboardCurrency.current) return;
     if (!mt5AccountsQuery.isSuccess) return;
 
-    setDashboardCurrency(savedDashboardCurrency || defaultDashboardCurrency);
+    setDashboardCurrency(
+      savedDashboardCurrency
+      || getCachedDashboardCurrency(defaultDashboardCurrency)
+      || defaultDashboardCurrency
+    );
     hasHydratedDashboardCurrency.current = true;
   }, [defaultDashboardCurrency, mt5AccountsQuery.isSuccess, savedDashboardCurrency]);
 
   const handleDashboardCurrencyChange = async (currencyCode) => {
     const normalizedCurrency = normalizeCurrencyCode(currencyCode, defaultDashboardCurrency);
     setDashboardCurrency(normalizedCurrency);
+    saveUserSettings({ dashboard: { currency: normalizedCurrency } }).catch(() => null);
     queryClient.setQueryData(['mt5-accounts', user?.ID], (previousAccounts = []) => (
       Array.isArray(previousAccounts)
         ? previousAccounts.map((account) => ({

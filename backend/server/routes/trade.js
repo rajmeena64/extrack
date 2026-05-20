@@ -18,6 +18,7 @@ const {
 } = require('../utils/validation');
 
 let apiTradeMetadataColumnsReady = false;
+let tradesUniqueIdIndexReady = false;
 const saveTradeRateLimiter = createRateLimiter({
     windowMs: 60 * 1000,
     max: Number(process.env.SAVE_TRADE_RATE_LIMIT_MAX || 60),
@@ -100,6 +101,18 @@ function normalizeScreenshots(screenshots) {
     return normalized.length > 0 ? JSON.stringify(normalized) : null;
 }
 
+async function ensureTradesUniqueIdIndex() {
+    if (tradesUniqueIdIndexReady) return;
+
+    await pool.query(`
+        CREATE UNIQUE INDEX IF NOT EXISTS trades_user_unique_id_unique
+        ON trades (user_id, unique_id)
+        WHERE unique_id IS NOT NULL
+    `);
+
+    tradesUniqueIdIndexReady = true;
+}
+
 function parseTradeId(value) {
     const numericId = Number.parseInt(value, 10);
     return Number.isNaN(numericId) ? null : numericId;
@@ -156,6 +169,7 @@ router.post('/save-trade', authCheck, saveTradeRateLimiter, async (req, res) => 
         'pnl',
         'strategy',
         'timestamp',
+        'unique_id',
         'notes',
         'screenshots',
     ]);
@@ -173,6 +187,7 @@ router.post('/save-trade', authCheck, saveTradeRateLimiter, async (req, res) => 
         pnl,
         strategy,
         timestamp,
+        unique_id,
         notes,
         screenshots
     } = req.body;
@@ -184,10 +199,15 @@ router.post('/save-trade', authCheck, saveTradeRateLimiter, async (req, res) => 
         const normalizedCategory = trimString(category, { max: 64 });
         const normalizedStrategy = trimString(strategy, { max: 120 });
         const normalizedNotes = trimString(notes, { max: 5000 });
+        const normalizedUniqueId = trimString(unique_id, { max: 120 });
         const normalizedTimestamp = timestampValue(timestamp, { required: true });
 
         if (!normalizedSymbol) {
             return res.status(400).json({ success: false, error: 'Invalid symbol' });
+        }
+
+        if (!normalizedUniqueId) {
+            return res.status(400).json({ success: false, error: 'Invalid unique_id' });
         }
 
         if (!normalizedTradeType || normalizedTimestamp === null) {
@@ -208,16 +228,22 @@ router.post('/save-trade', authCheck, saveTradeRateLimiter, async (req, res) => 
             return res.status(400).json({ success: false, error: 'Invalid numeric trade values' });
         }
 
-        await pool.query(
+        await ensureTradesUniqueIdIndex();
+
+        const savedTradeResult = await pool.query(
             `INSERT INTO trades
-             (user_id, symbol, trade_type, category, quantity, price, exit_price, pnl, strategy, timestamp, notes, screenshots)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
-            [req.userId, normalizedSymbol, normalizedTradeType, normalizedCategory, normalizedQuantity, normalizedPrice, normalizedExitPrice, normalizedPnl, normalizedStrategy, normalizedTimestamp, normalizedNotes, screenshotsJson]
+              (user_id, symbol, trade_type, category, quantity, price, exit_price, pnl, strategy, timestamp, unique_id, notes, screenshots)
+              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+              ON CONFLICT (user_id, unique_id) WHERE unique_id IS NOT NULL DO UPDATE
+              SET unique_id = EXCLUDED.unique_id
+              RETURNING *, timestamp AS open_timestamp, timestamp AS close_timestamp`,
+            [req.userId, normalizedSymbol, normalizedTradeType, normalizedCategory, normalizedQuantity, normalizedPrice, normalizedExitPrice, normalizedPnl, normalizedStrategy, normalizedTimestamp, normalizedUniqueId, normalizedNotes, screenshotsJson]
         );
 
         res.json({
             success: true,
             message: 'Manual trade saved!',
+            trade: savedTradeResult.rows[0],
             screenshotCount: screenshotsJson ? JSON.parse(screenshotsJson).length : 0
         });
     } catch (error) {

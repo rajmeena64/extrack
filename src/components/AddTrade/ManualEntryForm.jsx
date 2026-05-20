@@ -1,12 +1,21 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import SymbolWithIcon from "../Common/SymbolWithIcon";
 import LegacyIcon from "../Common/LegacyIcon";
 import api from "../../utils/serve";
 import { useAuth } from '../../context/AuthContext';
 import { normalizeStoredSymbol } from "../../utils/symbols";
 import { parseTradeNumber, sanitizeDecimalInput, sanitizeSignedDecimalInput } from "../../utils/fieldValidation";
+import TradeSaveOverlay from './TradeSaveOverlay';
+
+const generateTradeUniqueId = () => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+
+  return `manual-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+};
 
 function ManualEntryForm({ trades }) {
   const navigate = useNavigate();
@@ -30,6 +39,7 @@ function ManualEntryForm({ trades }) {
 
   const [previewImage, setPreviewImage] = useState('');
   const [showSymbolSuggestions, setShowSymbolSuggestions] = useState(false);
+  const [saveError, setSaveError] = useState('');
   const symbolBlurTimeoutRef = useRef(null);
   const symbols = useMemo(() => {
     return [...new Set(trades?.map(t => t.symbol).filter(Boolean))];
@@ -96,7 +106,104 @@ function ManualEntryForm({ trades }) {
     setShowSymbolSuggestions(false);
   };
 
+  const toDashboardTrade = (savedTrade, status) => ({
+    ID: savedTrade.ID,
+    user_id: savedTrade.user_id,
+    symbol: savedTrade.symbol,
+    trade_type: savedTrade.trade_type,
+    price: savedTrade.price,
+    category: savedTrade.category,
+    exit_price: savedTrade.exit_price,
+    strategy: savedTrade.strategy,
+    quantity: savedTrade.quantity,
+    pnl: savedTrade.pnl,
+    notes: savedTrade.notes,
+    screenshots: savedTrade.screenshots,
+    is_breakeven: Boolean(savedTrade.is_breakeven),
+    open_timestamp: savedTrade.open_timestamp || savedTrade.timestamp,
+    close_timestamp: savedTrade.close_timestamp || savedTrade.exit_timestamp || savedTrade.timestamp || null,
+    unique_id: savedTrade.unique_id,
+    ...(status ? { optimistic: true, status } : {}),
+  });
+
+  const updateTradeCaches = (updater) => {
+    queryClient.getQueryCache().findAll({ queryKey: ['trades'] }).forEach((query) => {
+      const [, queryUserId, mode] = query.queryKey;
+      if (mode === 'api' || (queryUserId && user?.ID && queryUserId !== user.ID)) return;
+
+      queryClient.setQueryData(query.queryKey, (oldTrades) => {
+        if (!Array.isArray(oldTrades)) return oldTrades;
+        return updater(oldTrades);
+      });
+    });
+  };
+
+  const saveTradeMutation = useMutation({
+    mutationFn: async (tradeData) => {
+      const { data } = await api.post('/save-trade', tradeData);
+      if (!data?.success) {
+        throw new Error(data?.error || 'Trade save failed. Please retry.');
+      }
+      return data.trade;
+    },
+    onMutate: async (tradeData) => {
+      setSaveError('');
+      await queryClient.cancelQueries({ queryKey: ['trades'] });
+
+      const previousTradeQueries = queryClient
+        .getQueryCache()
+        .findAll({ queryKey: ['trades'] })
+        .map((query) => ({
+          queryKey: query.queryKey,
+          data: queryClient.getQueryData(query.queryKey),
+        }));
+
+      const optimisticTrade = toDashboardTrade({
+        ...tradeData,
+        user_id: user.ID,
+        open_timestamp: tradeData.timestamp,
+        close_timestamp: tradeData.timestamp,
+      }, 'saving');
+
+      updateTradeCaches((oldTrades) => {
+        const withoutSameTrade = oldTrades.filter((trade) => trade.unique_id !== optimisticTrade.unique_id);
+        return [optimisticTrade, ...withoutSameTrade];
+      });
+
+      navigate('/dashboard');
+
+      return { previousTradeQueries, uniqueId: tradeData.unique_id };
+    },
+    onError: (_error, _tradeData, context) => {
+      context?.previousTradeQueries?.forEach(({ queryKey, data }) => {
+        queryClient.setQueryData(queryKey, data);
+      });
+
+      setSaveError('Trade save failed. Please retry.');
+      alert('Trade save failed. Please retry.');
+    },
+    onSuccess: (savedTrade, _tradeData, context) => {
+      const realTrade = toDashboardTrade(savedTrade);
+      updateTradeCaches((oldTrades) => {
+        const replacedTrades = oldTrades.map((trade) => (
+          trade.unique_id === context?.uniqueId ? realTrade : trade
+        ));
+        const hasSavedTrade = replacedTrades.some((trade) => trade.unique_id === realTrade.unique_id);
+        return hasSavedTrade ? replacedTrades : [realTrade, ...replacedTrades];
+      });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['trades'],
+        refetchType: 'active',
+      });
+    },
+  });
+  const isSavingTrade = saveTradeMutation.isPending;
+
   const submitManualTrade = async () => {
+    if (saveTradeMutation.isPending) return;
+
     if (!user?.ID) {
       alert('Please login first!');
       navigate('/login');
@@ -134,6 +241,7 @@ function ManualEntryForm({ trades }) {
     const utcTimestamp = dateObj.toISOString();
 
     const tradeData = {
+      unique_id: generateTradeUniqueId(),
       symbol: normalizeStoredSymbol(formData.symbol),
       trade_type: formData.tradeType,
       category: formData.category,
@@ -145,24 +253,14 @@ function ManualEntryForm({ trades }) {
       timestamp: utcTimestamp
     };
 
-    try {
-      const { data: result } = await api.post('/save-trade', tradeData);
-
-      if (result.success) {
-        alert('✅ Trade added successfully!');
-        // Invalidate queries to refresh dashboard data
-        queryClient.invalidateQueries({ queryKey: ['trades'] });
-        navigate('/');
-      } else {
-        alert('❌ Error: ' + result.error);
-      }
-    } catch {
-      alert('❌ Network error: Could not save trade');
-    }
+    saveTradeMutation.mutate(tradeData);
   };
 
   return (
-    <div className="form-card horizontal-entry-form">
+    <>
+    {saveError ? <div className="trade-save-error-toast" role="alert">{saveError}</div> : null}
+    {isSavingTrade ? <TradeSaveOverlay label="Saving trade and refreshing dashboard..." /> : null}
+    <div className="form-card horizontal-entry-form" aria-busy={isSavingTrade}>
       {/* Top-left Category */}
       <div className="form-group category-top">
         <label htmlFor="category">Category</label>
@@ -313,14 +411,21 @@ function ManualEntryForm({ trades }) {
 
       {/* Submit Buttons */}
       <div className="btn-group-horizontal">
-        <button className="btn btn-secondary" onClick={() => navigate('/')}>
+        <button className="btn btn-secondary" onClick={() => navigate('/')} disabled={isSavingTrade}>
           <LegacyIcon className="fas fa-times" /> Cancel
         </button>
-        <button className="btn btn-primary" onClick={submitManualTrade}>
-          <LegacyIcon className="fas fa-plus-circle" /> Add Trade
+        <button
+          className="btn btn-primary"
+          onClick={submitManualTrade}
+          disabled={isSavingTrade}
+          aria-busy={isSavingTrade}
+        >
+          <LegacyIcon className={isSavingTrade ? "fas fa-spinner fa-spin" : "fas fa-plus-circle"} />
+          {isSavingTrade ? 'Saving trade...' : 'Add Trade'}
         </button>
       </div>
     </div>
+    </>
   );
 }
 
