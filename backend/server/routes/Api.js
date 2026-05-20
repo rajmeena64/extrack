@@ -1,10 +1,17 @@
 const express = require("express");
 const axios = require("axios");
+const { createRateLimiter } = require("../middleware/rateLimit");
 
 const router = express.Router();
+const marketDataRateLimiter = createRateLimiter({
+  windowMs: 60 * 1000,
+  max: Number(process.env.MARKET_DATA_RATE_LIMIT_MAX || 120),
+  keyGenerator: (req) => req.ip,
+  message: "Too many market data requests. Please try again shortly.",
+});
 
 // GET /api/forex-ohlc?symbol=EURUSD&period=5m
-router.get("/forex-ohlc", async (req, res) => {
+router.get("/forex-ohlc", marketDataRateLimiter, async (req, res) => {
   try {
     let { symbol = "EURUSD", period = "5m", from, to, limit = 300 } = req.query;
 

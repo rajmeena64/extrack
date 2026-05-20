@@ -1,5 +1,10 @@
 {
     "name": "trading-backend",
+
+  "scripts": {
+    "start": "node server/app.js",
+    "check": "node --check server/app.js"
+  },
     "dependencies": {
         "axios": "^1.13.2",
         "bcrypt": "^6.0.0",

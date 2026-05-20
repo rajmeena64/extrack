@@ -5,6 +5,11 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { createRateLimiter } = require('../middleware/rateLimit');
 const { hashToken, secretsMatch } = require('../utils/security');
+const {
+    currencyCode,
+    rejectUnexpectedFields,
+    trimString,
+} = require('../utils/validation');
 
 // Separate secrets for access and refresh tokens
 const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET;
@@ -49,11 +54,11 @@ const refreshRateLimiter = createRateLimiter({
 
 // Helper function to generate tokens
 const generateTokens = async (userId) => {
-    // Access Token (24 hours)
+    // Access Token (15 minutes)
     const accessToken = jwt.sign(
         { userId: userId },
         JWT_ACCESS_SECRET,
-        { expiresIn: '24hr' }
+        { expiresIn: '15m' }
     );
 
     // Refresh Token (30 days)
@@ -143,7 +148,28 @@ const authCheck = async (req, res, next) => {
 
 // REGISTER
 router.post('/register', async (req, res) => {
-    const { firstName, lastName, email, phone, password, preferred_currency = 'USD' } = req.body;
+    const unexpectedFieldError = rejectUnexpectedFields(req.body, [
+        'firstName',
+        'lastName',
+        'email',
+        'phone',
+        'password',
+        'preferred_currency',
+    ]);
+    if (unexpectedFieldError) {
+        return res.status(400).json({ success: false, error: unexpectedFieldError });
+    }
+
+    const firstName = trimString(req.body.firstName, { max: 80, required: true });
+    const lastName = trimString(req.body.lastName, { max: 80 });
+    const email = trimString(req.body.email, { max: 254 });
+    const phone = trimString(req.body.phone, { max: 32 });
+    const password = trimString(req.body.password, { max: 200, required: true });
+    const preferred_currency = currencyCode(req.body.preferred_currency) || 'USD';
+
+    if (!firstName || !password || password.length < 6 || (!email && !phone)) {
+        return res.status(400).json({ success: false, error: 'Invalid registration details' });
+    }
 
 
     try {
@@ -183,7 +209,11 @@ router.post('/register', async (req, res) => {
         });
 
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        const isDuplicate = error.code === '23505';
+        res.status(isDuplicate ? 409 : 500).json({
+            success: false,
+            error: isDuplicate ? 'Account already exists' : 'Registration failed',
+        });
     }
 });
 
@@ -214,7 +244,7 @@ router.post('/login', loginRateLimiter, async (req, res) => {
         if (result.rows.length === 0) {
             return res.status(401).json({ 
                 success: false, 
-                error: "User not found or account deleted" 
+                error: "Invalid email, phone, or password" 
             });
         }
 
@@ -224,7 +254,7 @@ router.post('/login', loginRateLimiter, async (req, res) => {
         if (!passwordMatch) {
             return res.status(401).json({ 
                 success: false, 
-                error: "Invalid password" 
+                error: "Invalid email, phone, or password" 
             });
         }
 
@@ -275,11 +305,12 @@ router.post('/refresh-token', refreshRateLimiter, async (req, res) => {
         // Check database
         const tokenResult = await pool.query(
             `SELECT * FROM refresh_tokens 
-             WHERE (token = $1 OR token = $2) AND user_id = $3 AND expires_at > NOW()`,
-            [refreshTokenHash, refreshToken, decoded.userId]
+             WHERE token = $1 AND user_id = $2 AND expires_at > NOW()`,
+            [refreshTokenHash, decoded.userId]
         );
 
         if (tokenResult.rows.length === 0) {
+            await pool.query(`DELETE FROM refresh_tokens WHERE user_id = $1`, [decoded.userId]);
             return res.status(401).json({ 
                 success: false, 
                 error: 'Invalid or expired refresh token',
@@ -289,8 +320,8 @@ router.post('/refresh-token', refreshRateLimiter, async (req, res) => {
 
         // Delete old token
         await pool.query(
-            `DELETE FROM refresh_tokens WHERE token = $1 OR token = $2`,
-            [refreshTokenHash, refreshToken]
+            `DELETE FROM refresh_tokens WHERE token = $1`,
+            [refreshTokenHash]
         );
 
         // Generate NEW tokens (30 days reset)
@@ -315,8 +346,8 @@ router.post('/refresh-token', refreshRateLimiter, async (req, res) => {
                 const decoded = jwt.decode(refreshToken);
                 if (decoded?.userId) {
                     await pool.query(
-                        `DELETE FROM refresh_tokens WHERE token = $1 OR token = $2`,
-                        [hashToken(refreshToken), refreshToken]
+                        `DELETE FROM refresh_tokens WHERE user_id = $1`,
+                        [decoded.userId]
                     );
                 }
             } catch (_cleanupError) {}
@@ -340,24 +371,14 @@ router.post('/logout', async (req, res) => {
         // If a token exists, delete it from the database
         if (refreshToken) {
             await pool.query(
-                `DELETE FROM refresh_tokens WHERE token = $1 OR token = $2`,
-                [hashToken(refreshToken), refreshToken]
+                `DELETE FROM refresh_tokens WHERE token = $1`,
+                [hashToken(refreshToken)]
             );
         }
 
         // 🍪 Clear cookie (IMPORTANT)
-        res.clearCookie('refreshToken', {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            path: '/'
-        });
-        res.clearCookie('accessToken', {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            path: '/'
-        });
+        res.clearCookie('refreshToken', COOKIE_OPTIONS);
+        res.clearCookie('accessToken', ACCESS_COOKIE_OPTIONS);
 
 
         return res.json({
@@ -385,8 +406,29 @@ router.post('/logout', async (req, res) => {
 // UPDATE PROFILE
 router.post('/update-profile', authCheck, async (req, res) => {
     const userId = req.userId;
-    const { firstName, lastName, email, phone, password, preferred_currency } = req.body;
+    const unexpectedFieldError = rejectUnexpectedFields(req.body, [
+        'firstName',
+        'lastName',
+        'email',
+        'phone',
+        'password',
+        'preferred_currency',
+    ]);
+    if (unexpectedFieldError) {
+        return res.status(400).json({ success: false, error: unexpectedFieldError });
+    }
 
+    const firstName = trimString(req.body.firstName, { max: 80 });
+    const lastName = trimString(req.body.lastName, { max: 80 });
+    const email = trimString(req.body.email, { max: 254 });
+    const phone = trimString(req.body.phone, { max: 32 });
+    const password = trimString(req.body.password, { max: 200 });
+    const preferred_currency = currencyCode(req.body.preferred_currency);
+
+
+    if ([firstName, lastName, email, phone, password, preferred_currency].includes(null)) {
+        return res.status(400).json({ success: false, error: 'Invalid profile details' });
+    }
 
     if (password && password.trim().length < 6) {
         return res.status(400).json({ 
@@ -441,9 +483,7 @@ router.post('/update-profile', authCheck, async (req, res) => {
             hashedPassword = await bcrypt.hash(password.trim(), saltRounds);
         }
 
-        const formattedCurrency = preferred_currency ? 
-            (typeof preferred_currency === 'string' ? preferred_currency.toUpperCase() : preferred_currency) 
-            : null;
+        const formattedCurrency = preferred_currency || null;
 
         const result = await pool.query(
             `UPDATE public."user" SET 
@@ -533,25 +573,39 @@ router.get('/user-profile', authCheck, async (req, res) => {
     }
 });
 
+router.get('/ws-token', authCheck, (req, res) => {
+    const token = jwt.sign(
+        {
+            userId: req.userId,
+            purpose: 'websocket',
+        },
+        JWT_ACCESS_SECRET,
+        { expiresIn: '60s' }
+    );
+
+    res.json({
+        success: true,
+        token,
+    });
+});
+
 // UPDATE CURRENCY
 router.post('/update-currency', authCheck, async (req, res) => {
-    const { currency } = req.body;
+    const currency = currencyCode(req.body.currency, { required: true });
     const userId = req.userId;
 
 
     if (!currency) {
-        return res.status(400).json({ success: false, error: 'currency required' });
+        return res.status(400).json({ success: false, error: 'Valid currency required' });
     }
 
     try {
-        const formattedCurrency = typeof currency === 'string' ? currency.toUpperCase() : currency;
-        
         const result = await pool.query(
             `UPDATE public."user" 
              SET preferred_currency = $1 
              WHERE "ID" = $2 AND "isDeleted" = false 
              RETURNING *`,
-            [formattedCurrency, userId]
+            [currency, userId]
         );
 
         if (result.rows.length === 0) {

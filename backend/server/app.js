@@ -3,6 +3,7 @@ const fs = require('fs');
 const http = require('http');
 const WebSocket = require('ws');
 const path = require('path');
+const jwt = require('jsonwebtoken');
 require('dotenv').config({ path: path.join(__dirname, '.env'), quiet: true });
 
 const app = express();
@@ -57,6 +58,70 @@ const cookieParser = require('cookie-parser');
 app.use(corsMiddleware);
 app.use(cookieParser());
 app.use(express.json({ limit: '2mb' }));
+
+const normalizeOrigin = (value) => String(value || '').trim().replace(/\/+$/, '');
+const devOrigins = process.env.NODE_ENV === 'production'
+  ? []
+  : [
+      'http://localhost:3000',
+      'http://127.0.0.1:3000',
+      'http://localhost:5173',
+      'http://127.0.0.1:5173',
+      'http://localhost:5174',
+      'http://127.0.0.1:5174',
+    ];
+const allowedOrigins = [process.env.ALLOWED_ORIGINS, process.env.FRONTEND_URL, ...devOrigins]
+  .filter(Boolean)
+  .flatMap((value) => String(value).split(','))
+  .map(normalizeOrigin)
+  .filter(Boolean);
+
+function isTrustedOrigin(req) {
+  const origin = normalizeOrigin(req.headers.origin);
+  if (!origin) return true;
+  return allowedOrigins.includes(origin);
+}
+
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader(
+    'Content-Security-Policy',
+    [
+      "default-src 'self'",
+      "base-uri 'self'",
+      "object-src 'none'",
+      "frame-ancestors 'none'",
+      "img-src 'self' data: blob: https:",
+      "script-src 'self' https://www.tradays.com",
+      "style-src 'self' 'unsafe-inline'",
+      "connect-src 'self' http: https: ws: wss:",
+    ].join('; ')
+  );
+
+  if (process.env.NODE_ENV === 'production') {
+    res.setHeader('Strict-Transport-Security', 'max-age=15552000; includeSubDomains');
+  }
+
+  next();
+});
+
+app.use((req, res, next) => {
+  if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
+    return next();
+  }
+
+  if (!isTrustedOrigin(req)) {
+    return res.status(403).json({
+      success: false,
+      error: 'Untrusted request origin',
+    });
+  }
+
+  next();
+});
 
 /* =======================
    ROUTES
@@ -118,15 +183,75 @@ const server = http.createServer(app);
 /* =======================
    WEBSOCKET SERVER
 ======================= */
-const wss = new WebSocket.Server({ server });
+const wss = new WebSocket.Server({ noServer: true });
 
 // make wss available in all routes
 app.set('wss', wss);
 
-wss.on('connection', (ws) => {
+wss.on('connection', (ws, req, userId) => {
+  ws.userId = userId;
+  ws.isAlive = true;
+  ws.on('pong', () => {
+    ws.isAlive = true;
+  });
   ws.on('close', () => {});
-  ws.on('message', () => {});
+  ws.on('message', (message) => {
+    if (Buffer.byteLength(message) > 2048) {
+      ws.close(1009, 'Message too large');
+    }
+  });
 });
+
+server.on('upgrade', (req, socket, head) => {
+  const origin = normalizeOrigin(req.headers.origin);
+  if (origin && !allowedOrigins.includes(origin)) {
+    socket.destroy();
+    return;
+  }
+
+  const cookies = Object.fromEntries(
+    String(req.headers.cookie || '')
+      .split(';')
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .map((part) => {
+        const separatorIndex = part.indexOf('=');
+        return separatorIndex === -1
+          ? [part, '']
+          : [part.slice(0, separatorIndex), part.slice(separatorIndex + 1)];
+      })
+  );
+
+  try {
+    const requestUrl = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
+    const queryToken = requestUrl.searchParams.get('token');
+    const accessToken = queryToken || decodeURIComponent(cookies.accessToken || '');
+    const decoded = jwt.verify(accessToken, process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET);
+
+    if (queryToken && decoded.purpose !== 'websocket') {
+      socket.destroy();
+      return;
+    }
+
+    wss.handleUpgrade(req, socket, head, (ws) => {
+      wss.emit('connection', ws, req, decoded.userId);
+    });
+  } catch {
+    socket.destroy();
+  }
+});
+
+setInterval(() => {
+  wss.clients.forEach((ws) => {
+    if (!ws.isAlive) {
+      ws.terminate();
+      return;
+    }
+
+    ws.isAlive = false;
+    ws.ping();
+  });
+}, 30000).unref();
 
 /* =======================
    START SERVER

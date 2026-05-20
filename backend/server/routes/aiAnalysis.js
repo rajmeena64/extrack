@@ -1,8 +1,15 @@
 const express = require('express');
 const axios = require('axios');
 const { authCheck } = require('./auth');
+const { createRateLimiter } = require('../middleware/rateLimit');
 
 const router = express.Router();
+const aiAnalysisRateLimiter = createRateLimiter({
+  windowMs: 60 * 1000,
+  max: Number(process.env.AI_ANALYSIS_RATE_LIMIT_MAX || 10),
+  keyGenerator: (req) => req.userId || req.ip,
+  message: 'Too many AI analysis requests. Please try again shortly.',
+});
 
 const MAX_TRADES = 80;
 const MAX_IMAGE_PARTS = 4;
@@ -223,7 +230,7 @@ const buildGeminiPayload = ({ prompt, imageParts, useSearch }) => ({
   },
 });
 
-router.post('/ai-trade-analysis', authCheck, async (req, res) => {
+router.post('/ai-trade-analysis', authCheck, aiAnalysisRateLimiter, async (req, res) => {
   const apiKey = process.env.GEMINI_API_KEY;
   const models = getGeminiModels();
 

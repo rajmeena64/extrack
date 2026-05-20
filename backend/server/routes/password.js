@@ -7,6 +7,7 @@ const emailTransporter = require('../config/email');
 const { createRateLimiter } = require('../middleware/rateLimit');
 const { authCheck } = require('./auth');
 const { hashToken } = require('../utils/security');
+const { trimString } = require('../utils/validation');
 
 const forgotPasswordRateLimiter = createRateLimiter({
     windowMs: process.env.FORGOT_PASSWORD_RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000,
@@ -43,7 +44,14 @@ function getPasswordResetUrl() {
 }
 
 router.post('/forgot-password', forgotPasswordRateLimiter, async (req, res) => {
-    const { email } = req.body;
+    const email = trimString(req.body?.email, { max: 254, required: true });
+
+    if (!email) {
+        return res.status(400).json({
+            success: false,
+            error: 'Valid email is required'
+        });
+    }
 
     try {
         if (!emailTransporter) {
@@ -55,7 +63,7 @@ router.post('/forgot-password', forgotPasswordRateLimiter, async (req, res) => {
 
         const result = await pool.query(
             `SELECT * FROM public."user" WHERE "email" = $1`,
-            [email]
+            [email.toLowerCase()]
         );
 
         if (result.rows.length === 0) {
@@ -139,7 +147,8 @@ router.post('/forgot-password', forgotPasswordRateLimiter, async (req, res) => {
 });
 
 router.post('/reset-password', resetPasswordRateLimiter, async (req, res) => {
-    const { token, newPassword } = req.body;
+    const token = trimString(req.body?.token, { max: 256, required: true });
+    const newPassword = trimString(req.body?.newPassword, { max: 200, required: true });
 
     try {
         if (!token || !newPassword) {
@@ -159,9 +168,9 @@ router.post('/reset-password', resetPasswordRateLimiter, async (req, res) => {
         const tokenHash = hashToken(token);
         const result = await pool.query(
             `SELECT * FROM public."user"
-             WHERE (reset_token = $1 OR reset_token = $2)
+             WHERE reset_token = $1
              AND reset_token_expiry > NOW()`,
-            [tokenHash, token]
+            [tokenHash]
         );
 
         if (result.rows.length === 0) {
@@ -182,6 +191,8 @@ router.post('/reset-password', resetPasswordRateLimiter, async (req, res) => {
              WHERE "ID" = $2`,
             [hashedPassword, user.ID]
         );
+
+        await pool.query(`DELETE FROM refresh_tokens WHERE user_id = $1`, [user.ID]);
 
         res.json({
             success: true,
@@ -230,6 +241,8 @@ router.post('/update-password', authCheck, async (req, res) => {
             `UPDATE public."user" SET "password" = $1 WHERE "ID" = $2`,
             [hashedNewPassword, userId]
         );
+
+        await pool.query(`DELETE FROM refresh_tokens WHERE user_id = $1`, [userId]);
 
         res.json({
             success: true,

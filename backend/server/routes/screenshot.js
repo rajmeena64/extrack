@@ -5,6 +5,27 @@ const cloudinary = require('../config/cloudinary');
 const upload = require('../config/multer');
 const fs = require('fs');
 const { authCheck } = require('./auth');
+const { createRateLimiter } = require('../middleware/rateLimit');
+const { trimString } = require('../utils/validation');
+
+const screenshotRateLimiter = createRateLimiter({
+    windowMs: 60 * 1000,
+    max: Number(process.env.SCREENSHOT_RATE_LIMIT_MAX || 20),
+    keyGenerator: (req) => req.userId || req.ip,
+    message: 'Too many screenshot requests. Please try again shortly.',
+});
+
+function isAllowedImageMagic(filePath) {
+    const buffer = fs.readFileSync(filePath);
+    if (buffer.length < 12) return false;
+
+    const isPng = buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+    const isJpeg = buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+    const isWebp = buffer.subarray(0, 4).toString('ascii') === 'RIFF'
+        && buffer.subarray(8, 12).toString('ascii') === 'WEBP';
+
+    return isPng || isJpeg || isWebp;
+}
 
 // ==================== GET TRADE DATA (NOTES, STRATEGY, SCREENSHOTS) ====================
 router.get('/get-trade/:unique_id', authCheck, async (req, res) => {
@@ -64,6 +85,8 @@ router.get('/get-trade/:unique_id', authCheck, async (req, res) => {
 router.post('/update-trade', authCheck, async (req, res) => {
     const { unique_id, notes, strategy } = req.body;
     const userId = req.userId;
+    const normalizedNotes = trimString(notes, { max: 5000 });
+    const normalizedStrategy = trimString(strategy, { max: 120 });
 
     // Validation
     if (!unique_id || !userId) {
@@ -112,15 +135,21 @@ router.post('/update-trade', authCheck, async (req, res) => {
 
         // Add notes if provided
         if (notes !== undefined) {
+            if (normalizedNotes === null) {
+                return res.status(400).json({ success: false, error: 'Invalid notes' });
+            }
             updates.push(`notes = $${paramIndex}`);
-            values.push(notes);
+            values.push(normalizedNotes || null);
             paramIndex++;
         }
 
         // Add strategy if provided
         if (strategy !== undefined) {
+            if (normalizedStrategy === null) {
+                return res.status(400).json({ success: false, error: 'Invalid strategy' });
+            }
             updates.push(`strategy = $${paramIndex}`);
-            values.push(strategy);
+            values.push(normalizedStrategy || null);
             paramIndex++;
         }
 
@@ -164,12 +193,22 @@ router.post('/update-trade', authCheck, async (req, res) => {
 });
 
 // ==================== SCREENSHOT UPLOAD TO CLOUDINARY ====================
-router.post('/upload-screenshot', authCheck, upload.single('screenshot'), async (req, res) => {
+router.post('/upload-screenshot', authCheck, screenshotRateLimiter, upload.single('screenshot'), async (req, res) => {
     try {
         if (!req.file) {
             return res.json({ 
                 success: false, 
                 error: 'No file uploaded' 
+            });
+        }
+
+        if (!isAllowedImageMagic(req.file.path)) {
+            if (req.file && fs.existsSync(req.file.path)) {
+                fs.unlinkSync(req.file.path);
+            }
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid image file',
             });
         }
 
@@ -278,7 +317,7 @@ router.post('/upload-screenshot', authCheck, upload.single('screenshot'), async 
 });
 
 // ==================== DELETE SCREENSHOT FROM CLOUDINARY ====================
-router.delete('/delete-screenshot', authCheck, async (req, res) => {
+router.delete('/delete-screenshot', authCheck, screenshotRateLimiter, async (req, res) => {
     const { unique_id, screenshotUrl } = req.body;
     const userId = req.userId;
 

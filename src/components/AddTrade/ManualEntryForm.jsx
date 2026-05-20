@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import SymbolWithIcon from "../Common/SymbolWithIcon";
 import LegacyIcon from "../Common/LegacyIcon";
 import api from "../../utils/serve";
@@ -9,6 +10,7 @@ import { parseTradeNumber, sanitizeDecimalInput, sanitizeSignedDecimalInput } fr
 
 function ManualEntryForm({ trades }) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user } = useAuth();
   const now = new Date();
   const initialTradeDate = now.toISOString().split('T')[0];
@@ -148,6 +150,8 @@ function ManualEntryForm({ trades }) {
 
       if (result.success) {
         alert('✅ Trade added successfully!');
+        // Invalidate queries to refresh dashboard data
+        queryClient.invalidateQueries({ queryKey: ['trades'] });
         navigate('/');
       } else {
         alert('❌ Error: ' + result.error);

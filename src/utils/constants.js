@@ -28,17 +28,34 @@ const isLocalHostname = (hostname) => {
   return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
 };
 
+const isLocalUrl = (value) => {
+  try {
+    return isLocalHostname(new URL(value).hostname.toLowerCase());
+  } catch {
+    return false;
+  }
+};
+
 const resolveApiUrl = () => {
   const envUrl = normalizeUrl(import.meta.env.VITE_URL);
-  if (envUrl) return envUrl;
-
   const hostname = getBrowserHostname();
+
+  if (envUrl && (isLocalHostname(hostname) || !isLocalUrl(envUrl))) {
+    return envUrl;
+  }
+
   return isLocalHostname(hostname) ? DEV_API_FALLBACK : PROD_API_FALLBACK;
 };
 
 const resolveWsUrl = (apiUrl) => {
   const envWsUrl = normalizeUrl(import.meta.env.VITE_WS_URL);
-  if (envWsUrl) return envWsUrl;
+  const hostname = getBrowserHostname();
+
+  if (envWsUrl && (isLocalHostname(hostname) || !isLocalUrl(envWsUrl))) {
+    return envWsUrl.replace(/^http/i, (protocol) =>
+      protocol.toLowerCase() === 'https' ? 'wss' : 'ws'
+    );
+  }
 
   return apiUrl.replace(/^http/i, (protocol) =>
     protocol.toLowerCase() === 'https' ? 'wss' : 'ws'

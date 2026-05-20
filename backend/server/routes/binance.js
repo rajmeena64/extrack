@@ -1,6 +1,7 @@
 const express = require("express");
 const zlib = require("zlib");
 const router = express.Router();
+const { createRateLimiter } = require("../middleware/rateLimit");
 const { fetchCtraderKlines } = require("./ctrader");
 const { normalizeStoredSymbol } = require("../utils/symbols");
 
@@ -30,6 +31,12 @@ const INTERVAL_MS = {
   "1w": 7 * 24 * 60 * 60 * 1000,
   "1M": 31 * 24 * 60 * 60 * 1000,
 };
+const marketDataRateLimiter = createRateLimiter({
+  windowMs: 60 * 1000,
+  max: Number(process.env.MARKET_DATA_RATE_LIMIT_MAX || 120),
+  keyGenerator: (req) => req.ip,
+  message: "Too many market data requests. Please try again shortly.",
+});
 
 const clampLimit = (value) => {
   const limit = Number.parseInt(value, 10);
@@ -189,7 +196,7 @@ const fetchVisionDailyKlines = async ({ market, symbol, interval, endTime, start
 // ======================
 // KLINES ROUTE
 // ======================
-router.get("/klines", async (req, res) => {
+router.get("/klines", marketDataRateLimiter, async (req, res) => {
   try {
     const { symbol, interval, startTime, endTime, limit, category } = req.query;
 
@@ -312,7 +319,7 @@ router.get("/klines", async (req, res) => {
 // ======================
 // SYMBOLS ROUTE
 // ======================
-router.get("/symbols", async (req, res) => {
+router.get("/symbols", marketDataRateLimiter, async (req, res) => {
   try {
     const response = await fetch(`${FUTURES_BASE_URL}/fapi/v1/exchangeInfo`);
 
@@ -344,7 +351,7 @@ router.get("/symbols", async (req, res) => {
 // ======================
 // VALIDATE SYMBOL
 // ======================
-router.get("/validate/:symbol", async (req, res) => {
+router.get("/validate/:symbol", marketDataRateLimiter, async (req, res) => {
   try {
     const symbolUpper = req.params.symbol.toUpperCase();
 

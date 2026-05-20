@@ -4,9 +4,10 @@ const router = express.Router();
 const pool = require('../config/database');
 const { authCheck } = require('./auth');
 const { encryptMT5Password } = require('../utils/mt5Credentials');
+const { currencyCode, trimString } = require('../utils/validation');
 
 // ======= UTILITY FUNCTIONS =======
-function maskPassword(password) {
+function _maskPassword(password) {
     if (!password || password.length === 0) return '';
     return password[0] + '•'.repeat(password.length - 1);
 }
@@ -33,7 +34,7 @@ router.get('/get-mt5-accounts', authCheck, async (req, res) => {
             balance: acc.balance,
             default_currency: acc.default_currency,
             temporary_currency: acc.temporary_currency,
-            investor_password: maskPassword(acc.investor_password)
+            has_investor_password: Boolean(acc.investor_password)
         }));
 
         res.json({ success: true, accounts });
@@ -44,13 +45,13 @@ router.get('/get-mt5-accounts', authCheck, async (req, res) => {
 });
 
 router.post('/update-dashboard-currency', authCheck, async (req, res) => {
-    const { currency } = req.body;
+    const currency = currencyCode(req.body.currency, { required: true });
 
     if (!currency) {
-        return res.status(400).json({ success: false, error: 'currency required' });
+        return res.status(400).json({ success: false, error: 'Valid currency required' });
     }
 
-    const normalizedCurrency = String(currency).trim().toUpperCase();
+    const normalizedCurrency = currency;
 
     try {
         const result = await pool.query(
@@ -76,7 +77,8 @@ router.post('/update-dashboard-currency', authCheck, async (req, res) => {
 // ======= UPDATE MT5 PASSWORD =======
 router.post('/update-mt5-password', authCheck, async (req, res) => {
     try {
-        const { account_id, new_password } = req.body;
+        const account_id = trimString(req.body.account_id, { max: 64, required: true });
+        const new_password = trimString(req.body.new_password, { max: 200, required: true });
         const userId = req.userId;
 
         if (!account_id || !new_password) {
@@ -112,7 +114,14 @@ router.post('/update-mt5-password', authCheck, async (req, res) => {
 
 // ======= SAVE MT5 ACCOUNT =======
 router.post('/save-mt5-account', authCheck, async (req, res) => {
-    const { broker_name, account_id, server_name, investor_password } = req.body;
+    const broker_name = trimString(req.body.broker_name, { max: 120, required: true });
+    const account_id = trimString(req.body.account_id, { max: 64, required: true });
+    const server_name = trimString(req.body.server_name, { max: 120, required: true });
+    const investor_password = trimString(req.body.investor_password, { max: 200, required: true });
+
+    if (!broker_name || !account_id || !server_name || !investor_password) {
+        return res.status(400).json({ success: false, error: 'Valid account details required' });
+    }
 
     try {
         const check = await pool.query(

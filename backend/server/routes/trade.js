@@ -2,14 +2,40 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../config/database');
 const { authCheck } = require('./auth');
+const { createRateLimiter } = require('../middleware/rateLimit');
 const { requireIngestSecret } = require('../utils/security');
 const {
     encryptMT5Password,
     verifyMT5Password,
 } = require('../utils/mt5Credentials');
 const { normalizeStoredSymbol } = require('../utils/symbols');
+const {
+    enumValue,
+    isoDate,
+    rejectUnexpectedFields,
+    timestampValue,
+    trimString,
+} = require('../utils/validation');
 
 let apiTradeMetadataColumnsReady = false;
+const saveTradeRateLimiter = createRateLimiter({
+    windowMs: 60 * 1000,
+    max: Number(process.env.SAVE_TRADE_RATE_LIMIT_MAX || 60),
+    keyGenerator: (req) => req.userId || req.ip,
+    message: 'Too many trade save requests. Please slow down.',
+});
+const bulkTradeRateLimiter = createRateLimiter({
+    windowMs: 60 * 1000,
+    max: Number(process.env.BULK_TRADE_RATE_LIMIT_MAX || 5),
+    keyGenerator: (req) => req.userId || req.ip,
+    message: 'Too many bulk trade requests. Please try again shortly.',
+});
+const ingestRateLimiter = createRateLimiter({
+    windowMs: 60 * 1000,
+    max: Number(process.env.INGEST_RATE_LIMIT_MAX || 60),
+    keyGenerator: (req) => `${req.ip}:${String(req.body?.account_id || 'bulk')}`,
+    message: 'Too many ingest requests. Please try again shortly.',
+});
 
 function normalizeText(value) {
     return String(value || '').trim();
@@ -66,9 +92,12 @@ async function ensureApiTradeMetadataColumns() {
 
 function normalizeScreenshots(screenshots) {
     if (!screenshots) return null;
-    return Array.isArray(screenshots)
-        ? JSON.stringify(screenshots)
-        : JSON.stringify([screenshots]);
+    const values = Array.isArray(screenshots) ? screenshots : [screenshots];
+    const normalized = values
+        .map((value) => trimString(value, { max: 2048 }))
+        .filter(Boolean)
+        .slice(0, 10);
+    return normalized.length > 0 ? JSON.stringify(normalized) : null;
 }
 
 function parseTradeId(value) {
@@ -116,7 +145,24 @@ function clamp(value, min, max) {
     return Math.min(Math.max(value, min), max);
 }
 
-router.post('/save-trade', authCheck, async (req, res) => {
+router.post('/save-trade', authCheck, saveTradeRateLimiter, async (req, res) => {
+    const unexpectedFieldError = rejectUnexpectedFields(req.body, [
+        'symbol',
+        'trade_type',
+        'category',
+        'quantity',
+        'price',
+        'exit_price',
+        'pnl',
+        'strategy',
+        'timestamp',
+        'notes',
+        'screenshots',
+    ]);
+    if (unexpectedFieldError) {
+        return res.status(400).json({ success: false, error: unexpectedFieldError });
+    }
+
     const {
         symbol,
         trade_type,
@@ -134,9 +180,18 @@ router.post('/save-trade', authCheck, async (req, res) => {
     try {
         const screenshotsJson = normalizeScreenshots(screenshots);
         const normalizedSymbol = normalizeStoredSymbol(symbol);
+        const normalizedTradeType = enumValue(trade_type, ['buy', 'sell'], { required: true });
+        const normalizedCategory = trimString(category, { max: 64 });
+        const normalizedStrategy = trimString(strategy, { max: 120 });
+        const normalizedNotes = trimString(notes, { max: 5000 });
+        const normalizedTimestamp = timestampValue(timestamp, { required: true });
 
         if (!normalizedSymbol) {
             return res.status(400).json({ success: false, error: 'Invalid symbol' });
+        }
+
+        if (!normalizedTradeType || normalizedTimestamp === null) {
+            return res.status(400).json({ success: false, error: 'Invalid trade type or timestamp' });
         }
 
         const normalizedQuantity = parseRequiredNumber(quantity, { min: 0.0000001 });
@@ -157,7 +212,7 @@ router.post('/save-trade', authCheck, async (req, res) => {
             `INSERT INTO trades
              (user_id, symbol, trade_type, category, quantity, price, exit_price, pnl, strategy, timestamp, notes, screenshots)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
-            [req.userId, normalizedSymbol, trade_type, category, normalizedQuantity, normalizedPrice, normalizedExitPrice, normalizedPnl, strategy, timestamp, notes, screenshotsJson]
+            [req.userId, normalizedSymbol, normalizedTradeType, normalizedCategory, normalizedQuantity, normalizedPrice, normalizedExitPrice, normalizedPnl, normalizedStrategy, normalizedTimestamp, normalizedNotes, screenshotsJson]
         );
 
         res.json({
@@ -170,14 +225,14 @@ router.post('/save-trade', authCheck, async (req, res) => {
     }
 });
 
-router.post('/save-bulk-trades', authCheck, async (req, res) => {
+router.post('/save-bulk-trades', authCheck, bulkTradeRateLimiter, async (req, res) => {
     const { trades } = req.body;
 
     if (!trades || !Array.isArray(trades)) {
         return res.status(400).json({ success: false, error: 'Invalid trades data' });
     }
 
-    const MAX_TRADES_PER_REQUEST = 500;
+    const MAX_TRADES_PER_REQUEST = Number(process.env.BULK_TRADES_MAX_PER_REQUEST || 100);
     if (trades.length > MAX_TRADES_PER_REQUEST) {
         return res.status(400).json({
             success: false,
@@ -199,6 +254,7 @@ router.post('/save-bulk-trades', authCheck, async (req, res) => {
             const tradePNL = trade.pnl || trade.profit_usd || 0;
             const screenshotsJson = normalizeScreenshots(trade.screenshots || null);
             const normalizedSymbol = normalizeStoredSymbol(trade.symbol);
+            const normalizedTimestamp = timestampValue(tradeTimestamp, { required: true });
             const normalizedQuantity = parseRequiredNumber(tradeQuantity, { min: 0.0000001 });
             const normalizedEntryPrice = parseRequiredNumber(entryPrice, { min: 0.0000001 });
             const normalizedExitPrice = parseRequiredNumber(exitPrice, { min: 0.0000001 });
@@ -229,7 +285,7 @@ router.post('/save-bulk-trades', authCheck, async (req, res) => {
                 errorCount++;
                 continue;
             }
-            if (!tradeTimestamp) {
+            if (normalizedTimestamp === null) {
                 results.push({ success: false, trade: trade.symbol, error: 'Missing timestamp' });
                 errorCount++;
                 continue;
@@ -249,14 +305,14 @@ router.post('/save-bulk-trades', authCheck, async (req, res) => {
                     req.userId,
                     normalizedSymbol,
                     normalizedTradeType,
-                    trade.category || 'forex',
+                    trimString(trade.category, { max: 64 }) || 'forex',
                     normalizedQuantity,
                     normalizedEntryPrice,
                     normalizedExitPrice,
                     normalizedPNL,
-                    trade.strategy || null,
-                    tradeTimestamp,
-                    trade.notes || null,
+                    trimString(trade.strategy, { max: 120 }) || null,
+                    normalizedTimestamp,
+                    trimString(trade.notes, { max: 5000 }) || null,
                     screenshotsJson
                 ]
             );
@@ -292,6 +348,7 @@ async function ingestApiTrades(req, res) {
         const params = [];
         let i = 1;
         const userIdMap = new Map();
+        const affectedUserIds = new Set();
 
         for (const trade of trades) {
             try {
@@ -391,6 +448,8 @@ async function ingestApiTrades(req, res) {
                     );
                 }
 
+                affectedUserIds.add(userId);
+
                 values.push(
                     `($${i++},$${i++},'mt5',$${i++},$${i++},$${i++},$${i++},$${i++},$${i++},$${i++},$${i++},$${i++},$${i++},$${i++},$${i++},$${i++})`
                 );
@@ -449,14 +508,16 @@ async function ingestApiTrades(req, res) {
             results.push({ success: true, inserted: tradeRes.rows.length });
         }
 
+        req.broadcastUserIds = Array.from(affectedUserIds);
+
         res.json({ success: true, errorCount, skippedCount, results });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }
 }
 
-router.post('/save-api-trade', requireIngestSecret, ingestApiTrades);
-router.post('/mt5/receive-trades', requireIngestSecret, ingestApiTrades);
+router.post('/save-api-trade', ingestRateLimiter, requireIngestSecret, ingestApiTrades);
+router.post('/mt5/receive-trades', ingestRateLimiter, requireIngestSecret, ingestApiTrades);
 
 router.get('/user-trades/:userid?', authCheck, async (req, res) => {
     try {
@@ -489,9 +550,10 @@ router.get('/user-api-trades/:userid?', authCheck, async (req, res) => {
 
 router.patch('/trades/breakeven-day', authCheck, async (req, res) => {
     const { date, is_breakeven } = req.body;
+    const normalizedDate = isoDate(date, { required: true });
 
-    if (!date) {
-        return res.status(400).json({ success: false, error: 'date required' });
+    if (normalizedDate === null) {
+        return res.status(400).json({ success: false, error: 'Valid date required' });
     }
 
     const isBreakeven = Boolean(is_breakeven);
@@ -503,7 +565,7 @@ router.patch('/trades/breakeven-day', authCheck, async (req, res) => {
              WHERE user_id = $2
                AND timestamp >= $3::date
                AND timestamp < ($3::date + INTERVAL '1 day')`,
-            [isBreakeven, req.userId, date]
+            [isBreakeven, req.userId, normalizedDate]
         );
 
         const apiResult = await pool.query(
@@ -512,12 +574,12 @@ router.patch('/trades/breakeven-day', authCheck, async (req, res) => {
              WHERE user_id = $2
                AND timestamp >= $3::date
                AND timestamp < ($3::date + INTERVAL '1 day')`,
-            [isBreakeven, req.userId, date]
+            [isBreakeven, req.userId, normalizedDate]
         );
 
         res.json({
             success: true,
-            date,
+            date: normalizedDate,
             is_breakeven: isBreakeven,
             manualCount: manualResult.rowCount,
             apiCount: apiResult.rowCount
@@ -609,15 +671,20 @@ router.delete('/api-trades/:id', authCheck, async (req, res) => {
 
 router.post('/update-trade-note', authCheck, async (req, res) => {
     const { tradeId, notes } = req.body;
+    const normalizedNotes = trimString(notes, { max: 5000 });
 
     if (!tradeId) {
         return res.status(400).json({ success: false, error: 'Trade ID required' });
     }
 
+    if (normalizedNotes === null) {
+        return res.status(400).json({ success: false, error: 'Invalid notes' });
+    }
+
     try {
         const updateResult = await pool.query(
             `UPDATE trades SET notes = $1 WHERE "ID" = $2 AND user_id = $3 RETURNING "ID", symbol`,
-            [notes, tradeId, req.userId]
+            [normalizedNotes || null, tradeId, req.userId]
         );
 
         if (updateResult.rowCount === 0) {

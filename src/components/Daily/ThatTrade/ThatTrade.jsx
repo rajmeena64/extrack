@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import "./ThatTrade.css";
 
 import Chart from "../chart/Chart";
@@ -13,6 +14,7 @@ function ThatTrade({ trades = [] }) {
   const { tradeId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient();
 
   // States for editable fields
   const [strategy, setStrategy] = useState("");
@@ -122,6 +124,7 @@ function ThatTrade({ trades = [] }) {
       
       if (data.success) {
         setSaveMessage("✅ Strategy saved!");
+        queryClient.invalidateQueries({ queryKey: ['trades'] });
         setShowStrategyModal(false);
         setTimeout(() => setSaveMessage(""), 3000);
       } else {
@@ -149,6 +152,7 @@ function ThatTrade({ trades = [] }) {
       
       if (data.success) {
         setSaveMessage("✅ Notes saved!");
+        queryClient.invalidateQueries({ queryKey: ['trades'] });
         setShowNoteModal(false);
         setTimeout(() => setSaveMessage(""), 3000);
       } else {
@@ -175,6 +179,7 @@ function ThatTrade({ trades = [] }) {
       
       if (data.success) {
         setScreenshots(data.screenshots || []);
+        queryClient.invalidateQueries({ queryKey: ['trades'] });
         setSaveMessage("✅ Screenshot uploaded!");
         setTimeout(() => setSaveMessage(""), 3000);
       } else {
@@ -210,6 +215,7 @@ function ThatTrade({ trades = [] }) {
       
       if (data.success) {
         setScreenshots(data.screenshots || []);
+        queryClient.invalidateQueries({ queryKey: ['trades'] });
         setSaveMessage("✅ Screenshot deleted!");
         setTimeout(() => setSaveMessage(""), 3000);
       } else {

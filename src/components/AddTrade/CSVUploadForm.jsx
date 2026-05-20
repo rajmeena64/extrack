@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import LegacyIcon from '../Common/LegacyIcon';
 import api from '../../utils/serve';
 import { useAuth } from '../../context/AuthContext';
@@ -8,6 +9,7 @@ import { parseTradeNumber } from '../../utils/fieldValidation';
 
 function CSVUploadForm({ csvData, setCsvData }) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user } = useAuth();
   const [previewData, setPreviewData] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -198,6 +200,8 @@ function CSVUploadForm({ csvData, setCsvData }) {
       
       if (result.success) {
         alert(`✅ Successfully uploaded ${trades.length} trades!`);
+        // Invalidate queries to refresh dashboard data
+        queryClient.invalidateQueries({ queryKey: ['trades'] });
         navigate('/');
       } else {
         throw new Error(result.error || 'Failed to save trades');

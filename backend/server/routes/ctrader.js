@@ -7,6 +7,11 @@ const fs = require('fs');
 const _path = require('path');
 const pool = require('../config/database');
 const { authCheck } = require('./auth');
+const { createRateLimiter } = require('../middleware/rateLimit');
+const {
+  decryptMT5Password,
+  encryptMT5Password,
+} = require('../utils/mt5Credentials');
 const { normalizeStoredSymbol } = require('../utils/symbols');
 
 let root;
@@ -65,6 +70,12 @@ const EXPECTED_RESPONSE_BY_REQUEST = {
   2137: 2138,
   2145: 2146,
 };
+const ctraderKlineRateLimiter = createRateLimiter({
+  windowMs: 60 * 1000,
+  max: Number(process.env.CTRADER_KLINE_RATE_LIMIT_MAX || 60),
+  keyGenerator: (req) => req.userId || req.ip,
+  message: 'Too many cTrader kline requests. Please try again shortly.',
+});
 
 async function requireCtraderAdmin(req, res, next) {
   try {
@@ -167,11 +178,11 @@ async function loadCtraderTokensFromStore() {
     }
 
     if (row.access_token) {
-      ctraderConfig.accessToken = row.access_token;
+      ctraderConfig.accessToken = decryptMT5Password(row.access_token);
     }
 
     if (row.refresh_token) {
-      ctraderConfig.refreshToken = row.refresh_token;
+      ctraderConfig.refreshToken = decryptMT5Password(row.refresh_token);
     }
 
     if (row.expires_at) {
@@ -206,8 +217,8 @@ async function saveCtraderTokensToStore() {
         'ctrader',
         ctraderConfig.accountId || null,
         Boolean(ctraderConfig.isDemo),
-        ctraderConfig.accessToken || null,
-        ctraderConfig.refreshToken || null,
+        ctraderConfig.accessToken ? encryptMT5Password(ctraderConfig.accessToken) : null,
+        ctraderConfig.refreshToken ? encryptMT5Password(ctraderConfig.refreshToken) : null,
         Number(ctraderConfig.expiresAt || 0),
       ]
     );
@@ -1113,7 +1124,7 @@ function registerCtraderRoutes(app) {
     }
   });
 
-  app.get("/api/ctrader-klines", async (req, res) => {
+  app.get("/api/ctrader-klines", authCheck, ctraderKlineRateLimiter, async (req, res) => {
     try {
       const { symbol, interval, startTime, endTime, limit } = req.query;
 

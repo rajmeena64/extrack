@@ -49,7 +49,9 @@ const deepMerge = (target, source) => {
 
 const normalizeSettingsBody = (body) => {
   if (!isPlainObject(body)) return null;
-  return JSON.parse(JSON.stringify(body));
+  const serialized = JSON.stringify(body);
+  if (serialized.length > 50 * 1024) return null;
+  return JSON.parse(serialized);
 };
 
 const toBase64Url = (buffer) => buffer

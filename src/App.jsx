@@ -229,6 +229,8 @@ function App() {
     enabled: !isAuthLoading && Boolean(user?.ID),
     queryFn: () => tradeManager.loadTrades(user.ID, tradeMode),
     placeholderData: (previousData) => previousData,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
   const mt5AccountsQuery = useQuery({
@@ -255,6 +257,14 @@ function App() {
     let isDisposed = false;
     let connectTimer = null;
 
+    const scheduleConnection = (delay = 2500) => {
+      if (isDisposed || connectTimer || ws.current) return;
+      connectTimer = window.setTimeout(() => {
+        connectTimer = null;
+        connectWebSocket();
+      }, delay);
+    };
+
     const connectWebSocket = async () => {
       try {
         const healthResponse = await fetch(`${API_URL}/api/health`, {
@@ -265,7 +275,22 @@ function App() {
           return;
         }
 
-        const socket = new WebSocket(WS_URL);
+        await api.get('/user-profile');
+        if (isDisposed || ws.current) {
+          return;
+        }
+
+        const { data: wsTokenResponse } = await api.get('/ws-token');
+        const wsToken = wsTokenResponse?.token;
+
+        if (!wsToken || isDisposed || ws.current) {
+          return;
+        }
+
+        const wsUrl = new URL(WS_URL);
+        wsUrl.searchParams.set('token', wsToken);
+
+        const socket = new WebSocket(wsUrl.toString());
         ws.current = socket;
 
         socket.onmessage = async (event) => {
@@ -277,8 +302,10 @@ function App() {
             updatingTrades.current = true;
 
             try {
-              await queryClient.invalidateQueries({
-                queryKey: ['trades', user.ID, tradeMode],
+              await queryClient.invalidateQueries({ queryKey: ['trades'] });
+              await queryClient.refetchQueries({
+                queryKey: ['trades'],
+                type: 'active',
               });
             } catch {
               // Query invalidation is best-effort.
@@ -301,14 +328,13 @@ function App() {
           if (ws.current === socket) {
             ws.current = null;
           }
+
+          scheduleConnection(3000);
         };
       } catch {
         // Backend not reachable yet; skip websocket setup silently.
+        scheduleConnection(5000);
       }
-    };
-
-    const scheduleConnection = () => {
-      connectTimer = window.setTimeout(connectWebSocket, 2500);
     };
 
     const closeSocket = () => {
