@@ -24,7 +24,7 @@ const Analytics = lazy(() => import('./components/Analytics/Analytics'));
 const EconomicCalendar = lazy(() => import('./components/EconomicCalendar/EconomicCalendar'));
 const TradeView = lazy(() => import('./components/Daily/TradeView'));
 const ThatTrade = lazy(() => import('./components/Daily/ThatTrade/ThatTrade'));
-const LandingPage = lazy(() => import('./components/Landing/LandingPage'));
+import LandingPage from './components/Landing/LandingPage';
 const DayReview = lazy(() => import('./components/DayReview/DayReview'));
 
 const startOfLocalDay = (date) => {
@@ -38,30 +38,6 @@ const endOfLocalDay = (date) => {
   nextDate.setHours(23, 59, 59, 999);
   return nextDate;
 };
-
-const PageLoader = () => (
-  <div className="dashboard dashboard-boot-shell" aria-hidden="true">
-    <main className="main-content dashboard-boot-shell__main">
-      <header className="dashboard-boot-shell__header">
-        <h1 className="app-page-title">Dashboard</h1>
-        <div className="dashboard-boot-shell__controls">
-          <span />
-          <span />
-          <span />
-        </div>
-      </header>
-      <section className="dashboard-boot-shell__stats">
-        <article className="dashboard-boot-shell__card dashboard-boot-shell__card--featured">
-          <small>Total P&amp;L</small>
-          <strong>&nbsp;</strong>
-        </article>
-        <article className="dashboard-boot-shell__card" />
-        <article className="dashboard-boot-shell__card" />
-        <article className="dashboard-boot-shell__card" />
-      </section>
-    </main>
-  </div>
-);
 
 const RouteSkeleton = () => {
   useEffect(() => {
@@ -504,9 +480,7 @@ function App() {
   return (
     <BrowserRouter>
     <ThemeProvider>
-      {!user && isAuthLoading ? (
-        <PageLoader />
-      ) : user ? (
+      {user ? (
         <div className="dashboard">
           <Sidebar />
 
@@ -553,11 +527,9 @@ function App() {
           </Suspense>
         </div>
       ) : (
-        <Suspense fallback={<PageLoader />}>
-          <Routes>
-            <Route path="*" element={<LandingPage />} />
-          </Routes>
-        </Suspense>
+        <Routes>
+          <Route path="*" element={<LandingPage />} />
+        </Routes>
       )}
       </ThemeProvider>
     </BrowserRouter>
