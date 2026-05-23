@@ -59,27 +59,10 @@ app.use(corsMiddleware);
 app.use(cookieParser());
 app.use(express.json({ limit: '2mb' }));
 
-const normalizeOrigin = (value) => String(value || '').trim().replace(/\/+$/, '');
-const devOrigins = process.env.NODE_ENV === 'production'
-  ? []
-  : [
-      'http://localhost:3000',
-      'http://127.0.0.1:3000',
-      'http://localhost:5173',
-      'http://127.0.0.1:5173',
-      'http://localhost:5174',
-      'http://127.0.0.1:5174',
-    ];
-const allowedOrigins = [process.env.ALLOWED_ORIGINS, process.env.FRONTEND_URL, ...devOrigins]
-  .filter(Boolean)
-  .flatMap((value) => String(value).split(','))
-  .map(normalizeOrigin)
-  .filter(Boolean);
-
 function isTrustedOrigin(req) {
-  const origin = normalizeOrigin(req.headers.origin);
+  const origin = corsMiddleware.normalizeOrigin(req.headers.origin);
   if (!origin) return true;
-  return allowedOrigins.includes(origin);
+  return corsMiddleware.isAllowedOrigin(origin);
 }
 
 app.use((req, res, next) => {
@@ -203,8 +186,8 @@ wss.on('connection', (ws, req, userId) => {
 });
 
 server.on('upgrade', (req, socket, head) => {
-  const origin = normalizeOrigin(req.headers.origin);
-  if (origin && !allowedOrigins.includes(origin)) {
+  const origin = corsMiddleware.normalizeOrigin(req.headers.origin);
+  if (origin && !corsMiddleware.isAllowedOrigin(origin)) {
     socket.destroy();
     return;
   }
