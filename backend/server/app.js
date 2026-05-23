@@ -5,6 +5,12 @@ const WebSocket = require('ws');
 const path = require('path');
 const jwt = require('jsonwebtoken');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env'), quiet: true });
+const Sentry = require('@sentry/node');
+
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  environment: process.env.NODE_ENV || 'development',
+});
 
 
 const app = express();
@@ -158,7 +164,21 @@ app.get('/api/health', (req, res) => {
     message: 'Server is running!',
   });
 });
+
 registerCtraderRoutes(app);
+Sentry.setupExpressErrorHandler(app);
+
+app.use((err, req, res, next) => {
+  if (res.headersSent) {
+    return next(err);
+  }
+
+  res.status(err.status || 500).json({
+    success: false,
+    error: process.env.NODE_ENV === 'production' ? 'Internal server error' : err.message,
+  });
+});
+
 /* =======================
    HTTP SERVER
 ======================= */

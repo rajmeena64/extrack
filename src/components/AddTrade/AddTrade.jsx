@@ -28,7 +28,6 @@ function AddTrade({ trades }) {
             <button className="back-btn" onClick={() => navigate('/')}>
               <LegacyIcon className="fas fa-arrow-left" />
             </button>
-
             <h1 className="app-page-title">
               {activeTab === 'manual' ? 'Add Trade' : 'Trade Import'}
             </h1>
