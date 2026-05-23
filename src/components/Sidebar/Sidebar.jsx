@@ -153,7 +153,7 @@ function Sidebar() {
 
   const handleLogout = (e) => {
     e.preventDefault();
-    fetch(`${API_URL}/api/logout`, {
+    fetch(`${API_URL}/api/auth/logout`, {
       method: 'POST',
       credentials: 'include'
     })

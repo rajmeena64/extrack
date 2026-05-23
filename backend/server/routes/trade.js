@@ -7,7 +7,7 @@ const { requireIngestSecret } = require('../utils/security');
 const {
     encryptMT5Password,
     verifyMT5Password,
-} = require('../utils/mt5Credentials');
+} = require('../services/mt5Credentials');
 const { normalizeStoredSymbol } = require('../utils/symbols');
 const {
     enumValue,
@@ -15,7 +15,7 @@ const {
     rejectUnexpectedFields,
     timestampValue,
     trimString,
-} = require('../utils/validation');
+} = require('../validators/common');
 
 let apiTradeMetadataColumnsReady = false;
 let tradesUniqueIdIndexReady = false;

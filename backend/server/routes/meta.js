@@ -3,8 +3,8 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../config/database');
 const { authCheck } = require('./auth');
-const { encryptMT5Password } = require('../utils/mt5Credentials');
-const { currencyCode, trimString } = require('../utils/validation');
+const { encryptMT5Password } = require('../services/mt5Credentials');
+const { currencyCode, trimString } = require('../validators/common');
 
 // ======= UTILITY FUNCTIONS =======
 function _maskPassword(password) {

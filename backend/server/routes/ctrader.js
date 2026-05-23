@@ -11,7 +11,7 @@ const { createRateLimiter } = require('../middleware/rateLimit');
 const {
   decryptMT5Password,
   encryptMT5Password,
-} = require('../utils/mt5Credentials');
+} = require('../services/mt5Credentials');
 const { normalizeStoredSymbol } = require('../utils/symbols');
 
 let root;

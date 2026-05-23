@@ -64,13 +64,12 @@ function UserLoginModal({ isOpen, onClose }) {
     setLoading(true);
     
     const loginData = {
-      email: loginMethod === 'email' ? formData.email : null,
-      phone: loginMethod === 'phone' ? formData.phone : null,
+      email: formData.email,
       password: formData.password
     };
 
     try {
-      const response = await fetch(`${API_URL}/api/login`, {
+      const response = await fetch(`${API_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(loginData),
@@ -79,23 +78,24 @@ function UserLoginModal({ isOpen, onClose }) {
 
       const data = await response.json();
 
-      if (data.success) {
+      const responseUser = data.data?.user || data.user;
+      if (data.success && responseUser) {
         const userData = {
-          ID: data.user.ID,
-          firstName: data.user.firstName,
-          lastName: data.user.lastName,
-          email: data.user.email,
-          phone: data.user.phone,
-          accountType: data.user.accountType || 'manual',
-          preferred_currency: data.user.preferred_currency || 'USD'
+          ID: responseUser.ID,
+          firstName: responseUser.firstName,
+          lastName: responseUser.lastName,
+          email: responseUser.email,
+          phone: responseUser.phone,
+          accountType: responseUser.accountType || 'manual',
+          preferred_currency: responseUser.preferred_currency || 'USD'
         };
         
         setUser(userData);
         
-        alert(`Welcome back ${data.user.firstName}!`);
+        alert(`Welcome back ${responseUser.firstName}!`);
         onClose();
       } else {
-        alert('Error: ' + data.error);
+        alert('Error: ' + (data.message || data.error));
       }
     } catch {
       alert('Network error. Check if server is running.');
@@ -116,16 +116,18 @@ function UserLoginModal({ isOpen, onClose }) {
     setLoading(true);
     
     const signupData = {
+      name: `${formData.firstName} ${formData.lastName}`.trim(),
       firstName: formData.firstName,
       lastName: formData.lastName,
       email: formData.email,
-      phone: formData.phoneNumber,
+      mobile: formData.phoneNumber || null,
       password: formData.password,
+      confirmPassword: formData.confirmPassword,
       preferred_currency: formData.currency
     };
 
     try {
-      const response = await fetch(`${API_URL}/api/register`, {
+      const response = await fetch(`${API_URL}/api/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(signupData),
@@ -135,22 +137,10 @@ function UserLoginModal({ isOpen, onClose }) {
       const data = await response.json();
 
       if (data.success) {
-        const userData = {
-          ID: data.user.ID,
-          firstName: data.user.firstName,
-          lastName: data.user.lastName,
-          email: data.user.email,
-          phone: data.user.phone,
-          accountType: 'manual',
-          preferred_currency: data.user.preferred_currency || formData.currency
-        };
-        
-        setUser(userData);
-        
-        alert(`Welcome ${formData.firstName} ${formData.lastName}!`);
-        onClose();
+        alert(data.message || 'Verification link sent to your email');
+        setActiveTab('login');
       } else {
-        alert('Error: ' + data.error);
+        alert('Error: ' + (data.message || data.error));
       }
     } catch {
       alert('Network error. Check if server is running.');
@@ -165,7 +155,7 @@ function UserLoginModal({ isOpen, onClose }) {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_URL}/api/forgot-password`, {
+      const response = await fetch(`${API_URL}/api/auth/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: formData.forgotEmail }),
@@ -174,12 +164,8 @@ function UserLoginModal({ isOpen, onClose }) {
 
       const data = await response.json();
 
-      if (data.success) {
-        alert('✅ Password reset link sent to your email!');
-        setActiveTab('login');
-      } else {
-        alert('❌ Error: ' + data.error);
-      }
+      alert(data.message || 'If an account exists, password reset instructions have been sent');
+      setActiveTab('login');
     } catch {
       alert('⚠️ Network error. Check if server is running.');
     } finally {
@@ -195,7 +181,7 @@ function UserLoginModal({ isOpen, onClose }) {
     });
 
     if (shouldLogout) {
-      fetch(`${API_URL}/api/logout`, {
+      fetch(`${API_URL}/api/auth/logout`, {
         method: 'POST',
         credentials: 'include'
       })
@@ -499,8 +485,7 @@ function UserLoginModal({ isOpen, onClose }) {
                         value={formData.phoneNumber}
                         onChange={handleInputChange}
                         className="form-input"
-                        placeholder="Enter your phone number"
-                        required
+                        placeholder="+919876543210 (optional)"
                       />
                     </div>
                     
@@ -531,6 +516,7 @@ function UserLoginModal({ isOpen, onClose }) {
                           onChange={handleInputChange}
                           className="form-input"
                           placeholder="Create a password"
+                          minLength={12}
                           required
                         />
                         <button 
@@ -552,6 +538,7 @@ function UserLoginModal({ isOpen, onClose }) {
                         onChange={handleInputChange}
                         className="form-input"
                         placeholder="Confirm your password"
+                        minLength={12}
                         required
                       />
                     </div>

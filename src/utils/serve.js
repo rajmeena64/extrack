@@ -77,7 +77,7 @@ const forceLogout = async () => {
   isForceLoggingOut = true;
 
   try {
-    await api.post("/logout");
+    await api.post("/auth/logout");
   } catch {
     // Ignore logout cleanup failures and continue clearing local auth state.
   } finally {
@@ -126,7 +126,7 @@ api.interceptors.response.use(
 
       try {
         await axios.post(
-          `${API_URL}/api/refresh-token`,
+          `${API_URL}/api/auth/refresh-token`,
           {},
           { withCredentials: true }
         );

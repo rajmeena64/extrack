@@ -4,7 +4,8 @@ const http = require('http');
 const WebSocket = require('ws');
 const path = require('path');
 const jwt = require('jsonwebtoken');
-require('dotenv').config({ path: path.join(__dirname, '.env'), quiet: true });
+require('dotenv').config({ path: path.join(__dirname, '..', '.env'), quiet: true });
+
 
 const app = express();
 const missingEnv = [];
@@ -21,8 +22,8 @@ if (!process.env.JWT_REFRESH_SECRET) {
 }
 
 if (process.env.NODE_ENV === 'production') {
-  if (fs.existsSync(path.join(__dirname, '.env'))) {
-    missingEnv.push('remove backend/server/.env from production deploy and use platform-managed secrets');
+  if (fs.existsSync(path.join(__dirname, '..', '.env'))) {
+    missingEnv.push('remove backend .env files from production deploy and use platform-managed secrets');
   }
 
   if (!process.env.MT5_INGEST_SECRET && !process.env.TRADE_INGEST_SECRET) {
@@ -52,7 +53,7 @@ if (missingEnv.length > 0) {
 /* =======================
    MIDDLEWARES
 ======================= */
-const corsMiddleware = require('./uploads/middleware/cors');
+const corsMiddleware = require('./middleware/cors');
 
 const cookieParser = require('cookie-parser');
 app.use(corsMiddleware);
@@ -110,14 +111,14 @@ app.use((req, res, next) => {
    ROUTES
 ======================= */
 const authRoutes = require('./routes/auth');
+const secureAuthRoutes = require('./routes/secureAuth');
 const tradeRoutes = require('./routes/trade');
 const screenshotRoutes = require('./routes/screenshot');
 const analyticsRoutes = require('./routes/analytics');
 const aiAnalysisRoutes = require('./routes/aiAnalysis');
-const passwordRoutes = require('./routes/password');
 const mt5Routes = require('./routes/mt5');
 const metaRoutes = require('./routes/meta');
-const wsBroadcast = require('./uploads/middleware/ws-broadcast');
+const wsBroadcast = require('./middleware/wsBroadcast');
 const settingsRoutes = require('./routes/settings');
 
 const apiRoutes = require('./routes/Api');
@@ -130,12 +131,12 @@ const { registerCtraderRoutes, ensureCtraderTokenStore } = require('./routes/ctr
 // **sab API routes pe automatically apply**
 app.use(wsBroadcast);
 
+app.use('/api/auth', secureAuthRoutes);
 app.use('/api', authRoutes);
 app.use('/api', tradeRoutes);
 app.use('/api', screenshotRoutes);
 app.use('/api', analyticsRoutes);
 app.use('/api', aiAnalysisRoutes);
-app.use('/api', passwordRoutes);
 app.use('/api', mt5Routes);
 app.use('/api', metaRoutes);
 app.use('/api', settingsRoutes);

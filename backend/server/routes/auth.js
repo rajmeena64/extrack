@@ -9,7 +9,7 @@ const {
     currencyCode,
     rejectUnexpectedFields,
     trimString,
-} = require('../utils/validation');
+} = require('../validators/common');
 
 // Separate secrets for access and refresh tokens
 const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET;

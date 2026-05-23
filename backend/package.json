@@ -1,10 +1,9 @@
 {
     "name": "trading-backend",
-
-  "scripts": {
-    "start": "node server/app.js",
-    "check": "node --check server/app.js"
-  },
+    "scripts": {
+        "start": "node server/app.js",
+        "check": "node --check server/app.js"
+    },
     "dependencies": {
         "axios": "^1.13.2",
         "bcrypt": "^6.0.0",
@@ -18,10 +17,10 @@
         "jsonwebtoken": "^9.0.3",
         "multer": "^2.0.2",
         "node-fetch": "^2.7.0",
-        "nodemailer": "^7.0.11",
         "pg": "^8.16.3",
         "postgres": "^3.4.7",
         "protobufjs": "^8.0.0",
-        "ws": "^8.19.0"
+        "ws": "^8.19.0",
+        "zod": "^4.4.3"
     }
 }

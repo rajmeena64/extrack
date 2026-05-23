@@ -38,11 +38,12 @@ export function AuthProvider({ children }) {
 
   const refreshUser = useCallback(async () => {
     try {
-      const { data } = await api.get('/user-profile');
+      const { data } = await api.get('/auth/me');
 
-      if (data?.success && data.user) {
-        setUser(data.user);
-        return data.user;
+      const user = data?.data?.user || data?.user;
+      if (data?.success && user) {
+        setUser(user);
+        return user;
       }
     } catch (error) {
       const status = error?.response?.status;

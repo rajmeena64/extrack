@@ -14,6 +14,9 @@ import { convertCurrency, normalizeCurrencyCode } from './utils/Currency';
 import { getTradeDisplayDate } from './utils/tradeTime';
 import { loadCachedUserSettings, loadUserSettings, saveUserSettings } from './utils/userSettings';
 import { markPerf, measurePerf } from './utils/perfMarks';
+import VerifyEmailPage from './components/Auth/VerifyEmailPage';
+import ResetPasswordPage from './components/Auth/ResetPasswordPage';
+import LandingPage from './components/Landing/LandingPage';
 
 
 /* ---------------- LAZY LOADED PAGES ---------------- */
@@ -24,7 +27,6 @@ const Analytics = lazy(() => import('./components/Analytics/Analytics'));
 const EconomicCalendar = lazy(() => import('./components/EconomicCalendar/EconomicCalendar'));
 const TradeView = lazy(() => import('./components/Daily/TradeView'));
 const ThatTrade = lazy(() => import('./components/Daily/ThatTrade/ThatTrade'));
-import LandingPage from './components/Landing/LandingPage';
 const DayReview = lazy(() => import('./components/DayReview/DayReview'));
 
 const startOfLocalDay = (date) => {
@@ -295,7 +297,7 @@ function App() {
           return;
         }
 
-        await api.get('/user-profile');
+        await api.get('/auth/me');
         if (isDisposed || ws.current) {
           return;
         }
@@ -490,6 +492,8 @@ function App() {
           <Suspense fallback={<RouteSkeleton />}>
             <Routes>
               <Route path="/" element={<Navigate to="/dashboard" />} />
+              <Route path="/verify-email" element={<VerifyEmailPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
 
               <Route
                 path="/dashboard"
@@ -531,6 +535,8 @@ function App() {
         </div>
       ) : (
         <Routes>
+          <Route path="/verify-email" element={<VerifyEmailPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="*" element={<LandingPage />} />
         </Routes>
       )}
