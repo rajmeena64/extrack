@@ -86,17 +86,17 @@ router.post('/forgot-password', forgotPasswordRateLimiter, async (req, res) => {
 
         const resetLink = `${getPasswordResetUrl()}?token=${encodeURIComponent(resetToken)}`;
         const fromEmail = process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER;
-        const fromName = process.env.SMTP_FROM_NAME || 'TradeAnalytics';
+        const fromName = process.env.SMTP_FROM_NAME || 'ENTrack';
 
         const mailOptions = {
             from: `"${fromName}" <${fromEmail}>`,
             to: email,
-            subject: 'Reset Your Password - TradeAnalytics',
+            subject: 'Reset Your Password - ENTrack',
             html: `
                 <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; padding: 20px;">
                     <div style="background: linear-gradient(135deg, #000000 0%, #333333 100%);
                                 padding: 30px; border-radius: 15px 15px 0 0; color: white; text-align: center;">
-                        <h1 style="margin: 0; font-size: 28px; font-weight: bold;">TradeAnalytics</h1>
+                        <h1 style="margin: 0; font-size: 28px; font-weight: bold;">ENTrack</h1>
                         <p style="opacity: 0.9; margin-top: 10px; font-size: 14px;">Smart Trading Analytics Platform</p>
                     </div>
 

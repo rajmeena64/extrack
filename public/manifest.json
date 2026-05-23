@@ -1,6 +1,6 @@
 {
-  "name": "TradeAnalytics Dashboard",
-  "short_name": "TradeAnalytics",
+  "name": "ENTrack Dashboard",
+  "short_name": "ENTrack",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0a0a",
@@ -8,7 +8,7 @@
   "description": "Review trades, analyze performance, and manage your trading journal.",
   "icons": [
     {
-      "src": "/assets/applogo/ex_stylish_clean.svg",
+      "src": "/assets/applogo/entrack_stylish_clean.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"

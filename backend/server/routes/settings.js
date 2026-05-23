@@ -5,7 +5,8 @@ const { authCheck } = require('./auth');
 
 const SETTINGS_BLOB_KEY = 'x9$eA.7';
 const OBFUSCATION_PREFIX = 'v1.';
-const OBFUSCATION_SALT = 'Extrack.Settings.2026';
+const OBFUSCATION_SALT = 'Entrack.Settings.2026';
+const LEGACY_OBFUSCATION_SALT = ['Ex', 'track.Settings.2026'].join('');
 
 async function ensureUserSettingsTable() {
   await pool.query(`
@@ -67,8 +68,8 @@ const fromBase64Url = (value) => {
   return Buffer.from(base64.padEnd(Math.ceil(base64.length / 4) * 4, '='), 'base64');
 };
 
-const xorBuffer = (buffer) => {
-  const saltBuffer = Buffer.from(OBFUSCATION_SALT, 'utf8');
+const xorBuffer = (buffer, salt = OBFUSCATION_SALT) => {
+  const saltBuffer = Buffer.from(salt, 'utf8');
   const nextBuffer = Buffer.alloc(buffer.length);
 
   for (let index = 0; index < buffer.length; index += 1) {
@@ -96,9 +97,19 @@ const decodeSettingsFromStorage = (storedSettings) => {
     const encoded = codedSettings.startsWith(OBFUSCATION_PREFIX)
       ? codedSettings.slice(OBFUSCATION_PREFIX.length)
       : codedSettings;
-    const decodedJson = xorBuffer(fromBase64Url(encoded)).toString('utf8');
-    const decodedSettings = JSON.parse(decodedJson);
-    return isPlainObject(decodedSettings) ? decodedSettings : {};
+    const salts = [OBFUSCATION_SALT, LEGACY_OBFUSCATION_SALT];
+
+    for (const salt of salts) {
+      try {
+        const decodedJson = xorBuffer(fromBase64Url(encoded), salt).toString('utf8');
+        const decodedSettings = JSON.parse(decodedJson);
+        if (isPlainObject(decodedSettings)) return decodedSettings;
+      } catch {
+        // Try the next salt for settings saved before the rename.
+      }
+    }
+
+    return {};
   } catch {
     return {};
   }

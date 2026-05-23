@@ -1,12 +1,12 @@
-# EXTrack Figma Design Brief
+# ENTrack Figma Design Brief
 
 ## Product Direction
 
-EXTrack is a trading journal and performance dashboard. The design should feel calm, dense, and operational: a tool traders can scan quickly after a session, not a marketing-heavy crypto app.
+ENTrack is a trading journal and performance dashboard. The design should feel calm, dense, and operational: a tool traders can scan quickly after a session, not a marketing-heavy crypto app.
 
 ## Canvas Structure
 
-Create one Figma page named `EXTrack App Design`.
+Create one Figma page named `ENTrack App Design`.
 
 Recommended frames:
 
@@ -111,7 +111,7 @@ Hero-first landing page for unauthenticated users.
 
 Layout:
 
-- Top nav with EXTrack logo left and `Sign in` button right
+- Top nav with ENTrack logo left and `Sign in` button right
 - Hero copy left:
   - Eyebrow: `Trade review, without the spreadsheet drag`
   - H1: `Know what your trading is really doing.`
@@ -245,8 +245,8 @@ Include these states in components:
 
 When Figma MCP limit is available again:
 
-1. Use existing file `Extrack Trading Dashboard` with file key `npfpdA9549uIB8sZWaJ0oC`.
-2. Create a new page named `EXTrack App Design`.
+1. Use existing file `Entrack Trading Dashboard` with file key `npfpdA9549uIB8sZWaJ0oC`.
+2. Create a new page named `ENTrack App Design`.
 3. Build the component frame first.
 4. Create desktop frames, then mobile frames.
 5. Use the existing code colors as local Figma variables.

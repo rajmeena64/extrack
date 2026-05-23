@@ -40,7 +40,7 @@
 .dashboard-grid-card--progress,
 .dashboard-grid-card--activity,
 .dashboard-grid-card--trades {
-  contain: layout paint;
+  contain: layout;
 }
 
 .dashboard-grid-card--zella,

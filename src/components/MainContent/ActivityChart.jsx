@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useRef } from 'react';
-import { Info } from 'lucide-react';
 import Chart from '../../utils/chartSetup';
 import './ActivityChart.css';
 import { formatCurrency } from '../../utils/Currency';
 import { useTheme } from '../../context/ThemeContext';
 import { toTradeDateKey } from '../../utils/tradeTime';
+import InfoTooltip from '../Common/InfoTooltip';
 
 const formatCompactNumber = (value) => (
   new Intl.NumberFormat('en-US', {
@@ -204,7 +204,11 @@ function ActivityChart({ trades, currencyCode = 'USD' }) {
         <div className="activity-card__title-wrap">
           <div className="activity-card__title-row">
             <h3 className="app-panel-title">Net Daily P&L</h3>
-            <Info size={14} />
+            <InfoTooltip
+              text="Shows each trading day's net P&L as a bar."
+              size={13}
+              side="bottom-left"
+            />
           </div>
         </div>
 

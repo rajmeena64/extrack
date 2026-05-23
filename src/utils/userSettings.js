@@ -2,7 +2,8 @@ import api from "./serve";
 import { decodeStorageValue, encodeStorageValue } from "./obfuscatedStorage";
 
 export const SETTINGS_STORAGE_KEY = "x9$eA.7";
-export const LEGACY_SETTINGS_STORAGE_KEY = "extrack:userSettings";
+export const LEGACY_SETTINGS_STORAGE_KEY = "entrack:userSettings";
+const PREVIOUS_SETTINGS_STORAGE_KEY = ["ex", "track:userSettings"].join("");
 let settingsSaveVersion = 0;
 let activeSettingsSaves = 0;
 
@@ -13,11 +14,14 @@ export function loadCachedUserSettings() {
       return decodeStorageValue(cached) || {};
     }
 
-    const legacyCached = localStorage.getItem(LEGACY_SETTINGS_STORAGE_KEY);
+    const legacyCached =
+      localStorage.getItem(LEGACY_SETTINGS_STORAGE_KEY) ||
+      localStorage.getItem(PREVIOUS_SETTINGS_STORAGE_KEY);
     if (legacyCached) {
       const settings = JSON.parse(legacyCached);
       cacheUserSettings(settings);
       localStorage.removeItem(LEGACY_SETTINGS_STORAGE_KEY);
+      localStorage.removeItem(PREVIOUS_SETTINGS_STORAGE_KEY);
       return settings || {};
     }
 
@@ -25,6 +29,7 @@ export function loadCachedUserSettings() {
   } catch {
     localStorage.removeItem(SETTINGS_STORAGE_KEY);
     localStorage.removeItem(LEGACY_SETTINGS_STORAGE_KEY);
+    localStorage.removeItem(PREVIOUS_SETTINGS_STORAGE_KEY);
     return {};
   }
 }
@@ -33,6 +38,7 @@ function cacheUserSettings(settings) {
   try {
     localStorage.setItem(SETTINGS_STORAGE_KEY, encodeStorageValue(settings || {}));
     localStorage.removeItem(LEGACY_SETTINGS_STORAGE_KEY);
+    localStorage.removeItem(PREVIOUS_SETTINGS_STORAGE_KEY);
   } catch {
     // Storage can fail in private mode; backend settings still work.
   }

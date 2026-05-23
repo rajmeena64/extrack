@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
-import { Info } from 'lucide-react';
 import './ProgressTracker.css';
+import InfoTooltip from '../Common/InfoTooltip';
 import { getTradeDisplayDate, getTradeDisplayTime } from '../../utils/tradeTime';
 
 const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -85,7 +85,11 @@ function ProgressTracker({ trades }) {
       <div className="progress-card__header">
         <div className="progress-card__title-wrap">
           <h3 className="dashboard-card-title">Progress Tracker</h3>
-          <Info size={15} aria-hidden="true" />
+          <InfoTooltip
+            text="Shows how consistently you traded across recent weeks."
+            size={13}
+            side="bottom-left"
+          />
         </div>
         <span className="progress-card__badge">BETA</span>
       </div>

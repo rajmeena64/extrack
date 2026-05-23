@@ -38,8 +38,10 @@ function ManualEntryForm({ trades }) {
   });
 
   const [previewImage, setPreviewImage] = useState('');
+  const [screenshotFile, setScreenshotFile] = useState(null);
   const [showSymbolSuggestions, setShowSymbolSuggestions] = useState(false);
   const [saveError, setSaveError] = useState('');
+  const screenshotInputRef = useRef(null);
   const symbolBlurTimeoutRef = useRef(null);
   const symbols = useMemo(() => {
     return [...new Set(trades?.map(t => t.symbol).filter(Boolean))];
@@ -85,6 +87,7 @@ function ManualEntryForm({ trades }) {
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file && file.type.startsWith('image/')) {
+      setScreenshotFile(file);
       const reader = new FileReader();
       reader.onload = (event) => {
         setPreviewImage(event.target.result);
@@ -96,6 +99,10 @@ function ManualEntryForm({ trades }) {
 
   const removeScreenshot = () => {
     setPreviewImage('');
+    setScreenshotFile(null);
+    if (screenshotInputRef.current) {
+      screenshotInputRef.current.value = '';
+    }
   };
 
   const selectSymbol = (symbol) => {
@@ -138,15 +145,55 @@ function ManualEntryForm({ trades }) {
     });
   };
 
+  const waitForTradeCommit = () => new Promise((resolve) => {
+    window.setTimeout(resolve, 450);
+  });
+
+  const uploadTradeScreenshot = async (uniqueId, file) => {
+    if (!uniqueId || !file) return null;
+
+    await waitForTradeCommit();
+
+    const uploadData = new FormData();
+    uploadData.append('unique_id', uniqueId);
+    uploadData.append('screenshot', file);
+
+    const { data } = await api.post('/upload-screenshot', uploadData);
+
+    if (!data?.success) {
+      throw new Error(data?.error || 'Screenshot upload failed. Trade was saved.');
+    }
+
+    return data;
+  };
+
   const saveTradeMutation = useMutation({
-    mutationFn: async (tradeData) => {
+    mutationFn: async ({ tradeData, screenshot }) => {
       const { data } = await api.post('/save-trade', tradeData);
       if (!data?.success) {
         throw new Error(data?.error || 'Trade save failed. Please retry.');
       }
-      return data.trade;
+
+      const savedTrade = data.trade;
+      let uploadedScreenshot = null;
+      let screenshotError = '';
+
+      if (screenshot) {
+        try {
+          uploadedScreenshot = await uploadTradeScreenshot(savedTrade?.unique_id, screenshot);
+        } catch (error) {
+          screenshotError = error?.message || 'Screenshot upload failed. Trade was saved.';
+        }
+      }
+
+      return {
+        trade: uploadedScreenshot?.screenshots
+          ? { ...savedTrade, screenshots: uploadedScreenshot.screenshots }
+          : savedTrade,
+        screenshotError,
+      };
     },
-    onMutate: async (tradeData) => {
+    onMutate: async ({ tradeData, screenshot }) => {
       setSaveError('');
       await queryClient.cancelQueries({ queryKey: ['trades'] });
 
@@ -160,10 +207,11 @@ function ManualEntryForm({ trades }) {
 
       const optimisticTrade = toDashboardTrade({
         ...tradeData,
+        screenshots: screenshot ? [] : null,
         user_id: user.ID,
         open_timestamp: tradeData.timestamp,
         close_timestamp: tradeData.timestamp,
-      }, 'saving');
+      }, screenshot ? 'saving screenshot' : 'saving');
 
       updateTradeCaches((oldTrades) => {
         const withoutSameTrade = oldTrades.filter((trade) => trade.unique_id !== optimisticTrade.unique_id);
@@ -179,10 +227,11 @@ function ManualEntryForm({ trades }) {
         queryClient.setQueryData(queryKey, data);
       });
 
-      setSaveError('Trade save failed. Please retry.');
-      alert('Trade save failed. Please retry.');
+      const message = _error?.message || 'Trade save failed. Please retry.';
+      setSaveError(message);
+      alert(message);
     },
-    onSuccess: (savedTrade, _tradeData, context) => {
+    onSuccess: ({ trade: savedTrade, screenshotError }, _tradeData, context) => {
       const realTrade = toDashboardTrade(savedTrade);
       updateTradeCaches((oldTrades) => {
         const replacedTrades = oldTrades.map((trade) => (
@@ -191,6 +240,10 @@ function ManualEntryForm({ trades }) {
         const hasSavedTrade = replacedTrades.some((trade) => trade.unique_id === realTrade.unique_id);
         return hasSavedTrade ? replacedTrades : [realTrade, ...replacedTrades];
       });
+      removeScreenshot();
+      if (screenshotError) {
+        setSaveError(screenshotError);
+      }
     },
     onSettled: () => {
       queryClient.invalidateQueries({
@@ -253,7 +306,7 @@ function ManualEntryForm({ trades }) {
       timestamp: utcTimestamp
     };
 
-    saveTradeMutation.mutate(tradeData);
+    saveTradeMutation.mutate({ tradeData, screenshot: screenshotFile });
   };
 
   return (
@@ -390,11 +443,12 @@ function ManualEntryForm({ trades }) {
               style={{ display: 'none' }}
               onChange={handleImageUpload}
               id="screenshotInput"
+              ref={screenshotInputRef}
             />
             <button
               type="button"
               className="btn btn-primary"
-              onClick={() => document.getElementById('screenshotInput').click()}
+              onClick={() => screenshotInputRef.current?.click()}
             >
               <LegacyIcon className="fas fa-upload" /> Choose Image
             </button>

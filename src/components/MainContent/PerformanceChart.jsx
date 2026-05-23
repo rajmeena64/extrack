@@ -4,6 +4,7 @@ import './PerformanceChart.css';
 import { formatCurrency } from '../../utils/Currency';
 import { useTheme } from '../../context/ThemeContext';
 import { getTradeDisplayDate, getTradeDisplayTime, toTradeDateKey } from '../../utils/tradeTime';
+import InfoTooltip from '../Common/InfoTooltip';
 
 const formatCompactNumber = (value) => (
   new Intl.NumberFormat('en-US', {
@@ -221,6 +222,11 @@ function PerformanceChart({
     <div className="chart-card performance-card">
       <div className="performance-header">
         <h3 className="app-panel-title">{title}</h3>
+        <InfoTooltip
+          text="Tracks cumulative net P&L over time so you can see your equity curve."
+          size={13}
+          side="bottom-left"
+        />
       </div>
 
       <div className="chart-container">

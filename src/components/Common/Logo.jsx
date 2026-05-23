@@ -1,7 +1,7 @@
 import React from 'react';
 import './Logo.css';
 
-const APP_LOGO_SRC = '/assets/applogo/ex_stylish_clean.svg';
+const APP_LOGO_SRC = '/assets/applogo/entrack_stylish_clean.svg';
 
 function Logo({ className = '', showText = true, compact = false }) {
   return (
@@ -12,7 +12,7 @@ function Logo({ className = '', showText = true, compact = false }) {
 
       {showText && (
         <span className="app-brand__wordmark">
-          EXTRACK
+          ENTRACK
         </span>
       )}
     </div>

@@ -7,6 +7,7 @@ import { formatCurrency } from "../../utils/Currency";
 import { getTradeDisplayDate, getTradeDisplayTime } from "../../utils/tradeTime";
 import { useAuth } from "../../context/AuthContext";
 import { loadCachedUserSettings, loadUserSettings, saveUserSettings } from "../../utils/userSettings";
+import InfoTooltip from "../Common/InfoTooltip";
 
 const FIELDS = [
   { key: "symbol", label: "Symbol" },
@@ -145,7 +146,14 @@ function TradesList({ trades = [], currencyCode = "USD" }) {
     <div className="my-trades">
       {/* ================= HEADER ================= */}
       <div className="trades-header">
-        <h2 className="trades-title dashboard-card-title">My Trades</h2>
+        <div className="trades-title-wrap">
+          <h2 className="trades-title dashboard-card-title">My Trades</h2>
+          <InfoTooltip
+            text="Lists your latest trades; click any row to open full trade details."
+            size={13}
+            side="bottom-left"
+          />
+        </div>
 
         <div className="trades-header-actions">
           {/* TABS */}

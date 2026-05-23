@@ -7,7 +7,6 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Info,
   Settings,
 } from 'lucide-react';
 import './PnLCalendar.css';
@@ -15,6 +14,7 @@ import { formatCompactCurrency } from '../../utils/Currency';
 import api from '../../utils/serve';
 import { getTradeDisplayDate } from '../../utils/tradeTime';
 import { loadCachedUserSettings, loadUserSettings, saveUserSettings } from '../../utils/userSettings';
+import InfoTooltip from '../Common/InfoTooltip';
 
 const MONTH_NAMES = [
   'January',
@@ -655,9 +655,11 @@ function PnLCalendar({ trades, currencyCode = 'USD' }) {
           >
             <Camera size={15} />
           </button>
-          <button className="calendar-shell__icon" type="button" aria-label="Info">
-            <Info size={15} />
-          </button>
+          <InfoTooltip
+            text="Shows daily P&L, trade count, win rate, breakeven days, and opens day review when you click a trading day."
+            size={13}
+            side="bottom"
+          />
 
           {settingsOpen && (
             <div

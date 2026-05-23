@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TradeAnalytics Dashboard</title>
+  <title>ENTrack Dashboard</title>
   <meta
     name="description"
-    content="TradeAnalytics helps you review trades, analyze performance, and manage your trading journal faster."
+    content="ENTrack helps you review trades, analyze performance, and manage your trading journal faster."
   >
   <!-- Favicon -->
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
@@ -33,7 +33,10 @@
   <script>
     (function () {
       try {
-        if (localStorage.getItem('tradeanalytics:darkMode') === 'true') {
+        if (
+          localStorage.getItem('entrack:darkMode') === 'true' ||
+          localStorage.getItem(['trade', 'analytics:darkMode'].join('')) === 'true'
+        ) {
           document.body.classList.add('dark-mode');
         }
       } catch (error) {

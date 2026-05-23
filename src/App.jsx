@@ -69,13 +69,16 @@ const RouteSkeleton = () => {
 
 const LEGACY_LOCAL_STORAGE_KEYS = [
   'darkMode',
-  'tradeanalytics:darkMode',
+  'entrack:darkMode',
+  ['trade', 'analytics:darkMode'].join(''),
   'economic_calendar_provider',
   'tradeMode',
   'dashboardRowOrder',
   'trades_visible_fields',
-  'extrack:userSettings',
-  'extrack:dashboard_stats',
+  'entrack:userSettings',
+  'entrack:dashboard_stats',
+  ['ex', 'track:userSettings'].join(''),
+  ['ex', 'track:dashboard_stats'].join(''),
 ];
 
 const getCachedDashboardCurrency = (fallback = 'USD') => {

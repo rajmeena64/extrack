@@ -3,6 +3,7 @@ import Chart from "../../utils/chartSetup";
 import "./Radar.css";
 import { useTheme } from "../../context/ThemeContext";
 import { getTradeDisplayDate } from "../../utils/tradeTime";
+import InfoTooltip from "../Common/InfoTooltip";
 
 export default function Radar({ trades = [] }) {
   const radarRef    = useRef(null);
@@ -182,6 +183,11 @@ export default function Radar({ trades = [] }) {
       <div className="radar-card">
         <div className="radar-header">
           <span className="radar-title-text dashboard-card-title">Score</span>
+          <InfoTooltip
+            text="Scores your trading quality from win rate, profit factor, drawdown, recovery, and consistency."
+            size={13}
+            side="bottom-left"
+          />
           <strong className="radar-score-empty">—</strong>
         </div>
         <div className="radar-empty">No trade data yet</div>
@@ -195,6 +201,11 @@ export default function Radar({ trades = [] }) {
       {/* HEADER */}
       <div className="radar-header">
         <span className="radar-title-text dashboard-card-title">Score</span>
+        <InfoTooltip
+          text="Scores your trading quality from win rate, profit factor, drawdown, recovery, and consistency."
+          size={13}
+          side="bottom-left"
+        />
         <strong className={`radar-score ${grade.cls}`}>{overallScore}</strong>
       </div>
 

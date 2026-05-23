@@ -4,7 +4,7 @@ const marks = new Set();
 export function markPerf(name) {
   if (!isDev || typeof performance === 'undefined') return;
 
-  const markName = `extrack:${name}`;
+  const markName = `entrack:${name}`;
   if (marks.has(markName)) return;
 
   marks.add(markName);
@@ -15,13 +15,13 @@ export function markPerf(name) {
 export function measurePerf(name, startMark, endMark = name) {
   if (!isDev || typeof performance === 'undefined') return;
 
-  const start = `extrack:${startMark}`;
-  const end = `extrack:${endMark}`;
+  const start = `entrack:${startMark}`;
+  const end = `entrack:${endMark}`;
   if (!marks.has(start) || !marks.has(end)) return;
 
   try {
-    performance.measure(`extrack:${name}`, start, end);
-    const measures = performance.getEntriesByName(`extrack:${name}`);
+    performance.measure(`entrack:${name}`, start, end);
+    const measures = performance.getEntriesByName(`entrack:${name}`);
     const latest = measures[measures.length - 1];
     if (latest) {
       console.info(`[perf] ${name}`, `${Math.round(latest.duration)}ms`);

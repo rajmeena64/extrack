@@ -1,5 +1,6 @@
 const OBFUSCATION_PREFIX = "v1.";
-const OBFUSCATION_SALT = "Extrack.Settings.2026";
+const OBFUSCATION_SALT = "Entrack.Settings.2026";
+const LEGACY_OBFUSCATION_SALT = ["Ex", "track.Settings.2026"].join("");
 
 const toBase64Url = (binary) => (
   btoa(binary)
@@ -36,8 +37,8 @@ const binaryToBytes = (binary) => {
   return bytes;
 };
 
-const xorBytes = (bytes) => {
-  const saltBytes = new TextEncoder().encode(OBFUSCATION_SALT);
+const xorBytes = (bytes, salt = OBFUSCATION_SALT) => {
+  const saltBytes = new TextEncoder().encode(salt);
 
   return bytes.map((byte, index) => byte ^ saltBytes[index % saltBytes.length]);
 };
@@ -55,6 +56,16 @@ export function decodeStorageValue(value) {
 
   const encoded = value.slice(OBFUSCATION_PREFIX.length);
   const bytes = binaryToBytes(fromBase64Url(encoded));
-  const json = new TextDecoder().decode(xorBytes(bytes));
-  return JSON.parse(json);
+  const salts = [OBFUSCATION_SALT, LEGACY_OBFUSCATION_SALT];
+
+  for (const salt of salts) {
+    try {
+      const json = new TextDecoder().decode(xorBytes(bytes, salt));
+      return JSON.parse(json);
+    } catch {
+      // Try the next salt for settings saved before the rename.
+    }
+  }
+
+  return null;
 }

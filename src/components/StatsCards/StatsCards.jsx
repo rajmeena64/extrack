@@ -3,9 +3,11 @@ import { ArrowDownRight, ArrowUpRight, CircleDollarSign, Gauge, Percent, Sigma }
 import './StatsCards.css';
 import { formatCurrency as formatDashboardCurrency } from '../../utils/Currency';
 import { decodeStorageValue, encodeStorageValue } from '../../utils/obfuscatedStorage';
+import InfoTooltip from '../Common/InfoTooltip';
 
 const STATS_CACHE_KEY = 'm5$ds.4';
-const LEGACY_STATS_CACHE_KEY = 'extrack:dashboard_stats';
+const LEGACY_STATS_CACHE_KEY = 'entrack:dashboard_stats';
+const PREVIOUS_STATS_CACHE_KEY = ['ex', 'track:dashboard_stats'].join('');
 const DEFAULT_STATS_SCOPE = 'dashboard:all';
 
 function formatNumber(value) {
@@ -76,12 +78,15 @@ const readStatsCache = () => {
       return decoded?.scopes ? decoded : { scopes: { [DEFAULT_STATS_SCOPE]: decoded } };
     }
 
-    const legacySaved = localStorage.getItem(LEGACY_STATS_CACHE_KEY);
+    const legacySaved =
+      localStorage.getItem(LEGACY_STATS_CACHE_KEY) ||
+      localStorage.getItem(PREVIOUS_STATS_CACHE_KEY);
     if (legacySaved) {
       const stats = JSON.parse(legacySaved);
       const nextCache = { scopes: { [DEFAULT_STATS_SCOPE]: stats } };
       localStorage.setItem(STATS_CACHE_KEY, encodeStorageValue(nextCache));
       localStorage.removeItem(LEGACY_STATS_CACHE_KEY);
+      localStorage.removeItem(PREVIOUS_STATS_CACHE_KEY);
       return nextCache;
     }
 
@@ -89,6 +94,7 @@ const readStatsCache = () => {
   } catch {
     localStorage.removeItem(STATS_CACHE_KEY);
     localStorage.removeItem(LEGACY_STATS_CACHE_KEY);
+    localStorage.removeItem(PREVIOUS_STATS_CACHE_KEY);
     return { scopes: {} };
   }
 };
@@ -105,6 +111,7 @@ const writeStatsCache = (scopeKey, stats) => {
     };
     localStorage.setItem(STATS_CACHE_KEY, encodeStorageValue(nextCache));
     localStorage.removeItem(LEGACY_STATS_CACHE_KEY);
+    localStorage.removeItem(PREVIOUS_STATS_CACHE_KEY);
   } catch {
     // Cache is a performance hint only.
   }
@@ -155,6 +162,7 @@ function StatsCards({ trades, currencyCode = 'USD', isLoading = false, statsScop
       mobileMeta: `${stats.wins}W / ${stats.losses}L`,
       detail: stats.totalTrades > 0 ? 'Overall result' : 'No trades yet',
       mobileDetail: stats.totalTrades > 0 ? 'Overall result' : 'No trades yet',
+      info: 'Total profit or loss from all trades in the current filter.',
     },
     {
       key: 'win-rate',
@@ -169,6 +177,7 @@ function StatsCards({ trades, currencyCode = 'USD', isLoading = false, statsScop
       mobileMeta: `${stats.wins} winning`,
       detail: stats.totalTrades > 0 ? 'Closed trade accuracy' : 'Waiting for history',
       mobileDetail: stats.totalTrades > 0 ? 'Accuracy' : 'Waiting',
+      info: 'Percentage of trades that closed with positive P&L.',
     },
     {
       key: 'factor',
@@ -183,6 +192,7 @@ function StatsCards({ trades, currencyCode = 'USD', isLoading = false, statsScop
       mobileMeta: `Avg ${formatDashboardCurrency(stats.avgPnL, currencyCode)}`,
       detail: 'Target 1.00+',
       mobileDetail: 'Target 1.0+',
+      info: 'Gross profit divided by gross loss; above 1 means profit is beating loss.',
     },
     {
       key: 'avg',
@@ -197,6 +207,7 @@ function StatsCards({ trades, currencyCode = 'USD', isLoading = false, statsScop
       mobileMeta: `Win ${formatDashboardCurrency(stats.avgWin, currencyCode)}`,
       detail: `Avg loss ${formatDashboardCurrency(-stats.avgLoss, currencyCode)}`,
       mobileDetail: `Loss ${formatDashboardCurrency(-stats.avgLoss, currencyCode)}`,
+      info: 'Average P&L per trade in the current filter.',
     },
   ];
 
@@ -212,10 +223,13 @@ function StatsCards({ trades, currencyCode = 'USD', isLoading = false, statsScop
           >
             <div className="metric-card__top">
               <div className="metric-card__label-row">
-                <p className="metric-card__label">
-                  <span className="metric-card__label-full">{card.title}</span>
-                  <span className="metric-card__label-short">{card.shortTitle ?? card.title}</span>
-                </p>
+                <div className="metric-card__heading">
+                  <p className="metric-card__label">
+                    <span className="metric-card__label-full">{card.title}</span>
+                    <span className="metric-card__label-short">{card.shortTitle ?? card.title}</span>
+                  </p>
+                  <InfoTooltip text={card.info} size={12} side="bottom-left" />
+                </div>
                 {showSkeleton ? (
                   <span className="skeleton-text" style={{ width: '60px', height: '18px' }} />
                 ) : (

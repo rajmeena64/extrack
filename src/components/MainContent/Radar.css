@@ -5,7 +5,7 @@
   width: 100%;
   height: 100%;
   min-width: 0;
-  overflow: hidden;
+  overflow: visible;
   display: flex;
   flex-direction: column;
   box-shadow: var(--dashboard-card-shadow);
@@ -15,14 +15,19 @@
 
 .radar-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 8px;
   min-height: var(--title-card-row-height);
   margin-bottom: 8px;
 }
 
 .radar-title-text {
   color: var(--heading);
+}
+
+.radar-header .radar-score,
+.radar-header .radar-score-empty {
+  margin-left: auto;
 }
 
 .radar-score {

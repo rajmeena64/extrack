@@ -29,7 +29,7 @@ function LandingPage() {
           <span className="landing-hero__eyebrow">Trade review, without the spreadsheet drag</span>
           <h1>Know what your trading is really doing.</h1>
           <p>
-            EXTrack brings imports, P&L, calendar review, and setup tracking into one calm dashboard
+            ENTrack brings imports, P&L, calendar review, and setup tracking into one calm dashboard
             built for traders who want clarity after every session.
           </p>
 

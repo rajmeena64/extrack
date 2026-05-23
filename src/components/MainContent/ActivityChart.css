@@ -10,7 +10,7 @@
   box-shadow: var(--dashboard-card-shadow);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .activity-card__header {
@@ -46,7 +46,7 @@
   color: var(--heading);
 }
 
-.activity-card__title-row svg {
+.activity-card__title-row > svg {
   color: var(--text-muted);
 }
 

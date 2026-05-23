@@ -39,16 +39,29 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
+}
+
+.metric-card__heading {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
 }
 
 .metric-card__label {
+  min-width: 0;
   font-size: var(--title-card-size);
   line-height: var(--title-line-height);
   font-weight: var(--title-weight);
   letter-spacing: var(--title-tight-tracking);
   text-transform: uppercase;
   color: var(--heading);
+}
+
+.metric-card__label-row .info-tooltip {
+  width: 20px;
+  height: 20px;
 }
 
 .metric-card__label-short,
@@ -64,6 +77,7 @@
 .metric-card__badge {
   display: inline-flex;
   align-items: center;
+  margin-left: auto;
   padding: 4px 8px;
   border-radius: 999px;
   background: rgba(100, 116, 139, 0.1);
@@ -285,6 +299,10 @@
     flex-direction: column;
     align-items: flex-start;
     justify-content: flex-start;
+  }
+
+  .metric-card:not(.metric-card--featured) .metric-card__heading {
+    width: 100%;
   }
 
   .metric-card:not(.metric-card--featured) .metric-card__label {
