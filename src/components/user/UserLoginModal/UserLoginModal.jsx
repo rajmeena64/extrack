@@ -612,7 +612,7 @@ function UserLoginModal({ isOpen, onClose }) {
                 {/* LOGGED IN SECTION */}
                 {currentUser && (
                   <div id="logoutSection" className="logout-section">
-                    <h2>Welcome to <span className="pip">PIP</span><span className="x">X</span></h2>
+                    <h2>Welcome to Entrack</h2>
                     
                     <div className="user-info">
                       <p style={{ fontWeight: 600, marginBottom: '10px' }}>
@@ -665,7 +665,7 @@ function UserLoginModal({ isOpen, onClose }) {
         {/* FOOTER */}
         <div className="modal-footer">
           <p>
-            © 2024 PIPX Trade. All rights reserved. | 
+            © 2024 Entrack. All rights reserved. | 
             <a href="#"> Privacy Policy</a> | 
             <a href="#"> Terms of Service</a>
           </p>

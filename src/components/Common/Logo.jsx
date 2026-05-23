@@ -12,7 +12,7 @@ function Logo({ className = '', showText = true, compact = false }) {
 
       {showText && (
         <span className="app-brand__wordmark">
-          ENTRACK
+          Entrack
         </span>
       )}
     </div>

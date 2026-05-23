@@ -1,12 +1,5 @@
 const normalizeOrigin = (value) => String(value || '').trim().replace(/\/+$/, '');
 
-const appOrigins = process.env.NODE_ENV === 'production'
-    ? [
-        'https://entrack.in',
-        'https://www.entrack.in',
-    ]
-    : [];
-
 const devOrigins = process.env.NODE_ENV === 'production'
     ? []
     : [
@@ -18,7 +11,7 @@ const devOrigins = process.env.NODE_ENV === 'production'
         'http://127.0.0.1:5174',
     ];
 
-const getAllowedOrigins = () => [process.env.ALLOWED_ORIGINS, process.env.FRONTEND_URL, ...appOrigins, ...devOrigins]
+const getAllowedOrigins = () => [process.env.ALLOWED_ORIGINS, process.env.FRONTEND_URL, ...devOrigins]
     .filter(Boolean)
     .flatMap((value) => String(value).split(','))
     .map(normalizeOrigin)
