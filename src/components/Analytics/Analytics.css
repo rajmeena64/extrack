@@ -62,6 +62,15 @@
   gap: 14px;
 }
 
+.economic-calendar-page .analytics-topbar {
+  margin-bottom: 0;
+}
+
+.economic-calendar-page .analytics-content {
+  padding: var(--dashboard-grid-gap);
+  gap: var(--dashboard-grid-gap);
+}
+
 /* ===== CALENDAR PANEL ===== */
 .analytics-panel {
   width: 100%;
@@ -160,19 +169,43 @@
   font-size: 11px;
 }
 
-.economic-calendar-widget-panel {
+.economic-calendar-widget-panel,
+.tradingview-calendar-widget-panel {
   position: relative;
   padding: 0;
+  overflow: hidden;
   background: var(--bg-card);
   border-color: var(--border-light);
-
+  --economic-calendar-footer-crop: 46px;
 }
 
-.economic-calendar-widget-panel #economicCalendarWidget {
+.economic-calendar-widget-panel::after,
+.tradingview-calendar-widget-panel::after {
+  content: none;
+}
+
+.economic-calendar-widget-host,
+.tradingview-calendar-widget-host {
+  position: relative;
   width: 100%;
-  height: calc(100% - 24px);
+  height: calc(100% + var(--economic-calendar-footer-crop));
+  min-height: 0;
+  overflow: hidden;
+  background: var(--bg-card);
+}
+
+.economic-calendar-widget-host > div[id^="economicCalendarWidget"] {
+  width: 100%;
+  height: 100%;
   min-height: 0;
   background: var(--bg-card);
+}
+
+.tradingview-calendar-widget-host iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
 }
 
 .economic-calendar-widget-panel .ecw-copyright {
@@ -191,12 +224,18 @@
   text-decoration: none;
 }
 
-.dark-mode .economic-calendar-widget-panel {
+.dark-mode .economic-calendar-widget-panel,
+.dark-mode .tradingview-calendar-widget-panel {
   background: #000000;
   border-color: #1f1f1f;
 }
 
-.dark-mode .economic-calendar-widget-panel #economicCalendarWidget {
+.dark-mode .economic-calendar-widget-host,
+.dark-mode .tradingview-calendar-widget-host {
+  background: #000000;
+}
+
+.dark-mode .economic-calendar-widget-host > div[id^="economicCalendarWidget"] {
   background: #000000;
 }
 

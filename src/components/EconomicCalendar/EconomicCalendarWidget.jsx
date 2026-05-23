@@ -57,7 +57,11 @@ function EconomicCalendarWidget() {
     };
   }, [darkMode]);
 
-  return <div className="analytics-panel economic-calendar-widget-panel" ref={container} />;
+  return (
+    <div className="analytics-panel economic-calendar-widget-panel">
+      <div className="economic-calendar-widget-host" ref={container} />
+    </div>
+  );
 }
 
 export default memo(EconomicCalendarWidget);
