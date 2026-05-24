@@ -13,7 +13,7 @@
   border: var(--dashboard-card-border);
   box-shadow: var(--dashboard-card-shadow);
   background: var(--bg-card);
-  overflow: visible;
+  overflow: hidden;
 }
 
 .trades-header {
@@ -223,7 +223,7 @@
   display: grid;
   gap: 8px;
   align-items: center;
-  flex: 1 1 0;
+  flex: 0 0 auto;
   min-height: 48px;
   padding: 8px 0;
   border-bottom: 1px solid var(--border-light);
@@ -371,7 +371,7 @@ color: var(--accent-danger);
 @media (max-width: 480px) {
   .my-trades {
     padding: 10px 12px 8px;
-    overflow-x: visible;
+    overflow-x: hidden;
   }
   
   .settings-dropdown {
@@ -463,7 +463,7 @@ color: var(--accent-danger);
   }
 
   .trade-item {
-    flex: 1 1 0;
+    flex: 0 0 auto;
     min-height: 42px;
     padding: 7px 0;
     font-size: 9px;
@@ -547,6 +547,5 @@ color: var(--accent-danger);
     gap: 10px;
   }
 }
-
 
 

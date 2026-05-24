@@ -1,10 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import NEWS from "../Analytics/NEWS";
 import LegacyIcon from "../Common/LegacyIcon";
 import EconomicCalendarWidget from "./EconomicCalendarWidget";
 import "../Analytics/Analytics.css";
 import { useAuth } from "../../context/AuthContext";
 import { loadCachedUserSettings, loadUserSettings, saveUserSettings } from "../../utils/userSettings";
+import MainContentWrapper from "../Layout/MainContentWrapper";
+import PageHeader from "../Layout/PageHeader";
 
 const CALENDAR_OPTIONS = [
   { value: "tradingview", label: "TradingView" },
@@ -25,6 +28,7 @@ const getCachedProvider = () => {
 
 function EconomicCalendar() {
   const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [provider, setProvider] = useState(getCachedProvider);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsRef = useRef(null);
@@ -79,13 +83,11 @@ function EconomicCalendar() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
-      <main className="main-content economic-calendar-page" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-        <div className="analytics-topbar app-page-header">
-          <div className="app-page-header__left">
-            <h1 className="analytics-title app-page-title">Economic Calendar</h1>
-          </div>
-
+    <MainContentWrapper className="economic-calendar-page">
+        <PageHeader
+          title="Economic Calendar"
+          onBack={() => navigate(-1)}
+          actions={(
           <div className="economic-calendar-settings" ref={settingsRef}>
             <button
               className="economic-calendar-settings__button"
@@ -114,7 +116,8 @@ function EconomicCalendar() {
               </div>
             )}
           </div>
-        </div>
+          )}
+        />
 
         <div className="analytics-content">
           <div style={{ display: provider === "metatrader" ? "block" : "none", height: "100%" }}>
@@ -124,8 +127,7 @@ function EconomicCalendar() {
             <NEWS />
           </div>
         </div>
-      </main>
-    </div>
+    </MainContentWrapper>
   );}
 
 export default EconomicCalendar;

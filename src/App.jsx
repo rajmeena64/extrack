@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import './styles/app-shell.css';
 import './styles/mobile.css';
 
-import Sidebar from './components/Sidebar/Sidebar';
 import { TradeManager } from './utils/tradeManager';
 import { API_URL, WS_URL } from './utils/constants';
 import { ThemeProvider } from './context/ThemeContext'; 
@@ -17,7 +16,9 @@ import { markPerf, measurePerf } from './utils/perfMarks';
 import VerifyEmailPage from './components/Auth/VerifyEmailPage';
 import ResetPasswordPage from './components/Auth/ResetPasswordPage';
 import LandingPage from './components/Landing/LandingPage';
-import Logo from './components/Common/Logo';
+import AppShell from './components/Layout/AppShell';
+import MainContentWrapper from './components/Layout/MainContentWrapper';
+import PageHeader from './components/Layout/PageHeader';
 
 
 /* ---------------- LAZY LOADED PAGES ---------------- */
@@ -48,7 +49,7 @@ const RouteSkeleton = () => {
   }, []);
 
   return (
-    <main className="main-content dashboard-boot-shell__main" aria-hidden="true">
+    <MainContentWrapper className="dashboard-boot-shell__main" aria-hidden="true">
       <header className="dashboard-boot-shell__header">
         <h1 className="app-page-title">Dashboard</h1>
         <div className="dashboard-boot-shell__controls">
@@ -66,7 +67,7 @@ const RouteSkeleton = () => {
         <article className="dashboard-boot-shell__card" />
         <article className="dashboard-boot-shell__card" />
       </section>
-    </main>
+    </MainContentWrapper>
   );
 };
 
@@ -119,18 +120,15 @@ const deriveCachedTradesForMode = (queryClient, userId, mode) => {
 
 function Profile() {
   const { user: currentUser, isAuthLoading } = useAuth();
+  const navigate = useNavigate();
 
   if (isAuthLoading) {
     return <div style={{ padding: '40px' }}>Loading profile...</div>;
   }
 
   return (
-    <div className="main-content">
-      <div className="app-page-header">
-        <div className="app-page-header__left">
-          <h1 className="app-page-title">Profile</h1>
-        </div>
-      </div>
+    <MainContentWrapper>
+      <PageHeader title="Profile" onBack={() => navigate(-1)} />
       {currentUser ? (
         <>
           <p><strong>Name:</strong> {currentUser.firstName} {currentUser.lastName}</p>
@@ -139,7 +137,7 @@ function Profile() {
       ) : (
         <p>Please login</p>
       )}
-    </div>
+    </MainContentWrapper>
   );
 }
 
@@ -600,11 +598,7 @@ function App() {
     <BrowserRouter>
     <ThemeProvider>
       {user ? (
-        <div className="dashboard">
-          <div className="app-shell-header-logo" aria-hidden="true">
-            <Logo className="app-shell-header-logo__brand" />
-          </div>
-          <Sidebar />
+        <AppShell>
           <CachedMainRoutes
             tradeMode={tradeMode}
             setTradeMode={handleTradeModeChange}
@@ -617,7 +611,7 @@ function App() {
             handleDashboardCurrencyChange={handleDashboardCurrencyChange}
             isTradesLoading={isTradesLoading}
           />
-        </div>
+        </AppShell>
       ) : (
         <Routes>
           <Route path="/verify-email" element={<VerifyEmailPage />} />

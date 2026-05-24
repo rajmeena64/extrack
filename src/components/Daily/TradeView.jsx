@@ -8,6 +8,8 @@ import api from "../../utils/serve";
 import { saveUserSettings } from "../../utils/userSettings";
 import DateRangePicker from "../Common/DateRangePicker";
 import { sanitizeSignedDecimalInput } from "../../utils/fieldValidation";
+import MainContentWrapper from "../Layout/MainContentWrapper";
+import PageHeader from "../Layout/PageHeader";
 
 
 
@@ -357,7 +359,7 @@ function TradeView({ trades = [] }) {
   // Show skeleton while loading
   if (isLoading || !settingsLoaded) {
     return (
-      <div className="main-content">
+      <MainContentWrapper>
         <SkeletonHeader />
         <SkeletonTable />
         <style >{`
@@ -398,12 +400,12 @@ function TradeView({ trades = [] }) {
             padding: 12px 16px;
           }
         `}</style>
-      </div>
+      </MainContentWrapper>
     );
   }
 
   return (
-    <div className="main-content">
+    <MainContentWrapper>
       {(showFilters || showSettings || showDatePicker) && (
         <div
           className="popup-overlay"
@@ -416,17 +418,12 @@ function TradeView({ trades = [] }) {
       )}
 
       {/* HEADER */}
-      <div className="trade-header-shell app-page-header">
-        <div className="trade-header">
-          <div className="trade-header-left app-page-header__left">
-            <div className="trade-title-block">
-              <div className="trade-title-row">
-                <h1 className="trade-page-title app-page-title">Trade Log</h1>
-              </div>
-            </div>
-          </div>
-
-          <div className="trade-header-right app-page-header__right">
+      <PageHeader
+        title="Trade Log"
+        onBack={() => navigate(-1)}
+        className="trade-header-shell"
+        actions={(
+          <div className="trade-header-right">
             {/* FILTERS */}
             <div className="toolbar-group" ref={filterRef}>
               <button
@@ -639,8 +636,8 @@ function TradeView({ trades = [] }) {
               )}
             </div>
           </div>
-        </div>
-      </div>
+        )}
+      />
 
       {/* TABLE */}
       <div className="trades-table-card">
@@ -707,7 +704,7 @@ function TradeView({ trades = [] }) {
           </table>
         </div>
       </div>
-    </div>
+    </MainContentWrapper>
   );
 }
 

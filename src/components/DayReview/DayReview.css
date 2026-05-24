@@ -1,57 +1,14 @@
 .day-review-page {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--dashboard-grid-gap);
 }
 
 .day-review-header {
-  min-height: 68px;
-  margin: -16px -16px 0;
-  padding: 10px 16px;
-  display: flex;
-  align-items: center;
   gap: 14px;
-  background: var(--bg-card);
-  border-bottom: 1px solid var(--border-light);
-}
-
-.day-review-back {
-  height: 34px;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 0 12px;
-  border: 1px solid var(--border-light);
-  border-radius: 8px;
-  background: var(--surface-elevated);
-  color: var(--text-primary);
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.day-review-title {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.day-review-title .app-page-title {
-  font-size: 19px;
-  letter-spacing: 0;
-  text-transform: none;
-}
-
-.day-review-eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--text-secondary);
-  font-size: 12px;
-  font-weight: 600;
 }
 
 .day-review-date-nav {
-  margin-left: auto;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -483,27 +440,7 @@
 
 @media (max-width: 560px) {
   .day-review-header {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 16px;
-    padding: 16px;
-    margin: -16px -16px 10px;
-    min-height: auto;
-  }
-
-  .day-review-back {
-    align-self: flex-start;
-    width: auto;
-  }
-
-  .day-review-title {
-    text-align: left;
-    gap: 2px;
-  }
-
-  .day-review-title .app-page-title {
-    font-size: 18px;
-    line-height: 1.2;
+    gap: 10px;
   }
 
   .day-review-date-nav {

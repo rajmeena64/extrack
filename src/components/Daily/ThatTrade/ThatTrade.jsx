@@ -6,6 +6,8 @@ import "./ThatTrade.css";
 import Chart from "../chart/Chart";
 import SymbolWithIcon from "../../Common/SymbolWithIcon";
 import LegacyIcon from "../../Common/LegacyIcon";
+import MainContentWrapper from "../../Layout/MainContentWrapper";
+import PageHeader from "../../Layout/PageHeader";
 import api from "../../../utils/serve";
 import { normalizeStoredSymbol } from "../../../utils/symbols";
 import { getTradeDisplayDate } from "../../../utils/tradeTime";
@@ -251,10 +253,9 @@ function ThatTrade({ trades = [] }) {
 
   if (!trade) {
     return (
-      <div className="main-content">
-        <h2>Trade Not Found</h2>
-        <button onClick={goBack} className="back-btn">Go Back</button>
-      </div>
+      <MainContentWrapper>
+        <PageHeader title="Trade Not Found" onBack={goBack} backLabel="Go Back" />
+      </MainContentWrapper>
     );
   }
 
@@ -335,18 +336,18 @@ function ThatTrade({ trades = [] }) {
   };
 
   return (
-    <div className="main-content">
-      <div className="app-page-header trade-detail-header">
-        <div className="app-page-header__left">
-          <button onClick={goBack} className="back-btn trade-detail-back">Back</button>
-          <h1 className="app-page-title">Trade Detail</h1>
-        </div>
-
-        <div className="app-page-header__right trade-detail-symbol">
+    <MainContentWrapper>
+      <PageHeader
+        title="Trade Detail"
+        onBack={goBack}
+        className="trade-detail-header"
+        actions={(
+          <div className="trade-detail-symbol">
           <SymbolWithIcon symbol={trade.symbol} size="sm" />
           <span>{date}</span>
         </div>
-      </div>
+        )}
+      />
 
       <div className="trade-page">
 
@@ -642,7 +643,7 @@ function ThatTrade({ trades = [] }) {
           <img src={fullscreenImage} alt="Screenshot" />
         </div>
       )}
-    </div>
+    </MainContentWrapper>
   );
 }
 

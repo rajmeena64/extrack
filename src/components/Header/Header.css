@@ -1,20 +1,27 @@
 .dashboard-header {
   --dashboard-fixed-header-height: 54px;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
+  position: relative;
   z-index: 8000;
   display: flex;
-  flex-direction: column;
-  gap: 5px;
-  min-height: var(--dashboard-fixed-header-height);
-  margin: 0;
-  padding: 7px 16px 7px 80px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: var(--app-shell-header-height);
+  margin: -16px -16px 14px;
+  padding: 0 16px;
   background: var(--bg-card);
   border-bottom: 1px solid var(--border-light);
   border-radius: 0;
   box-shadow: none;
+}
+
+.dashboard-header .app-page-header__right {
+  flex: 1;
+  min-width: 0;
+}
+
+.dashboard-header .app-page-header__eyebrow {
+  display: none;
 }
 
 .dashboard-header__sticky-row {
@@ -1068,4 +1075,75 @@ body.dashboard-popup-open .currency-filter-wrapper:has(.currency-filter-menu) {
     width: calc(100vw - 24px);
   }
 
+}
+
+.dashboard-header.app-page-header {
+  position: fixed;
+  top: 0;
+  left: var(--app-shell-sidebar-width);
+  right: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: var(--app-shell-header-height);
+  min-height: var(--app-shell-header-height);
+  margin: 0;
+  padding: 0 16px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-light);
+  border-radius: 0;
+}
+
+.dark-mode .dashboard-header.app-page-header {
+  background: #070707;
+  border-bottom-color: #242424;
+}
+
+.dashboard-header .app-page-header__left {
+  flex: 0 0 auto;
+}
+
+.dashboard-header .app-page-header__right {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.dashboard-header .dashboard-toolbar {
+  width: 100%;
+  min-width: 0;
+}
+
+.dashboard-header .dashboard-toolbar__controls {
+  width: 100%;
+  justify-content: flex-end;
+}
+
+@media (max-width: 768px) {
+  .dashboard-header.app-page-header {
+    position: relative;
+    left: auto;
+    right: auto;
+    padding: 0 16px;
+    margin: 0 -8px;
+    border-radius: 0;
+    box-shadow: none;
+    overflow: visible;
+  }
+
+  .dashboard-header .app-page-header__left {
+    display: none;
+  }
+
+  .dashboard-header .dashboard-toolbar__controls {
+    justify-content: flex-start;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+  }
+
+  .dashboard-header .dashboard-toolbar__controls::-webkit-scrollbar {
+    display: none;
+  }
 }

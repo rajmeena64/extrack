@@ -5,6 +5,8 @@ import ApiImportForm from './ApiImportForm';
 import './AddTrade.css';
 import LegacyIcon from '../Common/LegacyIcon';
 import { API_URL } from "../../utils/constants";
+import MainContentWrapper from '../Layout/MainContentWrapper';
+import PageHeader from '../Layout/PageHeader';
 
 const brokers = [
   { id: 1, name: 'MT5 Broker 1' },
@@ -21,19 +23,14 @@ function AddTrade({ trades }) {
   const selectedBroker = brokers.find((broker) => broker.id === selectedBrokerId);
 
   return (
-    <div className="main-content add-trade-page">
+    <MainContentWrapper className="add-trade-page">
       <section className="add-trade-shell">
-        <header className="app-page-header add-trade-header">
-          <div className="app-page-header__left">
-            <button className="back-btn" onClick={() => navigate('/')}>
-              <LegacyIcon className="fas fa-arrow-left" />
-            </button>
-            <h1 className="app-page-title">
-              {activeTab === 'manual' ? 'Add Trade' : 'Trade Import'}
-            </h1>
-          </div>
-
-          <div className="app-page-header__right">
+        <PageHeader
+          title={activeTab === 'manual' ? 'Add Trade' : 'Trade Import'}
+          onBack={() => navigate('/')}
+          className="add-trade-header"
+          actions={(
+            <>
             <label className="broker-select-card">
               <LegacyIcon className="fas fa-network-wired broker-select-icon" />
               <span className="broker-select-card__label">Broker</span>
@@ -65,8 +62,9 @@ function AddTrade({ trades }) {
                 <LegacyIcon className="fas fa-sync-alt" /> Exact Sync
               </button>
             </div>
-          </div>
-        </header>
+            </>
+          )}
+        />
 
         <section className="add-trade-stage">
           {activeTab === 'manual' ? (
@@ -86,7 +84,7 @@ function AddTrade({ trades }) {
           )}
         </section>
       </section>
-    </div>
+    </MainContentWrapper>
   );
 }
 

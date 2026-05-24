@@ -1,13 +1,17 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./Analytics.css";
 
 import Heatmap from "./heatmap";
 import AIAnalysis from "./AIAnalysis";
 
 import { Ratio, ChartBar } from "../Common/icons";
+import MainContentWrapper from "../Layout/MainContentWrapper";
+import PageHeader from "../Layout/PageHeader";
 
 function Analytics({ trades = [], currencyCode = "USD" }) {
   const [activeTab, setActiveTab] = useState("heatmap");
+  const navigate = useNavigate();
   // const [darkMode, setDarkMode] = useState(false);
   const IconSize= 15;
 
@@ -29,16 +33,12 @@ function Analytics({ trades = [], currencyCode = "USD" }) {
   // }, []);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
-      <div className= "main-content" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-        
-        {/* ===== HEADER ===== */}
-        <div className="analytics-topbar app-page-header">
-          <div className="app-page-header__left">
-            <h1 className="analytics-title app-page-title">Analytics</h1>
-          </div>
-
-          <div className="analytics-tabs app-page-header__right">
+    <MainContentWrapper className="analytics-page">
+        <PageHeader
+          title="Analytics"
+          onBack={() => navigate(-1)}
+          actions={(
+            <div className="analytics-tabs">
             <button
               className={`analytics-tab ${
                 activeTab === "heatmap" ? "active" : ""
@@ -59,16 +59,15 @@ function Analytics({ trades = [], currencyCode = "USD" }) {
               <span>AI Analysis</span>
             </button>
           </div>
-        </div>
+          )}
+        />
 
         {/* ===== CONTENT ===== */}
         <div className="analytics-content">
           {activeTab === "heatmap" && <Heatmap />}
           {activeTab === "ai" && <AIAnalysis trades={trades} currencyCode={currencyCode} />}
         </div>
-
-      </div>
-    </div>
+    </MainContentWrapper>
   );
 }
 

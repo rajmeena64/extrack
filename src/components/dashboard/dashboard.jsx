@@ -2,6 +2,7 @@ import React, { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'rea
 import './dashboard.css';
 
 import Header from '@/components/Header/Header';
+import MainContentWrapper from '@/components/Layout/MainContentWrapper';
 import StatsCards from '@/components/StatsCards/StatsCards';
 import TradesList from '@/components/myTrades/TradesList';
 import ProgressTracker from '@/components/MainContent/ProgressTracker';
@@ -387,7 +388,7 @@ function Dashboard({
   );
 
   return (
-    <main className="main-content">
+    <MainContentWrapper>
       <Header
         tradeMode={tradeMode}
         setTradeMode={setTradeMode}
@@ -408,7 +409,7 @@ function Dashboard({
 
       {MainGrid}
 
-    </main>
+    </MainContentWrapper>
   );
 }
 

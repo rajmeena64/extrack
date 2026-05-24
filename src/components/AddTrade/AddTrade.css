@@ -1,7 +1,7 @@
 /* ===== ADD TRADE PAGE ===== */
 
 .add-trade-page {
-  padding-top: 2px;
+  padding-top: 0;
 }
 
 .trade-save-overlay {
@@ -68,7 +68,7 @@
 .add-trade-shell {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--dashboard-grid-gap);
 }
 
 .add-trade-hero {
@@ -1478,19 +1478,19 @@
     flex-direction: column;
     align-items: stretch;
     gap: 16px;
-    margin: 0 0 10px 0;
+    margin: 0;
     padding: 16px;
     border-radius: 18px;
     background: var(--bg-card);
   }
 
-  .app-page-header__left {
+  .add-trade-header .app-page-header__left {
     display: flex;
     align-items: center;
     gap: 12px;
   }
 
-  .app-page-header__right {
+  .add-trade-header .app-page-header__right {
     display: flex;
     flex-direction: column;
     gap: 12px;

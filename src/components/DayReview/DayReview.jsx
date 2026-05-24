@@ -13,6 +13,8 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import SymbolWithIcon from '../Common/SymbolWithIcon';
+import MainContentWrapper from '../Layout/MainContentWrapper';
+import PageHeader from '../Layout/PageHeader';
 import { formatCurrency } from '../../utils/Currency';
 import { getTradeDisplayDate, getTradeDisplayTime, getTradeOpenDate, toTradeDateKey } from '../../utils/tradeTime';
 import './DayReview.css';
@@ -249,22 +251,19 @@ function DayReview({ trades = [], currencyCode = 'USD' }) {
   ];
 
   return (
-    <main className="main-content day-review-page">
-      <header className="day-review-header">
-        <button className="day-review-back" type="button" onClick={() => navigate(-1)}>
-          <ArrowLeft size={16} />
-          Back
-        </button>
-
-        <div className="day-review-title">
-          <span className="day-review-eyebrow">
+    <MainContentWrapper className="day-review-page">
+      <PageHeader
+        className="day-review-header"
+        onBack={() => navigate(-1)}
+        eyebrow={(
+          <>
             <CalendarDays size={14} />
             {isToday ? 'Start my day' : 'Day review'}
-          </span>
-          <h1 className="app-page-title">{formatDateTitle(selectedDateKey)}</h1>
-        </div>
-
-        <div className="day-review-date-nav">
+          </>
+        )}
+        title={formatDateTitle(selectedDateKey)}
+        actions={(
+          <div className="day-review-date-nav">
           <button type="button" onClick={() => navigate(`/day-review/${shiftDateKey(selectedDateKey, -1)}`)}>
             <ArrowLeft size={14} />
             Previous
@@ -277,7 +276,8 @@ function DayReview({ trades = [], currencyCode = 'USD' }) {
             <ArrowRight size={14} />
           </button>
         </div>
-      </header>
+        )}
+      />
 
       <section className="day-review-stats">
         {statCards.map((card) => {
@@ -442,7 +442,7 @@ function DayReview({ trades = [], currencyCode = 'USD' }) {
           )}
         </div>
       </section>
-    </main>
+    </MainContentWrapper>
   );
 }
 
