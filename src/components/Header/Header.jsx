@@ -168,61 +168,62 @@ function Header({
       )}
 
       <header className="dashboard-header">
-        <div className="dashboard-header__hero">
-          <div className="dashboard-header__title-row">
-            <div className="dashboard-header__headline">
-              <span className="dashboard-header__eyebrow">Welcome back</span>
-              <h1 className="app-page-title">Dashboard</h1>
-            </div>
+        <div className="dashboard-header__sticky-row">
+          <div className="dashboard-header__hero">
+            <div className="dashboard-header__title-row">
+              <div className="dashboard-header__headline">
+                <span className="dashboard-header__eyebrow">Welcome back</span>
+                <h1 className="app-page-title">Dashboard</h1>
+              </div>
 
-            <div className="dashboard-header__top-actions">
-              {isMobile && (currentUser ? (
-                <button
-                  className="header-user header-user--hero"
-                  type="button"
-                  aria-label="Open profile"
-                  onClick={() => setProfileOpen(true)}
-                >
-                  <div className="user-avatar" aria-hidden="true">
-                    {currentUser.firstName?.[0]}
-                    {currentUser.lastName?.[0]}
-                  </div>
-                  <div className="header-user__text">
-                    <span className="user-name">
-                      {currentUser.firstName} {currentUser.lastName}
-                    </span>
-                    <span className="user-role">Active account</span>
-                  </div>
-                </button>
-              ) : (
-                <button
-                  className="header-user header-user--hero"
-                  type="button"
-                  aria-label="Login"
-                  onClick={() => setShowLoginModal(true)}
-                >
-                  <div className="user-avatar" aria-hidden="true">Ur</div>
-                  <div className="header-user__text">
-                    <span className="user-name">Login</span>
-                    <span className="user-role">Open your profile</span>
-                  </div>
-                </button>
-              ))}
-              {isMobile && (
-                <button
-                  className="header-user header-user--hero header-action-btn--import"
-                  type="button"
-                  aria-label="Import trades"
-                  onClick={() => navigate('/add-trade')}
-                >
-                  <Plus size={20} color="#ffffff" />
-                </button>
-              )}
+              <div className="dashboard-header__top-actions">
+                {isMobile && (currentUser ? (
+                  <button
+                    className="header-user header-user--hero"
+                    type="button"
+                    aria-label="Open profile"
+                    onClick={() => setProfileOpen(true)}
+                  >
+                    <div className="user-avatar" aria-hidden="true">
+                      {currentUser.firstName?.[0]}
+                      {currentUser.lastName?.[0]}
+                    </div>
+                    <div className="header-user__text">
+                      <span className="user-name">
+                        {currentUser.firstName} {currentUser.lastName}
+                      </span>
+                      <span className="user-role">Active account</span>
+                    </div>
+                  </button>
+                ) : (
+                  <button
+                    className="header-user header-user--hero"
+                    type="button"
+                    aria-label="Login"
+                    onClick={() => setShowLoginModal(true)}
+                  >
+                    <div className="user-avatar" aria-hidden="true">Ur</div>
+                    <div className="header-user__text">
+                      <span className="user-name">Login</span>
+                      <span className="user-role">Open your profile</span>
+                    </div>
+                  </button>
+                ))}
+                {isMobile && (
+                  <button
+                    className="header-user header-user--hero header-action-btn--import"
+                    type="button"
+                    aria-label="Import trades"
+                    onClick={() => navigate('/add-trade')}
+                  >
+                    <Plus size={20} color="#ffffff" />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="dashboard-toolbar">
+          <div className="dashboard-toolbar">
           <div className="dashboard-toolbar__controls">
             <div
               className={`toolbar-date-range ${
@@ -409,22 +410,24 @@ function Header({
               </button>
             ) : null}
           </div>
-        </div>
-
-        <div className="dashboard-header__daily-row">
-          <div className="dashboard-header__meta">
-            <span className="dashboard-header__meta-pill">
-              <RefreshCw size={14} aria-hidden="true" />
-              {isMobile ? `Last import ${compactLatestTradeLabel}` : `Last import was made: ${latestTradeLabel}`}
-            </span>
           </div>
-
-          <button className="start-day-btn" type="button" onClick={() => navigate('/day-review')}>
-            <Rocket size={16} aria-hidden="true" />
-            <span>Start my day</span>
-          </button>
         </div>
+
       </header>
+
+      <div className="dashboard-header__daily-row">
+        <div className="dashboard-header__meta">
+          <span className="dashboard-header__meta-pill">
+            <RefreshCw size={14} aria-hidden="true" />
+            {isMobile ? `Last import ${compactLatestTradeLabel}` : `Last import was made: ${latestTradeLabel}`}
+          </span>
+        </div>
+
+        <button className="start-day-btn" type="button" onClick={() => navigate('/day-review')}>
+          <Rocket size={16} aria-hidden="true" />
+          <span>Start my day</span>
+        </button>
+      </div>
 
       {profileOpen && (
         <div className="profile-overlay">

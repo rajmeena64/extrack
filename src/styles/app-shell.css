@@ -1,4 +1,6 @@
 :root {
+  --app-shell-header-height: 54px;
+  --app-shell-sidebar-width: 64px;
   --bg-primary: #f6f8fb;
   --bg-secondary: #ffffff;
   --bg-card: #ffffff;
@@ -243,22 +245,86 @@ body {
 }
 
 .dashboard {
+  position: relative;
   width: 100%;
   min-height: 100vh;
   background: var(--bg-primary);
+}
+
+.dashboard::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--app-shell-header-height);
+  z-index: 0;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-light);
+  pointer-events: none;
+}
+
+.dark-mode .dashboard::before {
+  background: #070707;
+  border-bottom-color: #242424;
+}
+
+.app-shell-header-logo {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 8001;
+  width: var(--app-shell-sidebar-width);
+  height: var(--app-shell-header-height);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 0;
+  pointer-events: none;
+}
+
+.dark-mode .app-shell-header-logo {
+  background: transparent;
+}
+
+.app-shell-header-logo__brand .app-brand__wordmark {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .app-shell-header-logo {
+    display: none;
+  }
 }
 
 .main-content {
   position: relative;
   min-height: 100vh;
   height: auto;
-  margin-left: 60px;
+  margin-left: var(--app-shell-sidebar-width);
   padding: 16px;
   overflow: visible;
   scroll-behavior: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
   -webkit-overflow-scrolling: touch;
+}
+
+.main-content:has(.dashboard-header) {
+  padding-top: calc(var(--app-shell-header-height) + 14px);
+}
+
+.main-content:has(.dashboard-header)::before {
+  content: "";
+  position: fixed;
+  top: var(--app-shell-header-height);
+  left: var(--app-shell-sidebar-width);
+  right: 0;
+  height: 14px;
+  z-index: 7999;
+  background: var(--bg-primary);
+  pointer-events: none;
 }
 
 .light-text {
@@ -329,7 +395,7 @@ body,
 }
 
 .app-page-header {
-  min-height: 68px;
+  min-height: var(--app-shell-header-height);
   margin: -16px -16px 14px;
   padding: 0 16px;
   display: flex;

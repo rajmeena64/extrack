@@ -5,16 +5,16 @@
 .sidebar {
   --sidebar-collapsed-width: 64px;
   --sidebar-expanded-width: 220px;
-  width: 60px;
+  width: var(--app-shell-sidebar-width);
   background: #ffffff;
   border-right: 1px solid var(--border-light);
-  padding: 24px 0;
+  padding: 8px 0 24px;
   display: flex;
   flex-direction: column;
   position: fixed;
-  top: 0;
+  top: var(--app-shell-header-height);
   left: 0;
-  height: 100vh;
+  height: calc(100vh - var(--app-shell-header-height));
   z-index: 1000;
   box-shadow: 10px 0 30px -28px rgba(15, 23, 42, 0.24);
   overflow: hidden;
@@ -26,7 +26,7 @@
 ===================================================== */
 @media (min-width: 1024px) {
   .sidebar {
-    width: var(--sidebar-collapsed-width);
+    width: var(--app-shell-sidebar-width);
     transform: translateX(0);
   }
 
@@ -41,6 +41,9 @@
 @media (min-width: 769px) and (max-width: 1023px) {
   .sidebar {
     width: 0px; /* Even smaller for tablets */
+    padding-top: 24px;
+    top: 0;
+    height: 100vh;
     transform: translateX(0);
   }
 
@@ -60,6 +63,9 @@
 @media (max-width: 768px) and (min-width: 481px) {
   .sidebar {
     width: 0px;
+    padding-top: 24px;
+    top: 0;
+    height: 100vh;
     transform: translateX(-100%);
   }
   
@@ -76,6 +82,9 @@
 @media (max-width: 480px) {
   .sidebar {
     width: 0;
+    padding-top: 24px;
+    top: 0;
+    height: 100vh;
     transform: translateX(-100%);
   }
   

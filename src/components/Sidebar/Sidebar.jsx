@@ -19,7 +19,6 @@ import {
 import { useTheme } from '../../context/ThemeContext';  // ✅ ADDED
 
 import './Sidebar.css';
-import Logo from '../Common/Logo';
 import { API_URL } from '../../utils/constants';
 import { useAuth } from '../../context/AuthContext';
 import { loadCachedUserSettings, loadUserSettings, saveUserSettings } from '../../utils/userSettings';
@@ -179,11 +178,6 @@ function Sidebar() {
 
       {/* 🔹 SIDEBAR */}
       <div className={`sidebar ${sidebarOpen || settingsOpen ? 'open' : ''} ${settingsOpen ? 'settings-open' : ''} ${hoverLocked ? 'sidebar-hover-locked' : ''}`}>
-        {/* LOGO */}
-        <div className="sidebar-logo">
-          <Logo className="sidebar-logo__brand" />
-        </div>
-
         {/* NAV LINKS */}
         <Link
           to="/dashboard"

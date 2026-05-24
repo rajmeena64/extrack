@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import './styles/app-shell.css';
 import './styles/mobile.css';
 
@@ -17,6 +17,7 @@ import { markPerf, measurePerf } from './utils/perfMarks';
 import VerifyEmailPage from './components/Auth/VerifyEmailPage';
 import ResetPasswordPage from './components/Auth/ResetPasswordPage';
 import LandingPage from './components/Landing/LandingPage';
+import Logo from './components/Common/Logo';
 
 
 /* ---------------- LAZY LOADED PAGES ---------------- */
@@ -139,6 +140,119 @@ function Profile() {
         <p>Please login</p>
       )}
     </div>
+  );
+}
+
+const normalizeRoutePath = (pathname) => {
+  const normalized = String(pathname || '/').replace(/\/+$/, '') || '/';
+  return normalized.toLowerCase();
+};
+
+const getCachedRouteKey = (pathname) => {
+  const path = normalizeRoutePath(pathname);
+
+  if (path === '/' || path === '/dashboard') return 'dashboard';
+  if (path === '/add-trade') return 'add-trade';
+  if (path === '/analytics') return 'analytics';
+  if (path === '/economic-calendar') return 'economic-calendar';
+  if (path === '/profile') return 'profile';
+  if (path === '/day-review') return 'day-review';
+  if (path === '/tradeview') return 'trade-view';
+
+  return null;
+};
+
+function CachedMainRoutes({
+  tradeMode,
+  setTradeMode,
+  trades,
+  convertedDashboardTrades,
+  dashboardDateRange,
+  setDashboardDateRange,
+  dashboardCurrency,
+  defaultDashboardCurrency,
+  handleDashboardCurrencyChange,
+  isTradesLoading,
+}) {
+  const location = useLocation();
+  const activeRouteKey = getCachedRouteKey(location.pathname);
+  const [visitedRoutes, setVisitedRoutes] = useState(() => new Set([activeRouteKey || 'dashboard']));
+
+  useEffect(() => {
+    if (!activeRouteKey) return;
+
+    setVisitedRoutes((previous) => {
+      if (previous.has(activeRouteKey)) return previous;
+      const nextRoutes = new Set(previous);
+      nextRoutes.add(activeRouteKey);
+      return nextRoutes;
+    });
+  }, [activeRouteKey]);
+
+  const renderCachedPane = (routeKey, element) => {
+    if (!visitedRoutes.has(routeKey)) return null;
+
+    const isActive = activeRouteKey === routeKey;
+
+    return (
+      <div
+        key={routeKey}
+        aria-hidden={!isActive}
+        style={{ display: isActive ? 'block' : 'none' }}
+      >
+        <Suspense fallback={<RouteSkeleton />}>
+          {element}
+        </Suspense>
+      </div>
+    );
+  };
+
+  return (
+    <>
+      {renderCachedPane('dashboard', (
+        <Dashboard
+          tradeMode={tradeMode}
+          setTradeMode={setTradeMode}
+          trades={convertedDashboardTrades}
+          dateRange={dashboardDateRange}
+          setDateRange={setDashboardDateRange}
+          currencyCode={dashboardCurrency}
+          defaultCurrencyCode={defaultDashboardCurrency}
+          onCurrencyChange={handleDashboardCurrencyChange}
+          isLoading={isTradesLoading}
+        />
+      ))}
+
+      {renderCachedPane('add-trade', <AddTrade trades={trades} />)}
+
+      {renderCachedPane('analytics', (
+        <Analytics trades={convertedDashboardTrades} currencyCode={dashboardCurrency} />
+      ))}
+
+      {renderCachedPane('economic-calendar', <EconomicCalendar />)}
+      {renderCachedPane('profile', <Profile />)}
+
+      {renderCachedPane('day-review', (
+        <DayReview trades={convertedDashboardTrades} currencyCode={dashboardCurrency} />
+      ))}
+
+      {renderCachedPane('trade-view', <TradeView trades={trades} />)}
+
+      {!activeRouteKey && (
+        <Suspense fallback={<RouteSkeleton />}>
+          <Routes>
+            <Route path="/verify-email" element={<VerifyEmailPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route
+              path="/day-review/:dateKey"
+              element={<DayReview trades={convertedDashboardTrades} currencyCode={dashboardCurrency} />}
+            />
+            <Route path="/trade/:tradeId" element={<ThatTrade />} />
+            <Route path="*" element={<Navigate to="/dashboard" />} />
+          </Routes>
+        </Suspense>
+      )}
+    </>
   );
 }
 
@@ -487,51 +601,22 @@ function App() {
     <ThemeProvider>
       {user ? (
         <div className="dashboard">
+          <div className="app-shell-header-logo" aria-hidden="true">
+            <Logo className="app-shell-header-logo__brand" />
+          </div>
           <Sidebar />
-
-          <Suspense fallback={<RouteSkeleton />}>
-            <Routes>
-              <Route path="/" element={<Navigate to="/dashboard" />} />
-              <Route path="/verify-email" element={<VerifyEmailPage />} />
-              <Route path="/reset-password" element={<ResetPasswordPage />} />
-
-              <Route
-                path="/dashboard"
-                element={
-                  <Dashboard
-                    tradeMode={tradeMode}
-                    setTradeMode={handleTradeModeChange}
-                    trades={convertedDashboardTrades}
-                    dateRange={dashboardDateRange}
-                    setDateRange={setDashboardDateRange}
-                    currencyCode={dashboardCurrency}
-                    defaultCurrencyCode={defaultDashboardCurrency}
-                    onCurrencyChange={handleDashboardCurrencyChange}
-                    isLoading={isTradesLoading}
-                  />
-                }
-              />
-
-              <Route path="/add-trade" element={<AddTrade trades={trades} />} />
-              <Route
-                path="/analytics"
-                element={<Analytics trades={convertedDashboardTrades} currencyCode={dashboardCurrency} />}
-              />
-              <Route path="/economic-calendar" element={<EconomicCalendar />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route
-                path="/day-review"
-                element={<DayReview trades={convertedDashboardTrades} currencyCode={dashboardCurrency} />}
-              />
-              <Route
-                path="/day-review/:dateKey"
-                element={<DayReview trades={convertedDashboardTrades} currencyCode={dashboardCurrency} />}
-              />
-              <Route path="/TradeView" element={<TradeView trades={trades} />} />
-              <Route path="/trade/:tradeId" element={<ThatTrade />} />
-              <Route path="*" element={<Navigate to="/dashboard" />} />
-            </Routes>
-          </Suspense>
+          <CachedMainRoutes
+            tradeMode={tradeMode}
+            setTradeMode={handleTradeModeChange}
+            trades={trades}
+            convertedDashboardTrades={convertedDashboardTrades}
+            dashboardDateRange={dashboardDateRange}
+            setDashboardDateRange={setDashboardDateRange}
+            dashboardCurrency={dashboardCurrency}
+            defaultDashboardCurrency={defaultDashboardCurrency}
+            handleDashboardCurrencyChange={handleDashboardCurrencyChange}
+            isTradesLoading={isTradesLoading}
+          />
         </div>
       ) : (
         <Routes>
