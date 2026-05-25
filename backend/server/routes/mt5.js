@@ -459,6 +459,28 @@ router.post("/vps/accounts/:account_id/health", requireVpsAgent, async (req, res
     }
 });
 
+router.get("/vps/accounts/health-targets", requireVpsAgent, async (req, res) => {
+    try {
+        const result = await pool.query(
+            `SELECT id, instance_key, status, connection_status
+             FROM mt5_accounts
+             WHERE instance_key IS NOT NULL
+               AND status IN ('connected', 'disconnected')
+             ORDER BY updated_at ASC, id ASC`
+        );
+
+        res.json({
+            success: true,
+            accounts: result.rows,
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message,
+        });
+    }
+});
+
 // ----------------------------
 // MT5 Trades Receive Endpoint
 // ----------------------------

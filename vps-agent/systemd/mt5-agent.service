@@ -1,0 +1,19 @@
+[Unit]
+Description=Extrack MT5 VPS Agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/mt5-agent
+EnvironmentFile=/home/ubuntu/mt5-agent/.env
+Environment=RUN_ONCE=0
+ExecStart=/home/ubuntu/mt5-agent/agent.sh
+Restart=always
+RestartSec=10
+StandardOutput=append:/home/ubuntu/mt5-agent/logs/systemd.out.log
+StandardError=append:/home/ubuntu/mt5-agent/logs/systemd.err.log
+
+[Install]
+WantedBy=multi-user.target

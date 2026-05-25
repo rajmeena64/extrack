@@ -10,6 +10,7 @@ DISPLAY_VALUE="${DISPLAY_VALUE:-:10.0}"
 job_json="$(cat)"
 job_id="$(printf '%s' "$job_json" | python3 -c 'import json,sys; print(json.load(sys.stdin)["job_id"])')"
 instance_key="$(printf '%s' "$job_json" | python3 -c 'import json,sys; print(json.load(sys.stdin)["instance_key"])')"
+login_id="$(printf '%s' "$job_json" | python3 -c 'import json,sys; print(json.load(sys.stdin)["login"])')"
 
 case "$instance_key" in
   ""|*/*|*..*|*" "*)
@@ -23,6 +24,8 @@ wine_prefix="$instance_root/wine"
 mt5_dir="$instance_root/mt5"
 scripts_dir="$instance_root/scripts"
 logs_dir="$instance_root/logs"
+config_dir="$instance_root/config"
+login_config_linux="$config_dir/login.ini"
 
 case "$(readlink -m "$instance_root")" in
   "$(readlink -m "$MT5_INSTANCES_DIR")"/*) ;;
@@ -52,7 +55,7 @@ if [ "$(readlink -m "$SOURCE_WINE_PREFIX")" = "$(readlink -m "$wine_prefix")" ];
 fi
 
 "$AGENT_DIR/lib/report-status.sh" "$job_id" "creating_terminal" || true
-mkdir -p "$instance_root" "$mt5_dir" "$scripts_dir" "$logs_dir"
+mkdir -p "$instance_root" "$mt5_dir" "$scripts_dir" "$logs_dir" "$config_dir"
 rsync -a --delete "$SOURCE_WINE_PREFIX/" "$wine_prefix/"
 rsync -a --delete "$MT5_SOURCE_DIR/" "$mt5_dir/"
 
@@ -65,6 +68,9 @@ for required_file in \
     exit 1
   fi
 done
+
+"$AGENT_DIR/lib/write-login-config.py" "$job_json" "$login_config_linux" "${BACKEND_URL:?BACKEND_URL is required}"
+"$AGENT_DIR/lib/update-webrequest-allowlist.py" "$mt5_dir/Config/common.ini" "${BACKEND_URL:?BACKEND_URL is required}"
 
 "$AGENT_DIR/lib/report-status.sh" "$job_id" "applying_ea" || true
 mkdir -p "$mt5_dir/MQL5/Experts"
@@ -79,6 +85,7 @@ fi
 for script in start.sh stop.sh status.sh logs.sh; do
   sed \
     -e "s#__INSTANCE_ROOT__#$instance_root#g" \
+    -e "s#__CONFIG_PATH_LINUX__#$login_config_linux#g" \
     -e "s#__DISPLAY_VALUE__#$DISPLAY_VALUE#g" \
     "$AGENT_DIR/templates/$script" > "$scripts_dir/$script"
   chmod 700 "$scripts_dir/$script"
@@ -89,7 +96,11 @@ done
 for wait_seconds in 5 5 5 15 30; do
   sleep "$wait_seconds"
   if "$AGENT_DIR/lib/verify-running.sh" "$instance_root" >/dev/null; then
-    exit 0
+    if "$AGENT_DIR/lib/verify-login.sh" "$instance_root" "$login_id"; then
+      exit 0
+    fi
+    echo "MT5 terminal is running, but login verification failed" >&2
+    exit 1
   fi
 done
 
