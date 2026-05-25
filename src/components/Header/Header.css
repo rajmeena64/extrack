@@ -18,6 +18,7 @@
 .dashboard-header .app-page-header__right {
   flex: 1;
   min-width: 0;
+  overflow: visible;
 }
 
 .dashboard-header .app-page-header__eyebrow {
@@ -667,6 +668,53 @@
   }
 }
 
+@media (min-width: 769px) and (max-width: 1023px) {
+  .dashboard-header .app-page-header__left {
+    padding-left: 46px;
+  }
+
+  .toolbar-date-range .toolbar-chip,
+  .trade-filter-wrapper .toolbar-chip,
+  .currency-filter-wrapper .toolbar-chip {
+    width: 34px;
+    min-width: 34px;
+    padding: 0;
+  }
+
+  .toolbar-date-range .toolbar-chip__text,
+  .trade-filter-wrapper .toolbar-chip__text,
+  .currency-filter-wrapper .toolbar-chip__text,
+  .toolbar-date-range .toolbar-chip > svg:last-child,
+  .trade-filter-wrapper .toolbar-chip > svg:last-child,
+  .currency-filter-wrapper .toolbar-chip > svg:last-child {
+    display: none;
+  }
+
+  .dashboard-toolbar__search--inline {
+    flex: 1 1 110px;
+    min-width: 80px;
+    max-width: 150px;
+  }
+
+  .dashboard-toolbar__controls > .toolbar-primary {
+    width: 34px;
+    min-width: 34px;
+    padding: 0;
+  }
+
+  .toolbar-primary__text,
+  .header-user__text {
+    display: none;
+  }
+
+  .header-user {
+    width: 34px;
+    min-width: 34px;
+    padding: 2px;
+    justify-content: center;
+  }
+}
+
 .header-user--hero {
   min-width: 0;
 }
@@ -985,10 +1033,10 @@ body.dashboard-popup-open .dashboard-main-grid {
 
 .dashboard-popup-overlay {
   position: fixed;
-  top: 60px;
+  top: var(--app-shell-header-height);
   right: 0;
   bottom: 0;
-  left: 64px;
+  left: 0;
   z-index: 9000;
   background: rgba(15, 23, 42, 0.22);
   backdrop-filter: blur(4px);
@@ -997,6 +1045,7 @@ body.dashboard-popup-open .dashboard-main-grid {
 
 body.dashboard-popup-open .main-content {
   contain: none;
+  overflow: visible;
 }
 
 body.dashboard-popup-open .dashboard-header {
@@ -1094,6 +1143,8 @@ body.dashboard-popup-open .currency-filter-wrapper:has(.currency-filter-menu) {
   background: var(--bg-card);
   border-bottom: 1px solid var(--border-light);
   border-radius: 0;
+  max-width: calc(100vw - var(--app-shell-sidebar-width));
+  overflow: visible;
 }
 
 .dark-mode .dashboard-header.app-page-header {
@@ -1108,16 +1159,19 @@ body.dashboard-popup-open .currency-filter-wrapper:has(.currency-filter-menu) {
 .dashboard-header .app-page-header__right {
   flex: 1 1 auto;
   min-width: 0;
+  overflow: visible;
 }
 
 .dashboard-header .dashboard-toolbar {
   width: 100%;
   min-width: 0;
+  overflow: visible;
 }
 
 .dashboard-header .dashboard-toolbar__controls {
   width: 100%;
   justify-content: flex-end;
+  overflow: visible;
 }
 
 @media (max-width: 768px) {

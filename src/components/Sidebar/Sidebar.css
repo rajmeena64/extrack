@@ -45,6 +45,7 @@
     top: 0;
     height: 100vh;
     transform: translateX(0);
+    z-index: 10003;
   }
 
   /* Disable hover effect completely on tablets */
@@ -114,6 +115,15 @@
   box-shadow: var(--shadow-md);
   transition: all 0.2s ease;
   display: none; /* Hidden by default */
+  box-sizing: border-box;
+}
+
+.sidebar-toggle svg {
+  pointer-events: none;
+}
+
+.sidebar-toggle--open {
+  pointer-events: auto;
 }
 
 .sidebar-toggle:hover {
@@ -125,11 +135,33 @@
 /* Show toggle on tablet (769px to 1023px) */
 @media (min-width: 769px) and (max-width: 1023px) {
   .sidebar-toggle {
-    display: block;
-    top: 31px;
-    left: 1px;
-    padding: 6px 10px;
-    font-size: 20px;
+    display: inline-flex;
+    top: 8px;
+    left: calc(var(--app-shell-sidebar-width) + 6px);
+    z-index: 10004;
+    width: 46px;
+    min-width: 46px;
+    height: 38px;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 1px solid var(--border-light);
+    box-shadow: none;
+    font-size: 0;
+  }
+
+  .sidebar-toggle--open {
+    top: 50%;
+    left: 202px;
+    width: 38px;
+    min-width: 38px;
+    transform: translateY(-50%);
+  }
+
+  .sidebar-toggle__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 }
 
@@ -138,12 +170,38 @@
   .sidebar-toggle {
     display: block;
   }
+
+  .sidebar-toggle--open {
+    display: inline-flex !important;
+    top: 50%;
+    left: 222px;
+    z-index: 10004;
+    width: 38px;
+    height: 38px;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 1px solid var(--border-light);
+    box-shadow: var(--shadow-md);
+    font-size: 0;
+    transform: translateY(-50%);
+  }
 }
 
 /* Hide toggle on mobile widths where the sidebar button is not useful */
 @media (max-width: 720px) {
   .sidebar-toggle {
     display: none;
+  }
+
+  .sidebar-toggle--open {
+    display: inline-flex !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .sidebar-toggle--open {
+    left: min(252px, calc(100vw - 48px));
   }
 }
 
@@ -722,6 +780,12 @@ input:checked + .slider::before {
 
 @media (max-width: 720px) {
   .sidebar-theme-toggle,
+  .sidebar-collapse-toggle {
+    display: none;
+  }
+}
+
+@media (max-width: 1023px) {
   .sidebar-collapse-toggle {
     display: none;
   }

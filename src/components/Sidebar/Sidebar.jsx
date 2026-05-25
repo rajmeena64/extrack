@@ -9,6 +9,7 @@ import {
   Grid2x2,
   Home,
   LogOut,
+  Menu,
   Moon,
   PieChart,
   Plus,
@@ -168,12 +169,14 @@ function Sidebar() {
     <>
       {/* 🔹 TOGGLE BUTTON */}
       <button
-        className="sidebar-toggle"
+        className={`sidebar-toggle ${sidebarOpen ? 'sidebar-toggle--open' : ''}`}
         onClick={toggleSidebar}
         aria-label={sidebarOpen ? 'Close navigation menu' : 'Open navigation menu'}
         title={sidebarOpen ? 'Close navigation menu' : 'Open navigation menu'}
       >
-        <span className="sidebar-toggle__icon" aria-hidden="true">☰</span>
+        <span className="sidebar-toggle__icon" aria-hidden="true">
+          {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
+        </span>
       </button>
 
       {/* 🔹 SIDEBAR */}

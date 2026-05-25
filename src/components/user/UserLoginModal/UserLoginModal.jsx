@@ -43,7 +43,13 @@ function UserLoginModal({ isOpen, onClose }) {
 
   // Scroll lock
   useEffect(() => {
-    document.body.style.overflow = isOpen ? 'hidden' : 'auto';
+    document.body.style.overflowX = 'hidden';
+    document.body.style.overflowY = isOpen ? 'hidden' : 'auto';
+
+    return () => {
+      document.body.style.overflowX = 'hidden';
+      document.body.style.overflowY = 'auto';
+    };
   }, [isOpen]);
 
   const handleInputChange = (e) => {

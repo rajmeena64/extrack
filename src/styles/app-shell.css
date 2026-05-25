@@ -152,8 +152,10 @@ html,
 body,
 #root {
   width: 100%;
+  max-width: 100%;
   min-height: 100%;
   height: auto;
+  overflow-x: hidden;
 }
 
 body {
@@ -163,7 +165,7 @@ body {
   line-height: 1.5;
   background: var(--bg-primary);
   transition: var(--transition-slow);
-  overflow-x: hidden;
+  overflow-x: hidden !important;
   overflow-y: auto;
   scroll-behavior: auto;
   text-rendering: geometricPrecision;
@@ -247,8 +249,10 @@ body {
 .dashboard {
   position: relative;
   width: 100%;
+  max-width: 100vw;
   min-height: 100vh;
   background: var(--bg-primary);
+  overflow-x: clip;
 }
 
 .app-shell-header-logo {
@@ -277,7 +281,7 @@ body {
   display: none;
 }
 
-@media (max-width: 1023px) {
+@media (max-width: 768px) {
   .app-shell-header-logo {
     display: none;
   }
@@ -285,11 +289,13 @@ body {
 
 .main-content {
   position: relative;
+  max-width: calc(100vw - var(--app-shell-sidebar-width));
   min-height: 100vh;
   height: auto;
   margin-left: var(--app-shell-sidebar-width);
   padding: 0 16px 16px;
-  overflow: visible;
+  overflow-x: clip;
+  overflow-y: visible;
   scroll-behavior: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
@@ -550,18 +556,24 @@ body,
   }
 
   .main-content {
+    max-width: 100%;
     height: 100dvh;
     min-height: 100dvh;
-    margin-left: 12px;
+    margin-left: 0;
     overflow-x: hidden;
     overflow-y: auto;
     touch-action: pan-y;
     overscroll-behavior-y: contain;
   }
+
+  .main-content:has(.dashboard-header) {
+    padding-top: calc(var(--app-shell-header-height) + 12px);
+  }
 }
 
 @media (max-width: 768px) and (min-width: 481px) {
   .main-content {
+    max-width: 100%;
     margin-left: 10px;
     padding: 0 12px 12px;
   }
@@ -599,6 +611,7 @@ body,
 
 @media (max-width: 480px) {
   .main-content {
+    max-width: 100%;
     margin-left: 12px;
     padding: 0 12px 12px;
   }
