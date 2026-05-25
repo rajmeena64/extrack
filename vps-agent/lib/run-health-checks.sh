@@ -4,6 +4,13 @@ set -euo pipefail
 AGENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 instances_dir="${MT5_INSTANCES_DIR:-/home/ubuntu/mt5-instances}"
 
+if [ -f "$AGENT_DIR/.env" ]; then
+  set -a
+  # shellcheck disable=SC1091
+  . "$AGENT_DIR/.env"
+  set +a
+fi
+
 "$AGENT_DIR/lib/fetch-health-targets.sh" | while IFS=$'\t' read -r account_id instance_key; do
   [ -n "${account_id:-}" ] || continue
   [ -n "${instance_key:-}" ] || continue
