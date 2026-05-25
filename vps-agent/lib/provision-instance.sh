@@ -74,6 +74,7 @@ done
 "$AGENT_DIR/lib/write-ea-preset.py" "$ea_preset_linux" "${BACKEND_URL:?BACKEND_URL is required}" "${MT5_INGEST_SECRET:-${TRADE_INGEST_SECRET:-}}"
 "$AGENT_DIR/lib/write-login-config.py" "$job_json" "$login_config_linux" "${BACKEND_URL:?BACKEND_URL is required}" "$ea_preset_name"
 "$AGENT_DIR/lib/update-webrequest-allowlist.py" "$mt5_dir/Config/common.ini" "${BACKEND_URL:?BACKEND_URL is required}"
+"$AGENT_DIR/lib/update-webrequest-allowlist.py" "$wine_prefix/drive_c/Program Files/MetaTrader 5/Config/common.ini" "${BACKEND_URL:?BACKEND_URL is required}"
 
 "$AGENT_DIR/lib/report-status.sh" "$job_id" "applying_ea" || true
 mkdir -p "$mt5_dir/MQL5/Experts"
