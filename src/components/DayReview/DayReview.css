@@ -438,23 +438,96 @@
   }
 }
 
+@media (max-width: 768px) {
+  .day-review-header.app-page-header {
+    gap: 8px;
+  }
+
+  .day-review-header .app-page-header__left {
+    flex: 1 1 auto;
+    min-width: 0;
+    gap: 8px;
+  }
+
+  .day-review-header .app-page-header__right {
+    flex: 0 0 auto;
+    gap: 6px;
+    min-width: 0;
+    overflow: visible;
+  }
+
+  .day-review-header .app-page-header__title-block {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .day-review-header .app-page-header__eyebrow {
+    width: fit-content;
+    max-width: 20px;
+    overflow: hidden;
+    gap: 0;
+    font-size: 0;
+    letter-spacing: 0;
+    line-height: 1;
+  }
+
+  .day-review-header .app-page-header__eyebrow svg {
+    width: 14px;
+    height: 14px;
+    flex: 0 0 14px;
+  }
+
+  .day-review-header .app-page-title {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: clamp(14px, 4.3vw, 18px);
+  }
+
+  .day-review-date-nav {
+    flex: 0 0 auto;
+    width: auto;
+    gap: 6px;
+  }
+
+  .day-review-date-nav button {
+    width: 36px;
+    min-width: 36px;
+    height: 36px;
+    padding: 0;
+    justify-content: center;
+    gap: 0;
+    font-size: 0;
+  }
+
+  .day-review-date-nav button span {
+    display: none;
+  }
+
+  .day-review-date-nav button svg {
+    width: 16px;
+    height: 16px;
+    flex: 0 0 16px;
+  }
+}
+
 @media (max-width: 560px) {
   .day-review-header {
     gap: 10px;
   }
 
   .day-review-date-nav {
-    width: 100%;
+    width: auto;
     margin-left: 0;
     display: flex;
-    gap: 8px;
+    gap: 6px;
   }
 
   .day-review-date-nav button {
-    flex: 1;
+    flex: 0 0 36px;
     justify-content: center;
-    height: 38px;
-    font-size: 13px;
+    height: 36px;
   }
 
   .day-review-table {

@@ -1176,28 +1176,223 @@ body.dashboard-popup-open .currency-filter-wrapper:has(.currency-filter-menu) {
 
 @media (max-width: 768px) {
   .dashboard-header.app-page-header {
-    position: relative;
-    left: auto;
-    right: auto;
-    padding: 0 16px;
-    margin: 0 -8px;
+    position: fixed !important;
+    inset: 0 0 auto 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 56px !important;
+    min-height: 56px !important;
+    max-height: 56px !important;
+    padding: 0 12px !important;
+    margin: 0 !important;
     border-radius: 0;
+    background: var(--bg-card) !important;
+    border-bottom: 1px solid var(--border-light);
     box-shadow: none;
     overflow: visible;
+    z-index: 8000;
   }
 
   .dashboard-header .app-page-header__left {
-    display: none;
+    position: fixed;
+    top: 0;
+    left: 60px;
+    right: 112px;
+    z-index: 8002;
+    display: flex !important;
+    min-width: 0;
+    height: 56px;
+    align-items: center;
+  }
+
+  .dashboard-header .app-page-title {
+    display: block !important;
+    max-width: 100%;
+    overflow: hidden;
+    color: var(--heading) !important;
+    font-size: 17px !important;
+    line-height: 1.1;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dashboard-header .app-page-header__right,
+  .dashboard-header .dashboard-toolbar {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .dashboard-header .dashboard-toolbar {
+    position: fixed;
+    top: 56px;
+    left: 12px;
+    right: 12px;
+    z-index: 8001;
   }
 
   .dashboard-header .dashboard-toolbar__controls {
-    justify-content: flex-start;
-    overflow-x: auto;
+    display: grid !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    width: 100%;
+    gap: 8px;
+    align-items: stretch;
+    justify-content: stretch;
+    overflow: visible;
     flex-wrap: nowrap;
     scrollbar-width: none;
   }
 
   .dashboard-header .dashboard-toolbar__controls::-webkit-scrollbar {
     display: none;
+  }
+
+  .dashboard-header .toolbar-date-range {
+    grid-column: 1;
+  }
+
+  .dashboard-header .trade-filter-wrapper {
+    grid-column: 2;
+  }
+
+  .dashboard-header .currency-filter-wrapper {
+    grid-column: 3;
+  }
+
+  .dashboard-header .header-action-btn--import {
+    grid-column: 5;
+  }
+
+  .dashboard-header .dashboard-toolbar__search {
+    display: none !important;
+  }
+
+  .dashboard-header .toolbar-chip,
+  .dashboard-header .header-action-btn--import,
+  .dashboard-header__daily-row .start-day-btn {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 40px;
+    min-height: 40px;
+    padding: 0 !important;
+    border-radius: 12px;
+  }
+
+  .dashboard-header .toolbar-chip {
+    background: var(--surface-elevated);
+    border: 1px solid var(--border-light);
+    color: var(--text-primary);
+    box-shadow: 0 10px 22px -18px rgba(15, 23, 42, 0.38);
+    backdrop-filter: none;
+  }
+
+  .dashboard-header .toolbar-chip__text,
+  .dashboard-header .toolbar-chip > svg:last-child,
+  .dashboard-header .header-user__text {
+    display: none !important;
+  }
+
+  .dashboard-header .header-user {
+    position: fixed;
+    top: 8px;
+    right: 64px;
+    z-index: 8003;
+    display: inline-flex !important;
+    width: 40px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
+    height: 40px !important;
+    min-height: 40px;
+    padding: 0 !important;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    background: var(--surface-elevated);
+    border: 1px solid var(--border-light);
+    box-shadow: 0 10px 22px -18px rgba(15, 23, 42, 0.38);
+  }
+
+  .dashboard-header .header-user .user-avatar {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    border-radius: 11px;
+    margin: 0;
+  }
+
+  .dashboard-header .header-action-btn--import {
+    position: static;
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #ffffff;
+    box-shadow: none;
+  }
+
+  .dashboard-header__daily-row {
+    position: fixed;
+    top: 56px;
+    left: 12px;
+    right: 12px;
+    z-index: 8001;
+    display: grid !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 8px;
+    min-height: 40px;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    pointer-events: none;
+  }
+
+  .dashboard-header__meta {
+    display: none !important;
+  }
+
+  .dashboard-header__daily-row .start-day-btn {
+    grid-column: 4;
+    pointer-events: auto;
+    background: var(--primary);
+    color: #ffffff;
+    box-shadow: none;
+  }
+
+  .dashboard-header__daily-row .start-day-btn span {
+    display: none !important;
+  }
+
+  .toolbar-date-range__panel,
+  .trade-filter-menu,
+  .currency-filter-menu {
+    top: 116px !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .dashboard-header.app-page-header {
+    padding-inline: 8px !important;
+  }
+
+  .dashboard-header .dashboard-toolbar__controls,
+  .dashboard-header__daily-row {
+    gap: 6px;
+  }
+
+  .dashboard-header__daily-row {
+    left: 8px;
+    right: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-header .app-page-header__left {
+    right: 64px;
+  }
+
+  .dashboard-header .header-user {
+    right: 12px;
+  }
+
+  .dashboard-header .header-action-btn--import {
+    display: none !important;
   }
 }

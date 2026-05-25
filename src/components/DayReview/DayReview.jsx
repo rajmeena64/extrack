@@ -264,15 +264,31 @@ function DayReview({ trades = [], currencyCode = 'USD' }) {
         title={formatDateTitle(selectedDateKey)}
         actions={(
           <div className="day-review-date-nav">
-          <button type="button" onClick={() => navigate(`/day-review/${shiftDateKey(selectedDateKey, -1)}`)}>
+          <button
+            type="button"
+            aria-label="Previous day"
+            title="Previous day"
+            onClick={() => navigate(`/day-review/${shiftDateKey(selectedDateKey, -1)}`)}
+          >
             <ArrowLeft size={14} />
-            Previous
+            <span>Previous</span>
           </button>
-          <button type="button" onClick={() => navigate('/day-review')}>
-            Today
+          <button
+            type="button"
+            aria-label="Today"
+            title="Today"
+            onClick={() => navigate('/day-review')}
+          >
+            <CalendarDays size={14} />
+            <span>Today</span>
           </button>
-          <button type="button" onClick={() => navigate(`/day-review/${shiftDateKey(selectedDateKey, 1)}`)}>
-            Next
+          <button
+            type="button"
+            aria-label="Next day"
+            title="Next day"
+            onClick={() => navigate(`/day-review/${shiftDateKey(selectedDateKey, 1)}`)}
+          >
+            <span>Next</span>
             <ArrowRight size={14} />
           </button>
         </div>

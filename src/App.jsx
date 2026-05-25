@@ -43,33 +43,7 @@ const endOfLocalDay = (date) => {
   return nextDate;
 };
 
-const RouteSkeleton = () => {
-  useEffect(() => {
-    markPerf('stats-skeleton-visible');
-  }, []);
-
-  return (
-    <MainContentWrapper className="dashboard-boot-shell__main" aria-hidden="true">
-      <header className="dashboard-boot-shell__header">
-        <h1 className="app-page-title">Dashboard</h1>
-        <div className="dashboard-boot-shell__controls">
-          <span />
-          <span />
-          <span />
-        </div>
-      </header>
-      <section className="dashboard-boot-shell__stats">
-        <article className="dashboard-boot-shell__card dashboard-boot-shell__card--featured">
-          <small>Total P&amp;L</small>
-          <strong>&nbsp;</strong>
-        </article>
-        <article className="dashboard-boot-shell__card" />
-        <article className="dashboard-boot-shell__card" />
-        <article className="dashboard-boot-shell__card" />
-      </section>
-    </MainContentWrapper>
-  );
-};
+const RouteFallback = () => null;
 
 const LEGACY_LOCAL_STORAGE_KEYS = [
   'darkMode',
@@ -198,7 +172,7 @@ function CachedMainRoutes({
         aria-hidden={!isActive}
         style={{ display: isActive ? 'block' : 'none' }}
       >
-        <Suspense fallback={<RouteSkeleton />}>
+        <Suspense fallback={<RouteFallback />}>
           {element}
         </Suspense>
       </div>
@@ -237,7 +211,7 @@ function CachedMainRoutes({
       {renderCachedPane('trade-view', <TradeView trades={trades} />)}
 
       {!activeRouteKey && (
-        <Suspense fallback={<RouteSkeleton />}>
+        <Suspense fallback={<RouteFallback />}>
           <Routes>
             <Route path="/verify-email" element={<VerifyEmailPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />

@@ -428,6 +428,8 @@ function TradeView({ trades = [] }) {
             <div className="toolbar-group" ref={filterRef}>
               <button
                 className={`toolbar-btn ${showFilters ? "toolbar-btn-active" : ""}`}
+                aria-label="Filters"
+                title="Filters"
                 onClick={(e) => {
                   e.stopPropagation();
                   setShowFilters(!showFilters);
@@ -547,6 +549,8 @@ function TradeView({ trades = [] }) {
                 className={`toolbar-btn toolbar-btn-date ${
                   showDatePicker ? "toolbar-btn-active" : ""
                 }`}
+                aria-label={`Date range: ${formatDateLabel()}`}
+                title={formatDateLabel()}
                 onClick={(e) => {
                   e.stopPropagation();
                   setShowDatePicker(!showDatePicker);
@@ -578,10 +582,12 @@ function TradeView({ trades = [] }) {
             </div>
 
             {/* ACCOUNT */}
-            <div className="toolbar-group">
+            <div className="toolbar-group toolbar-group-account">
+              <Ratio size={IconSize} className="toolbar-svg-icon toolbar-select-icon" aria-hidden="true" />
               <select
                 className="toolbar-select"
                 value={selectedAccount}
+                aria-label="Account filter"
                 onChange={(e) => setSelectedAccount(e.target.value)}
               >
                 <option>All Accounts</option>
@@ -597,6 +603,8 @@ function TradeView({ trades = [] }) {
                 className={`toolbar-btn toolbar-btn-ghost ${
                   showSettings ? "toolbar-btn-active" : ""
                 }`}
+                aria-label="Columns"
+                title="Columns"
                 onClick={(e) => {
                   e.stopPropagation();
                   setShowSettings(!showSettings);

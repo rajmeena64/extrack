@@ -387,28 +387,134 @@
    RESPONSIVE
 ======================= */
 @media (max-width: 768px) {
-  .trade-header {
-    flex-direction: column;
-    align-items: flex-start;
+  .main-content:has(.trade-header-shell) {
+    padding-top: 64px;
+  }
+
+  .trade-header-shell.app-page-header {
+    position: fixed;
+    inset: 0 0 auto 0;
+    width: 100%;
+    max-width: 100%;
+    height: 56px !important;
+    min-height: 56px !important;
+    max-height: 56px !important;
+    margin: 0;
+    padding: 0 8px !important;
+    display: flex;
+    align-items: center !important;
+    justify-content: space-between;
+    gap: 6px;
+    background: var(--bg-card);
+    z-index: 8000;
+  }
+
+  .trade-header-shell .app-page-header__left {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding-left: 44px;
+    gap: 6px;
+  }
+
+  .trade-header-shell .app-page-header__title-block {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .trade-header-shell .app-page-title {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: clamp(16px, 4.6vw, 18px);
+  }
+
+  .trade-header-shell .app-back-button {
+    width: 34px;
+    min-width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: var(--surface-elevated);
+    box-shadow: 0 10px 22px -18px rgba(15, 23, 42, 0.38);
+  }
+
+  .trade-header-shell .app-page-header__right {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 0;
+    height: 34px;
+    overflow: visible;
   }
 
   .trade-header-right {
-    width: 100%;
+    width: auto;
+    min-width: 0;
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(4, 34px);
+    gap: 5px;
+    align-items: stretch;
   }
 
-  .toolbar-btn,
-  .toolbar-select {
+  .trade-header-right .toolbar-group {
+    min-width: 0;
+  }
+
+  .trade-header-right .toolbar-btn,
+  .trade-header-right .toolbar-select {
     width: 100%;
+    min-width: 0;
+    height: 34px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 12px;
+  }
+
+  .trade-header-right .toolbar-btn-text {
+    display: none;
+  }
+
+  .trade-header-right .toolbar-inline {
+    gap: 0;
+    justify-content: center;
+  }
+
+  .trade-header-right .toolbar-svg-icon {
+    width: 15px;
+    height: 15px;
   }
 
   .toolbar-btn-date {
-    min-width: unset;
+    min-width: 0;
   }
 
-  .trade-page-title.app-page-title {
-    font-size: 22px;
+  .toolbar-group-account {
+    position: relative;
+    width: 34px;
+    height: 34px;
+  }
+
+  .toolbar-group-account .toolbar-select-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    z-index: 2;
+    margin: auto;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+
+  .toolbar-group-account .toolbar-select {
+    position: relative;
+    z-index: 1;
+    color: transparent;
+    text-indent: -999px;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  .toolbar-group-account .toolbar-select option {
+    color: var(--text-primary);
+    text-indent: 0;
   }
 
   .calendar-wrapper {
@@ -433,16 +539,32 @@
 }
 
 @media (max-width: 520px) {
-  .main-content {
-    padding: 14px;
+  .main-content:has(.trade-header-shell) {
+    padding-top: 64px;
+  }
+
+  .trade-header-shell.app-page-header {
+    gap: 4px;
+  }
+
+  .trade-header-shell .app-page-header__left {
+    gap: 4px;
+  }
+
+  .trade-header-shell .app-page-title {
+    font-size: 15px;
   }
 
   .trade-header-right {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(4, 32px);
+    gap: 4px;
   }
 
-  .trade-page-title.app-page-title {
-    font-size: 20px;
+  .trade-header-right .toolbar-btn,
+  .trade-header-right .toolbar-select,
+  .toolbar-group-account {
+    width: 32px;
+    height: 32px;
   }
 
   .toolbar-dropdown,

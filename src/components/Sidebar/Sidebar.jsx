@@ -56,7 +56,11 @@ function Sidebar() {
       if (
         sidebarOpen &&
         !e.target.closest('.sidebar') &&
-        !e.target.closest('.sidebar-toggle')
+        !e.target.closest('.sidebar-toggle') &&
+        !e.target.closest('.dashboard-toolbar') &&
+        !e.target.closest('.toolbar-date-range__panel') &&
+        !e.target.closest('.trade-filter-menu') &&
+        !e.target.closest('.currency-filter-menu')
       ) {
         setSidebarOpen(false);
       }
@@ -64,6 +68,22 @@ function Sidebar() {
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
   }, [sidebarOpen]);
+
+  React.useEffect(() => {
+    document.body.classList.toggle('dashboard-sidebar-open', sidebarOpen);
+
+    return () => {
+      document.body.classList.remove('dashboard-sidebar-open');
+    };
+  }, [sidebarOpen]);
+
+  React.useEffect(() => {
+    document.body.classList.toggle('dashboard-settings-open', settingsOpen);
+
+    return () => {
+      document.body.classList.remove('dashboard-settings-open');
+    };
+  }, [settingsOpen]);
 
   // 🔹 CLOSE SETTINGS ON OUTSIDE CLICK
   React.useEffect(() => {

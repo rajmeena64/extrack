@@ -794,3 +794,52 @@ input:checked + .slider::before {
 .dark-mode .sidebar {
   background: var(--bg-secondary);
 }
+
+@media (max-width: 480px) {
+  .dashboard > .sidebar:not(.open) {
+    justify-content: center !important;
+    gap: 8px !important;
+    overflow: visible !important;
+  }
+
+  .dashboard > .sidebar:not(.open) .nav-item {
+    order: 10;
+  }
+
+  .dashboard > .sidebar:not(.open) .nav-item[title="Dashboard"] {
+    order: 1;
+  }
+
+  .dashboard > .sidebar:not(.open) .nav-item[title="Analytics"] {
+    order: 2;
+  }
+
+  .dashboard > .sidebar:not(.open) .add-trade-btn {
+    order: 3;
+    flex: 0 0 58px !important;
+    width: 58px !important;
+    min-width: 58px !important;
+    height: 58px !important;
+    margin: -18px 2px 0 !important;
+    padding: 0 !important;
+    justify-content: center !important;
+    border-radius: 20px !important;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+    color: #ffffff !important;
+    box-shadow: 0 18px 34px -18px rgba(37, 99, 235, 0.78) !important;
+  }
+
+  .dashboard > .sidebar:not(.open) .add-trade-btn svg {
+    width: 22px;
+    height: 22px;
+    stroke-width: 2.4;
+  }
+
+  .dashboard > .sidebar:not(.open) .nav-item[title="Economic Calendar"] {
+    order: 4;
+  }
+
+  .dashboard > .sidebar:not(.open) .nav-item[title="Trades"] {
+    order: 5;
+  }
+}

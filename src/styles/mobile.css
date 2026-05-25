@@ -64,7 +64,15 @@
   }
 
   .main-content:has(.dashboard-header) {
-    padding-top: 10px;
+    padding-top: 118px;
+  }
+
+  .app-shell-header-logo {
+    display: none !important;
+  }
+
+  .app-page-header:not(.dashboard-header) .app-page-header__left {
+    padding-left: 44px;
   }
 
   .dashboard-header {
@@ -301,28 +309,30 @@
   }
 
   .dashboard > .sidebar-toggle {
-    top: 24px;
+    top: 8px;
     right: auto;
-    left: 22px;
+    left: 12px;
     transform: none;
-    width: 38px;
-    min-width: 38px;
-    height: 38px;
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
     display: inline-flex;
     justify-content: center;
     align-items: center;
     padding: 0;
-    background: transparent;
-    box-shadow: none;
-    border: none;
+    background: var(--surface-elevated);
+    box-shadow: var(--dashboard-card-shadow);
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
     color: var(--text-primary);
     font-size: 22px;
     line-height: 1;
     pointer-events: auto;
+    z-index: 10004;
   }
 
   .dashboard > .sidebar-toggle {
-    display: none !important;
+    display: inline-flex !important;
   }
 
   .dashboard > .sidebar-toggle:hover {
@@ -341,14 +351,14 @@
     justify-content: center;
     width: 38px;
     height: 38px;
-    border-radius: 12px;
+    border-radius: 11px;
     margin-left: 0;
-    background: rgba(255, 255, 255, 0.16);
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    box-shadow: 0 6px 14px -12px rgba(17, 23, 20, 0.34);
+    background: transparent;
+    border: 0;
+    box-shadow: none;
     font-size: 24px;
     line-height: 1;
-    color: #ffffff;
+    color: inherit;
     backdrop-filter: none;
   }
 
@@ -454,6 +464,32 @@
     z-index: 1200;
   }
 
+  .dashboard > .sidebar.open.settings-open .sub-menu {
+    position: static !important;
+    right: auto !important;
+    bottom: auto !important;
+    display: flex !important;
+    width: 100% !important;
+    margin: 4px 0 8px !important;
+    flex-direction: column !important;
+    border-radius: 12px !important;
+    box-shadow: none !important;
+    overflow: hidden !important;
+    z-index: auto !important;
+  }
+
+  .dashboard > .sidebar.open.settings-open .sub-nav-item {
+    width: 100% !important;
+    min-height: 42px !important;
+    padding: 10px 12px !important;
+    justify-content: flex-start !important;
+    gap: 10px !important;
+  }
+
+  .dashboard > .sidebar.open.settings-open .sub-nav-item .switch {
+    margin-left: auto !important;
+  }
+
   .dashboard > .sidebar.settings-open .sub-nav-item {
     min-height: 46px;
     padding: 12px 14px;
@@ -548,34 +584,27 @@
 
 @media (max-width: 720px) {
   .dashboard > .sidebar-toggle {
-    display: none !important;
+    display: inline-flex !important;
   }
 }
 
 @media (min-width: 481px) and (max-width: 768px) {
   .main-content:has(.dashboard-header) {
-    padding-top: 112px;
+    padding-top: 118px;
   }
 
   .app-shell-header-logo {
-    display: flex !important;
-    top: 8px;
-    left: 12px;
-    width: 40px;
-    height: 40px;
-    border: 0;
-    background: transparent;
-    z-index: 8002;
+    display: none !important;
   }
 
   .dashboard-header.app-page-header {
     position: fixed !important;
     inset: 0 0 auto 0 !important;
-    height: 104px !important;
-    min-height: 104px !important;
-    max-height: 104px !important;
+    height: 56px !important;
+    min-height: 56px !important;
+    max-height: 56px !important;
     margin: 0 !important;
-    padding: 56px 12px 8px !important;
+    padding: 0 12px !important;
     border-radius: 0 !important;
     background: var(--bg-card) !important;
     border-bottom: 1px solid var(--border-light);
@@ -725,10 +754,10 @@
   .dashboard > .sidebar-toggle {
     display: inline-flex !important;
     top: 8px;
-    right: 12px;
-    left: auto;
-    width: 46px;
-    min-width: 46px;
+    right: auto;
+    left: 12px;
+    width: 40px;
+    min-width: 40px;
     height: 40px;
     align-items: center;
     justify-content: center;
@@ -756,6 +785,10 @@
     display: none !important;
   }
 
+  .dashboard > .sidebar:not(.open) {
+    display: none !important;
+  }
+
   .dashboard > .sidebar.open .sidebar-settings-group {
     display: block !important;
   }
@@ -769,7 +802,7 @@
   }
 
   .main-content:has(.dashboard-header) {
-    padding-top: 12px;
+    padding-top: 118px;
   }
 
   .dashboard-header {
@@ -806,6 +839,14 @@
     padding: 18px 12px 20px !important;
   }
 
+  .dashboard > .sidebar:not(.open) .sidebar-settings-group {
+    display: none !important;
+  }
+
+  .dashboard > .sidebar.open > a.nav-item {
+    display: none !important;
+  }
+
   .dashboard > .sidebar .nav-item,
   .dashboard > .sidebar .sidebar-settings-group,
   .dashboard > .sidebar .sidebar-settings-group .nav-item {
@@ -815,6 +856,137 @@
   }
 
   .dashboard > .sidebar-toggle {
-    left: 20px;
+    left: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-header .dashboard-toolbar {
+    pointer-events: none !important;
+  }
+
+  .dashboard-header .toolbar-date-range,
+  .dashboard-header .trade-filter-wrapper,
+  .dashboard-header .currency-filter-wrapper {
+    display: none !important;
+  }
+
+  .dashboard-header .header-action-btn--import {
+    display: none !important;
+  }
+
+  .dashboard-header__daily-row {
+    grid-template-columns: minmax(0, 1fr) 40px !important;
+    z-index: 8001 !important;
+  }
+
+  body.dashboard-popup-open .dashboard-header__daily-row {
+    z-index: 10003 !important;
+  }
+
+  .dashboard-header__meta {
+    display: flex !important;
+    min-width: 0 !important;
+    grid-column: 1 !important;
+    pointer-events: auto !important;
+  }
+
+  .dashboard-header__meta-pill {
+    width: 100% !important;
+    height: 40px !important;
+    min-width: 0 !important;
+    padding: 0 10px !important;
+    border-radius: 12px !important;
+    background: var(--surface-elevated) !important;
+    border: 1px solid var(--border-light) !important;
+    color: var(--text-secondary) !important;
+    box-shadow: 0 10px 22px -18px rgba(15, 23, 42, 0.38) !important;
+    font-size: 10px !important;
+    line-height: 1 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .dashboard-header__daily-row .start-day-btn {
+    grid-column: 2 !important;
+  }
+
+  .toolbar-date-range__panel,
+  .trade-filter-menu,
+  .currency-filter-menu {
+    top: 170px !important;
+  }
+
+  body.dashboard-sidebar-open .dashboard-header .dashboard-toolbar {
+    position: fixed !important;
+    top: 78px !important;
+    left: 12px !important;
+    right: auto !important;
+    z-index: 10006 !important;
+    width: min(246px, calc(100vw - 52px)) !important;
+    pointer-events: auto !important;
+  }
+
+  body.dashboard-sidebar-open.dashboard-settings-open .dashboard-header .dashboard-toolbar {
+    display: none !important;
+  }
+
+  body.dashboard-sidebar-open .dashboard-header.app-page-header {
+    z-index: 10005 !important;
+    pointer-events: none !important;
+    background: transparent !important;
+    border-bottom: 0 !important;
+  }
+
+  body.dashboard-sidebar-open .dashboard-header .app-page-header__left,
+  body.dashboard-sidebar-open .dashboard-header .header-user {
+    display: none !important;
+  }
+
+  body.dashboard-sidebar-open .dashboard-header .dashboard-toolbar__controls {
+    display: flex !important;
+    width: 100% !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  body.dashboard-sidebar-open .dashboard-header .toolbar-date-range,
+  body.dashboard-sidebar-open .dashboard-header .trade-filter-wrapper,
+  body.dashboard-sidebar-open .dashboard-header .currency-filter-wrapper {
+    display: block !important;
+    width: 100% !important;
+    pointer-events: auto !important;
+  }
+
+  body.dashboard-sidebar-open .dashboard-header .toolbar-chip {
+    justify-content: flex-start !important;
+    width: 100% !important;
+    gap: 10px !important;
+    padding: 0 12px !important;
+  }
+
+  body.dashboard-sidebar-open .dashboard-header .toolbar-chip__text,
+  body.dashboard-sidebar-open .dashboard-header .toolbar-chip > svg:last-child {
+    display: inline-flex !important;
+  }
+
+  body.dashboard-sidebar-open .dashboard-header .toolbar-chip__text {
+    flex: 1 1 auto !important;
+    text-align: left !important;
+  }
+
+  body.dashboard-sidebar-open .toolbar-date-range__panel,
+  body.dashboard-sidebar-open .trade-filter-menu,
+  body.dashboard-sidebar-open .currency-filter-menu {
+    top: 216px !important;
+    left: 12px !important;
+    right: auto !important;
+    transform: none !important;
+    width: min(246px, calc(100vw - 52px)) !important;
   }
 }
