@@ -307,8 +307,16 @@ router.post("/vps/jobs/:job_id/complete", requireVpsAgent, async (req, res) => {
                 `INSERT INTO mt5_accounts
                  (user_id, login_id, broker_server, instance_key, status, connected_at,
                   broker_name, account_id, server_name, connection_status, last_connected)
-                 VALUES ($1, $2, $3, $4, 'connected', NOW(), $3, $2, $3, 'connected', NOW())`,
-                [job.user_id, job.login_id, job.broker_server, job.instance_key]
+                 VALUES ($1, $2, $3, $4, 'connected', NOW(), $5, $6, $7, 'connected', NOW())`,
+                [
+                    job.user_id,
+                    job.login_id,
+                    job.broker_server,
+                    job.instance_key,
+                    job.broker_server,
+                    job.login_id,
+                    job.broker_server,
+                ]
             );
         }
 
