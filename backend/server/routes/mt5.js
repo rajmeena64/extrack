@@ -256,6 +256,7 @@ router.post("/vps/jobs/:job_id/status", requireVpsAgent, async (req, res) => {
 });
 
 router.post("/vps/jobs/:job_id/complete", requireVpsAgent, async (req, res) => {
+    const verifiedRunning = req.body?.verified_running === true;
     const client = await pool.connect();
 
     try {
@@ -285,6 +286,30 @@ router.post("/vps/jobs/:job_id/complete", requireVpsAgent, async (req, res) => {
         }
 
         const job = jobResult.rows[0];
+
+        if (!verifiedRunning) {
+            const errorMessage = 'MT5 terminal was not verified running by VPS agent';
+
+            await client.query(
+                `UPDATE mt5_connection_requests
+                 SET status = 'failed', error_message = $1, updated_at = NOW()
+                 WHERE id = $2`,
+                [errorMessage, job.request_id]
+            );
+
+            await client.query(
+                `UPDATE mt5_vps_jobs
+                 SET status = 'failed', error_message = $1, updated_at = NOW()
+                 WHERE id = $2`,
+                [errorMessage, job.job_id]
+            );
+
+            await client.query('COMMIT');
+            return res.status(400).json({
+                success: false,
+                error: errorMessage,
+            });
+        }
 
         const existingAccount = await client.query(
             `SELECT id FROM mt5_accounts WHERE instance_key = $1`,
