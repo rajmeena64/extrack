@@ -425,17 +425,18 @@ router.post("/vps/jobs/:job_id/fail", requireVpsAgent, async (req, res) => {
 router.post("/vps/accounts/:account_id/health", requireVpsAgent, async (req, res) => {
     const running = req.body?.running === true;
     const errorMessage = sanitizeAgentMessage(req.body?.error_message);
+    const accountStatus = running ? 'connected' : 'disconnected';
 
     try {
         const result = await pool.query(
             `UPDATE mt5_accounts
-             SET status = $1,
-                 connection_status = $1,
-                 last_connected = CASE WHEN $2 THEN NOW() ELSE last_connected END,
+             SET status = $1::text,
+                 connection_status = $2::text,
+                 last_connected = CASE WHEN $3::boolean THEN NOW() ELSE last_connected END,
                  updated_at = NOW()
-             WHERE id = $3
+             WHERE id = $4
              RETURNING id, instance_key, status, connection_status, last_connected, updated_at`,
-            [running ? 'connected' : 'disconnected', running, req.params.account_id]
+            [accountStatus, accountStatus, running, req.params.account_id]
         );
 
         if (result.rowCount === 0) {
