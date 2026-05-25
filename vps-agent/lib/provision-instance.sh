@@ -6,7 +6,6 @@ MT5_SOURCE_DIR="${MT5_SOURCE_DIR:-/home/ubuntu/.wine/drive_c/Program Files/MetaT
 MT5_INSTANCES_DIR="${MT5_INSTANCES_DIR:-/home/ubuntu/mt5-instances}"
 SOURCE_WINE_PREFIX="${SOURCE_WINE_PREFIX:-/home/ubuntu/.wine}"
 DISPLAY_VALUE="${DISPLAY_VALUE:-:10.0}"
-MT5_LAUNCH_WAIT_SECONDS="${MT5_LAUNCH_WAIT_SECONDS:-12}"
 
 job_json="$(cat)"
 job_id="$(printf '%s' "$job_json" | python3 -c 'import json,sys; print(json.load(sys.stdin)["job_id"])')"
@@ -87,5 +86,12 @@ done
 
 "$AGENT_DIR/lib/report-status.sh" "$job_id" "launching_terminal" || true
 "$scripts_dir/start.sh"
-sleep "$MT5_LAUNCH_WAIT_SECONDS"
-"$AGENT_DIR/lib/verify-running.sh" "$instance_root" >/dev/null
+for wait_seconds in 5 5 5 15 30; do
+  sleep "$wait_seconds"
+  if "$AGENT_DIR/lib/verify-running.sh" "$instance_root" >/dev/null; then
+    exit 0
+  fi
+done
+
+echo "MT5 terminal did not become verified running within 60 seconds" >&2
+exit 1
