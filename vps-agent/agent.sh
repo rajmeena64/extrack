@@ -77,12 +77,23 @@ while true; do
   log "claimed job=$job_id request=$request_id instance=$instance_key"
 
   if printf '%s' "$job_json" | "$AGENT_DIR/lib/provision-instance.sh"; then
-    "$AGENT_DIR/lib/report-complete.sh" "$job_id"
-    log "completed job=$job_id instance=$instance_key"
-    run_health_checks_if_due
+    if "$AGENT_DIR/lib/report-complete.sh" "$job_id"; then
+      log "completed job=$job_id instance=$instance_key"
+      run_health_checks_if_due
+    else
+      log "complete report failed job=$job_id instance=$instance_key"
+      if "$AGENT_DIR/lib/report-fail.sh" "$job_id" "MT5 completion report failed"; then
+        log "marked failed job=$job_id instance=$instance_key"
+      else
+        log "failed to mark failed job=$job_id instance=$instance_key"
+      fi
+    fi
   else
-    "$AGENT_DIR/lib/report-fail.sh" "$job_id" "MT5 instance provisioning failed"
-    log "failed job=$job_id instance=$instance_key"
+    if "$AGENT_DIR/lib/report-fail.sh" "$job_id" "MT5 instance provisioning failed"; then
+      log "failed job=$job_id instance=$instance_key"
+    else
+      log "failed to mark failed job=$job_id instance=$instance_key"
+    fi
   fi
 
   if [ "$RUN_ONCE" = "1" ]; then

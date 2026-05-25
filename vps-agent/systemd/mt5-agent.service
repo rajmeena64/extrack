@@ -13,6 +13,7 @@ Environment=RUN_ONCE=0
 ExecStart=/home/ubuntu/mt5-agent/agent.sh
 Restart=always
 RestartSec=10
+KillMode=process
 StandardOutput=append:/home/ubuntu/mt5-agent/logs/systemd.out.log
 StandardError=append:/home/ubuntu/mt5-agent/logs/systemd.err.log
 
