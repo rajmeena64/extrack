@@ -26,6 +26,8 @@ scripts_dir="$instance_root/scripts"
 logs_dir="$instance_root/logs"
 config_dir="$instance_root/config"
 login_config_linux="$config_dir/login.ini"
+ea_preset_name="Extrack_Render.set"
+ea_preset_linux="$mt5_dir/MQL5/Presets/$ea_preset_name"
 
 case "$(readlink -m "$instance_root")" in
   "$(readlink -m "$MT5_INSTANCES_DIR")"/*) ;;
@@ -69,7 +71,8 @@ for required_file in \
   fi
 done
 
-"$AGENT_DIR/lib/write-login-config.py" "$job_json" "$login_config_linux" "${BACKEND_URL:?BACKEND_URL is required}"
+"$AGENT_DIR/lib/write-ea-preset.py" "$ea_preset_linux" "${BACKEND_URL:?BACKEND_URL is required}" "${MT5_INGEST_SECRET:-${TRADE_INGEST_SECRET:-}}"
+"$AGENT_DIR/lib/write-login-config.py" "$job_json" "$login_config_linux" "${BACKEND_URL:?BACKEND_URL is required}" "$ea_preset_name"
 "$AGENT_DIR/lib/update-webrequest-allowlist.py" "$mt5_dir/Config/common.ini" "${BACKEND_URL:?BACKEND_URL is required}"
 
 "$AGENT_DIR/lib/report-status.sh" "$job_id" "applying_ea" || true

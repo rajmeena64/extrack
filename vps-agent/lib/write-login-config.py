@@ -6,12 +6,13 @@ import sys
 
 
 def main():
-    if len(sys.argv) != 4:
-        raise SystemExit("usage: write-login-config.py <job-json> <config-path> <backend-url>")
+    if len(sys.argv) not in (4, 5):
+        raise SystemExit("usage: write-login-config.py <job-json> <config-path> <backend-url> [expert-preset]")
 
     job = json.loads(sys.argv[1])
     config_path = sys.argv[2]
     backend_url = sys.argv[3].rstrip("/")
+    expert_preset = sys.argv[4] if len(sys.argv) == 5 else ""
 
     login = str(job.get("login") or "").strip()
     password = str(job.get("password") or "")
@@ -43,6 +44,7 @@ def main():
             "",
             "[StartUp]",
             "Expert=Extrack_Backend_Job_Bulk_M1_EA",
+            f"ExpertParameters={expert_preset}" if expert_preset else "",
             "Symbol=EURUSD",
             "Period=M1",
             "ShutdownTerminal=0",
