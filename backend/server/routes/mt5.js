@@ -357,17 +357,25 @@ router.post("/vps/jobs/:job_id/complete", requireVpsAgent, async (req, res) => {
                 `UPDATE mt5_accounts
                  SET status = 'connected',
                      connection_status = 'connected',
-                     login_id = $2,
-                     broker_server = $3,
-                     instance_key = $4,
-                     broker_name = $3,
-                     account_id = $2::bigint,
-                     server_name = $3,
+                     login_id = $2::text,
+                     broker_server = $3::text,
+                     instance_key = $4::text,
+                     broker_name = $5::text,
+                     account_id = $6::bigint,
+                     server_name = $7::text,
                      connected_at = NOW(),
                      last_connected = NOW(),
                      updated_at = NOW()
                  WHERE id = $1`,
-                [existingAccount.rows[0].id, job.login_id, job.broker_server, job.instance_key]
+                [
+                    existingAccount.rows[0].id,
+                    job.login_id,
+                    job.broker_server,
+                    job.instance_key,
+                    job.broker_server,
+                    job.login_id,
+                    job.broker_server,
+                ]
             );
         } else {
             await client.query(
