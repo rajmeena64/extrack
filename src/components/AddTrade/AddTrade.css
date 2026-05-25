@@ -931,6 +931,58 @@
   padding: clamp(14px, 2vw, 20px);
 }
 
+.mt5-connect-section {
+  max-width: 620px;
+}
+
+.mt5-connect-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.mt5-connect-form {
+  display: grid;
+  gap: 14px;
+}
+
+.mt5-connect-form .btn {
+  width: fit-content;
+  min-width: 140px;
+}
+
+.mt5-connect-state {
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 12px;
+  border: 1px dashed var(--divider-strong);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--surface-subtle) 86%, white 14%);
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.mt5-connect-state > i {
+  font-size: 24px;
+}
+
+.mt5-connect-state--success {
+  border-color: rgba(88, 212, 126, 0.3);
+  background: rgba(88, 212, 126, 0.1);
+  color: var(--accent-success-strong);
+}
+
+.mt5-connect-state--error {
+  border-color: rgba(239, 68, 68, 0.28);
+  background: rgba(239, 68, 68, 0.08);
+  color: var(--accent-danger);
+}
+
 .form-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.65fr) minmax(260px, 0.8fr);
@@ -1569,6 +1621,10 @@
 
   .btn,
   .btn-group-horizontal .btn {
+    width: 100%;
+  }
+
+  .mt5-connect-form .btn {
     width: 100%;
   }
 

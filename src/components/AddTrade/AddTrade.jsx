@@ -31,22 +31,24 @@ function AddTrade({ trades }) {
           className="add-trade-header"
           actions={(
             <>
-            <label className="broker-select-card">
-              <LegacyIcon className="fas fa-network-wired broker-select-icon" />
-              <span className="broker-select-card__label">Broker</span>
-              <select
-                className="broker-dropdown"
-                value={selectedBrokerId}
-                onChange={(e) => setSelectedBrokerId(parseInt(e.target.value, 10))}
-              >
-                {brokers.map((broker) => (
-                  <option key={broker.id} value={broker.id}>
-                    {broker.name}
-                  </option>
-                ))}
-              </select>
-              <LegacyIcon className="fas fa-chevron-down broker-select-chevron" />
-            </label>
+            {activeTab === 'manual' && (
+              <label className="broker-select-card">
+                <LegacyIcon className="fas fa-network-wired broker-select-icon" />
+                <span className="broker-select-card__label">Broker</span>
+                <select
+                  className="broker-dropdown"
+                  value={selectedBrokerId}
+                  onChange={(e) => setSelectedBrokerId(parseInt(e.target.value, 10))}
+                >
+                  {brokers.map((broker) => (
+                    <option key={broker.id} value={broker.id}>
+                      {broker.name}
+                    </option>
+                  ))}
+                </select>
+                <LegacyIcon className="fas fa-chevron-down broker-select-chevron" />
+              </label>
+            )}
 
             <div className="trade-tabs">
               <button

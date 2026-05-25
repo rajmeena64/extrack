@@ -2,7 +2,8 @@
     "name": "trading-backend",
     "scripts": {
         "start": "node server/app.js",
-        "check": "node --check server/app.js"
+        "check": "node --check server/app.js",
+        "migrate": "node scripts/run-migrations.js"
     },
     "dependencies": {
         "@sentry/node": "^10.53.1",
