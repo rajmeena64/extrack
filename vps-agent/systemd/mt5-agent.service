@@ -8,6 +8,7 @@ Type=simple
 User=ubuntu
 WorkingDirectory=/home/ubuntu/mt5-agent
 EnvironmentFile=/home/ubuntu/mt5-agent/.env
+Environment=AGENT_SERVICE_MODE=1
 Environment=RUN_ONCE=0
 ExecStart=/home/ubuntu/mt5-agent/agent.sh
 Restart=always
