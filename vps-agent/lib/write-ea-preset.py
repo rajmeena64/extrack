@@ -47,7 +47,7 @@ def main():
         ]
     )
 
-    with open(preset_path, "w", encoding="utf-16") as handle:
+    with open(preset_path, "w", encoding="utf-8", newline="") as handle:
         handle.write(content)
 
     os.chmod(preset_path, stat.S_IRUSR | stat.S_IWUSR)
