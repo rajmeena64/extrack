@@ -50,14 +50,7 @@ const HeroSection = ({ onCTA }) => {
               Trading Journal <span className="text-primary font-semibold">Platform</span>
             </div>
             <h1 className="hero-title">
-              <span className="hero-word">Trading</span>
-              <span className="hero-word">journal,</span>
-              <span className="hero-word">replay,</span>
-              <span className="hero-word">and</span>
-              <span className="hero-word">analytics</span>
-              <span className="hero-word">for</span>
-              <span className="hero-word text-primary">serious</span>
-              <span className="hero-word text-primary">traders.</span>
+              Trading journal, replay, and analytics for <span className="text-primary">serious traders.</span>
             </h1>
             <p className="hero-copy">
               Track every trade, review setups, replay market sessions, and improve performance from one

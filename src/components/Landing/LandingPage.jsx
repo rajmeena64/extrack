@@ -12,7 +12,6 @@ import CalendarSection from './CalendarSection';
 import MarketIntelligence from './MarketIntelligence';
 import PricingSection from './PricingSection';
 import LandingFooter from './LandingFooter';
-import { landingImages } from './LandingData';
 import './LandingPage.css';
 
 const UserLoginModal = lazy(() => import('../user/UserLoginModal/UserLoginModal'));
@@ -97,7 +96,7 @@ function LandingPage() {
         title="Practice the market"
         highlight="before risking real money"
         description="Entrack Replay allows you to backtest your strategies in a live-market environment. No more scrolling back on static charts—relive every tick."
-        image={landingImages.spotlightReplay}
+        image="https://lh3.googleusercontent.com/aida-public/AB6AXuAmLYA9BpC5N3b9428rEoYmngkR6XWhddcN4PY_4a9H0Z4ZWmLN3hT-vPz3JzZvDlcnjQ0BqdKomytvdVfM9Okeg4NrUUvIvUd4irgFFuWNiFh0ZIAmwlqjqStavVlLP7j_Q55ZNURqab5qCa1Zg_aoKoCJJKApu_zop768VjZ9wBeTgvzoK72wdr44AwB02vDxKo7p-YTa0T0T7w5rgkUiCD_U4SB3HRgL-DxZsgKbsP-YZGGzyJvXP3lpSifC54TmufGuPZ9I5oXzIeg"
         imageAlt="Replay Mode"
       >
         <div className="space-y-sm">
@@ -121,7 +120,7 @@ function LandingPage() {
         title="Journal every trade with"
         highlight="absolute context"
         description="Stop relying on memory. Document the 'Why' behind every execution so you can spot your psychological triggers."
-        image={landingImages.spotlightJournal}
+        image="https://lh3.googleusercontent.com/aida-public/AB6AXuBzOVDO951qVFXvbFu7_G-KFo9Deh7879KFehx4NScHuPXffx0-DLCOmTGlq5KmNYlM8Hi6vuv7UjuZGYXDoOjVHoVnwuTcLaxBWKw5WeD-ijv4fvxNyCPs-MnlUYtuXI1MLJIWiQByEHUZSO1OSeY9STD4pJKF05NiDNUeuTLqbQ5iCqypjgHjJxTYR-Lw70hHRyuOw0Ur0fmCAsiBIhFK9-i2n5XkFh_qk2Nyvxv5eNtFKxCPuzse0HLU5wSCcA3Wnxvekl3T3Knm"
         imageAlt="Trading Journal"
         reverse={true}
         background=""
@@ -144,7 +143,7 @@ function LandingPage() {
         title="Know exactly what"
         highlight="improves your performance"
         description="Advanced metrics that go beyond simple P&L. Understand your expectation and profit factors at a granular level."
-        image={landingImages.spotlightAnalytics}
+        image="https://lh3.googleusercontent.com/aida-public/AB6AXuAmwKwcMi0lz8XpVnGaNBLVWkH8VGmZot_rOnKGAewWg3iTLbRYINFENBGpaQZK-qM04OMh7UfhLs2oN55CvHVQxkfObcC9_mNhit-qnX0wlkJxRa_SV5wJ-6d30ZWODxS1PihTWI30-WxDMqCJ9syGir02KTLebXxkEnZ4s4kftMRanQtyC0cVG332P9fZBHwIX5Hld10-1F-iPRcw9A0p-i99h3DUAvSZWyKRz1yymxiE4aE3aR40xhmX7knu_-pOj8s1wnKWzJ_S"
         imageAlt="Performance Analytics"
       >
         <div className="space-y-sm bg-surface-container p-lg rounded-xl border border-outline-variant/20">

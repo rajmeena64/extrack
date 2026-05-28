@@ -1,10 +1,7 @@
 import React from 'react';
 import { brokers } from './LandingData';
-import { useTheme } from '../../context/ThemeContext';
 
 const BrokerSlider = () => {
-  const { darkMode } = useTheme();
-
   return (
     <section
       className="py-xl bg-surface-container-low border-b border-outline-variant/10 overflow-hidden"
@@ -20,7 +17,7 @@ const BrokerSlider = () => {
             {brokers.map((broker, index) => (
               <div key={index} className="broker-item">
                 <div className="broker-logo">
-                  <img alt={broker.name} src={darkMode ? broker.logo.dark : broker.logo.light} />
+                  <img alt={broker.name} src={broker.logo} />
                 </div>
                 <span className="broker-name">{broker.name}</span>
               </div>
@@ -31,7 +28,7 @@ const BrokerSlider = () => {
             {brokers.map((broker, index) => (
               <div key={`dup-${index}`} className="broker-item">
                 <div className="broker-logo">
-                  <img alt={broker.name} src={darkMode ? broker.logo.dark : broker.logo.light} />
+                  <img alt={broker.name} src={broker.logo} />
                 </div>
                 <span className="broker-name">{broker.name}</span>
               </div>
