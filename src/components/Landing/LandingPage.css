@@ -1220,4 +1220,25 @@ html.dark .hero-dock {
     font-size: 14px !important;
     line-height: 1.45 !important;
   }
+
+  #features .glass-panel {
+    padding: 18px !important;
+    border-radius: 18px !important;
+  }
+
+  #features .material-symbols-outlined {
+    font-size: 28px !important;
+    margin-bottom: 10px !important;
+  }
+
+  #features h3 {
+    font-size: 18px !important;
+    line-height: 1.25 !important;
+    margin-bottom: 6px !important;
+  }
+
+  #features p {
+    font-size: 14px !important;
+    line-height: 1.45 !important;
+  }
 }
