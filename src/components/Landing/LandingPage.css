@@ -756,13 +756,13 @@ html.dark .hero-dock {
 }
 
 /* Sections Spacing */
-section {
+.landing-page-body section {
   padding-top: clamp(56px, 10vw, 96px);
   padding-bottom: clamp(56px, 10vw, 96px);
   width: 100%;
 }
 
-section.front-hero {
+.landing-page-body section.front-hero {
   padding-top: 0;
   padding-bottom: 0;
 }
@@ -840,9 +840,9 @@ section.front-hero {
 }
 
 /* Product screenshots */
-section[id="replay"] .landing-mockup-card img,
-section[id="analytics"] .landing-mockup-card img,
-section:not(.front-hero) .md\:col-span-7 .landing-mockup-card img {
+.landing-page-body section[id="replay"] .landing-mockup-card img,
+.landing-page-body section[id="analytics"] .landing-mockup-card img,
+.landing-page-body section:not(.front-hero) .md\:col-span-7 .landing-mockup-card img {
   min-height: 360px;
 }
 
