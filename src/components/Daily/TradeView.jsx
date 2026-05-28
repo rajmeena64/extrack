@@ -13,7 +13,7 @@ import PageHeader from "../Layout/PageHeader";
 
 
 
-import { Calendar, Filter, Ratio, Table } from "../Common/icons";
+import { Calendar, Filter, Ratio, Table } from "../../icons/lucideIcons";
 
 
 const IconSize = 16;

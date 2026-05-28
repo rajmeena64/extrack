@@ -49,8 +49,12 @@ export function ThemeProvider({ children }) {
   useLayoutEffect(() => {
     if (darkMode) {
       document.body.classList.add('dark-mode');
+      document.documentElement.classList.add('dark');
+      document.documentElement.classList.remove('light');
     } else {
       document.body.classList.remove('dark-mode');
+      document.documentElement.classList.add('light');
+      document.documentElement.classList.remove('dark');
     }
   }, [darkMode]);
 

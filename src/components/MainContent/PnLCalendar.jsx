@@ -8,7 +8,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Settings,
-} from 'lucide-react';
+} from '../../icons/lucideIcons';
 import './PnLCalendar.css';
 import { formatCompactCurrency } from '../../utils/Currency';
 import api from '../../utils/serve';

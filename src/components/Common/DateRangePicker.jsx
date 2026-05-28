@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { DayPicker } from "react-day-picker";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import "./DateRangePicker.css";
-import { Calendar, ChevronLeft, ChevronRight } from "../Common/icons";
+import { Calendar, ChevronLeft, ChevronRight } from "../../icons/lucideIcons";
 
 const toPickerDate = (value) => {
   if (!value) return null;

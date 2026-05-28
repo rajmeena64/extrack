@@ -1,5 +1,5 @@
 import React from 'react';
-import { Info } from 'lucide-react';
+import { Info } from '../../icons/lucideIcons';
 import './InfoTooltip.css';
 
 function InfoTooltip({ text, className = '', size = 14, side = 'top' }) {

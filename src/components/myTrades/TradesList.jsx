@@ -2,7 +2,7 @@ import React, { useCallback, useMemo, useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"; // <-- added
 import "./Trades.css";
 import SymbolWithIcon from "../Common/SymbolWithIcon";
-import { EllipsisVertical } from "../Common/icons";
+import { EllipsisVertical } from "../../icons/lucideIcons";
 import { formatCurrency } from "../../utils/Currency";
 import { getTradeDisplayDate, getTradeDisplayTime } from "../../utils/tradeTime";
 import { useAuth } from "../../context/AuthContext";

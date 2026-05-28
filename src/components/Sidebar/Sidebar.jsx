@@ -16,7 +16,7 @@ import {
   Settings,
   Sun,
   X,
-} from 'lucide-react';
+} from '../../icons/lucideIcons';
 import { useTheme } from '../../context/ThemeContext';  // ✅ ADDED
 
 import './Sidebar.css';

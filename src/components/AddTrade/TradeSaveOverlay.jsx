@@ -1,4 +1,4 @@
-import { Loader as LoaderIcon } from 'lucide-react';
+import { Loader as LoaderIcon } from '../../icons/lucideIcons';
 
 function TradeSaveOverlay({ label = 'Saving trade...' }) {
   return (

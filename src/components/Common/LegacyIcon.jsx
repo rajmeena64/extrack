@@ -35,7 +35,7 @@ import {
   TriangleAlert,
   Upload,
   X,
-} from 'lucide-react';
+} from '../../icons/lucideIcons';
 
 import './LegacyIcon.css';
 

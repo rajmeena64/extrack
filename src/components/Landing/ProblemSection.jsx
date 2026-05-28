@@ -1,0 +1,87 @@
+import React from 'react';
+
+const ProblemSection = () => {
+  return (
+    <section className="py-xl px-margin-mobile md:px-margin-desktop max-w-7xl mx-auto">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-xl items-center items-stretch">
+        <div>
+          <h2 className="font-headline-lg text-headline-lg mb-md leading-tight">
+            Most traders repeat the same mistakes because they <span className="text-error">never review them</span>.
+          </h2>
+          <ul className="space-y-md">
+            <li className="flex items-start gap-md">
+              <div className="w-8 h-8 rounded-full bg-error/10 flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-error text-sm" data-icon="close">
+                  close
+                </span>
+              </div>
+              <div>
+                <p className="font-headline-sm text-headline-sm text-on-surface">No structured review process</p>
+                <p className="font-body-sm text-body-sm text-on-surface-variant">
+                  Scattered notes in Discord, notebooks, or Excel that are never opened again.
+                </p>
+              </div>
+            </li>
+            <li className="flex items-start gap-md">
+              <div className="w-8 h-8 rounded-full bg-error/10 flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-error text-sm" data-icon="close">
+                  close
+                </span>
+              </div>
+              <div>
+                <p className="font-headline-sm text-headline-sm text-on-surface">Invisible emotional leaks</p>
+                <p className="font-body-sm text-body-sm text-on-surface-variant">
+                  Revenge trading and FOMO go untracked, draining your account balance slowly.
+                </p>
+              </div>
+            </li>
+            <li className="flex items-start gap-md">
+              <div className="w-8 h-8 rounded-full bg-error/10 flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-error text-sm" data-icon="close">
+                  close
+                </span>
+              </div>
+              <div>
+                <p className="font-headline-sm text-headline-sm text-on-surface">Flying blind on strategy</p>
+                <p className="font-body-sm text-body-sm text-on-surface-variant">
+                  Not knowing which setups are profitable and which ones are just noise.
+                </p>
+              </div>
+            </li>
+          </ul>
+        </div>
+        <div className="bg-surface-container rounded-xl border border-outline-variant/20 relative overflow-hidden group">
+          <div className="absolute inset-0 bg-gradient-to-br from-error/5 to-primary/5 opacity-50"></div>
+          <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 h-full min-h-[400px]">
+            <div className="flex flex-col opacity-60 hover:opacity-100 transition-opacity duration-500 border-r border-outline-variant/30">
+              <div className="flex-grow overflow-hidden relative">
+                <img
+                  alt="Unorganized Notes"
+                  className="absolute inset-0 w-full h-full object-cover grayscale brightness-50"
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuBtXFtUpvXP_mvmO8RuH-iiBCst1BckosLAKUrAj_t-ayfx-b5OW6bjFUprOwBRxqTlNE53UWQ7VAUFkzYamqNFbxqrigIBGQuqe2KWVMb3Q8yLzhvw1fnFzuP1M7bygplcQWDdMXSRnhD65mSPpEF2q06syaoUHJ9h2zTBMAyNtTmJcVgjSnZL3prY3fByphbxo9yGg76rvUreJy_LKJnP_9s0oQpDdO7-ZwqZarVwH4NQXtSLHUydKj87D5qJGeOcFwcrNa1okuHk"
+                />
+              </div>
+              <div className="py-lg text-center font-data-mono text-error bg-surface-container/80 backdrop-blur-sm border-t border-outline-variant/20">
+                Unorganized Notebooks
+              </div>
+            </div>
+            <div className="flex flex-col group/dashboard transition-all duration-500">
+              <div className="flex-grow overflow-hidden relative">
+                <img
+                  alt="Entrack Dashboard"
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover/dashboard:scale-110"
+                  src="https://lh3.googleusercontent.com/aida/ADBb0uiUdCQaRfb_6RCiOYqi17GbegP3jxWxwi5Iv1s-IQflAPwQVFHlTBTFQ-PSjqxdOcYX8_Jk0reElsUgopo5Iut-HfTSeoBpKb5SIGzhgeVhestjDgx-AgFfz4S0vL0KIiO-HZ8BNy8sCWx1bkRjjDfh78CK4Ifl7ZCydaP19VF8X0_64QMl_1KkklZTBF-6OV9g8Wo6BDTHOVKq9iG9PhcD1wU9q2OBjozDvGjKVsyHBApBsWNcs--C2-Pm"
+                />
+              </div>
+              <div className="py-lg text-center font-data-mono text-primary bg-surface-container/80 backdrop-blur-sm border-t border-outline-variant/20">
+                Entrack Dashboard
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+export default ProblemSection;

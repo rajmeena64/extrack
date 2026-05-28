@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ArrowDownRight, ArrowUpRight, CircleDollarSign, Gauge, Percent, Sigma } from 'lucide-react';
+import { ArrowDownRight, ArrowUpRight, CircleDollarSign, Gauge, Percent, Sigma } from '../../icons/lucideIcons';
 import './StatsCards.css';
 import { formatCurrency as formatDashboardCurrency } from '../../utils/Currency';
 import { decodeStorageValue, encodeStorageValue } from '../../utils/obfuscatedStorage';

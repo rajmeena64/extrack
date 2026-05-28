@@ -8,7 +8,7 @@ import {
   RefreshCw,
   Rocket,
   Search,
-} from 'lucide-react';
+} from '../../icons/lucideIcons';
 import './Header.css';
 import { useAuth } from '../../context/AuthContext';
 import PageHeader from '../Layout/PageHeader';

@@ -5,7 +5,7 @@ import "./Analytics.css";
 import Heatmap from "./heatmap";
 import AIAnalysis from "./AIAnalysis";
 
-import { Ratio, ChartBar } from "../Common/icons";
+import { Ratio, ChartBar } from "../../icons/lucideIcons";
 import MainContentWrapper from "../Layout/MainContentWrapper";
 import PageHeader from "../Layout/PageHeader";
 

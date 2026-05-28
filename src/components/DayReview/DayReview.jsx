@@ -11,7 +11,7 @@ import {
   Sigma,
   TrendingDown,
   TrendingUp,
-} from 'lucide-react';
+} from '../../icons/lucideIcons';
 import SymbolWithIcon from '../Common/SymbolWithIcon';
 import MainContentWrapper from '../Layout/MainContentWrapper';
 import PageHeader from '../Layout/PageHeader';
