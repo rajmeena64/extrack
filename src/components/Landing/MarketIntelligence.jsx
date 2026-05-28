@@ -1,6 +1,10 @@
 import React from 'react';
+import { landingImages } from './LandingData';
+import { useTheme } from '../../context/ThemeContext';
 
 const MarketIntelligence = () => {
+  const { darkMode } = useTheme();
+
   return (
     <section className="py-24 bg-surface-container-lowest">
       <div className="max-w-7xl mx-auto px-margin-mobile md:px-margin-desktop">
@@ -20,7 +24,7 @@ const MarketIntelligence = () => {
               <div className="landing-mockup-card">
                 <img
                   alt="Market Intelligence Dashboard"
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuBKQH4Hisb9apyM27IuXpoa9fhoTv8h7UacQpzHfNQcwIF3FvNYTv31tGOmqOwqtyRyLkFyv1F-58qwsosHbwPOJ72cAMWKAV9KAPh3AQlSh7HFCV4IHlwy0tUYLNo5LNeE5ctIGghcrCtU2_wo4PWPm-VTSv-OCzIF_cGcPH8i8ajWyx62RqgRL1sbINyLO1ZQzNfjbCHvG3THuMRT4tGFpjLW5oIgfTrytl9Jc3lIbynryEUYaOAgmc95GOTkCpxCXttonMnMmj8CTr4"
+                  src={darkMode ? landingImages.marketIntelligence.dark : landingImages.marketIntelligence.light}
                 />
               </div>
             </div>
