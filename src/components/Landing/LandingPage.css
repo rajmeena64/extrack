@@ -1279,8 +1279,7 @@ section:not(.front-hero) .md\:col-span-7 .landing-mockup-card img {
     font-size: 14px !important;
     line-height: 1.45 !important;
   }
-}    gap: 14px !important;
-  }
+
 
   #features .glass-panel {
     padding: 18px !important;
