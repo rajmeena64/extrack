@@ -30,6 +30,7 @@ const EconomicCalendar = lazy(() => import('./components/EconomicCalendar/Econom
 const TradeView = lazy(() => import('./components/Daily/TradeView'));
 const ThatTrade = lazy(() => import('./components/Daily/ThatTrade/ThatTrade'));
 const DayReview = lazy(() => import('./components/DayReview/DayReview'));
+const BacktestingPage = lazy(() => import('./features/backtesting/BacktestingPage'));
 
 const startOfLocalDay = (date) => {
   const nextDate = new Date(date);
@@ -127,6 +128,7 @@ const getCachedRouteKey = (pathname) => {
   if (path === '/add-trade') return 'add-trade';
   if (path === '/analytics') return 'analytics';
   if (path === '/economic-calendar') return 'economic-calendar';
+  if (path === '/backtesting') return 'backtesting';
   if (path === '/profile') return 'profile';
   if (path === '/day-review') return 'day-review';
   if (path === '/tradeview') return 'trade-view';
@@ -202,6 +204,7 @@ function CachedMainRoutes({
       ))}
 
       {renderCachedPane('economic-calendar', <EconomicCalendar />)}
+      {renderCachedPane('backtesting', <BacktestingPage />)}
       {renderCachedPane('profile', <Profile />)}
 
       {renderCachedPane('day-review', (

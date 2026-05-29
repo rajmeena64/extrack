@@ -1,0 +1,47 @@
+import React from 'react';
+import { CalendarDays, RefreshCw, Search } from '../../../icons/lucideIcons';
+
+const TIMEFRAMES = ['1m', '5m', '15m', '30m', '1h', '4h', '1D'];
+
+function BacktestToolbar({ symbol, timeframe, loadStatus, onSymbolChange, onTimeframeChange, onReload }) {
+  return (
+    <div className="backtest-toolbar">
+      <label className="backtest-field backtest-field--symbol backtest-toolbar__symbol">
+        <span><Search size={13} aria-hidden="true" /> Symbol</span>
+        <input value={symbol} onChange={(event) => onSymbolChange(event.target.value.toUpperCase())} />
+      </label>
+
+      <div className="backtest-timeframes backtest-toolbar__timeframes" aria-label="Timeframe selector">
+        {TIMEFRAMES.map((item) => (
+          <button
+            key={item}
+            type="button"
+            className={timeframe === item ? 'is-active' : ''}
+            onClick={() => onTimeframeChange(item)}
+          >
+            {item}
+          </button>
+        ))}
+      </div>
+
+      <label className="backtest-field backtest-field--session backtest-toolbar__session">
+        <span><CalendarDays size={13} aria-hidden="true" /> Session</span>
+        <input type="date" />
+      </label>
+
+      <div className="backtest-chart-tools backtest-toolbar__tools" aria-label="Chart tools">
+        <button type="button" title="Trend line placeholder">TL</button>
+        <button type="button" title="Measure placeholder">M</button>
+        <button type="button" title="Magnet placeholder">MG</button>
+      </div>
+
+      <button className="backtest-icon-button" type="button" onClick={onReload} title="Reload candles" aria-label="Reload candles">
+        <RefreshCw size={15} aria-hidden="true" />
+      </button>
+
+      <span className={`backtest-data-pill backtest-data-pill--${loadStatus}`}>{loadStatus}</span>
+    </div>
+  );
+}
+
+export default BacktestToolbar;

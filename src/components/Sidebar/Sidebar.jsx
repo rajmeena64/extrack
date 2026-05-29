@@ -2,6 +2,7 @@ import React, { lazy, Suspense, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
   CalendarDays,
+  ChartColumn,
   ChartLine,
   ChevronDown,
   ChevronsLeft,
@@ -241,6 +242,17 @@ function Sidebar() {
         >
           <CalendarDays size={16} aria-hidden="true" />
           <span className="nav-label">Economic Calendar</span>
+        </Link>
+
+        <Link
+          to="/backtesting"
+          className="nav-item"
+          onClick={() => setSidebarOpen(false)}
+          aria-label="Go to Backtesting"
+          title="Backtesting"
+        >
+          <ChartColumn size={16} aria-hidden="true" />
+          <span className="nav-label">Backtesting</span>
         </Link>
 
         <Link

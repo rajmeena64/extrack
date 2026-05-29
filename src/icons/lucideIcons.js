@@ -48,6 +48,8 @@ export {
   PenSquare,
   Percent,
   PieChart,
+  Pause,
+  Play,
   Plug,
   Plus,
   PlusCircle,
