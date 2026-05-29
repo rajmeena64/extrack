@@ -4,7 +4,7 @@ import { brokers } from './LandingData';
 const BrokerSlider = () => {
   return (
     <section
-      className="py-xl bg-surface-container-low border-b border-outline-variant/10 overflow-hidden"
+      className="py-40xl bg-surface-container-low border-b border-outline-variant/10 overflow-hidden"
     >
       <div className="max-w-7xl mx-auto px-margin-mobile md:px-margin-desktop mb-lg text-center">
         <h3 className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest">

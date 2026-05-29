@@ -317,10 +317,12 @@ body.light-mode .hero-shell {
   z-index: 20;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 18px;
   padding: clamp(18px, 3vw, 28px) clamp(18px, 5vw, 42px);
-  max-width: 1540px;
+  max-width: 100%;
   margin: 0 auto;
+  height: 70px;
+ 
 }
 
 .hero-nav {
@@ -805,7 +807,7 @@ html.dark .hero-dock {
   height: clamp(42px, 8vw, 52px);
   border-radius: 50%;
   overflow: hidden;
-  background: #ffffff;
+  background: transparent;
   padding: 8px;
   display: flex;
   align-items: center;
