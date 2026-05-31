@@ -53,6 +53,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 if (missingEnv.length > 0) {
+  console.error('startup.missing_env', { missingEnv });
   process.exit(1);
 }
 
@@ -275,7 +276,8 @@ async function startServer() {
     if (typeof settingsRoutes.ensureUserSettingsTable === 'function') {
       await settingsRoutes.ensureUserSettingsTable();
     }
-  } catch {
+  } catch (error) {
+    console.error('startup.ensure_failed', { error: error.message });
     process.exit(1);
   }
 
