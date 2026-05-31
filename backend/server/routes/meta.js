@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../config/database');
 const { authCheck } = require('./auth');
+const { TABLES } = require('../config/tables');
 const { encryptMT5Password } = require('../services/mt5Credentials');
 const { currencyCode, trimString } = require('../validators/common');
 
@@ -19,7 +20,7 @@ router.get('/get-mt5-accounts', authCheck, async (req, res) => {
     try {
         const result = await pool.query(
             `SELECT id, broker_name, account_id, server_name, balance, default_currency, temporary_currency, investor_password
-             FROM mt5_accounts 
+             FROM ${TABLES.mt5Accounts} 
              WHERE user_id = $1 
              ORDER BY created_at DESC`,
             [userId]
@@ -55,7 +56,7 @@ router.post('/update-dashboard-currency', authCheck, async (req, res) => {
 
     try {
         const result = await pool.query(
-            `UPDATE mt5_accounts
+            `UPDATE ${TABLES.mt5Accounts}
              SET temporary_currency = $1,
                  updated_at = NOW()
              WHERE user_id = $2
@@ -87,7 +88,7 @@ router.post('/update-mt5-password', authCheck, async (req, res) => {
 
         // Check if account belongs to user
         const result = await pool.query(
-            `SELECT id FROM mt5_accounts WHERE account_id = $1 AND user_id = $2`,
+            `SELECT id FROM ${TABLES.mt5Accounts} WHERE account_id = $1 AND user_id = $2`,
             [account_id, userId]
         );
 
@@ -99,7 +100,7 @@ router.post('/update-mt5-password', authCheck, async (req, res) => {
         const encryptedPassword = encryptMT5Password(new_password);
 
         await pool.query(
-            `UPDATE mt5_accounts 
+            `UPDATE ${TABLES.mt5Accounts} 
              SET investor_password = $1, updated_at = NOW() 
              WHERE account_id = $2 AND user_id = $3`,
             [encryptedPassword, account_id, userId]
@@ -125,7 +126,7 @@ router.post('/save-mt5-account', authCheck, async (req, res) => {
 
     try {
         const check = await pool.query(
-            `SELECT id FROM mt5_accounts WHERE user_id = $1 AND account_id = $2`,
+            `SELECT id FROM ${TABLES.mt5Accounts} WHERE user_id = $1 AND account_id = $2`,
             [req.userId, account_id]
         );
 
@@ -134,7 +135,7 @@ router.post('/save-mt5-account', authCheck, async (req, res) => {
             const encryptedPassword = encryptMT5Password(investor_password);
 
             await pool.query(
-                `UPDATE mt5_accounts 
+                `UPDATE ${TABLES.mt5Accounts} 
                  SET broker_name = $1, server_name = $2, investor_password = $3 
                  WHERE user_id = $4 AND account_id = $5`,
                 [broker_name, server_name, encryptedPassword, req.userId, account_id]
@@ -143,7 +144,7 @@ router.post('/save-mt5-account', authCheck, async (req, res) => {
             // Insert new account
             const encryptedPassword = encryptMT5Password(investor_password);
             await pool.query(
-                `INSERT INTO mt5_accounts 
+                `INSERT INTO ${TABLES.mt5Accounts} 
                  (user_id, broker_name, account_id, server_name, investor_password) 
                  VALUES ($1, $2, $3, $4, $5)`,
                 [req.userId, broker_name, account_id, server_name, encryptedPassword]
@@ -167,7 +168,7 @@ router.delete('/delete-mt5-account/:id', authCheck, async (req, res) => {
 
         // 1️⃣ Get MT5 account number
         const accountResult = await client.query(
-            `SELECT account_id FROM mt5_accounts WHERE id = $1 AND user_id = $2`,
+            `SELECT account_id FROM ${TABLES.mt5Accounts} WHERE id = $1 AND user_id = $2`,
             [accountId, req.userId]
         );
 
@@ -180,13 +181,13 @@ router.delete('/delete-mt5-account/:id', authCheck, async (req, res) => {
 
         // 2️⃣ Delete related trades
         await client.query(
-            `DELETE FROM api_trades WHERE account_id = $1::bigint AND user_id = $2`,
+            `DELETE FROM ${TABLES.apiTrades} WHERE account_id = $1::bigint AND user_id = $2`,
             [mt5AccountNumber, req.userId]
         );
 
         // 3️⃣ Delete MT5 account
         const deleteResult = await client.query(
-            `DELETE FROM mt5_accounts WHERE id = $1 AND user_id = $2 RETURNING broker_name, account_id`,
+            `DELETE FROM ${TABLES.mt5Accounts} WHERE id = $1 AND user_id = $2 RETURNING broker_name, account_id`,
             [accountId, req.userId]
         );
 

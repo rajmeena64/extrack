@@ -2,12 +2,42 @@ const fromEmail = process.env.EMAIL_FROM;
 const fromName = process.env.EMAIL_FROM_NAME || 'Entrack';
 const resendApiKey = process.env.RESEND_API_KEY || process.env.EMAIL_PROVIDER_API_KEY;
 
-function getFrontendUrl() {
-  const frontendUrl = String(process.env.FRONTEND_URL || '').trim().replace(/\/+$/, '');
-  if (!frontendUrl) {
-    throw new Error('FRONTEND_URL is required for auth emails');
+function normalizeHttpUrl(value, envName) {
+  const candidates = String(value || '')
+    .split(',')
+    .map((candidate) => candidate.trim().replace(/\/+$/, ''))
+    .filter(Boolean);
+
+  for (const candidate of candidates) {
+    try {
+      const url = new URL(candidate);
+      if (url.protocol === 'http:' || url.protocol === 'https:') {
+        return url.toString().replace(/\/+$/, '');
+      }
+    } catch {
+      // Try the next comma-separated value before failing below.
+    }
   }
-  return frontendUrl;
+
+  if (!candidates.length) {
+    throw new Error(`${envName} is required for auth emails`);
+  }
+
+  throw new Error(`${envName} must be a valid http(s) URL for auth emails`);
+}
+
+function getFrontendUrl() {
+  return normalizeHttpUrl(process.env.FRONTEND_URL, 'FRONTEND_URL');
+}
+
+function getPasswordResetUrl(token) {
+  const baseUrl = process.env.PASSWORD_RESET_URL
+    ? normalizeHttpUrl(process.env.PASSWORD_RESET_URL, 'PASSWORD_RESET_URL')
+    : `${getFrontendUrl()}/reset-password`;
+
+  const url = new URL(baseUrl);
+  url.searchParams.set('token', token);
+  return url.toString();
 }
 
 function escapeHtml(value) {
@@ -145,7 +175,7 @@ async function sendVerificationEmail({ email, name, token }) {
 }
 
 async function sendPasswordResetEmail({ email, name, token }) {
-  const link = `${getFrontendUrl()}/reset-password?token=${encodeURIComponent(token)}`;
+  const link = getPasswordResetUrl(token);
 
   await sendMail({
     to: email,
@@ -183,6 +213,8 @@ async function sendPasswordChangedEmail({ email, name }) {
 }
 
 module.exports = {
+  getFrontendUrl,
+  getPasswordResetUrl,
   sendPasswordChangedEmail,
   sendPasswordResetEmail,
   sendVerificationEmail,

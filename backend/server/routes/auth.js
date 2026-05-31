@@ -5,6 +5,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { createRateLimiter } = require('../middleware/rateLimit');
 const { hashToken, secretsMatch } = require('../utils/security');
+const { logAuthTableUse, TABLES, USER_SELECT } = require('../config/tables');
 const {
     currencyCode,
     rejectUnexpectedFields,
@@ -109,14 +110,16 @@ const generateTokens = async (userId) => {
 
         // 🔥 1. Purana token delete
     await pool.query(
-        `DELETE FROM refresh_tokens WHERE user_id = $1`,
+        `DELETE FROM ${TABLES.refreshTokens} WHERE user_id = $1`,
         [userId]
     );
 
 
     // Save refresh token to database
+    logAuthTableUse('refresh_token_save', TABLES.refreshTokens);
+
     await pool.query(
-        `INSERT INTO refresh_tokens (user_id, token, expires_at) 
+        `INSERT INTO ${TABLES.refreshTokens} (user_id, token, expires_at) 
          VALUES ($1, $2, $3)`,
         [userId, refreshTokenHash, expiresAt]
     );
@@ -145,7 +148,7 @@ const authCheck = async (req, res, next) => {
         const decoded = jwt.verify(token, JWT_ACCESS_SECRET);
         
         const userResult = await pool.query(
-            `SELECT "ID" FROM public."user" WHERE "ID" = $1 AND "isDeleted" = false`,
+            `SELECT id AS "ID" FROM ${TABLES.users} WHERE id = $1 AND is_deleted = false`,
             [decoded.userId]
         );
 
@@ -210,10 +213,10 @@ router.post('/register', async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, saltRounds);
 
         const result = await pool.query(
-            `INSERT INTO public."user" (
-                "firstName", "lastName", "email", "phone",
-                "password", "preferred_currency", "isDeleted"
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+            `INSERT INTO ${TABLES.users} (
+                first_name, last_name, email, phone,
+                password, preferred_currency, is_deleted
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING ${USER_SELECT}`,
             [firstName, lastName, email, phone, hashedPassword, preferred_currency, false]
         );
 
@@ -254,16 +257,17 @@ router.post('/register', async (req, res) => {
 router.post('/login', loginRateLimiter, async (req, res) => {
     const { email, phone, password } = req.body;
 
+    logAuthTableUse('login_user_lookup', TABLES.users);
 
     try {
         let query = '';
         let values = [];
 
         if (email && email.trim() !== '') {
-            query = `SELECT * FROM public."user" WHERE "email" = $1 AND "isDeleted" = false`;
+            query = `SELECT ${USER_SELECT} FROM ${TABLES.users} WHERE email = $1 AND is_deleted = false`;
             values = [email];
         } else if (phone && phone.trim() !== '') {
-            query = `SELECT * FROM public."user" WHERE "phone" = $1 AND "isDeleted" = false`;
+            query = `SELECT ${USER_SELECT} FROM ${TABLES.users} WHERE phone = $1 AND is_deleted = false`;
             values = [phone];
         } else {
             return res.status(400).json({ 
@@ -336,14 +340,16 @@ router.post('/refresh-token', refreshRateLimiter, async (req, res) => {
         const refreshTokenHash = hashToken(refreshToken);
 
         // Check database
+        logAuthTableUse('refresh_token_read', TABLES.refreshTokens);
+
         const tokenResult = await pool.query(
-            `SELECT * FROM refresh_tokens 
+            `SELECT * FROM ${TABLES.refreshTokens} 
              WHERE token = $1 AND user_id = $2 AND expires_at > NOW()`,
             [refreshTokenHash, decoded.userId]
         );
 
         if (tokenResult.rows.length === 0) {
-            await pool.query(`DELETE FROM refresh_tokens WHERE user_id = $1`, [decoded.userId]);
+            await pool.query(`DELETE FROM ${TABLES.refreshTokens} WHERE user_id = $1`, [decoded.userId]);
             return res.status(401).json({ 
                 success: false, 
                 error: 'Invalid or expired refresh token',
@@ -353,7 +359,7 @@ router.post('/refresh-token', refreshRateLimiter, async (req, res) => {
 
         // Delete old token
         await pool.query(
-            `DELETE FROM refresh_tokens WHERE token = $1`,
+            `DELETE FROM ${TABLES.refreshTokens} WHERE token = $1`,
             [refreshTokenHash]
         );
 
@@ -379,7 +385,7 @@ router.post('/refresh-token', refreshRateLimiter, async (req, res) => {
                 const decoded = jwt.decode(refreshToken);
                 if (decoded?.userId) {
                     await pool.query(
-                        `DELETE FROM refresh_tokens WHERE user_id = $1`,
+                        `DELETE FROM ${TABLES.refreshTokens} WHERE user_id = $1`,
                         [decoded.userId]
                     );
                 }
@@ -404,7 +410,7 @@ router.post('/logout', async (req, res) => {
         // If a token exists, delete it from the database
         if (refreshToken) {
             await pool.query(
-                `DELETE FROM refresh_tokens WHERE token = $1`,
+                `DELETE FROM ${TABLES.refreshTokens} WHERE token = $1`,
                 [hashToken(refreshToken)]
             );
         }
@@ -471,7 +477,7 @@ router.post('/update-profile', authCheck, async (req, res) => {
 
     try {
         const currentUserResult = await pool.query(
-            `SELECT * FROM public."user" WHERE "ID" = $1 AND "isDeleted" = false`,
+            `SELECT ${USER_SELECT} FROM ${TABLES.users} WHERE id = $1 AND is_deleted = false`,
             [userId]
         );
 
@@ -483,7 +489,7 @@ router.post('/update-profile', authCheck, async (req, res) => {
 
         if (email && email !== currentUser.email) {
             const emailCheck = await pool.query(
-                `SELECT "ID" FROM public."user" WHERE "email" = $1 AND "ID" != $2 AND "isDeleted" = false`,
+                `SELECT id AS "ID" FROM ${TABLES.users} WHERE email = $1 AND id != $2 AND is_deleted = false`,
                 [email, userId]
             );
             
@@ -497,7 +503,7 @@ router.post('/update-profile', authCheck, async (req, res) => {
 
         if (phone && phone !== currentUser.phone) {
             const phoneCheck = await pool.query(
-                `SELECT "ID" FROM public."user" WHERE "phone" = $1 AND "ID" != $2 AND "isDeleted" = false`,
+                `SELECT id AS "ID" FROM ${TABLES.users} WHERE phone = $1 AND id != $2 AND is_deleted = false`,
                 [phone, userId]
             );
             
@@ -518,14 +524,14 @@ router.post('/update-profile', authCheck, async (req, res) => {
         const formattedCurrency = preferred_currency || null;
 
         const result = await pool.query(
-            `UPDATE public."user" SET 
-                "firstName" = COALESCE($1, "firstName"),
-                "lastName" = COALESCE($2, "lastName"),
-                "email" = COALESCE($3, "email"),
-                "phone" = COALESCE($4, "phone"),
-                "password" = COALESCE($5, "password"),
-                "preferred_currency" = COALESCE($6, "preferred_currency")
-             WHERE "ID" = $7 AND "isDeleted" = false RETURNING *`,
+            `UPDATE ${TABLES.users} SET 
+                first_name = COALESCE($1, first_name),
+                last_name = COALESCE($2, last_name),
+                email = COALESCE($3, email),
+                phone = COALESCE($4, phone),
+                password = COALESCE($5, password),
+                preferred_currency = COALESCE($6, preferred_currency)
+             WHERE id = $7 AND is_deleted = false RETURNING ${USER_SELECT}`,
             [
                 firstName || null, 
                 lastName || null, 
@@ -574,9 +580,9 @@ router.get('/user-profile', authCheck, async (req, res) => {
 
     try {
         const result = await pool.query(
-            `SELECT *
-             FROM public."user" 
-             WHERE "ID" = $1 AND "isDeleted" = false`,
+            `SELECT ${USER_SELECT}
+             FROM ${TABLES.users} 
+             WHERE id = $1 AND is_deleted = false`,
             [userId]
         );
 
@@ -633,10 +639,10 @@ router.post('/update-currency', authCheck, async (req, res) => {
 
     try {
         const result = await pool.query(
-            `UPDATE public."user" 
+            `UPDATE ${TABLES.users} 
              SET preferred_currency = $1 
-             WHERE "ID" = $2 AND "isDeleted" = false 
-             RETURNING *`,
+             WHERE id = $2 AND is_deleted = false 
+             RETURNING ${USER_SELECT}`,
             [currency, userId]
         );
 
@@ -678,7 +684,7 @@ router.delete('/delete-account', authCheck, async (req, res) => {
 
     try {
         const userResult = await pool.query(
-            `SELECT * FROM public."user" WHERE "ID" = $1 AND "isDeleted" = false`,
+            `SELECT ${USER_SELECT} FROM ${TABLES.users} WHERE id = $1 AND is_deleted = false`,
             [userId]
         );
 
@@ -700,13 +706,13 @@ router.delete('/delete-account', authCheck, async (req, res) => {
         }
 
         // Delete refresh tokens first
-        await pool.query(`DELETE FROM refresh_tokens WHERE user_id = $1`, [userId]);
+        await pool.query(`DELETE FROM ${TABLES.refreshTokens} WHERE user_id = $1`, [userId]);
 
         // Soft delete user
         await pool.query(
-            `UPDATE public."user" 
-             SET "isDeleted" = true 
-             WHERE "ID" = $1`,
+            `UPDATE ${TABLES.users} 
+             SET is_deleted = true, status = 'deleted'
+             WHERE id = $1`,
             [userId]
         );
 
@@ -740,9 +746,9 @@ router.post('/admin/restore-user/:userId', authCheck, async (req, res) => {
     
     try {
         const adminUserResult = await pool.query(
-            `SELECT "ID", "accountType", "isDeleted"
-             FROM public."user"
-             WHERE "ID" = $1`,
+            `SELECT id AS "ID", account_type AS "accountType", is_deleted AS "isDeleted"
+             FROM ${TABLES.users}
+             WHERE id = $1`,
             [req.userId]
         );
 
@@ -756,7 +762,7 @@ router.post('/admin/restore-user/:userId', authCheck, async (req, res) => {
         }
 
         await pool.query(
-            `UPDATE public."user" SET "isDeleted" = false WHERE "ID" = $1`,
+            `UPDATE ${TABLES.users} SET is_deleted = false, status = 'active' WHERE id = $1`,
             [userId]
         );
         

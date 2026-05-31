@@ -1,6 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const pool = require('../config/database');
+const { logAuthTableUse, TABLES, USER_SELECT } = require('../config/tables');
 const { createRateLimiter } = require('../middleware/rateLimit');
 const {
   changePasswordSchema,
@@ -123,9 +124,9 @@ function getPasswordHash(row) {
 
 async function findUserByEmail(emailNormalized) {
   const result = await pool.query(
-    `SELECT * FROM public."user"
+    `SELECT ${USER_SELECT} FROM ${TABLES.users}
      WHERE COALESCE(email_normalized, lower(email)) = $1
-       AND COALESCE(status, CASE WHEN "isDeleted" THEN 'deleted' ELSE 'active' END) = 'active'`,
+       AND COALESCE(status, CASE WHEN is_deleted THEN 'deleted' ELSE 'active' END) = 'active'`,
     [emailNormalized]
   );
   return result.rows[0] || null;
@@ -171,9 +172,9 @@ router.post('/signup', signupLimiter, async (req, res) => {
     await client.query('BEGIN');
 
     const existingUser = await client.query(
-      `SELECT "ID" FROM public."user"
+      `SELECT id AS "ID" FROM ${TABLES.users}
        WHERE COALESCE(email_normalized, lower(email)) = $1
-         AND COALESCE(status, CASE WHEN "isDeleted" THEN 'deleted' ELSE 'active' END) = 'active'`,
+         AND COALESCE(status, CASE WHEN is_deleted THEN 'deleted' ELSE 'active' END) = 'active'`,
       [emailNormalized]
     );
     if (existingUser.rows.length > 0) {
@@ -182,14 +183,14 @@ router.post('/signup', signupLimiter, async (req, res) => {
     }
 
     const pendingResult = await client.query(
-      `SELECT * FROM pending_users WHERE email_normalized = $1 FOR UPDATE`,
+      `SELECT * FROM ${TABLES.emailVerifications} WHERE email_normalized = $1 FOR UPDATE`,
       [emailNormalized]
     );
     const existingPending = pendingResult.rows[0];
 
     if (existingPending) {
       await client.query(
-        `UPDATE pending_users
+        `UPDATE ${TABLES.emailVerifications}
          SET name = $1,
              email_original = $2,
              mobile_normalized = $3,
@@ -202,7 +203,7 @@ router.post('/signup', signupLimiter, async (req, res) => {
       );
     } else {
       await client.query(
-        `INSERT INTO pending_users (
+        `INSERT INTO ${TABLES.emailVerifications} (
            name, email_normalized, email_original, mobile_normalized,
            password_hash, verification_token_hash, verification_expires_at
          ) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
@@ -220,7 +221,7 @@ router.post('/signup', signupLimiter, async (req, res) => {
     if (/email service|frontend_url/i.test(error.message)) {
       return fail(res, 503, 'Email verification service is not configured', 'EMAIL_NOT_CONFIGURED');
     }
-    if (/pending_users|relation .* does not exist/i.test(error.message)) {
+    if (/email_verifications|relation .* does not exist/i.test(error.message)) {
       return fail(res, 500, 'Auth database migration has not been applied', 'AUTH_MIGRATION_REQUIRED');
     }
     return fail(res, 500, 'Signup failed', 'SIGNUP_FAILED');
@@ -239,7 +240,7 @@ router.get('/verify-email', async (req, res) => {
   try {
     await client.query('BEGIN');
     const pendingResult = await client.query(
-      `SELECT * FROM pending_users WHERE verification_token_hash = $1 FOR UPDATE`,
+      `SELECT * FROM ${TABLES.emailVerifications} WHERE verification_token_hash = $1 FOR UPDATE`,
       [tokenHash]
     );
     const pending = pendingResult.rows[0];
@@ -255,23 +256,23 @@ router.get('/verify-email', async (req, res) => {
     }
 
     const existingUser = await client.query(
-      `SELECT "ID" FROM public."user" WHERE COALESCE(email_normalized, lower(email)) = $1`,
+      `SELECT id AS "ID" FROM ${TABLES.users} WHERE COALESCE(email_normalized, lower(email)) = $1`,
       [pending.email_normalized]
     );
     if (existingUser.rows.length > 0) {
-      await client.query(`DELETE FROM pending_users WHERE id = $1`, [pending.id]);
+      await client.query(`DELETE FROM ${TABLES.emailVerifications} WHERE id = $1`, [pending.id]);
       await client.query('COMMIT');
       return fail(res, 409, 'This email is already registered. Please login.', 'EMAIL_REGISTERED');
     }
 
     const { firstName, lastName } = splitName(pending.name);
     const insertResult = await client.query(
-      `INSERT INTO public."user" (
-         "firstName", "lastName", "email", "phone", "password",
-         preferred_currency, "isDeleted", name, email_normalized, email_original,
+      `INSERT INTO ${TABLES.users} (
+         first_name, last_name, email, phone, password,
+         preferred_currency, is_deleted, name, email_normalized, email_original,
          password_hash, mobile_normalized, email_verified_at, status, created_at, updated_at
        ) VALUES ($1, $2, $3, $4, $5, 'USD', false, $6, $7, $8, $9, $10, NOW(), 'active', NOW(), NOW())
-       RETURNING *`,
+       RETURNING ${USER_SELECT}`,
       [
         firstName,
         lastName,
@@ -286,7 +287,7 @@ router.get('/verify-email', async (req, res) => {
       ]
     );
 
-    await client.query(`DELETE FROM pending_users WHERE id = $1`, [pending.id]);
+    await client.query(`DELETE FROM ${TABLES.emailVerifications} WHERE id = $1`, [pending.id]);
     await client.query('COMMIT');
     console.info('auth.email_verified', { email: pending.email_normalized });
     return ok(res, 'Email verified. Your account is ready.', { user: safeUser(insertResult.rows[0]) }, 'EMAIL_VERIFIED');
@@ -308,7 +309,7 @@ router.post('/resend-verification', resendLimiter, async (req, res) => {
 
   try {
     const pendingResult = await pool.query(
-      `SELECT * FROM pending_users WHERE email_normalized = $1`,
+      `SELECT * FROM ${TABLES.emailVerifications} WHERE email_normalized = $1`,
       [parsed.data.email]
     );
     const pending = pendingResult.rows[0];
@@ -317,7 +318,7 @@ router.post('/resend-verification', resendLimiter, async (req, res) => {
       const rawToken = generateRawToken(32);
       const expiresAt = new Date(Date.now() + VERIFY_TOKEN_MINUTES * 60 * 1000);
       await pool.query(
-        `UPDATE pending_users
+        `UPDATE ${TABLES.emailVerifications}
          SET verification_token_hash = $1, verification_expires_at = $2, created_at = NOW()
          WHERE id = $3`,
         [hashToken(rawToken), expiresAt, pending.id]
@@ -337,6 +338,8 @@ router.post('/login', loginLimiter, async (req, res) => {
   if (parsed.error) return fail(res, 400, GENERIC_LOGIN_ERROR, 'INVALID_CREDENTIALS');
 
   try {
+    logAuthTableUse('login_user_lookup', TABLES.users);
+
     const user = await findUserByEmail(parsed.data.email);
     if (!user || !getPasswordHash(user)) {
       console.info('auth.login_failed', { email: parsed.data.email, reason: 'not_found' });
@@ -354,7 +357,7 @@ router.post('/login', loginLimiter, async (req, res) => {
     }
 
     const session = await issueSession(pool, res, user.ID, req);
-    await pool.query(`UPDATE public."user" SET last_login_at = NOW(), updated_at = NOW() WHERE "ID" = $1`, [user.ID]);
+    await pool.query(`UPDATE ${TABLES.users} SET last_login_at = NOW(), updated_at = NOW() WHERE id = $1`, [user.ID]);
     console.info('auth.login_success', { userId: user.ID });
     return ok(res, 'Login successful', {
       user: safeUser(user),
@@ -376,8 +379,10 @@ router.post('/refresh-token', refreshLimiter, async (req, res) => {
 
   try {
     await client.query('BEGIN');
+    logAuthTableUse('refresh_token_read', TABLES.refreshTokens);
+
     const tokenResult = await client.query(
-      `SELECT * FROM refresh_tokens WHERE token_hash = $1 OR token = $1 FOR UPDATE`,
+      `SELECT * FROM ${TABLES.refreshTokens} WHERE token_hash = $1 OR token = $1 FOR UPDATE`,
       [tokenHash]
     );
     const stored = tokenResult.rows[0];
@@ -389,14 +394,14 @@ router.post('/refresh-token', refreshLimiter, async (req, res) => {
     }
 
     if (stored.revoked_at) {
-      await client.query(`UPDATE refresh_tokens SET revoked_at = NOW() WHERE user_id = $1 AND revoked_at IS NULL`, [stored.user_id]);
+      await client.query(`UPDATE ${TABLES.refreshTokens} SET revoked_at = NOW() WHERE user_id = $1 AND revoked_at IS NULL`, [stored.user_id]);
       await client.query('COMMIT');
       clearAuthCookies(res);
       console.warn('auth.refresh_reuse_detected', { userId: stored.user_id });
       return fail(res, 401, 'Invalid refresh token', 'REFRESH_REUSE_DETECTED');
     }
 
-    await client.query(`UPDATE refresh_tokens SET revoked_at = NOW() WHERE token_hash = $1 OR token = $1`, [tokenHash]);
+    await client.query(`UPDATE ${TABLES.refreshTokens} SET revoked_at = NOW() WHERE token_hash = $1 OR token = $1`, [tokenHash]);
     await client.query('COMMIT');
 
     const session = await issueSession(pool, res, stored.user_id, req);
@@ -418,7 +423,7 @@ router.post('/logout', async (req, res) => {
   const refreshToken = req.cookies?.refreshToken;
   try {
     if (refreshToken) {
-      await pool.query(`UPDATE refresh_tokens SET revoked_at = NOW() WHERE token_hash = $1 OR token = $1`, [hashToken(refreshToken)]);
+      await pool.query(`UPDATE ${TABLES.refreshTokens} SET revoked_at = NOW() WHERE token_hash = $1 OR token = $1`, [hashToken(refreshToken)]);
     }
     clearAuthCookies(res);
     return ok(res, 'Logged out successfully', null, 'LOGOUT_SUCCESS');
@@ -437,7 +442,7 @@ router.post('/forgot-password', forgotLimiter, async (req, res) => {
     if (user) {
       const rawToken = generateRawToken(32);
       await pool.query(
-        `INSERT INTO password_reset_tokens (user_id, token_hash, expires_at)
+        `INSERT INTO ${TABLES.passwordResets} (user_id, token_hash, expires_at)
          VALUES ($1, $2, $3)`,
         [user.ID, hashToken(rawToken), new Date(Date.now() + RESET_TOKEN_MINUTES * 60 * 1000)]
       );
@@ -466,9 +471,9 @@ router.post('/reset-password', resetLimiter, async (req, res) => {
   try {
     await client.query('BEGIN');
     const tokenResult = await client.query(
-      `SELECT prt.*, u.email_original, u.email, u.name, u."firstName"
-       FROM password_reset_tokens prt
-       JOIN public."user" u ON u."ID" = prt.user_id
+      `SELECT prt.*, u.email_original, u.email, u.name, u.first_name AS "firstName"
+       FROM ${TABLES.passwordResets} prt
+       JOIN ${TABLES.users} u ON u.id = prt.user_id
        WHERE prt.token_hash = $1 FOR UPDATE`,
       [hashToken(parsed.data.token)]
     );
@@ -481,19 +486,19 @@ router.post('/reset-password', resetLimiter, async (req, res) => {
 
     const passwordHash = await bcrypt.hash(newPassword, BCRYPT_COST);
     await client.query(
-      `UPDATE public."user"
-       SET password_hash = $1, "password" = $2, updated_at = NOW()
-       WHERE "ID" = $3`,
+      `UPDATE ${TABLES.users}
+       SET password_hash = $1, password = $2, updated_at = NOW()
+       WHERE id = $3`,
       [passwordHash, passwordHash, token.user_id]
     );
     await client.query(
-      `UPDATE password_reset_tokens
+      `UPDATE ${TABLES.passwordResets}
        SET used_at = NOW()
        WHERE user_id = $1
          AND used_at IS NULL`,
       [token.user_id]
     );
-    await client.query(`UPDATE refresh_tokens SET revoked_at = NOW() WHERE user_id = $1 AND revoked_at IS NULL`, [token.user_id]);
+    await client.query(`UPDATE ${TABLES.refreshTokens} SET revoked_at = NOW() WHERE user_id = $1 AND revoked_at IS NULL`, [token.user_id]);
     await client.query('COMMIT');
     clearAuthCookies(res);
     sendPasswordChangedEmail({
@@ -517,7 +522,7 @@ router.post('/change-password', authRequired, async (req, res) => {
   if (isWeakPassword(parsed.data.newPassword)) return fail(res, 400, 'Choose a stronger password', 'WEAK_PASSWORD');
 
   try {
-    const userResult = await pool.query(`SELECT * FROM public."user" WHERE "ID" = $1`, [req.userId]);
+    const userResult = await pool.query(`SELECT ${USER_SELECT} FROM ${TABLES.users} WHERE id = $1`, [req.userId]);
     const user = userResult.rows[0];
     if (!user || !(await bcrypt.compare(parsed.data.currentPassword, getPasswordHash(user)))) {
       return fail(res, 401, 'Current password is incorrect', 'INVALID_CURRENT_PASSWORD');
@@ -525,10 +530,10 @@ router.post('/change-password', authRequired, async (req, res) => {
 
     const passwordHash = await bcrypt.hash(parsed.data.newPassword, BCRYPT_COST);
     await pool.query(
-      `UPDATE public."user" SET password_hash = $1, "password" = $2, updated_at = NOW() WHERE "ID" = $3`,
+      `UPDATE ${TABLES.users} SET password_hash = $1, password = $2, updated_at = NOW() WHERE id = $3`,
       [passwordHash, passwordHash, req.userId]
     );
-    await pool.query(`UPDATE refresh_tokens SET revoked_at = NOW() WHERE user_id = $1 AND revoked_at IS NULL`, [req.userId]);
+    await pool.query(`UPDATE ${TABLES.refreshTokens} SET revoked_at = NOW() WHERE user_id = $1 AND revoked_at IS NULL`, [req.userId]);
     clearAuthCookies(res);
     sendPasswordChangedEmail({
       email: user.email_original || user.email,
@@ -545,9 +550,9 @@ router.post('/change-password', authRequired, async (req, res) => {
 router.get('/me', authRequired, async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT * FROM public."user"
-       WHERE "ID" = $1
-         AND COALESCE(status, CASE WHEN "isDeleted" THEN 'deleted' ELSE 'active' END) = 'active'`,
+      `SELECT ${USER_SELECT} FROM ${TABLES.users}
+       WHERE id = $1
+         AND COALESCE(status, CASE WHEN is_deleted THEN 'deleted' ELSE 'active' END) = 'active'`,
       [req.userId]
     );
     if (result.rows.length === 0) return fail(res, 404, 'User not found', 'USER_NOT_FOUND');
@@ -558,8 +563,8 @@ router.get('/me', authRequired, async (req, res) => {
 });
 
 router.post('/cleanup-expired', authRequired, async (req, res) => {
-  await pool.query(`DELETE FROM pending_users WHERE verification_expires_at <= NOW()`);
-  await pool.query(`DELETE FROM password_reset_tokens WHERE expires_at <= NOW() OR used_at IS NOT NULL`);
+  await pool.query(`DELETE FROM ${TABLES.emailVerifications} WHERE verification_expires_at <= NOW()`);
+  await pool.query(`DELETE FROM ${TABLES.passwordResets} WHERE expires_at <= NOW() OR used_at IS NOT NULL`);
   return ok(res, 'Expired auth records cleaned up', null, 'CLEANUP_DONE');
 });
 

@@ -17,7 +17,6 @@
   justify-content: space-between;
   gap: 12px;
   min-width: 0;
-  margin-bottom: 10px;
 }
 
 .backtest-header__titleBlock {
@@ -90,16 +89,15 @@
 .backtest-toolbar {
   min-width: 0;
   min-height: 0;
-  padding: 0;
+  padding: 8px 12px;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 12px;
   overflow: visible;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  background: var(--bg-card);
 }
 
 .backtest-toolbar > * {
@@ -107,17 +105,14 @@
 }
 
 .backtest-toolbar__symbol {
-  flex: 1 1 240px;
+  flex: 0 1 240px;
   max-width: 360px;
 }
 
-.backtest-toolbar__timeframes {
-  flex: 0 0 auto;
-}
-
 .backtest-toolbar__session {
-  flex: 1 1 220px;
+  flex: 0 1 220px;
   max-width: 320px;
+  margin-left: auto;
 }
 
 .backtest-toolbar__tools {
@@ -166,7 +161,6 @@
   min-width: 0;
 }
 
-.backtest-timeframes,
 .backtest-chart-tools,
 .backtest-segmented,
 .backtest-risk-buttons,
@@ -181,14 +175,12 @@
   background: var(--surface-subtle);
 }
 
-.backtest-timeframes,
 .backtest-chart-tools {
   flex-wrap: wrap;
   min-height: 34px;
   align-content: center;
 }
 
-.backtest-timeframes button,
 .backtest-chart-tools button,
 .backtest-segmented button,
 .backtest-risk-buttons button,
@@ -207,7 +199,6 @@
   transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
 }
 
-.backtest-timeframes button,
 .backtest-chart-tools button,
 .backtest-segmented button,
 .backtest-risk-buttons button,
@@ -217,7 +208,6 @@
   flex: 0 0 auto;
 }
 
-.backtest-timeframes button:hover,
 .backtest-chart-tools button:hover,
 .backtest-segmented button:hover,
 .backtest-risk-buttons button:hover,
@@ -229,7 +219,6 @@
   color: var(--primary);
 }
 
-.backtest-timeframes .is-active,
 .backtest-segmented .is-active,
 .backtest-risk-buttons .is-active,
 .backtest-speed-selector .is-active {
@@ -337,28 +326,55 @@
 }
 
 .backtest-chart-meta {
-  height: 38px;
-  padding: 0 10px;
+  height: 42px;
+  padding: 0 4px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 12px;
   border-bottom: 1px solid var(--border-light);
   color: var(--text-muted);
   font-size: 11px;
-  overflow-x: auto;
-  scrollbar-width: none;
+  overflow: visible;
 }
 
-.backtest-chart-meta::-webkit-scrollbar {
-  display: none;
-}
-
-.backtest-chart-meta div {
-  display: inline-flex;
+.backtest-chart-timeframes {
+  display: flex;
   align-items: center;
-  gap: 7px;
-  white-space: nowrap;
+  gap: 2px;
+  padding-right: 8px;
+  padding-left: 12px;
+  border-right: 1px solid var(--border-light);
+}
+
+.backtest-chart-timeframes button {
+  height: 28px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 750;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.backtest-chart-timeframes button:hover {
+  background: var(--bg-hover);
+  color: var(--primary);
+}
+
+.backtest-chart-timeframes button.is-active {
+  background: var(--primary);
+  color: #fff;
+}
+
+.backtest-chart-price-info {
+  display: flex;
+  gap: 12px;
+  margin-left: 0;
+  padding-right: 12px;
 }
 
 .backtest-chart-meta strong {
@@ -731,26 +747,24 @@
     align-items: stretch;
     overflow: visible;
   }
+.backtest-chart-tools,
+.backtest-icon-button,
+.backtest-data-pill {
+  grid-column: auto;
+  justify-self: stretch;
+}
 
-  .backtest-chart-tools,
-  .backtest-icon-button,
-  .backtest-data-pill {
-    grid-column: auto;
-    justify-self: stretch;
-  }
+.backtest-icon-button {
+  width: 100%;
+}
 
-  .backtest-icon-button {
-    width: 100%;
-  }
+.backtest-data-pill {
+  text-align: center;
+}
 
-  .backtest-data-pill {
-    text-align: center;
-  }
-
-  .backtest-timeframes,
-  .backtest-chart-tools {
-    justify-content: flex-start;
-  }
+.backtest-chart-tools {
+  justify-content: flex-start;
+}
 }
 
 @media (max-width: 480px) {
@@ -759,10 +773,28 @@
   }
 
   .backtest-chart-meta {
-    align-items: start;
-    height: 58px;
-    padding: 7px 8px;
+    align-items: flex-start;
+    height: auto;
+    min-height: 40px;
+    padding: 8px;
     flex-direction: column;
+    gap: 6px;
+  }
+
+  .backtest-chart-timeframes {
+    border-right: 0;
+    padding-right: 0;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--border-light);
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .backtest-chart-price-info {
+    margin-left: 0;
+    width: 100%;
+    justify-content: space-between;
+    padding-right: 0;
   }
 
   .backtest-chart-canvas {
@@ -770,7 +802,7 @@
   }
 
   .backtest-chart-risk-overlay {
-    inset: 58px 48px 28px 0;
+    inset: 60px 48px 28px 0;
   }
 
   .backtest-playback {

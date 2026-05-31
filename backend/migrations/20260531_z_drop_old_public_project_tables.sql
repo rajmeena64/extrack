@@ -1,0 +1,12 @@
+DROP TABLE IF EXISTS public.mt5_vps_jobs;
+DROP TABLE IF EXISTS public.mt5_connection_requests;
+DROP TABLE IF EXISTS public.api_trades;
+DROP TABLE IF EXISTS public.trades;
+DROP TABLE IF EXISTS public.mt5_accounts;
+DROP TABLE IF EXISTS public.user_settings;
+DROP TABLE IF EXISTS public.password_reset_tokens;
+DROP TABLE IF EXISTS public.pending_users;
+DROP TABLE IF EXISTS public.refresh_tokens;
+DROP TABLE IF EXISTS public.admin_integrations;
+DROP TABLE IF EXISTS public.schema_migrations;
+DROP TABLE IF EXISTS public."user";

@@ -31,3 +31,4 @@ __pycache__/
 .env.*
 backend/server/.env
 backend/server/.env.*
+.aider*

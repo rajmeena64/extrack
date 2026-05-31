@@ -279,10 +279,8 @@ async function startServer() {
     process.exit(1);
   }
 
-  server.listen(PORT);
+  server.listen(PORT,() => console.log(`server is strated on port ${PORT}`) );
 }
 
 startServer();
-
-
 

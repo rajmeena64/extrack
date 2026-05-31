@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../config/database');
 const { authCheck } = require('./auth');
+const { TABLES } = require('../config/tables');
 
 const SETTINGS_BLOB_KEY = 'x9$eA.7';
 const OBFUSCATION_PREFIX = 'v1.';
@@ -9,20 +10,7 @@ const OBFUSCATION_SALT = 'Entrack.Settings.2026';
 const LEGACY_OBFUSCATION_SALT = ['Ex', 'track.Settings.2026'].join('');
 
 async function ensureUserSettingsTable() {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS public.user_settings (
-      user_id INTEGER PRIMARY KEY,
-      settings JSONB NOT NULL DEFAULT '{}'::jsonb,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-  `);
-
-  await pool.query(`
-    ALTER TABLE public.user_settings
-      ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-  `);
+  return true;
 }
 
 const isPlainObject = (value) => (
@@ -120,7 +108,7 @@ router.get('/settings', authCheck, async (req, res) => {
     await ensureUserSettingsTable();
 
     const result = await pool.query(
-      `SELECT * FROM public.user_settings WHERE user_id = $1`,
+      `SELECT * FROM ${TABLES.userSettings} WHERE user_id = $1`,
       [req.userId]
     );
 
@@ -151,7 +139,7 @@ const saveSettings = async (req, res) => {
     }
 
     const exists = await pool.query(
-      `SELECT settings FROM public.user_settings WHERE user_id = $1`,
+      `SELECT settings FROM ${TABLES.userSettings} WHERE user_id = $1`,
       [req.userId]
     );
 
@@ -163,14 +151,14 @@ const saveSettings = async (req, res) => {
 
     if (exists.rows.length === 0) {
       result = await pool.query(
-        `INSERT INTO public.user_settings (user_id, settings)
+        `INSERT INTO ${TABLES.userSettings} (user_id, settings)
          VALUES ($1, $2::jsonb)
          RETURNING settings`,
         [req.userId, serializedSettings]
       );
     } else {
       result = await pool.query(
-        `UPDATE public.user_settings
+        `UPDATE ${TABLES.userSettings}
          SET settings = $1::jsonb, updated_at = NOW()
          WHERE user_id = $2
          RETURNING settings`,

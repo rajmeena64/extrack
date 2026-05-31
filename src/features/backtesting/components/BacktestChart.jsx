@@ -23,6 +23,8 @@ function formatTime(value) {
   return new Date(Number(value) * 1000).toLocaleString();
 }
 
+const TIMEFRAMES = ['1m', '5m', '15m', '30m', '1h', '4h', '1D'];
+
 function BacktestChart({
   candles,
   currentIndex,
@@ -33,6 +35,8 @@ function BacktestChart({
   takeProfit,
   openPositions,
   closedPositions,
+  timeframe,
+  onTimeframeChange,
 }) {
   const containerRef = useRef(null);
   const instanceRef = useRef(null);
@@ -101,18 +105,27 @@ function BacktestChart({
   return (
     <section className="backtest-chart-panel">
       <div className="backtest-chart-meta">
-        <div>
+        <div className="backtest-chart-timeframes">
+          {TIMEFRAMES.map((item) => (
+            <button
+              key={item}
+              type="button"
+              className={timeframe === item ? 'is-active' : ''}
+              onClick={() => onTimeframeChange(item)}
+            >
+              {item}
+            </button>
+          ))}
+        </div>
+
+        <div className="backtest-chart-price-info">
           <span>O</span><strong>{formatPrice(currentCandle?.open)}</strong>
           <span>H</span><strong>{formatPrice(currentCandle?.high)}</strong>
           <span>L</span><strong>{formatPrice(currentCandle?.low)}</strong>
           <span>C</span><strong>{formatPrice(currentCandle?.close)}</strong>
         </div>
-        <div>
-          <span>Crosshair</span>
-          <strong>{crosshair.price ? formatPrice(crosshair.price) : '-'}</strong>
-          <span>{formatTime(crosshair.time)}</span>
-        </div>
       </div>
+
       <div className="backtest-chart-canvas" ref={containerRef} />
     </section>
   );

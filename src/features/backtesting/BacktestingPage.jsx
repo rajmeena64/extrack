@@ -31,25 +31,22 @@ function BacktestingPage() {
           <div className="backtest-header__titleBlock">
             <span className="backtest-header__eyebrow">Replay lab</span>
             <h1 className="backtest-header__title">Backtesting</h1>
-            <span className="backtest-header__subtitle">{state.symbol} · {state.timeframe}</span>
           </div>
 
           <div className="backtest-header__meta">
             {stats.openTrades} open · {stats.totalTrades} closed
           </div>
         </div>
-
-        <BacktestToolbar
-          symbol={state.symbol}
-          timeframe={state.timeframe}
-          loadStatus={loadStatus}
-          onSymbolChange={(value) => setField('symbol', value)}
-          onTimeframeChange={(value) => setField('timeframe', value)}
-          onReload={reloadCandles}
-        />
       </header>
 
       <div className="backtest-terminal">
+        <BacktestToolbar
+          symbol={state.symbol}
+          loadStatus={loadStatus}
+          onSymbolChange={(value) => setField('symbol', value)}
+          onReload={reloadCandles}
+        />
+
         <BacktestStatsBar stats={stats} />
 
         <div className="backtest-workspace">
@@ -64,6 +61,8 @@ function BacktestingPage() {
               takeProfit={state.takeProfit}
               openPositions={state.openPositions}
               closedPositions={state.closedPositions}
+              timeframe={state.timeframe}
+              onTimeframeChange={(value) => setField('timeframe', value)}
             />
 
             <BacktestPlaybackControls

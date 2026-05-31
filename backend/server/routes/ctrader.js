@@ -7,6 +7,7 @@ const fs = require('fs');
 const _path = require('path');
 const pool = require('../config/database');
 const { authCheck } = require('./auth');
+const { TABLES } = require('../config/tables');
 const { createRateLimiter } = require('../middleware/rateLimit');
 const {
   decryptMT5Password,
@@ -80,7 +81,7 @@ const ctraderKlineRateLimiter = createRateLimiter({
 async function requireCtraderAdmin(req, res, next) {
   try {
     const userResult = await pool.query(
-      `SELECT "accountType", "isDeleted" FROM public."user" WHERE "ID" = $1`,
+      `SELECT account_type AS "accountType", is_deleted AS "isDeleted" FROM ${TABLES.users} WHERE id = $1`,
       [req.userId]
     );
 
@@ -136,19 +137,6 @@ const ctraderConfig = {
 async function ensureCtraderTokenStore() {
   if (tokenStoreReady) return;
 
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS admin_integrations (
-      id TEXT PRIMARY KEY,
-      provider TEXT NOT NULL,
-      account_id BIGINT,
-      is_demo BOOLEAN,
-      access_token TEXT,
-      refresh_token TEXT,
-      expires_at BIGINT,
-      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-  `);
-
   tokenStoreReady = true;
 }
 
@@ -161,7 +149,7 @@ async function loadCtraderTokensFromStore() {
 
     const result = await pool.query(
       `SELECT account_id, is_demo, access_token, refresh_token, expires_at
-       FROM admin_integrations
+       FROM ${TABLES.adminIntegrations}
        WHERE id = $1`,
       ['ctrader']
     );
@@ -201,7 +189,7 @@ async function saveCtraderTokensToStore() {
     await ensureCtraderTokenStore();
 
     await pool.query(
-      `INSERT INTO admin_integrations
+      `INSERT INTO ${TABLES.adminIntegrations}
        (id, provider, account_id, is_demo, access_token, refresh_token, expires_at, updated_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
        ON CONFLICT (id) DO UPDATE SET

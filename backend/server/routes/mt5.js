@@ -2,6 +2,7 @@ const express = require("express");
 const crypto = require("crypto");
 const router = express.Router();
 const pool = require('../config/database');
+const { TABLES } = require('../config/tables');
 const { authCheck } = require('./auth');
 const { decryptMT5Password, encryptMT5Password } = require('../services/mt5Credentials');
 const { secretsMatch, requireIngestSecret } = require('../utils/security');
@@ -75,7 +76,7 @@ router.post("/mt5/connect", authCheck, async (req, res) => {
         await client.query('BEGIN');
 
         const requestResult = await client.query(
-            `INSERT INTO mt5_connection_requests
+            `INSERT INTO ${TABLES.mt5ConnectionRequests}
              (user_id, login_id, broker_server, encrypted_password, status)
              VALUES ($1, $2, $3, $4, 'pending')
              RETURNING id, status`,
@@ -83,7 +84,7 @@ router.post("/mt5/connect", authCheck, async (req, res) => {
         );
 
         await client.query(
-            `INSERT INTO mt5_vps_jobs
+            `INSERT INTO ${TABLES.mt5VpsJobs}
              (request_id, job_type, status, instance_key)
              VALUES ($1, 'CREATE_MT5_INSTANCE', 'pending', $2)`,
             [requestResult.rows[0].id, instanceKey]
@@ -111,7 +112,7 @@ router.get("/mt5/connect/:request_id/status", authCheck, async (req, res) => {
     try {
         const result = await pool.query(
             `SELECT id, status, error_message
-             FROM mt5_connection_requests
+             FROM ${TABLES.mt5ConnectionRequests}
              WHERE id = $1 AND user_id = $2`,
             [req.params.request_id, req.userId]
         );
@@ -147,7 +148,7 @@ router.post("/vps/jobs/claim", requireVpsAgent, async (req, res) => {
         await client.query('BEGIN');
 
         const staleJobs = await client.query(
-            `UPDATE mt5_vps_jobs
+            `UPDATE ${TABLES.mt5VpsJobs}
              SET status = 'failed',
                  error_message = 'VPS agent did not finish job before timeout',
                  updated_at = NOW()
@@ -158,7 +159,7 @@ router.post("/vps/jobs/claim", requireVpsAgent, async (req, res) => {
 
         if (staleJobs.rowCount > 0) {
             await client.query(
-                `UPDATE mt5_connection_requests
+                `UPDATE ${TABLES.mt5ConnectionRequests}
                  SET status = 'failed',
                      error_message = 'VPS agent did not finish job before timeout',
                      updated_at = NOW()
@@ -176,8 +177,8 @@ router.post("/vps/jobs/claim", requireVpsAgent, async (req, res) => {
                 r.login_id,
                 r.broker_server,
                 r.encrypted_password
-             FROM mt5_vps_jobs j
-             JOIN mt5_connection_requests r ON r.id = j.request_id
+             FROM ${TABLES.mt5VpsJobs} j
+             JOIN ${TABLES.mt5ConnectionRequests} r ON r.id = j.request_id
              WHERE j.status = 'pending'
              ORDER BY j.created_at ASC
              LIMIT 1
@@ -195,14 +196,14 @@ router.post("/vps/jobs/claim", requireVpsAgent, async (req, res) => {
         const job = jobResult.rows[0];
 
         await client.query(
-            `UPDATE mt5_vps_jobs
+            `UPDATE ${TABLES.mt5VpsJobs}
              SET status = 'claimed', updated_at = NOW()
              WHERE id = $1`,
             [job.job_id]
         );
 
         await client.query(
-            `UPDATE mt5_connection_requests
+            `UPDATE ${TABLES.mt5ConnectionRequests}
              SET status = 'connecting', error_message = NULL, updated_at = NOW()
              WHERE id = $1`,
             [job.request_id]
@@ -245,9 +246,9 @@ router.post("/vps/jobs/:job_id/status", requireVpsAgent, async (req, res) => {
 
     try {
         const result = await pool.query(
-            `UPDATE mt5_connection_requests r
+            `UPDATE ${TABLES.mt5ConnectionRequests} r
              SET status = $1, updated_at = NOW()
-             FROM mt5_vps_jobs j
+             FROM ${TABLES.mt5VpsJobs} j
              WHERE j.id = $2 AND j.request_id = r.id
              RETURNING r.id`,
             [requestStatus, req.params.job_id]
@@ -261,7 +262,7 @@ router.post("/vps/jobs/:job_id/status", requireVpsAgent, async (req, res) => {
         }
 
         await pool.query(
-            `UPDATE mt5_vps_jobs
+            `UPDATE ${TABLES.mt5VpsJobs}
              SET status = 'running', updated_at = NOW()
              WHERE id = $1 AND status IN ('claimed', 'running')`,
             [req.params.job_id]
@@ -291,8 +292,8 @@ router.post("/vps/jobs/:job_id/complete", requireVpsAgent, async (req, res) => {
                 r.user_id,
                 r.login_id,
                 r.broker_server
-             FROM mt5_vps_jobs j
-             JOIN mt5_connection_requests r ON r.id = j.request_id
+             FROM ${TABLES.mt5VpsJobs} j
+             JOIN ${TABLES.mt5ConnectionRequests} r ON r.id = j.request_id
              WHERE j.id = $1
              FOR UPDATE`,
             [req.params.job_id]
@@ -312,14 +313,14 @@ router.post("/vps/jobs/:job_id/complete", requireVpsAgent, async (req, res) => {
             const errorMessage = 'MT5 terminal was not verified running by VPS agent';
 
             await client.query(
-                `UPDATE mt5_connection_requests
+                `UPDATE ${TABLES.mt5ConnectionRequests}
                  SET status = 'failed', error_message = $1, updated_at = NOW()
                  WHERE id = $2`,
                 [errorMessage, job.request_id]
             );
 
             await client.query(
-                `UPDATE mt5_vps_jobs
+                `UPDATE ${TABLES.mt5VpsJobs}
                  SET status = 'failed', error_message = $1, updated_at = NOW()
                  WHERE id = $2`,
                 [errorMessage, job.job_id]
@@ -334,7 +335,7 @@ router.post("/vps/jobs/:job_id/complete", requireVpsAgent, async (req, res) => {
 
         const existingAccount = await client.query(
             `SELECT id
-             FROM mt5_accounts
+             FROM ${TABLES.mt5Accounts}
              WHERE instance_key = $1
                 OR (
                     user_id = $2
@@ -354,7 +355,7 @@ router.post("/vps/jobs/:job_id/complete", requireVpsAgent, async (req, res) => {
 
         if (existingAccount.rowCount > 0) {
             await client.query(
-                `UPDATE mt5_accounts
+                `UPDATE ${TABLES.mt5Accounts}
                  SET status = 'connected',
                      connection_status = 'connected',
                      login_id = $2::text,
@@ -379,7 +380,7 @@ router.post("/vps/jobs/:job_id/complete", requireVpsAgent, async (req, res) => {
             );
         } else {
             await client.query(
-                `INSERT INTO mt5_accounts
+                `INSERT INTO ${TABLES.mt5Accounts}
                  (user_id, login_id, broker_server, instance_key, status, connected_at,
                   broker_name, account_id, server_name, connection_status, last_connected)
                  VALUES ($1, $2, $3, $4, 'connected', NOW(), $5, $6, $7, 'connected', NOW())`,
@@ -396,14 +397,14 @@ router.post("/vps/jobs/:job_id/complete", requireVpsAgent, async (req, res) => {
         }
 
         await client.query(
-            `UPDATE mt5_connection_requests
+            `UPDATE ${TABLES.mt5ConnectionRequests}
              SET status = 'connected', error_message = NULL, updated_at = NOW()
              WHERE id = $1`,
             [job.request_id]
         );
 
         await client.query(
-            `UPDATE mt5_vps_jobs
+            `UPDATE ${TABLES.mt5VpsJobs}
              SET status = 'completed', error_message = NULL, updated_at = NOW()
              WHERE id = $1`,
             [job.job_id]
@@ -431,7 +432,7 @@ router.post("/vps/jobs/:job_id/fail", requireVpsAgent, async (req, res) => {
 
         const jobResult = await client.query(
             `SELECT id, request_id
-             FROM mt5_vps_jobs
+             FROM ${TABLES.mt5VpsJobs}
              WHERE id = $1
              FOR UPDATE`,
             [req.params.job_id]
@@ -446,14 +447,14 @@ router.post("/vps/jobs/:job_id/fail", requireVpsAgent, async (req, res) => {
         }
 
         await client.query(
-            `UPDATE mt5_connection_requests
+            `UPDATE ${TABLES.mt5ConnectionRequests}
              SET status = 'failed', error_message = $1, updated_at = NOW()
              WHERE id = $2`,
             [errorMessage, jobResult.rows[0].request_id]
         );
 
         await client.query(
-            `UPDATE mt5_vps_jobs
+            `UPDATE ${TABLES.mt5VpsJobs}
              SET status = 'failed', error_message = $1, updated_at = NOW()
              WHERE id = $2`,
             [errorMessage, jobResult.rows[0].id]
@@ -479,7 +480,7 @@ router.post("/vps/accounts/:account_id/health", requireVpsAgent, async (req, res
 
     try {
         const result = await pool.query(
-            `UPDATE mt5_accounts
+            `UPDATE ${TABLES.mt5Accounts}
              SET status = $1::text,
                  connection_status = $2::text,
                  last_connected = CASE WHEN $3::boolean THEN NOW() ELSE last_connected END,
@@ -513,7 +514,7 @@ router.get("/vps/accounts/health-targets", requireVpsAgent, async (req, res) => 
     try {
         const result = await pool.query(
             `SELECT id, instance_key, status, connection_status
-             FROM mt5_accounts
+             FROM ${TABLES.mt5Accounts}
              WHERE instance_key IS NOT NULL
                AND status IN ('connected', 'disconnected')
              ORDER BY updated_at ASC, id ASC`

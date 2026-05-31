@@ -1,28 +1,13 @@
 import React from 'react';
 import { CalendarDays, RefreshCw, Search } from '../../../icons/lucideIcons';
 
-const TIMEFRAMES = ['1m', '5m', '15m', '30m', '1h', '4h', '1D'];
-
-function BacktestToolbar({ symbol, timeframe, loadStatus, onSymbolChange, onTimeframeChange, onReload }) {
+function BacktestToolbar({ symbol, loadStatus, onSymbolChange, onReload }) {
   return (
     <div className="backtest-toolbar">
       <label className="backtest-field backtest-field--symbol backtest-toolbar__symbol">
         <span><Search size={13} aria-hidden="true" /> Symbol</span>
         <input value={symbol} onChange={(event) => onSymbolChange(event.target.value.toUpperCase())} />
       </label>
-
-      <div className="backtest-timeframes backtest-toolbar__timeframes" aria-label="Timeframe selector">
-        {TIMEFRAMES.map((item) => (
-          <button
-            key={item}
-            type="button"
-            className={timeframe === item ? 'is-active' : ''}
-            onClick={() => onTimeframeChange(item)}
-          >
-            {item}
-          </button>
-        ))}
-      </div>
 
       <label className="backtest-field backtest-field--session backtest-toolbar__session">
         <span><CalendarDays size={13} aria-hidden="true" /> Session</span>

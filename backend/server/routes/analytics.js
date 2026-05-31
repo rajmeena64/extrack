@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../config/database');
 const { authCheck } = require('./auth');
+const { API_TRADE_SELECT, MANUAL_TRADE_SELECT, TABLES } = require('../config/tables');
 
 const REAL_API_TRADE_FILTER = `
     symbol IS NOT NULL
@@ -34,7 +35,7 @@ router.get('/trades-by-date/:userid?', authCheck, async (req, res) => {
 
     try {
         const manualResult = await pool.query(
-            `SELECT * FROM trades 
+            `SELECT ${MANUAL_TRADE_SELECT} FROM ${TABLES.manualTrades} 
              WHERE user_id = $1 
              AND DATE(timestamp) = $2
              ORDER BY timestamp DESC`,
@@ -42,7 +43,7 @@ router.get('/trades-by-date/:userid?', authCheck, async (req, res) => {
         );
 
         const apiResult = await pool.query(
-            `SELECT * FROM api_trades 
+            `SELECT ${API_TRADE_SELECT} FROM ${TABLES.apiTrades} 
              WHERE user_id = $1 
              AND ${REAL_API_TRADE_FILTER}
              AND DATE(timestamp) = $2
@@ -90,7 +91,7 @@ router.get('/trades-by-date-range/:userid?', authCheck, async (req, res) => {
                 SUM(pnl) as daily_pnl,
                 SUM(CASE WHEN pnl > 0 THEN 1 ELSE 0 END) as winning_trades,
                 SUM(CASE WHEN pnl < 0 THEN 1 ELSE 0 END) as losing_trades
-             FROM trades 
+             FROM ${TABLES.manualTrades} 
              WHERE user_id = $1 
              AND DATE(timestamp) BETWEEN $2 AND $3
              GROUP BY DATE(timestamp)
@@ -105,7 +106,7 @@ router.get('/trades-by-date-range/:userid?', authCheck, async (req, res) => {
                 SUM(pnl) as daily_pnl,
                 SUM(CASE WHEN pnl > 0 THEN 1 ELSE 0 END) as winning_trades,
                 SUM(CASE WHEN pnl < 0 THEN 1 ELSE 0 END) as losing_trades
-             FROM api_trades 
+             FROM ${TABLES.apiTrades} 
              WHERE user_id = $1
              AND ${REAL_API_TRADE_FILTER}
              AND DATE(timestamp) BETWEEN $2 AND $3
@@ -169,7 +170,7 @@ router.get('/trade-summary/:userid?', authCheck, async (req, res) => {
                 SUM(CASE WHEN pnl < 0 THEN pnl ELSE 0 END) as total_loss,
                 COUNT(CASE WHEN pnl > 0 THEN 1 END) as winning_trades,
                 COUNT(CASE WHEN pnl < 0 THEN 1 END) as losing_trades
-             FROM trades WHERE user_id = $1`,
+             FROM ${TABLES.manualTrades} WHERE user_id = $1`,
             [userId]
         );
 
@@ -181,7 +182,7 @@ router.get('/trade-summary/:userid?', authCheck, async (req, res) => {
                 SUM(CASE WHEN pnl < 0 THEN pnl ELSE 0 END) as total_loss,
                 COUNT(CASE WHEN pnl > 0 THEN 1 END) as winning_trades,
                 COUNT(CASE WHEN pnl < 0 THEN 1 END) as losing_trades
-             FROM api_trades
+             FROM ${TABLES.apiTrades}
              WHERE user_id = $1
              AND ${REAL_API_TRADE_FILTER}`,
             [userId]

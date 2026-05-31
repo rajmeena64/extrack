@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../config/database');
 const { authCheck } = require('./auth');
+const { API_TRADE_SELECT, MANUAL_TRADE_SELECT, TABLES } = require('../config/tables');
 const { createRateLimiter } = require('../middleware/rateLimit');
 const { requireIngestSecret } = require('../utils/security');
 const {
@@ -80,14 +81,6 @@ function inferSymbolCategory({ symbol, symbolPath, symbolDescription, category, 
 
 async function ensureApiTradeMetadataColumns() {
     if (apiTradeMetadataColumnsReady) return;
-
-    await pool.query(`
-        ALTER TABLE api_trades
-        ADD COLUMN IF NOT EXISTS category TEXT,
-        ADD COLUMN IF NOT EXISTS symbol_path TEXT,
-        ADD COLUMN IF NOT EXISTS symbol_description TEXT
-    `);
-
     apiTradeMetadataColumnsReady = true;
 }
 
@@ -103,13 +96,6 @@ function normalizeScreenshots(screenshots) {
 
 async function ensureTradesUniqueIdIndex() {
     if (tradesUniqueIdIndexReady) return;
-
-    await pool.query(`
-        CREATE UNIQUE INDEX IF NOT EXISTS trades_user_unique_id_unique
-        ON trades (user_id, unique_id)
-        WHERE unique_id IS NOT NULL
-    `);
-
     tradesUniqueIdIndexReady = true;
 }
 
@@ -231,12 +217,12 @@ router.post('/save-trade', authCheck, saveTradeRateLimiter, async (req, res) => 
         await ensureTradesUniqueIdIndex();
 
         const savedTradeResult = await pool.query(
-            `INSERT INTO trades
+            `INSERT INTO ${TABLES.manualTrades}
               (user_id, symbol, trade_type, category, quantity, price, exit_price, pnl, strategy, timestamp, unique_id, notes, screenshots)
               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
               ON CONFLICT (user_id, unique_id) WHERE unique_id IS NOT NULL DO UPDATE
               SET unique_id = EXCLUDED.unique_id
-              RETURNING *, timestamp AS open_timestamp, timestamp AS close_timestamp`,
+              RETURNING ${MANUAL_TRADE_SELECT}, timestamp AS open_timestamp, timestamp AS close_timestamp`,
             [req.userId, normalizedSymbol, normalizedTradeType, normalizedCategory, normalizedQuantity, normalizedPrice, normalizedExitPrice, normalizedPnl, normalizedStrategy, normalizedTimestamp, normalizedUniqueId, normalizedNotes, screenshotsJson]
         );
 
@@ -324,7 +310,7 @@ router.post('/save-bulk-trades', authCheck, bulkTradeRateLimiter, async (req, re
                     : tradeType;
 
             await pool.query(
-                `INSERT INTO trades
+                `INSERT INTO ${TABLES.manualTrades}
                  (user_id, symbol, trade_type, category, quantity, price, exit_price, pnl, strategy, timestamp, notes, screenshots)
                  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
                 [
@@ -440,7 +426,7 @@ async function ingestApiTrades(req, res) {
                     userId = userIdMap.get(account_id);
                 } else {
                     const accRes = await pool.query(
-                        `SELECT user_id, balance FROM mt5_accounts WHERE account_id = $1`,
+                        `SELECT user_id, balance FROM ${TABLES.mt5Accounts} WHERE account_id = $1`,
                         [account_id]
                     );
 
@@ -463,7 +449,7 @@ async function ingestApiTrades(req, res) {
                     );
 
                     await pool.query(
-                        `UPDATE mt5_accounts
+                        `UPDATE ${TABLES.mt5Accounts}
                          SET balance = $1,
                              balance_change = $2,
                              default_currency = $3,
@@ -505,7 +491,7 @@ async function ingestApiTrades(req, res) {
 
         if (values.length > 0) {
             const query = `
-                INSERT INTO api_trades
+                INSERT INTO ${TABLES.apiTrades}
                 (
                     user_id,
                     account_id,
@@ -548,8 +534,8 @@ router.post('/mt5/receive-trades', ingestRateLimiter, requireIngestSecret, inges
 router.get('/user-trades/:userid?', authCheck, async (req, res) => {
     try {
         const result = await pool.query(
-            `SELECT *, timestamp AS open_timestamp, timestamp AS close_timestamp
-             FROM trades
+            `SELECT ${MANUAL_TRADE_SELECT}, timestamp AS open_timestamp, timestamp AS close_timestamp
+             FROM ${TABLES.manualTrades}
              WHERE user_id = $1
              ORDER BY timestamp DESC`,
             [req.userId]
@@ -564,7 +550,7 @@ router.get('/user-trades/:userid?', authCheck, async (req, res) => {
 router.get('/user-api-trades/:userid?', authCheck, async (req, res) => {
     try {
         const result = await pool.query(
-            `SELECT * FROM api_trades WHERE user_id = $1 ORDER BY close_timestamp DESC NULLS LAST, open_timestamp DESC NULLS LAST`,
+            `SELECT ${API_TRADE_SELECT} FROM ${TABLES.apiTrades} WHERE user_id = $1 ORDER BY close_timestamp DESC NULLS LAST, open_timestamp DESC NULLS LAST`,
             [req.userId]
         );
 
@@ -586,7 +572,7 @@ router.patch('/trades/breakeven-day', authCheck, async (req, res) => {
 
     try {
         const manualResult = await pool.query(
-            `UPDATE trades
+            `UPDATE ${TABLES.manualTrades}
              SET is_breakeven = $1
              WHERE user_id = $2
                AND timestamp >= $3::date
@@ -595,7 +581,7 @@ router.patch('/trades/breakeven-day', authCheck, async (req, res) => {
         );
 
         const apiResult = await pool.query(
-            `UPDATE api_trades
+            `UPDATE ${TABLES.apiTrades}
              SET is_breakeven = $1
              WHERE user_id = $2
                AND timestamp >= $3::date
@@ -624,7 +610,7 @@ router.delete('/trades/:uniqueId', authCheck, async (req, res) => {
 
     try {
         const deleteResult = await pool.query(
-            `DELETE FROM trades WHERE unique_id = $1 AND user_id = $2 RETURNING "ID", unique_id, symbol`,
+            `DELETE FROM ${TABLES.manualTrades} WHERE unique_id = $1 AND user_id = $2 RETURNING id AS "ID", unique_id, symbol`,
             [uniqueId, req.userId]
         );
 
@@ -645,7 +631,7 @@ router.delete('/trades/:uniqueId', authCheck, async (req, res) => {
         }
 
         const fallbackResult = await pool.query(
-            `DELETE FROM trades WHERE "ID" = $1 AND user_id = $2 RETURNING "ID", unique_id, symbol`,
+            `DELETE FROM ${TABLES.manualTrades} WHERE id = $1 AND user_id = $2 RETURNING id AS "ID", unique_id, symbol`,
             [numericId, req.userId]
         );
 
@@ -675,7 +661,7 @@ router.delete('/api-trades/:id', authCheck, async (req, res) => {
 
     try {
         const deleteResult = await pool.query(
-            `DELETE FROM api_trades WHERE "ID" = $1 AND user_id = $2 RETURNING "ID", symbol`,
+            `DELETE FROM ${TABLES.apiTrades} WHERE id = $1 AND user_id = $2 RETURNING id AS "ID", symbol`,
             [tradeId, req.userId]
         );
 
@@ -709,7 +695,7 @@ router.post('/update-trade-note', authCheck, async (req, res) => {
 
     try {
         const updateResult = await pool.query(
-            `UPDATE trades SET notes = $1 WHERE "ID" = $2 AND user_id = $3 RETURNING "ID", symbol`,
+            `UPDATE ${TABLES.manualTrades} SET notes = $1 WHERE id = $2 AND user_id = $3 RETURNING id AS "ID", symbol`,
             [normalizedNotes || null, tradeId, req.userId]
         );
 
@@ -738,7 +724,7 @@ router.get('/trade-with-screenshots/:tradeId', authCheck, async (req, res) => {
 
     try {
         const result = await pool.query(
-            `SELECT * FROM trades WHERE "ID" = $1 AND user_id = $2`,
+            `SELECT ${MANUAL_TRADE_SELECT} FROM ${TABLES.manualTrades} WHERE id = $1 AND user_id = $2`,
             [tradeId, req.userId]
         );
 
@@ -782,7 +768,7 @@ router.post('/save-mt5-credentials', authCheck, async (req, res) => {
         const encryptedPassword = encryptMT5Password(investor_password);
 
         await pool.query(
-            `INSERT INTO mt5_accounts
+            `INSERT INTO ${TABLES.mt5Accounts}
              (user_id, broker_name, account_id, server_name, investor_password, connection_status)
              VALUES ($1, $2, $3, $4, $5, $6)`,
             [req.userId, broker_name, account_id, server_name, encryptedPassword, 'disconnected']
@@ -807,7 +793,7 @@ router.post('/test-mt5-connection', authCheck, async (req, res) => {
         }
 
         const result = await pool.query(
-            `SELECT * FROM mt5_accounts WHERE user_id = $1 AND account_id = $2`,
+            `SELECT * FROM ${TABLES.mt5Accounts} WHERE user_id = $1 AND account_id = $2`,
             [req.userId, account_id]
         );
 
@@ -822,7 +808,7 @@ router.post('/test-mt5-connection', authCheck, async (req, res) => {
         }
 
         await pool.query(
-            `UPDATE mt5_accounts SET connection_status = $1, last_connected = $2 WHERE id = $3`,
+            `UPDATE ${TABLES.mt5Accounts} SET connection_status = $1, last_connected = $2 WHERE id = $3`,
             ['connected', new Date(), storedAccount.id]
         );
 

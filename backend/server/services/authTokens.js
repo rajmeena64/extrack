@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const { hashToken } = require('../utils/security');
+const { logAuthTableUse, TABLES } = require('../config/tables');
 
 const accessSecret = process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET;
 const accessExpiresIn = process.env.JWT_ACCESS_EXPIRES_IN || '15m';
@@ -87,8 +88,10 @@ async function issueSession(pool, res, userId, req) {
   const refreshTokenHash = hashToken(refreshToken);
   const expiresAt = getRefreshExpiry();
 
+  logAuthTableUse('refresh_token_save', TABLES.refreshTokens);
+
   await pool.query(
-    `INSERT INTO refresh_tokens (user_id, token_hash, token, expires_at, user_agent, ip_address)
+    `INSERT INTO ${TABLES.refreshTokens} (user_id, token_hash, token, expires_at, user_agent, ip_address)
      VALUES ($1, $2, $2, $3, $4, $5)`,
     [
       userId,

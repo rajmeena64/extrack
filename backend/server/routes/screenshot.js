@@ -7,6 +7,7 @@ const fs = require('fs');
 const { authCheck } = require('./auth');
 const { createRateLimiter } = require('../middleware/rateLimit');
 const { trimString } = require('../validators/common');
+const { API_TRADE_SELECT, MANUAL_TRADE_SELECT, TABLES } = require('../config/tables');
 
 const screenshotRateLimiter = createRateLimiter({
     windowMs: 60 * 1000,
@@ -43,7 +44,7 @@ router.get('/get-trade/:unique_id', authCheck, async (req, res) => {
         // Check in trades table first
         const manualTrade = await pool.query(
             `SELECT unique_id, notes, strategy, screenshots 
-             FROM trades WHERE unique_id = $1 AND user_id = $2`,
+             FROM ${TABLES.manualTrades} WHERE unique_id = $1 AND user_id = $2`,
             [unique_id, userId]
         );
 
@@ -57,7 +58,7 @@ router.get('/get-trade/:unique_id', authCheck, async (req, res) => {
         // Check in api_trades table
         const apiTrade = await pool.query(
             `SELECT unique_id, notes, strategy, screenshots 
-             FROM api_trades WHERE unique_id = $1 AND user_id = $2`,
+             FROM ${TABLES.apiTrades} WHERE unique_id = $1 AND user_id = $2`,
             [unique_id, userId]
         );
 
@@ -102,21 +103,21 @@ router.post('/update-trade', authCheck, async (req, res) => {
 
         // Check in trades table (manual trades)
         const manualTrade = await pool.query(
-            `SELECT * FROM trades WHERE unique_id = $1 AND user_id = $2`,
+            `SELECT ${MANUAL_TRADE_SELECT} FROM ${TABLES.manualTrades} WHERE unique_id = $1 AND user_id = $2`,
             [unique_id, userId]
         );
 
         if (manualTrade.rows.length > 0) {
-            tableName = 'trades';
+            tableName = TABLES.manualTrades;
         } else {
             // Check in api_trades table
             const apiTrade = await pool.query(
-                `SELECT * FROM api_trades WHERE unique_id = $1 AND user_id = $2`,
+                `SELECT ${API_TRADE_SELECT} FROM ${TABLES.apiTrades} WHERE unique_id = $1 AND user_id = $2`,
                 [unique_id, userId]
             );
 
             if (apiTrade.rows.length > 0) {
-                tableName = 'api_trades';
+                tableName = TABLES.apiTrades;
             }
         }
 
@@ -231,22 +232,22 @@ router.post('/upload-screenshot', authCheck, screenshotRateLimiter, upload.singl
 
         // Check in trades table
         const manualTrade = await pool.query(
-            `SELECT * FROM trades WHERE unique_id = $1 AND user_id = $2`,
+            `SELECT ${MANUAL_TRADE_SELECT} FROM ${TABLES.manualTrades} WHERE unique_id = $1 AND user_id = $2`,
             [unique_id, userId]
         );
 
         if (manualTrade.rows.length > 0) {
-            tableName = 'trades';
+            tableName = TABLES.manualTrades;
             existingTrade = manualTrade.rows[0];
         } else {
             // Check in api_trades table
             const apiTrade = await pool.query(
-                `SELECT * FROM api_trades WHERE unique_id = $1 AND user_id = $2`,
+                `SELECT ${API_TRADE_SELECT} FROM ${TABLES.apiTrades} WHERE unique_id = $1 AND user_id = $2`,
                 [unique_id, userId]
             );
 
             if (apiTrade.rows.length > 0) {
-                tableName = 'api_trades';
+                tableName = TABLES.apiTrades;
                 existingTrade = apiTrade.rows[0];
             }
         }
@@ -334,21 +335,21 @@ router.delete('/delete-screenshot', authCheck, screenshotRateLimiter, async (req
         let existingTrade = null;
 
         const manualTrade = await pool.query(
-            `SELECT * FROM trades WHERE unique_id = $1 AND user_id = $2`,
+            `SELECT ${MANUAL_TRADE_SELECT} FROM ${TABLES.manualTrades} WHERE unique_id = $1 AND user_id = $2`,
             [unique_id, userId]
         );
 
         if (manualTrade.rows.length > 0) {
-            tableName = 'trades';
+            tableName = TABLES.manualTrades;
             existingTrade = manualTrade.rows[0];
         } else {
             const apiTrade = await pool.query(
-                `SELECT * FROM api_trades WHERE unique_id = $1 AND user_id = $2`,
+                `SELECT ${API_TRADE_SELECT} FROM ${TABLES.apiTrades} WHERE unique_id = $1 AND user_id = $2`,
                 [unique_id, userId]
             );
 
             if (apiTrade.rows.length > 0) {
-                tableName = 'api_trades';
+                tableName = TABLES.apiTrades;
                 existingTrade = apiTrade.rows[0];
             }
         }
