@@ -80,14 +80,6 @@ function inferSymbolCategory({ symbol, symbolPath, symbolDescription, category, 
 
 async function ensureApiTradeMetadataColumns() {
     if (apiTradeMetadataColumnsReady) return;
-
-    await pool.query(`
-        ALTER TABLE api_trades
-        ADD COLUMN IF NOT EXISTS category TEXT,
-        ADD COLUMN IF NOT EXISTS symbol_path TEXT,
-        ADD COLUMN IF NOT EXISTS symbol_description TEXT
-    `);
-
     apiTradeMetadataColumnsReady = true;
 }
 
