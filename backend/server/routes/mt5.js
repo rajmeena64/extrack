@@ -14,6 +14,15 @@ const REQUEST_STATUSES = new Set([
     'applying_ea',
 ]);
 
+const SYNC_PROGRESS_STATUSES = new Set([
+    'queued',
+    'launching_terminal',
+    'fetching_trades',
+    'saving_data',
+    'synced',
+    'failed',
+]);
+
 function sanitizeAgentMessage(value) {
     const message = trimString(value, { max: 500 });
     if (!message) return null;
@@ -26,6 +35,25 @@ function sanitizeAgentMessage(value) {
 
 function createInstanceKey() {
     return `mt5_${Date.now()}_${crypto.randomBytes(8).toString('hex')}`;
+}
+
+function getWorkerCapacity(req) {
+    const requestedCapacity = Number.parseInt(req.body?.capacity, 10);
+    if (Number.isFinite(requestedCapacity) && requestedCapacity > 0) {
+        return Math.min(requestedCapacity, 20);
+    }
+
+    const envCapacity = Number.parseInt(process.env.MT5_WORKER_CAPACITY || '1', 10);
+    return Number.isFinite(envCapacity) && envCapacity > 0 ? Math.min(envCapacity, 20) : 1;
+}
+
+function getWorkerId(req) {
+    return trimString(req.body?.worker_id, { max: 120 }) || 'default-worker';
+}
+
+function getWorkerActiveCount(req) {
+    const activeCount = Number.parseInt(req.body?.active_count, 10);
+    return Number.isFinite(activeCount) && activeCount > 0 ? activeCount : 0;
 }
 
 function requireVpsAgent(req, res, next) {
@@ -138,14 +166,174 @@ router.get("/mt5/connect/:request_id/status", authCheck, async (req, res) => {
     }
 });
 
-// ----------------------------
-// Trusted VPS Agent Endpoints
-// ----------------------------
-router.post("/vps/jobs/claim", requireVpsAgent, async (req, res) => {
+router.post("/mt5/accounts/:accountId/sync", authCheck, async (req, res) => {
     const client = await pool.connect();
 
     try {
         await client.query('BEGIN');
+
+        const accountResult = await client.query(
+            `SELECT id, user_id, instance_key, status
+             FROM ${TABLES.mt5Accounts}
+             WHERE id = $1 AND user_id = $2
+             FOR UPDATE`,
+            [req.params.accountId, req.userId]
+        );
+
+        if (accountResult.rowCount === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({
+                success: false,
+                error: 'MT5 account not found',
+            });
+        }
+
+        const account = accountResult.rows[0];
+        if (!account.instance_key) {
+            await client.query('ROLLBACK');
+            return res.status(409).json({
+                success: false,
+                error: 'This MT5 account does not have a saved VPS instance yet',
+            });
+        }
+
+        const activeJob = await client.query(
+            `SELECT id, status, progress_status, error_message, created_at, started_at, completed_at
+             FROM ${TABLES.mt5SyncJobs}
+             WHERE mt5_account_id = $1
+               AND status IN ('queued', 'running')
+             ORDER BY created_at DESC
+             LIMIT 1`,
+            [account.id]
+        );
+
+        if (activeJob.rowCount > 0) {
+            await client.query('COMMIT');
+            return res.status(409).json({
+                success: false,
+                error: 'MT5 account is already syncing',
+                job: activeJob.rows[0],
+                job_id: activeJob.rows[0].id,
+            });
+        }
+
+        const jobResult = await client.query(
+            `INSERT INTO ${TABLES.mt5SyncJobs}
+             (user_id, mt5_account_id, status, requested_by, progress_status)
+             VALUES ($1, $2, 'queued', 'manual', 'queued')
+             RETURNING id, status, progress_status, created_at`,
+            [req.userId, account.id]
+        );
+
+        await client.query(
+            `UPDATE ${TABLES.mt5Accounts}
+             SET last_sync_status = 'queued',
+                 last_sync_error = NULL,
+                 updated_at = NOW()
+             WHERE id = $1`,
+            [account.id]
+        );
+
+        await client.query('COMMIT');
+
+        res.status(202).json({
+            success: true,
+            job_id: jobResult.rows[0].id,
+            job: jobResult.rows[0],
+        });
+    } catch (error) {
+        await client.query('ROLLBACK');
+        if (error.code === '23505') {
+            return res.status(409).json({
+                success: false,
+                error: 'MT5 account is already syncing',
+            });
+        }
+
+        res.status(500).json({
+            success: false,
+            error: error.message,
+        });
+    } finally {
+        client.release();
+    }
+});
+
+router.get("/mt5/sync-jobs/:jobId/status", authCheck, async (req, res) => {
+    try {
+        const result = await pool.query(
+            `SELECT
+                j.id,
+                j.mt5_account_id,
+                j.status,
+                j.progress_status,
+                j.error_message,
+                j.created_at,
+                j.started_at,
+                j.completed_at,
+                a.last_synced_at,
+                a.last_sync_status
+             FROM ${TABLES.mt5SyncJobs} j
+             JOIN ${TABLES.mt5Accounts} a ON a.id = j.mt5_account_id
+             WHERE j.id = $1 AND j.user_id = $2`,
+            [req.params.jobId, req.userId]
+        );
+
+        if (result.rowCount === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Sync job not found',
+            });
+        }
+
+        res.json({
+            success: true,
+            job: result.rows[0],
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message,
+        });
+    }
+});
+
+// ----------------------------
+// Trusted VPS Agent Endpoints
+// ----------------------------
+router.post("/vps/jobs/claim", requireVpsAgent, async (req, res) => {
+    const workerId = getWorkerId(req);
+    const capacity = getWorkerCapacity(req);
+    const workerActiveCount = getWorkerActiveCount(req);
+    const client = await pool.connect();
+
+    try {
+        await client.query('BEGIN');
+
+        if (workerActiveCount >= capacity) {
+            await client.query('COMMIT');
+            return res.json({
+                success: true,
+                job: null,
+                capacity,
+            });
+        }
+
+        const runningCount = await client.query(
+            `SELECT
+                (SELECT COUNT(*)::int FROM ${TABLES.mt5VpsJobs} WHERE status IN ('claimed', 'running'))
+                +
+                (SELECT COUNT(*)::int FROM ${TABLES.mt5SyncJobs} WHERE status = 'running') AS active_count`
+        );
+
+        if (Number(runningCount.rows[0]?.active_count || 0) >= capacity) {
+            await client.query('COMMIT');
+            return res.json({
+                success: true,
+                job: null,
+                capacity,
+            });
+        }
 
         const staleJobs = await client.query(
             `UPDATE ${TABLES.mt5VpsJobs}
@@ -217,6 +405,7 @@ router.post("/vps/jobs/claim", requireVpsAgent, async (req, res) => {
                 job_id: job.job_id,
                 request_id: job.request_id,
                 job_type: job.job_type,
+                worker_id: workerId,
                 instance_key: job.instance_key,
                 login: job.login_id,
                 password: decryptMT5Password(job.encrypted_password),
@@ -366,6 +555,9 @@ router.post("/vps/jobs/:job_id/complete", requireVpsAgent, async (req, res) => {
                      server_name = $7::text,
                      connected_at = NOW(),
                      last_connected = NOW(),
+                     last_synced_at = NOW(),
+                     last_sync_status = 'success',
+                     last_sync_error = NULL,
                      updated_at = NOW()
                  WHERE id = $1`,
                 [
@@ -382,8 +574,10 @@ router.post("/vps/jobs/:job_id/complete", requireVpsAgent, async (req, res) => {
             await client.query(
                 `INSERT INTO ${TABLES.mt5Accounts}
                  (user_id, login_id, broker_server, instance_key, status, connected_at,
-                  broker_name, account_id, server_name, connection_status, last_connected)
-                 VALUES ($1, $2, $3, $4, 'connected', NOW(), $5, $6, $7, 'connected', NOW())`,
+                  broker_name, account_id, server_name, connection_status, last_connected,
+                  last_synced_at, last_sync_status)
+                 VALUES ($1, $2, $3, $4, 'connected', NOW(), $5, $6, $7, 'connected', NOW(),
+                         NOW(), 'success')`,
                 [
                     job.user_id,
                     job.login_id,
@@ -458,6 +652,278 @@ router.post("/vps/jobs/:job_id/fail", requireVpsAgent, async (req, res) => {
              SET status = 'failed', error_message = $1, updated_at = NOW()
              WHERE id = $2`,
             [errorMessage, jobResult.rows[0].id]
+        );
+
+        await client.query('COMMIT');
+        res.json({ success: true });
+    } catch (error) {
+        await client.query('ROLLBACK');
+        res.status(500).json({
+            success: false,
+            error: error.message,
+        });
+    } finally {
+        client.release();
+    }
+});
+
+router.post("/vps/sync-jobs/claim", requireVpsAgent, async (req, res) => {
+    const workerId = getWorkerId(req);
+    const capacity = getWorkerCapacity(req);
+    const workerActiveCount = getWorkerActiveCount(req);
+    const client = await pool.connect();
+
+    try {
+        await client.query('BEGIN');
+
+        if (workerActiveCount >= capacity) {
+            await client.query('COMMIT');
+            return res.json({
+                success: true,
+                job: null,
+                capacity,
+            });
+        }
+
+        const staleJobs = await client.query(
+            `UPDATE ${TABLES.mt5SyncJobs}
+             SET status = 'failed',
+                 progress_status = 'failed',
+                 error_message = 'VPS agent did not finish sync before timeout',
+                 completed_at = NOW(),
+                 updated_at = NOW()
+             WHERE status = 'running'
+               AND updated_at < NOW() - INTERVAL '10 minutes'
+             RETURNING mt5_account_id`
+        );
+
+        if (staleJobs.rowCount > 0) {
+            await client.query(
+                `UPDATE ${TABLES.mt5Accounts}
+                 SET last_sync_status = 'failed',
+                     last_sync_error = 'VPS agent did not finish sync before timeout',
+                     updated_at = NOW()
+                 WHERE id = ANY($1::int[])`,
+                [staleJobs.rows.map((row) => row.mt5_account_id)]
+            );
+        }
+
+        const runningCount = await client.query(
+            `SELECT
+                (SELECT COUNT(*)::int FROM ${TABLES.mt5VpsJobs} WHERE status IN ('claimed', 'running'))
+                +
+                (SELECT COUNT(*)::int FROM ${TABLES.mt5SyncJobs} WHERE status = 'running') AS active_count`
+        );
+
+        if (Number(runningCount.rows[0]?.active_count || 0) >= capacity) {
+            await client.query('COMMIT');
+            return res.json({
+                success: true,
+                job: null,
+                capacity,
+            });
+        }
+
+        const jobResult = await client.query(
+            `SELECT
+                j.id AS job_id,
+                j.mt5_account_id,
+                j.user_id,
+                a.account_id,
+                a.login_id,
+                a.broker_server,
+                a.server_name,
+                a.instance_key,
+                a.investor_password
+             FROM ${TABLES.mt5SyncJobs} j
+             JOIN ${TABLES.mt5Accounts} a ON a.id = j.mt5_account_id
+             WHERE j.status = 'queued'
+               AND a.instance_key IS NOT NULL
+             ORDER BY j.created_at ASC
+             LIMIT 1
+             FOR UPDATE SKIP LOCKED`
+        );
+
+        if (jobResult.rowCount === 0) {
+            await client.query('COMMIT');
+            return res.json({
+                success: true,
+                job: null,
+            });
+        }
+
+        const job = jobResult.rows[0];
+
+        await client.query(
+            `UPDATE ${TABLES.mt5SyncJobs}
+             SET status = 'running',
+                 worker_id = $2,
+                 progress_status = 'launching_terminal',
+                 started_at = NOW(),
+                 updated_at = NOW()
+             WHERE id = $1`,
+            [job.job_id, workerId]
+        );
+
+        await client.query(
+            `UPDATE ${TABLES.mt5Accounts}
+             SET last_sync_status = 'running',
+                 last_sync_error = NULL,
+                 updated_at = NOW()
+             WHERE id = $1`,
+            [job.mt5_account_id]
+        );
+
+        await client.query('COMMIT');
+
+        res.json({
+            success: true,
+            job: {
+                job_id: job.job_id,
+                job_type: 'SYNC_MT5_ACCOUNT',
+                mt5_account_id: job.mt5_account_id,
+                user_id: job.user_id,
+                account_id: job.account_id,
+                login: job.login_id || String(job.account_id),
+                broker_server: job.broker_server || job.server_name,
+                password: job.investor_password ? decryptMT5Password(job.investor_password) : null,
+                instance_key: job.instance_key,
+                worker_id: workerId,
+            },
+        });
+    } catch (error) {
+        await client.query('ROLLBACK');
+        res.status(500).json({
+            success: false,
+            error: error.message,
+        });
+    } finally {
+        client.release();
+    }
+});
+
+router.post("/vps/sync-jobs/:job_id/status", requireVpsAgent, async (req, res) => {
+    const progressStatus = trimString(req.body.progress_status, { max: 64, required: true });
+
+    if (!SYNC_PROGRESS_STATUSES.has(progressStatus)) {
+        return res.status(400).json({
+            success: false,
+            error: 'Invalid sync progress status',
+        });
+    }
+
+    try {
+        const result = await pool.query(
+            `UPDATE ${TABLES.mt5SyncJobs}
+             SET progress_status = $1,
+                 updated_at = NOW()
+             WHERE id = $2
+               AND status = 'running'
+             RETURNING id`,
+            [progressStatus, req.params.job_id]
+        );
+
+        if (result.rowCount === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Sync job not found',
+            });
+        }
+
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message,
+        });
+    }
+});
+
+router.post("/vps/sync-jobs/:job_id/complete", requireVpsAgent, async (req, res) => {
+    const client = await pool.connect();
+
+    try {
+        await client.query('BEGIN');
+
+        const result = await client.query(
+            `UPDATE ${TABLES.mt5SyncJobs}
+             SET status = 'success',
+                 progress_status = 'synced',
+                 error_message = NULL,
+                 completed_at = NOW(),
+                 updated_at = NOW()
+             WHERE id = $1
+               AND status = 'running'
+             RETURNING mt5_account_id`,
+            [req.params.job_id]
+        );
+
+        if (result.rowCount === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({
+                success: false,
+                error: 'Sync job not found',
+            });
+        }
+
+        await client.query(
+            `UPDATE ${TABLES.mt5Accounts}
+             SET last_synced_at = NOW(),
+                 last_sync_status = 'success',
+                 last_sync_error = NULL,
+                 updated_at = NOW()
+             WHERE id = $1`,
+            [result.rows[0].mt5_account_id]
+        );
+
+        await client.query('COMMIT');
+        res.json({ success: true });
+    } catch (error) {
+        await client.query('ROLLBACK');
+        res.status(500).json({
+            success: false,
+            error: error.message,
+        });
+    } finally {
+        client.release();
+    }
+});
+
+router.post("/vps/sync-jobs/:job_id/fail", requireVpsAgent, async (req, res) => {
+    const errorMessage = sanitizeAgentMessage(req.body.error_message) || 'MT5 sync failed';
+    const client = await pool.connect();
+
+    try {
+        await client.query('BEGIN');
+
+        const result = await client.query(
+            `UPDATE ${TABLES.mt5SyncJobs}
+             SET status = 'failed',
+                 progress_status = 'failed',
+                 error_message = $2,
+                 completed_at = NOW(),
+                 updated_at = NOW()
+             WHERE id = $1
+               AND status IN ('queued', 'running')
+             RETURNING mt5_account_id`,
+            [req.params.job_id, errorMessage]
+        );
+
+        if (result.rowCount === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({
+                success: false,
+                error: 'Sync job not found',
+            });
+        }
+
+        await client.query(
+            `UPDATE ${TABLES.mt5Accounts}
+             SET last_sync_status = 'failed',
+                 last_sync_error = $2,
+                 updated_at = NOW()
+             WHERE id = $1`,
+            [result.rows[0].mt5_account_id, errorMessage]
         );
 
         await client.query('COMMIT');

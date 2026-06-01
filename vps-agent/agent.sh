@@ -71,14 +71,36 @@ while true; do
   fi
 
   job_id="$(printf '%s' "$job_json" | python3 -c 'import json,sys; print(json.load(sys.stdin)["job_id"])')"
-  request_id="$(printf '%s' "$job_json" | python3 -c 'import json,sys; print(json.load(sys.stdin)["request_id"])')"
+  job_type="$(printf '%s' "$job_json" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("job_type") or "CREATE_MT5_INSTANCE")')"
+  request_id="$(printf '%s' "$job_json" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("request_id") or "")')"
   instance_key="$(printf '%s' "$job_json" | python3 -c 'import json,sys; print(json.load(sys.stdin)["instance_key"])')"
 
-  log "claimed job=$job_id request=$request_id instance=$instance_key"
+  log "claimed job=$job_id type=$job_type request=$request_id instance=$instance_key"
 
-  if printf '%s' "$job_json" | "$AGENT_DIR/lib/provision-instance.sh"; then
+  if [ "$job_type" = "SYNC_MT5_ACCOUNT" ]; then
+    if printf '%s' "$job_json" | "$AGENT_DIR/lib/sync-instance.sh"; then
+      if "$AGENT_DIR/lib/report-sync-complete.sh" "$job_id"; then
+        log "completed sync job=$job_id instance=$instance_key"
+      else
+        log "sync complete report failed job=$job_id instance=$instance_key"
+        "$AGENT_DIR/lib/report-sync-fail.sh" "$job_id" "MT5 sync completion report failed" || true
+      fi
+    else
+      if "$AGENT_DIR/lib/report-sync-fail.sh" "$job_id" "MT5 sync failed"; then
+        log "failed sync job=$job_id instance=$instance_key"
+      else
+        log "failed to mark sync failed job=$job_id instance=$instance_key"
+      fi
+    fi
+  elif printf '%s' "$job_json" | "$AGENT_DIR/lib/provision-instance.sh"; then
     if "$AGENT_DIR/lib/report-complete.sh" "$job_id"; then
       log "completed job=$job_id instance=$instance_key"
+      instance_root="${MT5_INSTANCES_DIR:-/home/ubuntu/mt5-instances}/$instance_key"
+      if [ -x "$instance_root/scripts/stop.sh" ]; then
+        sleep "${MT5_CONNECT_SETTLE_SECONDS:-30}"
+        "$instance_root/scripts/stop.sh" || true
+        log "stopped idle terminal job=$job_id instance=$instance_key"
+      fi
       run_health_checks_if_due
     else
       log "complete report failed job=$job_id instance=$instance_key"

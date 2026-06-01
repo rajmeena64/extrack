@@ -9,6 +9,7 @@ const TABLES = {
   mt5Accounts: 'mt5.accounts',
   mt5ConnectionRequests: 'mt5.connection_requests',
   mt5VpsJobs: 'mt5.vps_jobs',
+  mt5SyncJobs: 'mt5.sync_jobs',
   adminIntegrations: 'system.admin_integrations',
   schemaMigrations: 'system.schema_migrations',
 };

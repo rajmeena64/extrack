@@ -19,7 +19,8 @@ router.get('/get-mt5-accounts', authCheck, async (req, res) => {
 
     try {
         const result = await pool.query(
-            `SELECT id, broker_name, account_id, server_name, balance, default_currency, temporary_currency, investor_password
+            `SELECT id, broker_name, account_id, server_name, balance, default_currency, temporary_currency,
+                    investor_password, last_synced_at, last_sync_status, last_sync_error
              FROM ${TABLES.mt5Accounts} 
              WHERE user_id = $1 
              ORDER BY created_at DESC`,
@@ -35,7 +36,10 @@ router.get('/get-mt5-accounts', authCheck, async (req, res) => {
             balance: acc.balance,
             default_currency: acc.default_currency,
             temporary_currency: acc.temporary_currency,
-            has_investor_password: Boolean(acc.investor_password)
+            has_investor_password: Boolean(acc.investor_password),
+            last_synced_at: acc.last_synced_at,
+            last_sync_status: acc.last_sync_status,
+            last_sync_error: acc.last_sync_error
         }));
 
         res.json({ success: true, accounts });

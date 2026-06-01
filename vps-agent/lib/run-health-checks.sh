@@ -11,6 +11,10 @@ if [ -f "$AGENT_DIR/.env" ]; then
   set +a
 fi
 
+if [ "${ENABLE_MT5_PROCESS_HEALTH_CHECKS:-0}" != "1" ]; then
+  exit 0
+fi
+
 "$AGENT_DIR/lib/fetch-health-targets.sh" | while IFS=$'\t' read -r account_id instance_key; do
   [ -n "${account_id:-}" ] || continue
   [ -n "${instance_key:-}" ] || continue
