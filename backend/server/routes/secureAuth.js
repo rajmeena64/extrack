@@ -17,7 +17,6 @@ const {
   generateRawToken,
   hashToken,
   issueSession,
-  signAccessToken,
   verifyAccessToken,
 } = require('../services/authTokens');
 const {

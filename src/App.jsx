@@ -147,6 +147,7 @@ function CachedMainRoutes({
   defaultDashboardCurrency,
   handleDashboardCurrencyChange,
   isTradesLoading,
+  mt5Accounts,
 }) {
   const location = useLocation();
   const activeRouteKey = getCachedRouteKey(location.pathname);
@@ -155,6 +156,7 @@ function CachedMainRoutes({
   useEffect(() => {
     if (!activeRouteKey) return;
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setVisitedRoutes((previous) => {
       if (previous.has(activeRouteKey)) return previous;
       const nextRoutes = new Set(previous);
@@ -194,6 +196,7 @@ function CachedMainRoutes({
           defaultCurrencyCode={defaultDashboardCurrency}
           onCurrencyChange={handleDashboardCurrencyChange}
           isLoading={isTradesLoading}
+          mt5Accounts={mt5Accounts}
         />
       ))}
 
@@ -587,6 +590,7 @@ function App() {
             defaultDashboardCurrency={defaultDashboardCurrency}
             handleDashboardCurrencyChange={handleDashboardCurrencyChange}
             isTradesLoading={isTradesLoading}
+            mt5Accounts={mt5AccountsQuery.data || []}
           />
         </AppShell>
       ) : (

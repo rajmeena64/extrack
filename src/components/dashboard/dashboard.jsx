@@ -1,4 +1,5 @@
 import React, { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import './dashboard.css';
 
 import Header from '@/components/Header/Header';
@@ -6,6 +7,8 @@ import MainContentWrapper from '@/components/Layout/MainContentWrapper';
 import StatsCards from '@/components/StatsCards/StatsCards';
 import TradesList from '@/components/myTrades/TradesList';
 import ProgressTracker from '@/components/MainContent/ProgressTracker';
+import LegacyIcon from '@/components/Common/LegacyIcon';
+import api from '@/utils/serve';
 import { markPerf, measurePerf } from '@/utils/perfMarks';
 import { loadCachedUserSettings, loadUserSettings } from '../../utils/userSettings';
 
@@ -41,6 +44,29 @@ const getDateScopePart = (value) => {
   if (!value) return 'all';
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? 'all' : date.toISOString().slice(0, 10);
+};
+
+const syncStatusLabels = {
+  queued: 'Queued...',
+  launching_terminal: 'Launching terminal...',
+  fetching_trades: 'Fetching trades...',
+  saving_data: 'Saving data...',
+  synced: 'Synced successfully',
+  success: 'Synced successfully',
+  failed: 'Failed',
+};
+
+const formatSyncTime = (value) => {
+  if (!value) return 'Never synced';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Never synced';
+
+  return new Intl.DateTimeFormat(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
 };
 
 function LazyDashboardSection({ children, sectionKey, fallback, perfName, delay = 100 }) {
@@ -148,8 +174,11 @@ function Dashboard({
   defaultCurrencyCode = 'USD',
   onCurrencyChange,
   isLoading = false,
+  mt5Accounts = [],
 }) {
   const [layout, setLayout] = useState(getCachedDashboardLayout);
+  const queryClient = useQueryClient();
+  const [syncJobs, setSyncJobs] = useState({});
 
   const [layoutMode, setLayoutMode] = useState(getDashboardLayoutMode);
   const layoutChangeVersion = useRef(0);
@@ -210,6 +239,151 @@ function Dashboard({
     const to = getDateScopePart(dateRange?.to);
     return `dashboard:${tradeMode}:${currencyCode}:${from}:${to}`;
   }, [currencyCode, dateRange?.from, dateRange?.to, tradeMode]);
+
+  useEffect(() => {
+    const activeJobs = Object.entries(syncJobs).filter(([, job]) => (
+      job?.jobId && !['success', 'failed'].includes(job.status)
+    ));
+
+    if (activeJobs.length === 0) return undefined;
+
+    const timer = window.setTimeout(async () => {
+      await Promise.all(activeJobs.map(async ([accountId, job]) => {
+        try {
+          const { data } = await api.get(`/mt5/sync-jobs/${job.jobId}/status`);
+          const nextJob = data?.job;
+          if (!data?.success || !nextJob) {
+            throw new Error(data?.error || 'Unable to check sync status');
+          }
+
+          setSyncJobs((previous) => ({
+            ...previous,
+            [accountId]: {
+              ...previous[accountId],
+              status: nextJob.status,
+              progressStatus: nextJob.progress_status,
+              errorMessage: nextJob.error_message || '',
+            },
+          }));
+
+          if (['success', 'failed'].includes(nextJob.status)) {
+            queryClient.invalidateQueries({ queryKey: ['mt5-accounts'] });
+            queryClient.invalidateQueries({ queryKey: ['trades'] });
+          }
+        } catch (error) {
+          setSyncJobs((previous) => ({
+            ...previous,
+            [accountId]: {
+              ...previous[accountId],
+              status: 'failed',
+              progressStatus: 'failed',
+              errorMessage: error.response?.data?.error || error.message || 'Unable to check sync status',
+            },
+          }));
+        }
+      }));
+    }, 2500);
+
+    return () => window.clearTimeout(timer);
+  }, [queryClient, syncJobs]);
+
+  const handleSyncNow = async (account) => {
+    if (!account?.id) return;
+
+    setSyncJobs((previous) => ({
+      ...previous,
+      [account.id]: {
+        status: 'queued',
+        progressStatus: 'queued',
+        errorMessage: '',
+      },
+    }));
+
+    try {
+      const { data } = await api.post(`/mt5/accounts/${account.id}/sync`);
+      const jobId = data?.job_id || data?.job?.id;
+
+      if (!data?.success || !jobId) {
+        throw new Error(data?.error || 'Unable to start sync');
+      }
+
+      setSyncJobs((previous) => ({
+        ...previous,
+        [account.id]: {
+          jobId,
+          status: data.job?.status || 'queued',
+          progressStatus: data.job?.progress_status || 'queued',
+          errorMessage: '',
+        },
+      }));
+    } catch (error) {
+      const existingJob = error.response?.data?.job;
+
+      setSyncJobs((previous) => ({
+        ...previous,
+        [account.id]: existingJob?.id ? {
+          jobId: existingJob.id,
+          status: existingJob.status,
+          progressStatus: existingJob.progress_status || existingJob.status,
+          errorMessage: error.response?.data?.error || '',
+        } : {
+          status: 'failed',
+          progressStatus: 'failed',
+          errorMessage: error.response?.data?.error || error.message || 'Unable to start sync',
+        },
+      }));
+    }
+  };
+
+  const renderSyncPanel = () => {
+    if (!mt5Accounts.length) return null;
+
+    return (
+      <section className="mt5-sync-panel" aria-label="MT5 sync accounts">
+        <div className="mt5-sync-panel__head">
+          <div>
+            <h2>MT5 Sync</h2>
+            <span>{mt5Accounts.length} saved account{mt5Accounts.length === 1 ? '' : 's'}</span>
+          </div>
+        </div>
+
+        <div className="mt5-sync-list">
+          {mt5Accounts.map((account) => {
+            const syncJob = syncJobs[account.id];
+            const isActive = syncJob && !['success', 'failed'].includes(syncJob.status);
+            const progressStatus = syncJob?.progressStatus || account.last_sync_status;
+            const statusText = syncJob?.errorMessage && syncJob.status === 'failed'
+              ? `Failed: ${syncJob.errorMessage}`
+              : syncStatusLabels[progressStatus] || syncStatusLabels[syncJob?.status] || account.last_sync_status || 'Ready';
+
+            return (
+              <div className="mt5-sync-account" key={account.id}>
+                <div className="mt5-sync-account__main">
+                  <strong>{account.broker_name || account.server_name || 'MT5 Account'}</strong>
+                  <span>{account.account_id} &middot; {account.server_name}</span>
+                  <small>Last sync: {formatSyncTime(account.last_synced_at)}</small>
+                </div>
+
+                <div className="mt5-sync-account__actions">
+                  <span className={`mt5-sync-status ${isActive ? 'is-active' : ''}`}>{statusText}</span>
+                  <button
+                    className="mt5-sync-button"
+                    type="button"
+                    onClick={() => handleSyncNow(account)}
+                    disabled={isActive}
+                    title="Sync now"
+                  >
+                    <LegacyIcon className={`fas fa-sync-alt ${isActive ? 'fa-spin' : ''}`} />
+                    <span>Sync Now</span>
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+    );
+  };
 
   const gridAreas = useMemo(() => {
     const { rowOrder, columnOrder } = layout;
@@ -406,6 +580,8 @@ function Dashboard({
         isLoading={isLoading}
         statsScopeKey={statsScopeKey}
       />
+
+      {renderSyncPanel()}
 
       {MainGrid}
 

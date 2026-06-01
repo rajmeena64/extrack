@@ -91,6 +91,130 @@
   min-height: var(--dashboard-chart-slot);
 }
 
+.mt5-sync-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  margin-bottom: var(--dashboard-grid-gap);
+  padding: 12px;
+  border: var(--dashboard-card-border);
+  border-radius: var(--dashboard-card-radius);
+  background: var(--bg-card);
+  box-shadow: var(--dashboard-card-shadow);
+}
+
+.mt5-sync-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mt5-sync-panel__head h2 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.mt5-sync-panel__head span {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.mt5-sync-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 10px;
+}
+
+.mt5-sync-account {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--divider-strong);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-muted) 74%, transparent);
+}
+
+.mt5-sync-account__main {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.mt5-sync-account__main strong,
+.mt5-sync-account__main span,
+.mt5-sync-account__main small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mt5-sync-account__main strong {
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.mt5-sync-account__main span,
+.mt5-sync-account__main small {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.mt5-sync-account__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.mt5-sync-status {
+  max-width: 190px;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mt5-sync-status.is-active {
+  color: var(--primary);
+}
+
+.mt5-sync-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--divider-strong);
+  border-radius: 8px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.mt5-sync-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.68;
+}
+
 .calendar-panel {
   min-height: calc((var(--dashboard-chart-slot) * 2) + var(--dashboard-grid-gap));
   height: 100%;
@@ -360,6 +484,20 @@
 
   .calendar-panel {
     min-height: 200px;
+  }
+
+  .mt5-sync-account,
+  .mt5-sync-account__actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .mt5-sync-status {
+    max-width: 100%;
+  }
+
+  .mt5-sync-button {
+    width: 100%;
   }
 }
 

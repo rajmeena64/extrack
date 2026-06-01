@@ -18,7 +18,7 @@ function formatPrice(value) {
   return Number(value || 0).toLocaleString('en-US', { maximumFractionDigits: 5 });
 }
 
-function formatTime(value) {
+function _formatTime(value) {
   if (!value) return '-';
   return new Date(Number(value) * 1000).toLocaleString();
 }
@@ -41,7 +41,7 @@ function BacktestChart({
   const containerRef = useRef(null);
   const instanceRef = useRef(null);
   const { darkMode } = useTheme();
-  const [crosshair, setCrosshair] = useState({ price: null, time: null });
+  const [_crosshair, setCrosshair] = useState({ price: null, time: null });
 
   const visibleCandles = useMemo(
     () => getVisibleCandles(candles, currentIndex, strictReplay),
