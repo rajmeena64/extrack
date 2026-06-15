@@ -9,7 +9,7 @@ const TrustStrip = () => {
   ];
 
   return (
-    <section className="bg-surface-container-lowest border-y border-outline-variant/10 py-lg overflow-hidden">
+    <section className="bg-transparent py-lg overflow-hidden">
       <div className="max-w-7xl mx-auto px-margin-mobile md:px-margin-desktop flex flex-wrap justify-center md:justify-between items-center gap-xl opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
         {items.map((item, index) => (
           <div 

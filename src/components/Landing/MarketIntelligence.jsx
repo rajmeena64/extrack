@@ -2,7 +2,7 @@ import React from 'react';
 
 const MarketIntelligence = () => {
   return (
-    <section className="py-24 bg-surface-container-lowest">
+    <section className="py-8 bg-transparent">
       <div className="max-w-7xl mx-auto px-margin-mobile md:px-margin-desktop">
         <div className="text-center mb-xl max-w-4xl mx-auto">
           <h2 className="font-display-lg text-display-lg mb-md leading-tight">

@@ -34,6 +34,9 @@ function Header({
   currencyCode = 'USD',
   defaultCurrencyCode = 'USD',
   onCurrencyChange,
+  mt5Accounts = [],
+  syncJobs = {},
+  handleSyncNow,
 }) {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -47,6 +50,10 @@ function Header({
   const navigate = useNavigate();
 
   const { user: currentUser } = useAuth();
+
+  const primaryAccount = mt5Accounts?.[0];
+  const syncJob = primaryAccount ? syncJobs[primaryAccount.id] : null;
+  const isSyncing = syncJob && !['success', 'failed'].includes(syncJob.status);
 
   const modes = [
     { value: 'all', label: 'All Trades' },
@@ -414,6 +421,18 @@ function Header({
             <RefreshCw size={14} aria-hidden="true" />
             {isMobile ? `Last import ${compactLatestTradeLabel}` : `Last import was made: ${latestTradeLabel}`}
           </span>
+          {primaryAccount && (
+            <button
+              className={`header-sync-btn ${isSyncing ? 'is-syncing' : ''}`}
+              type="button"
+              onClick={() => handleSyncNow(primaryAccount)}
+              disabled={isSyncing}
+              title="Sync MT5 account now"
+            >
+              <RefreshCw size={12} className={isSyncing ? 'spin-anim' : ''} />
+              <span>{isSyncing ? 'Syncing...' : 'Sync Now'}</span>
+            </button>
+          )}
         </div>
 
         <button className="start-day-btn" type="button" onClick={() => navigate('/day-review')}>

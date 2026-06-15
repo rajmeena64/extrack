@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTheme } from '../../../context/ThemeContext';
 import { getVisibleCandles } from '../engine/candleReplay';
+import BacktestPlaybackControls from './BacktestPlaybackControls';
 import {
   applyTheme,
   createChartInstance,
@@ -36,7 +37,17 @@ function BacktestChart({
   openPositions,
   closedPositions,
   timeframe,
+  selectedOrderSide,
+  marketPrice,
   onTimeframeChange,
+  onSideChange,
+  onOpenOrderPanel,
+  // Playback props
+  isPlaying,
+  playbackSpeed,
+  onTogglePlay,
+  onStep,
+  onSpeedChange,
 }) {
   const containerRef = useRef(null);
   const instanceRef = useRef(null);
@@ -124,9 +135,43 @@ function BacktestChart({
           <span>L</span><strong>{formatPrice(currentCandle?.low)}</strong>
           <span>C</span><strong>{formatPrice(currentCandle?.close)}</strong>
         </div>
+
+        <div className="backtest-chart-trade-strip" aria-label="Quick trade side">
+          <button
+            type="button"
+            className={selectedOrderSide === 'sell' ? 'is-sell is-active' : 'is-sell'}
+            onClick={() => {
+              onSideChange('sell');
+              onOpenOrderPanel();
+            }}
+          >
+            <span>Sell</span>
+            <strong>{formatPrice(marketPrice)}</strong>
+          </button>
+          <button
+            type="button"
+            className={selectedOrderSide === 'buy' ? 'is-buy is-active' : 'is-buy'}
+            onClick={() => {
+              onSideChange('buy');
+              onOpenOrderPanel();
+            }}
+          >
+            <span>Buy</span>
+            <strong>{formatPrice(marketPrice)}</strong>
+          </button>
+        </div>
       </div>
 
-      <div className="backtest-chart-canvas" ref={containerRef} />
+      <div className="backtest-chart-canvas" ref={containerRef}>
+        <BacktestPlaybackControls
+          isPlaying={isPlaying}
+          speed={playbackSpeed}
+          currentCandle={currentCandle}
+          onTogglePlay={onTogglePlay}
+          onStep={onStep}
+          onSpeedChange={onSpeedChange}
+        />
+      </div>
     </section>
   );
 }

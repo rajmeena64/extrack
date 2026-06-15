@@ -6,7 +6,7 @@ import TwitterIcon from '@mui/icons-material/Twitter';
 
 const LandingFooter = () => {
   return (
-    <footer className="bg-surface-container-lowest border-t border-outline-variant/10 pt-20 pb-10">
+    <footer className="bg-transparent pt-8 pb-10">
       <div className="max-w-7xl mx-auto px-margin-mobile md:px-margin-desktop">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-xl mb-20">
           <div className="col-span-1 md:col-span-1">

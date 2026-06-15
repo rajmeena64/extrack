@@ -9,8 +9,9 @@ import {
 } from './tradeSimulator';
 
 export const INITIAL_BACKTEST_STATE = {
-  symbol: 'BTCUSDT',
+  symbol: 'XAUUSD',
   timeframe: '1m',
+  sessionDate: new Date().toISOString().split('T')[0],
   candles: [],
   currentIndex: 80,
   isPlaying: false,

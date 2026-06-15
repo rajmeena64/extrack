@@ -121,13 +121,22 @@
 
 .backtest-field {
   min-width: 0;
-  height: 34px;
-  padding: 3px 8px;
-  display: grid;
-  gap: 1px;
+  height: 38px;
+  padding: 4px 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0px;
   border: 1px solid var(--border-light);
-  border-radius: 7px;
+  border-radius: 8px;
   background: var(--surface-subtle);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.backtest-field:focus-within {
+  border-color: var(--primary);
+  background: var(--bg-card);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 15%, transparent);
 }
 
 .backtest-field span,
@@ -138,10 +147,11 @@
   align-items: center;
   gap: 5px;
   color: var(--text-muted);
-  font-size: 10px;
-  font-weight: 700;
+  font-size: 9px;
+  font-weight: 800;
   line-height: 1;
   text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 
 .backtest-field input,
@@ -149,12 +159,42 @@
 .backtest-check-input input[type="number"] {
   width: 100%;
   min-width: 0;
-  border: 0;
-  outline: 0;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
   background: transparent;
   color: var(--text-primary);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
+  padding: 0;
+  margin: 0;
+  height: 20px;
+ -webkit-appearance: none;
+}
+
+.backtest-terminal input:focus,
+.backtest-terminal input:active {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.backtest-field input::placeholder {
+  color: var(--text-muted);
+  font-weight: 500;
+  opacity: 0.5;
+}
+
+.backtest-field input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  filter: invert(0.5);
+  opacity: 0.6;
+  transition: opacity 0.2s;
+  margin-left: 4px;
+}
+
+.backtest-field input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
 }
 
 .backtest-field--symbol {
@@ -306,13 +346,20 @@
 
 .backtest-workspace {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 310px;
+  grid-template-columns: minmax(0, 1fr) var(--order-panel-width, 310px);
   gap: 10px;
   align-items: stretch;
+  min-height: calc(100vh - 260px);
+  position: relative;
+}
+
+.backtest-workspace--full-chart {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .backtest-center {
   min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -320,13 +367,14 @@
 
 .backtest-chart-panel {
   position: relative;
-  min-height: 520px;
+  flex: 1 1 520px;
+  min-height: 360px;
   overflow: hidden;
-  height: 650px;
+  height: auto;
 }
 
 .backtest-chart-meta {
-  height: 42px;
+  min-height: 42px;
   padding: 0 4px;
   display: flex;
   align-items: center;
@@ -375,6 +423,7 @@
   gap: 12px;
   margin-left: 0;
   padding-right: 12px;
+  white-space: nowrap;
 }
 
 .backtest-chart-meta strong {
@@ -383,7 +432,59 @@
 
 .backtest-chart-canvas {
   position: relative;
-  height: 600px;
+  height: calc(100% - 42px);
+  min-height: 318px;
+}
+
+.backtest-chart-trade-strip {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding-right: 4px;
+}
+
+.backtest-chart-trade-strip button {
+  min-width: 92px;
+  height: 30px;
+  padding: 0 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  background: var(--surface-subtle);
+  cursor: pointer;
+}
+
+.backtest-chart-trade-strip span {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.backtest-chart-trade-strip strong {
+  font-size: 12px;
+}
+
+.backtest-chart-trade-strip .is-sell {
+  border-color: color-mix(in srgb, var(--accent-danger) 55%, var(--border-light));
+  color: var(--accent-danger);
+}
+
+.backtest-chart-trade-strip .is-buy {
+  border-color: color-mix(in srgb, var(--primary) 55%, var(--border-light));
+  color: var(--primary);
+}
+
+.backtest-chart-trade-strip .is-active {
+  background: currentColor;
+}
+
+.backtest-chart-trade-strip .is-active span,
+.backtest-chart-trade-strip .is-active strong {
+  color: #fff;
 }
 
 .backtest-chart-risk-overlay {
@@ -415,6 +516,15 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  height: 100%;
+  overflow: auto;
+}
+
+.backtest-order-dock {
+  position: relative;
+  min-width: 260px;
+  max-width: 430px;
+  min-height: 0;
 }
 
 .backtest-panel-heading {
@@ -432,7 +542,30 @@
 }
 
 .backtest-panel-heading strong {
+  display: block;
+  margin-top: 2px;
   color: var(--heading);
+}
+
+.backtest-panel-close,
+.backtest-panel-controls button {
+  width: 30px;
+  height: 30px;
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  background: var(--surface-subtle);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.backtest-panel-close:hover,
+.backtest-panel-controls button:hover {
+  background: var(--bg-hover);
+  color: var(--primary);
 }
 
 .backtest-side-toggle {
@@ -503,19 +636,40 @@
 }
 
 .backtest-form-grid label,
-.backtest-check-input input[type="number"] {
+.backtest-check-input {
   min-width: 0;
-  padding: 7px;
-  display: grid;
-  gap: 4px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   border: 1px solid var(--border-light);
-  border-radius: 7px;
+  border-radius: 8px;
   background: var(--surface-subtle);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.backtest-form-grid label:focus-within,
+.backtest-check-input:focus-within {
+  border-color: var(--primary);
+  background: var(--bg-card);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 15%, transparent);
 }
 
 .backtest-check-input {
   display: grid;
   grid-template-columns: auto 1fr minmax(95px, 1.2fr);
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.backtest-check-input input[type="number"] {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent;
+  padding: 0;
+  height: 20px;
 }
 
 .backtest-calcs {
@@ -564,6 +718,50 @@
   overflow-x: auto;
 }
 
+.backtest-playback.is-floating {
+  position: absolute;
+  z-index: 100;
+  min-height: 42px;
+  padding: 6px 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-medium);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.3);
+  overflow: visible;
+  user-select: none;
+  touch-action: none;
+}
+
+.dark-mode .backtest-playback.is-floating {
+  background: #0f1115;
+  border-color: #2a2d35;
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.6);
+}
+
+.backtest-playback.is-dragging {
+  opacity: 0.9;
+  cursor: grabbing;
+  box-shadow: 0 20px 50px -15px rgba(0, 0, 0, 0.4);
+}
+
+.backtest-playback__drag-handle {
+  cursor: grab;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-right: 4px;
+  opacity: 0.6;
+}
+
+.backtest-playback__drag-handle:hover {
+  opacity: 1;
+}
+
+.backtest-playback.is-dragging .backtest-playback__drag-handle {
+  cursor: grabbing;
+}
+
 .backtest-playback__buttons {
   display: inline-flex;
   gap: 6px;
@@ -593,22 +791,41 @@
 }
 
 .backtest-bottom-panel {
+  position: relative;
   min-height: 0;
   overflow: hidden;
 }
 
 .backtest-center > .backtest-bottom-panel {
-  flex: 1 1 230px;
+  flex: 0 0 auto;
+}
+
+.backtest-bottom-panel.is-collapsed {
+  min-height: 48px;
 }
 
 .backtest-tabs {
   height: 42px;
   display: flex;
   align-items: end;
+  justify-content: space-between;
   gap: 4px;
   padding: 7px 8px 0;
   border-bottom: 1px solid var(--border-light);
   overflow-x: auto;
+}
+
+.backtest-tabs__list,
+.backtest-panel-controls {
+  display: flex;
+  align-items: end;
+  gap: 4px;
+}
+
+.backtest-panel-controls {
+  flex: 0 0 auto;
+  align-items: center;
+  padding-bottom: 4px;
 }
 
 .backtest-tabs button {
@@ -637,6 +854,85 @@
 .backtest-center > .backtest-bottom-panel .backtest-table-wrap {
   height: calc(100% - 42px);
   max-height: none;
+}
+
+.backtest-pane-resizer {
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: grab;
+  touch-action: none;
+}
+
+.backtest-pane-resizer--horizontal {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 3;
+  width: 64px;
+  height: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateX(-50%);
+  border-radius: 0 0 8px 8px;
+  background: var(--surface-subtle);
+}
+
+.backtest-pane-resizer--vertical {
+  position: absolute;
+  inset: 0 auto 0 -7px;
+  z-index: 3;
+  width: 12px;
+  cursor: col-resize;
+}
+
+.backtest-pane-resizer--vertical::before {
+  content: "";
+  position: absolute;
+  top: 14px;
+  bottom: 14px;
+  left: 5px;
+  border-left: 1px solid var(--border-medium);
+}
+
+.backtest-is-resizing {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.backtest-panel-restore {
+  height: 38px;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--border-light);
+  border-radius: 7px;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 850;
+  cursor: pointer;
+  box-shadow: 0 12px 26px -22px rgba(15, 23, 42, 0.42);
+}
+
+.backtest-panel-restore:hover {
+  background: var(--bg-hover);
+  color: var(--primary);
+}
+
+.backtest-panel-restore--bottom {
+  align-self: stretch;
+}
+
+.backtest-panel-restore--order {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 6;
+  padding: 0 10px;
 }
 
 .backtest-table-wrap table {
@@ -699,10 +995,19 @@
     grid-template-columns: 1fr;
   }
 
+  .backtest-order-dock {
+    width: 100% !important;
+    max-width: none;
+  }
+
   .backtest-order-panel {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: start;
+  }
+
+  .backtest-pane-resizer--vertical {
+    display: none;
   }
 
   .backtest-order-actions,
@@ -731,7 +1036,7 @@
   }
 
   .backtest-chart-canvas {
-    height: 392px;
+    min-height: 392px;
   }
 
   .backtest-order-panel {
@@ -798,7 +1103,7 @@
   }
 
   .backtest-chart-canvas {
-    height: 352px;
+    min-height: 352px;
   }
 
   .backtest-chart-risk-overlay {

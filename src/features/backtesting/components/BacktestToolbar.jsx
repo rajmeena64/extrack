@@ -1,17 +1,25 @@
 import React from 'react';
 import { CalendarDays, RefreshCw, Search } from '../../../icons/lucideIcons';
 
-function BacktestToolbar({ symbol, loadStatus, onSymbolChange, onReload }) {
+function BacktestToolbar({ symbol, sessionDate, loadStatus, onSymbolChange, onSessionChange, onReload }) {
   return (
     <div className="backtest-toolbar">
       <label className="backtest-field backtest-field--symbol backtest-toolbar__symbol">
         <span><Search size={13} aria-hidden="true" /> Symbol</span>
-        <input value={symbol} onChange={(event) => onSymbolChange(event.target.value.toUpperCase())} />
+        <input 
+          value={symbol} 
+          onChange={(event) => onSymbolChange(event.target.value.toUpperCase())} 
+          placeholder="e.g. BTCUSDT"
+        />
       </label>
 
       <label className="backtest-field backtest-field--session backtest-toolbar__session">
         <span><CalendarDays size={13} aria-hidden="true" /> Session</span>
-        <input type="date" />
+        <input 
+          type="date" 
+          value={sessionDate}
+          onChange={(e) => onSessionChange(e.target.value)}
+        />
       </label>
 
       <div className="backtest-chart-tools backtest-toolbar__tools" aria-label="Chart tools">

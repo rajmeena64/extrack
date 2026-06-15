@@ -6,6 +6,8 @@
         "migrate": "node scripts/run-migrations.js"
     },
     "dependencies": {
+        "@aws-sdk/client-s3": "^3.1067.0",
+        "@dsnp/parquetjs": "^1.8.7",
         "@sentry/node": "^10.53.1",
         "axios": "^1.13.2",
         "bcrypt": "^6.0.0",
@@ -19,6 +21,7 @@
         "jsonwebtoken": "^9.0.3",
         "multer": "^2.0.2",
         "node-fetch": "^2.7.0",
+        "parquet-wasm": "^0.7.1",
         "pg": "^8.16.3",
         "postgres": "^3.4.7",
         "protobufjs": "^8.0.0",

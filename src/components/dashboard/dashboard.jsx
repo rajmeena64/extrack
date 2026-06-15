@@ -335,56 +335,6 @@ function Dashboard({
     }
   };
 
-  const renderSyncPanel = () => {
-    if (!mt5Accounts.length) return null;
-
-    return (
-      <section className="mt5-sync-panel" aria-label="MT5 sync accounts">
-        <div className="mt5-sync-panel__head">
-          <div>
-            <h2>MT5 Sync</h2>
-            <span>{mt5Accounts.length} saved account{mt5Accounts.length === 1 ? '' : 's'}</span>
-          </div>
-        </div>
-
-        <div className="mt5-sync-list">
-          {mt5Accounts.map((account) => {
-            const syncJob = syncJobs[account.id];
-            const isActive = syncJob && !['success', 'failed'].includes(syncJob.status);
-            const progressStatus = syncJob?.progressStatus || account.last_sync_status;
-            const statusText = syncJob?.errorMessage && syncJob.status === 'failed'
-              ? `Failed: ${syncJob.errorMessage}`
-              : syncStatusLabels[progressStatus] || syncStatusLabels[syncJob?.status] || account.last_sync_status || 'Ready';
-
-            return (
-              <div className="mt5-sync-account" key={account.id}>
-                <div className="mt5-sync-account__main">
-                  <strong>{account.broker_name || account.server_name || 'MT5 Account'}</strong>
-                  <span>{account.account_id} &middot; {account.server_name}</span>
-                  <small>Last sync: {formatSyncTime(account.last_synced_at)}</small>
-                </div>
-
-                <div className="mt5-sync-account__actions">
-                  <span className={`mt5-sync-status ${isActive ? 'is-active' : ''}`}>{statusText}</span>
-                  <button
-                    className="mt5-sync-button"
-                    type="button"
-                    onClick={() => handleSyncNow(account)}
-                    disabled={isActive}
-                    title="Sync now"
-                  >
-                    <LegacyIcon className={`fas fa-sync-alt ${isActive ? 'fa-spin' : ''}`} />
-                    <span>Sync Now</span>
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-    );
-  };
-
   const gridAreas = useMemo(() => {
     const { rowOrder, columnOrder } = layout;
 
@@ -572,6 +522,9 @@ function Dashboard({
         currencyCode={currencyCode}
         defaultCurrencyCode={defaultCurrencyCode}
         onCurrencyChange={onCurrencyChange}
+        mt5Accounts={mt5Accounts}
+        syncJobs={syncJobs}
+        handleSyncNow={handleSyncNow}
       />
 
       <StatsCards
@@ -580,8 +533,6 @@ function Dashboard({
         isLoading={isLoading}
         statsScopeKey={statsScopeKey}
       />
-
-      {renderSyncPanel()}
 
       {MainGrid}
 

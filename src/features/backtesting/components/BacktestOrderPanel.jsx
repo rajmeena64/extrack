@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { X } from '../../../icons/lucideIcons';
 import { calculatePositionSize, calculateRR, calculateReward, calculateRisk, validateOrder } from '../engine/riskCalculator';
 
 const RISK_OPTIONS = [0.5, 1, 2, 3, 5];
@@ -11,6 +12,7 @@ function numberValue(value) {
 function BacktestOrderPanel({
   state,
   currentCandle,
+  onClose,
   onFieldChange,
   onPlaceOrder,
   onJournalTrade,
@@ -86,8 +88,13 @@ function BacktestOrderPanel({
   return (
     <aside className="backtest-order-panel">
       <div className="backtest-panel-heading">
-        <span>Place Order</span>
-        <strong>{state.symbol}</strong>
+        <div>
+          <span>Place Order</span>
+          <strong>{state.symbol}</strong>
+        </div>
+        <button className="backtest-panel-close" type="button" onClick={onClose} title="Hide order panel" aria-label="Hide order panel">
+          <X size={16} aria-hidden="true" />
+        </button>
       </div>
 
       <div className="backtest-side-toggle">

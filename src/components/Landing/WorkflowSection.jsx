@@ -2,7 +2,7 @@ import React from 'react';
 
 const WorkflowSection = () => {
   return (
-    <section className="py-24 bg-surface-container-low">
+    <section className="py-8 bg-transparent">
       <div className="max-w-7xl mx-auto px-margin-mobile md:px-margin-desktop">
         <div className="text-center mb-16 max-w-3xl mx-auto">
           <h2 className="font-headline-lg text-headline-lg mb-sm">

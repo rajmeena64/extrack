@@ -131,6 +131,7 @@ const settingsRoutes = require('./routes/settings');
 const apiRoutes = require('./routes/Api');
 
 const binanceRoutes = require('./routes/binance');
+const ohlcvRoute = require("./routes/ohlcv.route");
 
 const { registerCtraderRoutes, ensureCtraderTokenStore } = require('./routes/ctrader');
 
@@ -149,7 +150,7 @@ app.use('/api', metaRoutes);
 app.use('/api', settingsRoutes);
 app.use('/api', binanceRoutes);
 app.use('/api', apiRoutes);
-
+app.use("/api/ohlcv", ohlcvRoute);
 
 
 app.use(express.static(path.join(__dirname, '../../js')));

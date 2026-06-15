@@ -9,11 +9,11 @@ const SpotlightSection = ({
   image, 
   imageAlt, 
   reverse = false, 
-  background = 'bg-surface-container-lowest',
+  background = 'bg-transparent',
   children 
 }) => {
   return (
-    <section ref={revealRef} className={`py-24 ${background} reveal`} id={id}>
+    <section ref={revealRef} className={`py-8 ${background} reveal`} id={id}>
       <div className="max-w-7xl mx-auto px-margin-mobile md:px-margin-desktop grid grid-cols-1 md:grid-cols-2 gap-xl items-center">
         <div className={`${reverse ? 'order-1 md:order-2' : 'order-2 md:order-1'} landing-mockup-card`}>
           <img alt={imageAlt} src={image} />

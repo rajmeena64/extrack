@@ -79,27 +79,81 @@ export function useBacktestSession() {
     });
   }, [positionSize]);
 
-  const loadMarketData = useCallback(async () => {
-    setLoadStatus('loading');
-    try {
-      const { data } = await api.get('/klines', {
-        params: {
-          symbol: state.symbol,
-          interval: INTERVAL_MAP[state.timeframe] || '1m',
-          limit: 500,
-          category: 'crypto',
-        },
-      });
-      const candles = Array.isArray(data) && data.length
-        ? data.map(normalizeKline).filter((candle) => Number.isFinite(candle.time))
-        : generateMockCandles(state.timeframe);
-      dispatch({ type: 'candles', candles });
-      setLoadStatus('live');
-    } catch {
-      dispatch({ type: 'candles', candles: generateMockCandles(state.timeframe) });
-      setLoadStatus('mock');
-    }
-  }, [state.symbol, state.timeframe]);
+  // const loadMarketData = useCallback(async () => {
+  //   setLoadStatus('loading');
+  //   try {
+  //     const startTime = state.sessionDate ? new Date(state.sessionDate).getTime() : undefined;
+  //     const { data } = await api.get('/klines', {
+  //       params: {
+  //         symbol: state.symbol,
+  //         interval: INTERVAL_MAP[state.timeframe] || '1m',
+  //         limit: 5000,
+  //         category: 'crypto',
+  //         startTime,
+  //       },
+  //     });
+  //     const candles = Array.isArray(data) && data.length
+  //       ? data.map(normalizeKline).filter((candle) => Number.isFinite(candle.time))
+  //       : generateMockCandles(state.timeframe);
+  //     dispatch({ type: 'candles', candles });
+  //     setLoadStatus('live');
+  //   } catch {
+  //     dispatch({ type: 'candles', candles: generateMockCandles(state.timeframe) });
+  //     setLoadStatus('mock');
+  //   }
+  // }, [state.sessionDate, state.symbol, state.timeframe]);
+
+const loadMarketData = useCallback(async () => {
+  setLoadStatus('loading');
+
+  try {
+        const startDate = new Date("2023-01-10");
+
+        const endDate = new Date(startDate);
+        endDate.setMonth(endDate.getMonth() + 3);
+
+        const start = startDate.toISOString().split("T")[0];
+        const end = endDate.toISOString().split("T")[0];
+
+        console.log(start, end);
+
+    console.log("Requesting:", { start, end });
+
+    const { data } = await api.get('/ohlcv', {
+      params: {
+        symbol: state.symbol,
+        start,
+        end,
+      },
+    });
+
+    console.log("🔥 Backend Response:", data);
+
+    const candles = data.data.map((item) => ({
+      time: new Date(item.timestamp).getTime() / 1000,
+      open: Number(item.open),
+      high: Number(item.high),
+      low: Number(item.low),
+      close: Number(item.close),
+      volume: Number(item.volume),
+    }));
+
+    dispatch({ type: 'candles', candles });
+    setLoadStatus('live');
+
+  } catch (err) {
+    console.log("❌ Error:", err);
+
+    dispatch({
+      type: 'candles',
+      candles: generateMockCandles(state.timeframe),
+    });
+
+    setLoadStatus('mock');
+  }
+}, [state.symbol, state.sessionDate]);
+
+
 
   useEffect(() => {
     loadMarketData();

@@ -2,7 +2,7 @@ import React from 'react';
 
 const CalendarSection = () => {
   return (
-    <section className="py-24">
+    <section className="py-8">
       <div className="max-w-7xl mx-auto px-margin-mobile md:px-margin-desktop grid grid-cols-1 md:grid-cols-12 gap-xl">
         <div className="md:col-span-7">
           <h2 className="font-headline-lg text-headline-lg mb-md">

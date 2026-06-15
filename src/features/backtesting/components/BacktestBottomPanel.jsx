@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { ChevronDown, ChevronUp, GripHorizontal, X } from '../../../icons/lucideIcons';
 
 const TABS = ['Orders', 'Open Positions', 'Closed Positions', 'Journal'];
 const currency = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 });
@@ -7,20 +8,52 @@ function EmptyState({ label }) {
   return <div className="backtest-empty-state">{label}</div>;
 }
 
-function BacktestBottomPanel({ orders, openPositions, closedPositions, journalDrafts, onClosePosition, onJournalTrade }) {
+function BacktestBottomPanel({
+  orders,
+  openPositions,
+  closedPositions,
+  journalDrafts,
+  collapsed,
+  style,
+  onResizeStart,
+  onCollapse,
+  onClose,
+  onClosePosition,
+  onJournalTrade,
+}) {
   const [activeTab, setActiveTab] = useState('Orders');
 
   return (
-    <section className="backtest-bottom-panel">
+    <section className={collapsed ? 'backtest-bottom-panel is-collapsed' : 'backtest-bottom-panel'} style={style}>
+      <button
+        className="backtest-pane-resizer backtest-pane-resizer--horizontal"
+        type="button"
+        aria-label="Resize bottom panel"
+        onPointerDown={onResizeStart}
+      >
+        <GripHorizontal size={16} aria-hidden="true" />
+      </button>
+
       <div className="backtest-tabs" role="tablist" aria-label="Backtest records">
-        {TABS.map((tab) => (
-          <button key={tab} type="button" className={activeTab === tab ? 'is-active' : ''} onClick={() => setActiveTab(tab)}>
-            {tab}
+        <div className="backtest-tabs__list">
+          {TABS.map((tab) => (
+            <button key={tab} type="button" className={activeTab === tab ? 'is-active' : ''} onClick={() => setActiveTab(tab)}>
+              {tab}
+            </button>
+          ))}
+        </div>
+
+        <div className="backtest-panel-controls">
+          <button type="button" onClick={onCollapse} title={collapsed ? 'Expand orders panel' : 'Collapse orders panel'} aria-label={collapsed ? 'Expand orders panel' : 'Collapse orders panel'}>
+            {collapsed ? <ChevronUp size={16} aria-hidden="true" /> : <ChevronDown size={16} aria-hidden="true" />}
           </button>
-        ))}
+          <button type="button" onClick={onClose} title="Hide orders panel" aria-label="Hide orders panel">
+            <X size={16} aria-hidden="true" />
+          </button>
+        </div>
       </div>
 
-      <div className="backtest-table-wrap">
+      {!collapsed && <div className="backtest-table-wrap">
         {activeTab === 'Orders' && (
           orders.length ? (
             <table>
@@ -105,7 +138,7 @@ function BacktestBottomPanel({ orders, openPositions, closedPositions, journalDr
             </table>
           ) : <EmptyState label="Local journal drafts and saved backtest notes appear here." />
         )}
-      </div>
+      </div>}
     </section>
   );
 }

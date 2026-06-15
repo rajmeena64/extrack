@@ -108,6 +108,52 @@
   font-weight: 500;
 }
 
+.header-sync-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 8px;
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: 4px;
+}
+
+.header-sync-btn:hover:not(:disabled) {
+  background: var(--bg-primary);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.header-sync-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.header-sync-btn.is-syncing {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin-anim {
+  animation: spin 1s linear infinite;
+}
+
 .dark-mode .dashboard-header__meta-pill {
   color: #c4cee2;
 }

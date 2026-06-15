@@ -3,7 +3,7 @@ import { pricingPlans } from './LandingData';
 
 const PricingSection = ({ onCTA }) => {
   return (
-    <section className="py-24 px-margin-mobile md:px-margin-desktop max-w-7xl mx-auto" id="pricing">
+    <section className="py-8 px-margin-mobile md:px-margin-desktop max-w-7xl mx-auto" id="pricing">
       <div className="text-center mb-20">
         <h2 className="font-headline-lg text-headline-lg mb-sm">
           Professional tools for <span className="text-primary">every stage</span>.
