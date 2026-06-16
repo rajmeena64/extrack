@@ -1,6 +1,6 @@
 const express = require("express");
 const axios = require("axios");
-const { createRateLimiter } = require("../middleware/rateLimit");
+const { createRateLimiter } = require("../../core/rateLimiter/index");
 
 const router = express.Router();
 const marketDataRateLimiter = createRateLimiter({

@@ -1,16 +1,16 @@
 const express = require('express');
 const router = express.Router();
-const pool = require('../config/database');
+const pool = require('../../infra/db/database');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const { createRateLimiter } = require('../middleware/rateLimit');
-const { hashToken, secretsMatch } = require('../utils/security');
-const { logAuthTableUse, TABLES, USER_SELECT } = require('../config/tables');
+const { createRateLimiter } = require('../../core/rateLimiter/index');
+const { hashToken, secretsMatch } = require('../../shared/utils/security');
+const { logAuthTableUse, TABLES, USER_SELECT } = require('../../config/tables');
 const {
     currencyCode,
     rejectUnexpectedFields,
     trimString,
-} = require('../validators/common');
+} = require('../../api/validators/common');
 
 // Separate secrets for access and refresh tokens
 const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET;

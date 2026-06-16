@@ -1,13 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const pool = require('../config/database');
-const cloudinary = require('../services/cloudinary');
-const upload = require('../middleware/upload');
+const pool = require('../../infra/db/database');
+const cloudinary = require('../../infra/cache/cloudinary');
+const upload = require('../../infra/cache/upload');
 const fs = require('fs');
-const { authCheck } = require('./auth');
-const { createRateLimiter } = require('../middleware/rateLimit');
+const { authCheck } = require('../../domains/auth/controller');
+const { createRateLimiter } = require('../../core/rateLimiter/index');
 const { trimString } = require('../validators/common');
-const { API_TRADE_SELECT, MANUAL_TRADE_SELECT, TABLES } = require('../config/tables');
+const { API_TRADE_SELECT, MANUAL_TRADE_SELECT, TABLES } = require('../../config/tables');
 
 const screenshotRateLimiter = createRateLimiter({
     windowMs: 60 * 1000,

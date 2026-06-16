@@ -4,7 +4,7 @@ const http = require('http');
 const WebSocket = require('ws');
 const path = require('path');
 const jwt = require('jsonwebtoken');
-require('dotenv').config({ path: path.join(__dirname, '..', '.env'), quiet: true });
+require('dotenv').config({ path: path.join(__dirname, '.env'), quiet: true });
 const Sentry = require('@sentry/node');
 
 Sentry.init({
@@ -28,7 +28,7 @@ if (!process.env.JWT_REFRESH_SECRET) {
 }
 
 if (process.env.NODE_ENV === 'production') {
-  if (fs.existsSync(path.join(__dirname, '..', '.env'))) {
+  if (fs.existsSync(path.join(__dirname, '.env'))) {
     missingEnv.push('remove backend .env files from production deploy and use platform-managed secrets');
   }
 
@@ -60,7 +60,7 @@ if (missingEnv.length > 0) {
 /* =======================
    MIDDLEWARES
 ======================= */
-const corsMiddleware = require('./middleware/cors');
+const corsMiddleware = require('./api/middleware/cors');
 
 const cookieParser = require('cookie-parser');
 app.use(corsMiddleware);
@@ -117,23 +117,25 @@ app.use((req, res, next) => {
 /* =======================
    ROUTES
 ======================= */
-const authRoutes = require('./routes/auth');
-const secureAuthRoutes = require('./routes/secureAuth');
-const tradeRoutes = require('./routes/trade');
-const screenshotRoutes = require('./routes/screenshot');
-const analyticsRoutes = require('./routes/analytics');
-const aiAnalysisRoutes = require('./routes/aiAnalysis');
-const mt5Routes = require('./routes/mt5');
-const metaRoutes = require('./routes/meta');
-const wsBroadcast = require('./middleware/wsBroadcast');
-const settingsRoutes = require('./routes/settings');
+const authRoutes = require('./api/routes/auth');
+const secureAuthRoutes = require('./api/routes/secureAuth');
+const tradeRoutes = require('./api/routes/trade');
+const screenshotRoutes = require('./api/routes/screenshot');
+const analyticsRoutes = require('./api/routes/analytics');
+const aiAnalysisRoutes = require('./api/routes/aiAnalysis');
+const mt5Routes = require('./api/routes/mt5');
+const metaRoutes = require('./api/routes/meta');
+const wsBroadcast = require('./core/websocket/wsBroadcast');
+const settingsRoutes = require('./api/routes/settings');
 
-const apiRoutes = require('./routes/Api');
+const apiRoutes = require('./api/routes/Api');
 
-const binanceRoutes = require('./routes/binance');
-const ohlcvRoute = require("./routes/ohlcv.route");
+const clickhouse = require('./infra/db/clickhouse/clickhouse');
 
-const { registerCtraderRoutes, ensureCtraderTokenStore } = require('./routes/ctrader');
+const binanceRoutes = require('./api/routes/binance');
+const ohlcvRoute = require("./api/routes/ohlcv.route");
+
+const { registerCtraderRoutes, ensureCtraderTokenStore } = require('./api/routes/ctrader');
 
 
 // **sab API routes pe automatically apply**
@@ -153,7 +155,7 @@ app.use('/api', apiRoutes);
 app.use("/api/ohlcv", ohlcvRoute);
 
 
-app.use(express.static(path.join(__dirname, '../../js')));
+app.use(express.static(path.join(__dirname, '../js')));
 
 
 

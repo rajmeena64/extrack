@@ -9,7 +9,7 @@ import {
 } from './tradeSimulator';
 
 export const INITIAL_BACKTEST_STATE = {
-  symbol: 'XAUUSD',
+  symbol: 'USDJPY',
   timeframe: '1m',
   sessionDate: new Date().toISOString().split('T')[0],
   candles: [],

@@ -1,10 +1,10 @@
 // File: meta.js
 const express = require('express');
 const router = express.Router();
-const pool = require('../config/database');
-const { authCheck } = require('./auth');
-const { TABLES } = require('../config/tables');
-const { encryptMT5Password } = require('../services/mt5Credentials');
+const pool = require('../../infra/db/database');
+const { authCheck } = require('../../domains/auth/controller');
+const { TABLES } = require('../../config/tables');
+const { encryptMT5Password } = require('../../integrations/mt5/credentials.service');
 const { currencyCode, trimString } = require('../validators/common');
 
 // ======= UTILITY FUNCTIONS =======

@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const pool = require('../config/database');
-const { authCheck } = require('./auth');
-const { TABLES } = require('../config/tables');
+const pool = require('../../infra/db/database');
+const { authCheck } = require('../../domains/auth/controller');
+const { TABLES } = require('../../config/tables');
 
 const SETTINGS_BLOB_KEY = 'x9$eA.7';
 const OBFUSCATION_PREFIX = 'v1.';

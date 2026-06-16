@@ -1,12 +1,13 @@
 {
     "name": "trading-backend",
     "scripts": {
-        "start": "node server/app.js",
-        "check": "node --check server/app.js",
+        "start": "node app.js",
+        "check": "node --check app.js",
         "migrate": "node scripts/run-migrations.js"
     },
     "dependencies": {
         "@aws-sdk/client-s3": "^3.1067.0",
+        "@clickhouse/client": "^1.20.0",
         "@dsnp/parquetjs": "^1.8.7",
         "@sentry/node": "^10.53.1",
         "axios": "^1.13.2",

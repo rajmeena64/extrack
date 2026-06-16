@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const pool = require('../config/database');
-const { authCheck } = require('./auth');
-const { API_TRADE_SELECT, MANUAL_TRADE_SELECT, TABLES } = require('../config/tables');
+const pool = require('../../infra/db/database');
+const { authCheck } = require('../auth/controller');
+const { API_TRADE_SELECT, MANUAL_TRADE_SELECT, TABLES } = require('../../config/tables');
 
 const REAL_API_TRADE_FILTER = `
     symbol IS NOT NULL

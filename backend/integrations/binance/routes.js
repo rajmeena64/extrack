@@ -1,9 +1,9 @@
 const express = require("express");
 const zlib = require("zlib");
 const router = express.Router();
-const { createRateLimiter } = require("../middleware/rateLimit");
-const { fetchCtraderKlines } = require("./ctrader");
-const { normalizeStoredSymbol } = require("../utils/symbols");
+const { createRateLimiter } = require("../../core/rateLimiter/index");
+const { fetchCtraderKlines } = require("../ctrader/socket.client");
+const { normalizeStoredSymbol } = require("../../shared/utils/symbols");
 
 const FUTURES_BASE_URL = "https://fapi.binance.com";
 const SPOT_DATA_BASE_URL = "https://data-api.binance.vision";

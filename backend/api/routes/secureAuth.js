@@ -1,8 +1,8 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
-const pool = require('../config/database');
-const { logAuthTableUse, TABLES, USER_SELECT } = require('../config/tables');
-const { createRateLimiter } = require('../middleware/rateLimit');
+const pool = require('../../infra/db/database');
+const { logAuthTableUse, TABLES, USER_SELECT } = require('../../config/tables');
+const { createRateLimiter } = require('../../core/rateLimiter/index');
 const {
   changePasswordSchema,
   emailOnlySchema,
@@ -11,19 +11,19 @@ const {
   resetPasswordSchema,
   signupSchema,
   tokenSchema,
-} = require('../validators/authSchemas');
+} = require('../../domains/auth/validator');
 const {
   clearAuthCookies,
   generateRawToken,
   hashToken,
   issueSession,
   verifyAccessToken,
-} = require('../services/authTokens');
+} = require('../../domains/auth/service');
 const {
   sendPasswordChangedEmail,
   sendPasswordResetEmail,
   sendVerificationEmail,
-} = require('../services/authEmail');
+} = require('../../domains/auth/email.service');
 
 const router = express.Router();
 const configuredBcryptCost = Number.parseInt(process.env.BCRYPT_COST || '12', 10);

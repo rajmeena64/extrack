@@ -1,12 +1,12 @@
 const express = require("express");
 const crypto = require("crypto");
 const router = express.Router();
-const pool = require('../config/database');
-const { TABLES } = require('../config/tables');
-const { authCheck } = require('./auth');
-const { decryptMT5Password, encryptMT5Password } = require('../services/mt5Credentials');
-const { secretsMatch, requireIngestSecret } = require('../utils/security');
-const { trimString } = require('../validators/common');
+const pool = require('../../infra/db/database');
+const { TABLES } = require('../../config/tables');
+const { authCheck } = require('../../domains/auth/controller');
+const { decryptMT5Password, encryptMT5Password } = require('./credentials.service');
+const { secretsMatch, requireIngestSecret } = require('../../shared/utils/security');
+const { trimString } = require('../../api/validators/common');
 
 const REQUEST_STATUSES = new Set([
     'creating_terminal',

@@ -1,22 +1,22 @@
 const express = require('express');
 const router = express.Router();
-const pool = require('../config/database');
-const { authCheck } = require('./auth');
-const { API_TRADE_SELECT, MANUAL_TRADE_SELECT, TABLES } = require('../config/tables');
-const { createRateLimiter } = require('../middleware/rateLimit');
-const { requireIngestSecret } = require('../utils/security');
+const pool = require('../../infra/db/database');
+const { authCheck } = require('../auth/controller');
+const { API_TRADE_SELECT, MANUAL_TRADE_SELECT, TABLES } = require('../../config/tables');
+const { createRateLimiter } = require('../../core/rateLimiter/index');
+const { requireIngestSecret } = require('../../shared/utils/security');
 const {
     encryptMT5Password,
     verifyMT5Password,
-} = require('../services/mt5Credentials');
-const { normalizeStoredSymbol } = require('../utils/symbols');
+} = require('../../integrations/mt5/credentials.service');
+const { normalizeStoredSymbol } = require('../../shared/utils/symbols');
 const {
     enumValue,
     isoDate,
     rejectUnexpectedFields,
     timestampValue,
     trimString,
-} = require('../validators/common');
+} = require('../../api/validators/common');
 
 let apiTradeMetadataColumnsReady = false;
 let tradesUniqueIdIndexReady = false;

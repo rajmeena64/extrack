@@ -1,7 +1,7 @@
 const express = require('express');
 const axios = require('axios');
-const { authCheck } = require('./auth');
-const { createRateLimiter } = require('../middleware/rateLimit');
+const { authCheck } = require('../../domains/auth/controller');
+const { createRateLimiter } = require('../../core/rateLimiter/index');
 
 const router = express.Router();
 const aiAnalysisRateLimiter = createRateLimiter({

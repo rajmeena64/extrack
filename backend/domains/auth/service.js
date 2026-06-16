@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
-const { hashToken } = require('../utils/security');
-const { logAuthTableUse, TABLES } = require('../config/tables');
+const { hashToken } = require('../../shared/utils/security');
+const { logAuthTableUse, TABLES } = require('../../config/tables');
 
 const accessSecret = process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET;
 const accessExpiresIn = process.env.JWT_ACCESS_EXPIRES_IN || '15m';

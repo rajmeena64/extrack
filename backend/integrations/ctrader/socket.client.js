@@ -5,15 +5,15 @@ const WebSocket = require('ws');
 const protobuf = require("protobufjs");
 const fs = require('fs');
 const _path = require('path');
-const pool = require('../config/database');
-const { authCheck } = require('./auth');
-const { TABLES } = require('../config/tables');
-const { createRateLimiter } = require('../middleware/rateLimit');
+const pool = require('../../infra/db/database');
+const { authCheck } = require('../../domains/auth/controller');
+const { TABLES } = require('../../config/tables');
+const { createRateLimiter } = require('../../core/rateLimiter/index');
 const {
   decryptMT5Password,
   encryptMT5Password,
-} = require('../services/mt5Credentials');
-const { normalizeStoredSymbol } = require('../utils/symbols');
+} = require('../mt5/credentials.service');
+const { normalizeStoredSymbol } = require('../../shared/utils/symbols');
 
 let root;
 let ws;
@@ -26,7 +26,7 @@ let tokensLoadedFromStore = false;
 let tokenRefreshBlockedUntil = 0;
 let lastTokenRefreshError = '';
 const ADMIN_ACCOUNT_TYPES = new Set(['admin', 'superadmin']);
-const PROTO_DIR = _path.join(__dirname, '..', 'proto');
+const PROTO_DIR = _path.join(__dirname, 'protobuf');
 const PRICE_SCALE = 100000;
 const CTRADER_PERIODS = {
   M1: 1,
