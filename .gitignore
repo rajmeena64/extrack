@@ -32,3 +32,8 @@ __pycache__/
 backend/server/.env
 backend/server/.env.*
 .aider*
+
+# AI assistant local files
+.codex/
+CLAUDE.md
+GEMINI.md
