@@ -1,7 +1,7 @@
 // module.exports = require('../../domains/market-data/klines.service');
 
 const express = require('express');
-const { getOhlcvRange, getLatestCandle } = require('../../domains/market-data/ohlcv.service');
+const { getOhlcvRange, getLatestCandle } = require('../../domains/market-data/Ohlcv.service');
 
 const router = express.Router();
 
