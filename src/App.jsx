@@ -15,6 +15,7 @@ import { loadCachedUserSettings, loadUserSettings, saveUserSettings } from './ut
 import { markPerf, measurePerf } from './utils/perfMarks';
 import VerifyEmailPage from './components/Auth/VerifyEmailPage';
 import ResetPasswordPage from './components/Auth/ResetPasswordPage';
+import OAuthCallbackPage from './components/Auth/OAuthCallbackPage';
 import LandingPage from './components/Landing/LandingPage';
 import AppShell from './components/Layout/AppShell';
 import MainContentWrapper from './components/Layout/MainContentWrapper';
@@ -219,6 +220,12 @@ function CachedMainRoutes({
       {!activeRouteKey && (
         <Suspense fallback={<RouteFallback />}>
           <Routes>
+            <Route path="/demo/*" element={<LandingPage />} />
+            <Route path="/features/*" element={<LandingPage />} />
+            <Route path="/documentation/*" element={<LandingPage />} />
+            <Route path="/privacy" element={<LandingPage />} />
+            <Route path="/terms" element={<LandingPage />} />
+            <Route path="/auth/oauth-callback" element={<OAuthCallbackPage />} />
             <Route path="/verify-email" element={<VerifyEmailPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route
@@ -597,6 +604,7 @@ function App() {
         <Routes>
           <Route path="/verify-email" element={<VerifyEmailPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/auth/oauth-callback" element={<OAuthCallbackPage />} />
           <Route path="*" element={<LandingPage />} />
         </Routes>
       )}

@@ -1,0 +1,38 @@
+[
+  {
+    "symbol": "LBR2",
+    "name": "Random Length Lumber",
+    "type": "commodity",
+    "category": "forestry"
+  },
+  {
+    "symbol": "FRPLYWOOD",
+    "name": "Plywood",
+    "type": "commodity",
+    "category": "forestry"
+  },
+  {
+    "symbol": "OSB",
+    "name": "Oriented Strand Board",
+    "type": "commodity",
+    "category": "forestry"
+  },
+  {
+    "symbol": "PULP",
+    "name": "Wood Pulp",
+    "type": "commodity",
+    "category": "forestry"
+  },
+  {
+    "symbol": "FRPAPER",
+    "name": "Paper",
+    "type": "commodity",
+    "category": "forestry"
+  },
+  {
+    "symbol": "FRNEWSPRINT",
+    "name": "Newsprint",
+    "type": "commodity",
+    "category": "forestry"
+  }
+]

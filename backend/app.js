@@ -130,10 +130,9 @@ const settingsRoutes = require('./api/routes/settings');
 
 const apiRoutes = require('./api/routes/Api');
 
-const clickhouse = require('./infra/db/clickhouse/clickhouse');
-
 const binanceRoutes = require('./api/routes/binance');
 const ohlcvRoute = require("./api/routes/ohlcv.route");
+const instrumentRoutes = require('./instruments/instrumentRoutes');
 
 const { registerCtraderRoutes, ensureCtraderTokenStore } = require('./api/routes/ctrader');
 
@@ -151,6 +150,7 @@ app.use('/api', mt5Routes);
 app.use('/api', metaRoutes);
 app.use('/api', settingsRoutes);
 app.use('/api', binanceRoutes);
+app.use('/api/instruments', instrumentRoutes);
 app.use('/api', apiRoutes);
 app.use("/api/ohlcv", ohlcvRoute);
 

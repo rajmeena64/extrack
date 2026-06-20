@@ -15,6 +15,65 @@ The React Compiler is not enabled on this template because of its impact on dev 
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
 
+## Google OAuth Setup
+
+Entrack supports Google signup/login through the backend OAuth flow:
+
+1. Frontend redirects to `GET /api/auth/google`.
+2. Google redirects back to `GET /api/auth/google/callback`.
+3. Backend creates a short-lived one-time login code.
+4. Frontend `/auth/oauth-callback` exchanges that code with `POST /api/auth/oauth/exchange`.
+5. Backend issues the normal Entrack access token and refresh cookie.
+
+Required backend environment:
+
+```bash
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_CALLBACK_URL=http://localhost:5000/api/auth/google/callback
+FRONTEND_URL=http://localhost:5173
+```
+
+Production example:
+
+```bash
+GOOGLE_CALLBACK_URL=https://api.entrack.in/api/auth/google/callback
+FRONTEND_URL=https://www.entrack.in
+ALLOWED_ORIGINS=https://www.entrack.in,https://entrack.in
+COOKIE_SECURE=true
+COOKIE_SAMESITE=none
+```
+
+Frontend environment:
+
+```bash
+VITE_API_URL=http://localhost:5000
+```
+
+Google Cloud Console values:
+
+Authorized JavaScript origins:
+
+```text
+http://localhost:5173
+https://entrack.in
+https://www.entrack.in
+```
+
+Authorized redirect URIs:
+
+```text
+http://localhost:5000/api/auth/google/callback
+https://api.entrack.in/api/auth/google/callback
+```
+
+Run backend migrations before using Google login:
+
+```bash
+cd backend
+npm run migrate
+```
+
 ## VPS MT5 Template Setup
 
 The VPS agent creates every user MT5 instance from a prepared MT5 template. The template is a ready MT5 environment with broker server discovery data already initialized. It is not a saved user account, and it must not contain any real user's login session.

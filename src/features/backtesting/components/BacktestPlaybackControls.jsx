@@ -1,14 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, GripHorizontal, Pause, Play } from '../../../icons/lucideIcons';
 
 const SPEEDS = [1, 2, 5, 10];
 
-function formatReplayTime(candle) {
-  if (!candle?.time) return 'No candle';
-  return new Date(candle.time * 1000).toLocaleString();
-}
-
-function BacktestPlaybackControls({ isPlaying, speed, currentCandle, onTogglePlay, onStep, onSpeedChange }) {
+function BacktestPlaybackControls({ isPlaying, speed, onTogglePlay, onStep, onSpeedChange }) {
   const [pos, setPos] = useState({ x: 20, y: 150 });
   const [isDragging, setIsDragging] = useState(false);
   const dragRef = useRef(null);

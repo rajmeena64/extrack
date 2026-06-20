@@ -3,7 +3,7 @@ import React from 'react';
 const currency = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 });
 
 function formatProfitFactor(value) {
-  if (value === Infinity) return '∞';
+  if (value === Infinity) return 'Infinity';
   return Number(value || 0).toFixed(2);
 }
 

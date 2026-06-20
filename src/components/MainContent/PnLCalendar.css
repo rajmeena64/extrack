@@ -77,13 +77,19 @@
   font-weight: 600;
 }
 
-.calendar-settings-menu__row select {
+.calendar-settings-menu__row .custom-select {
+  width: 122px;
+}
+
+.calendar-settings-menu__row .custom-select__trigger {
   min-height: 30px;
   border: 1px solid var(--border-light);
   border-radius: 8px;
   padding: 4px 8px;
   background: var(--bg-card);
   color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .calendar-settings-menu__number {

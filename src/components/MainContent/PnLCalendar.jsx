@@ -15,6 +15,7 @@ import api from '../../utils/serve';
 import { getTradeDisplayDate } from '../../utils/tradeTime';
 import { loadCachedUserSettings, loadUserSettings, saveUserSettings } from '../../utils/userSettings';
 import InfoTooltip from '../Common/InfoTooltip';
+import CustomSelect from '../Common/CustomSelect';
 
 const MONTH_NAMES = [
   'January',
@@ -668,16 +669,17 @@ function PnLCalendar({ trades, currencyCode = 'USD' }) {
             >
               <span className="calendar-settings-menu__title">Calendar settings</span>
 
-              <label className="calendar-settings-menu__row">
+              <div className="calendar-settings-menu__row">
                 <span>Week starts on</span>
-                <select
+                <CustomSelect
                   value={calendarSettings.weekStartsOn}
                   onChange={(event) => updateCalendarSettings({ weekStartsOn: event.target.value })}
-                >
-                  <option value="sun">Sunday</option>
-                  <option value="mon">Monday</option>
-                </select>
-              </label>
+                  options={[
+                    { value: 'sun', label: 'Sunday' },
+                    { value: 'mon', label: 'Monday' },
+                  ]}
+                />
+              </div>
 
               <label className="calendar-settings-menu__option">
                 <input

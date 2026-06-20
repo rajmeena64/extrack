@@ -9,9 +9,13 @@ import {
 } from './tradeSimulator';
 
 export const INITIAL_BACKTEST_STATE = {
+  sessionId: '',
+  sessionName: '',
   symbol: 'USDJPY',
   timeframe: '1m',
   sessionDate: new Date().toISOString().split('T')[0],
+  sessionStartTime: '',
+  sessionEndTime: '',
   candles: [],
   currentIndex: 80,
   isPlaying: false,
@@ -45,6 +49,67 @@ export function loadCandles(state, candles) {
     entryPrice: currentCandle?.close || state.entryPrice,
     stopLoss: state.stopLoss || (currentCandle?.close ? currentCandle.close * 0.992 : state.stopLoss),
     takeProfit: state.takeProfit || (currentCandle?.close ? currentCandle.close * 1.016 : state.takeProfit),
+  };
+}
+
+export function startBacktestSessionState(state, session, candles) {
+  const nextCandles = Array.isArray(candles) ? candles : [];
+  const nextIndex = Math.max(nextCandles.length - 1, 0);
+  const currentCandle = getCurrentCandle(nextCandles, nextIndex);
+  const initialBalance = Number(session.initialBalance) || state.initialBalance;
+
+  return {
+    ...state,
+    sessionId: session.sessionId || session.id || '',
+    sessionName: session.sessionName || '',
+    symbol: session.symbol || state.symbol,
+    timeframe: session.timeframe || state.timeframe,
+    sessionDate: session.startTime ? session.startTime.slice(0, 10) : state.sessionDate,
+    sessionStartTime: session.startTime || '',
+    sessionEndTime: session.endTime || '',
+    candles: nextCandles,
+    currentIndex: nextIndex,
+    balance: initialBalance,
+    initialBalance,
+    entryPrice: currentCandle?.close || 0,
+    stopLoss: currentCandle?.close ? currentCandle.close * 0.992 : 0,
+    takeProfit: currentCandle?.close ? currentCandle.close * 1.016 : 0,
+    openPositions: [],
+    closedPositions: [],
+    orders: [],
+    journalDrafts: [],
+    isPlaying: false,
+  };
+}
+
+export function resumeBacktestSessionState(state, session, candles) {
+  const baseState = startBacktestSessionState(state, session, candles);
+  const currentTime = Number(session.currentTime || 0);
+  const restoredIndex = currentTime
+    ? Math.max(candles.findIndex((candle) => candle.time >= currentTime), 0)
+    : Number(session.currentIndex);
+  const safeIndex = Number.isFinite(restoredIndex)
+    ? Math.min(Math.max(restoredIndex, 0), Math.max(candles.length - 1, 0))
+    : baseState.currentIndex;
+  const currentCandle = getCurrentCandle(candles, safeIndex);
+
+  return {
+    ...baseState,
+    currentIndex: safeIndex,
+    balance: Number(session.balance) || baseState.balance,
+    selectedOrderSide: session.selectedOrderSide || baseState.selectedOrderSide,
+    orderType: session.orderType || baseState.orderType,
+    entryPrice: currentCandle?.close || Number(session.entryPrice) || baseState.entryPrice,
+    stopLoss: Number(session.stopLoss) || baseState.stopLoss,
+    takeProfit: Number(session.takeProfit) || baseState.takeProfit,
+    riskPercent: Number(session.riskPercent) || baseState.riskPercent,
+    riskAmount: Number(session.riskAmount) || baseState.riskAmount,
+    positionSize: Number(session.positionSize) || baseState.positionSize,
+    openPositions: Array.isArray(session.openPositions) ? session.openPositions : [],
+    closedPositions: Array.isArray(session.closedPositions) ? session.closedPositions : [],
+    orders: Array.isArray(session.orders) ? session.orders : [],
+    journalDrafts: Array.isArray(session.journalDrafts) ? session.journalDrafts : [],
+    isPlaying: false,
   };
 }
 

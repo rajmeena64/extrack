@@ -1,10 +1,16 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
+import { DayPicker } from 'react-day-picker';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import SymbolWithIcon from "../Common/SymbolWithIcon";
 import LegacyIcon from "../Common/LegacyIcon";
+import CustomSelect from "../Common/CustomSelect";
+import CustomTimePicker from "../Common/CustomTimePicker";
+import { CalendarMonthControls } from "../Common/DateRangePicker";
+import { Calendar } from "../../icons/lucideIcons";
 import api from "../../utils/serve";
 import { useAuth } from '../../context/AuthContext';
+import { filterInstruments, useInstruments } from '../../hooks/useInstruments';
 import { normalizeStoredSymbol } from "../../utils/symbols";
 import { parseTradeNumber, sanitizeDecimalInput, sanitizeSignedDecimalInput } from "../../utils/fieldValidation";
 import TradeSaveOverlay from './TradeSaveOverlay';
@@ -17,7 +23,123 @@ const generateTradeUniqueId = () => {
   return `manual-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 };
 
-function ManualEntryForm({ trades }) {
+const CATEGORY_FILTERS = {
+  stocks: (instrument) => instrument.type === 'stock',
+  crypto: (instrument) => instrument.category === 'crypto',
+  forex: (instrument) => instrument.type === 'forex',
+  commodities: (instrument) => instrument.type === 'commodity',
+};
+
+const SYMBOL_PLACEHOLDERS = {
+  stocks: 'AAPL',
+  crypto: 'BTCUSDT',
+  forex: 'EURUSD',
+  commodities: 'XAUUSD',
+};
+
+const CATEGORY_OPTIONS = [
+  { value: '', label: 'Select Category' },
+  { value: 'stocks', label: 'Stocks' },
+  { value: 'crypto', label: 'Crypto' },
+  { value: 'forex', label: 'Forex' },
+  { value: 'commodities', label: 'Commodities' },
+];
+
+const TRADE_TYPE_OPTIONS = [
+  { value: '', label: 'Select' },
+  { value: 'buy', label: 'Buy' },
+  { value: 'sell', label: 'Sell' },
+];
+
+const parseTradeDate = (value) => {
+  if (!value) return null;
+
+  const date = new Date(`${value}T00:00:00`);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const formatTradeDateValue = (date) => {
+  const pad = (value) => String(value).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+};
+
+const formatTradeDateLabel = (value) => {
+  const date = parseTradeDate(value);
+
+  if (!date) return 'Select date';
+
+  return new Intl.DateTimeFormat('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(date);
+};
+
+const normalizeCalendarMonth = (value) => {
+  const date = parseTradeDate(value) || new Date();
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+};
+
+function TradeDateField({ value, onChange, max }) {
+  const [open, setOpen] = useState(false);
+  const [pickerMonth, setPickerMonth] = useState(() => normalizeCalendarMonth(value));
+  const wrapperRef = useRef(null);
+  const selectedDate = parseTradeDate(value);
+  const maxDate = parseTradeDate(max);
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    const handlePointerDown = (event) => {
+      if (!wrapperRef.current?.contains(event.target)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => document.removeEventListener('pointerdown', handlePointerDown);
+  }, [open]);
+
+  return (
+    <div className="trade-single-date-field" ref={wrapperRef}>
+      <button
+        type="button"
+        className={selectedDate ? "trade-single-date-field__trigger" : "trade-single-date-field__trigger is-placeholder"}
+        onClick={() => {
+          setPickerMonth(normalizeCalendarMonth(value));
+          setOpen((current) => !current);
+        }}
+        aria-label="Trade date"
+      >
+        <Calendar size={14} aria-hidden="true" />
+        <span>{formatTradeDateLabel(value)}</span>
+      </button>
+
+      {open ? (
+        <div className="trade-single-date-field__popover">
+          <CalendarMonthControls month={pickerMonth} onMonthChange={setPickerMonth} />
+          <DayPicker
+            mode="single"
+            selected={selectedDate || undefined}
+            onSelect={(date) => {
+              if (!date) return;
+              onChange(formatTradeDateValue(date));
+              setOpen(false);
+            }}
+            month={pickerMonth}
+            onMonthChange={setPickerMonth}
+            disabled={maxDate ? { after: maxDate } : undefined}
+            fixedWeeks
+            showOutsideDays
+            className="trade-rdp trade-calendar-template add-trade-date-rdp"
+          />
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function ManualEntryForm() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -40,24 +162,39 @@ function ManualEntryForm({ trades }) {
   const [previewImage, setPreviewImage] = useState('');
   const [screenshotFile, setScreenshotFile] = useState(null);
   const [showSymbolSuggestions, setShowSymbolSuggestions] = useState(false);
+  const [showSymbolCategoryHint, setShowSymbolCategoryHint] = useState(false);
   const [saveError, setSaveError] = useState('');
   const screenshotInputRef = useRef(null);
   const symbolBlurTimeoutRef = useRef(null);
-  const symbols = useMemo(() => {
-    return [...new Set(trades?.map(t => t.symbol).filter(Boolean))];
-  }, [trades]);
+  const { data: instruments = [] } = useInstruments();
+  const isSymbolEnabled = Boolean(formData.category);
+  const categoryInstruments = useMemo(() => {
+    const filterByCategory = CATEGORY_FILTERS[formData.category];
+
+    if (!filterByCategory) return [];
+
+    return instruments.filter(filterByCategory);
+  }, [formData.category, instruments]);
   const filteredSymbols = useMemo(() => {
-    const query = formData.symbol.trim().toUpperCase();
-    if (!query) return symbols.slice(0, 8);
-    return symbols
-      .filter((symbol) => symbol.toUpperCase().includes(query))
-      .slice(0, 8);
-  }, [formData.symbol, symbols]);
+    if (!isSymbolEnabled) return [];
+
+    return filterInstruments(categoryInstruments, formData.symbol, 8);
+  }, [categoryInstruments, formData.symbol, isSymbolEnabled]);
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
     
-    if (id === 'symbol') {
+    if (id === 'category') {
+      setFormData(prev => ({
+        ...prev,
+        category: value,
+        symbol: ''
+      }));
+      setShowSymbolSuggestions(false);
+      setShowSymbolCategoryHint(false);
+    } else if (id === 'symbol') {
+      if (!isSymbolEnabled) return;
+
       setFormData(prev => ({
         ...prev,
         [id]: normalizeStoredSymbol(value)
@@ -106,6 +243,8 @@ function ManualEntryForm({ trades }) {
   };
 
   const selectSymbol = (symbol) => {
+    if (!isSymbolEnabled) return;
+
     setFormData(prev => ({
       ...prev,
       symbol: normalizeStoredSymbol(symbol)
@@ -264,7 +403,7 @@ function ManualEntryForm({ trades }) {
     }
 
     // Validate required fields
-    const requiredFields = ['symbol', 'tradeType', 'quantity', 'entryPrice', 'exitPrice', 'tradeDate', 'tradeTime', 'manualPNL'];
+    const requiredFields = ['category', 'symbol', 'tradeType', 'quantity', 'entryPrice', 'exitPrice', 'tradeDate', 'tradeTime', 'manualPNL'];
     const missingFields = requiredFields.filter(field => !formData[field]);
     
     if (missingFields.length > 0) {
@@ -317,17 +456,13 @@ function ManualEntryForm({ trades }) {
       {/* Top-left Category */}
       <div className="form-group category-top">
         <label htmlFor="category">Category</label>
-        <select
+        <CustomSelect
           id="category"
           value={formData.category}
           onChange={handleInputChange}
-        >
-          <option value="">Select Category</option>
-          <option value="stocks">Stocks</option>
-          <option value="crypto">Crypto</option>
-          <option value="forex">Forex</option>
-          <option value="commodities">Commodities</option>
-        </select>
+          options={CATEGORY_OPTIONS}
+          placeholder="Select Category"
+        />
       </div>
 
       {/* Horizontal row of other fields */}
@@ -345,31 +480,52 @@ function ManualEntryForm({ trades }) {
               id="symbol"
               value={formData.symbol}
               onChange={handleInputChange}
+              onClick={() => {
+                if (!isSymbolEnabled) {
+                  setShowSymbolCategoryHint(true);
+                }
+              }}
               onFocus={() => {
+                if (!isSymbolEnabled) {
+                  setShowSymbolCategoryHint(true);
+                  return;
+                }
+
                 if (symbolBlurTimeoutRef.current) {
                   clearTimeout(symbolBlurTimeoutRef.current);
                 }
+                setShowSymbolCategoryHint(false);
                 setShowSymbolSuggestions(true);
               }}
               onBlur={() => {
                 symbolBlurTimeoutRef.current = setTimeout(() => {
                   setShowSymbolSuggestions(false);
+                  setShowSymbolCategoryHint(false);
                 }, 120);
               }}
-              placeholder="BTCUSD"
+              placeholder={isSymbolEnabled ? SYMBOL_PLACEHOLDERS[formData.category] : "Click to choose symbol"}
               autoComplete="off"
+              readOnly={!isSymbolEnabled}
+              aria-disabled={!isSymbolEnabled}
+              aria-describedby={!isSymbolEnabled ? "symbol-category-hint" : undefined}
             />
+            {showSymbolCategoryHint && !isSymbolEnabled ? (
+              <div className="symbol-category-hint" id="symbol-category-hint" role="status">
+                Select a category first
+              </div>
+            ) : null}
             {showSymbolSuggestions && filteredSymbols.length > 0 ? (
               <div className="symbol-suggestions" role="listbox">
-                {filteredSymbols.map((symbol) => (
+                {filteredSymbols.map((instrument) => (
                   <button
-                    key={symbol}
+                    key={instrument.symbol}
                     type="button"
                     className="symbol-suggestion-item"
                     onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => selectSymbol(symbol)}
+                    onClick={() => selectSymbol(instrument.symbol)}
                   >
-                    <SymbolWithIcon symbol={symbol} size="sm" />
+                    <SymbolWithIcon symbol={instrument.symbol} size="sm" />
+                    <span>{instrument.name}</span>
                   </button>
                 ))}
               </div>
@@ -379,27 +535,32 @@ function ManualEntryForm({ trades }) {
 
         <div className="form-group">
           <label htmlFor="tradeType" className="required">Trade Type</label>
-          <select id="tradeType" value={formData.tradeType} onChange={handleInputChange}>
-            <option value="">Select</option>
-            <option value="buy">Buy</option>
-            <option value="sell">Sell</option>
-          </select>
+          <CustomSelect
+            id="tradeType"
+            value={formData.tradeType}
+            onChange={handleInputChange}
+            options={TRADE_TYPE_OPTIONS}
+            placeholder="Select"
+          />
         </div>
 
         <div className="form-group">
           <label htmlFor="tradeDate" className="required">Date</label>
-          <input 
-            type="date" 
-            id="tradeDate" 
-            value={formData.tradeDate} 
-            onChange={handleInputChange}
+          <TradeDateField
+            value={formData.tradeDate}
             max={new Date().toISOString().split('T')[0]}
+            onChange={(nextDate) => handleInputChange({ target: { id: 'tradeDate', value: nextDate } })}
           />
         </div>
 
         <div className="form-group">
           <label htmlFor="tradeTime" className="required">Time</label>
-          <input type="time" id="tradeTime" value={formData.tradeTime} onChange={handleInputChange}/>
+          <CustomTimePicker
+            id="tradeTime"
+            value={formData.tradeTime}
+            onChange={(nextTime) => handleInputChange({ target: { id: 'tradeTime', value: nextTime } })}
+            ariaLabel="Trade time"
+          />
         </div>
 
         <div className="form-group">

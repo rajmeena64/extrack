@@ -2,7 +2,12 @@ import { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import api from '../../../utils/serve';
 import { useAuth } from '../../../context/AuthContext';
-import { generateMockCandles } from '../data/mockCandles';
+import {
+  DEFAULT_OHLCV_CHUNK_LIMIT,
+  backtestSessionKey,
+  fetchOhlcvChunk,
+  mergeCandles,
+} from '../data/ohlcvChunks';
 import {
   INITIAL_BACKTEST_STATE,
   closePositionById,
@@ -10,6 +15,8 @@ import {
   loadCandles,
   mapBacktestTradeToJournalTrade,
   placeMarketOrder,
+  resumeBacktestSessionState,
+  startBacktestSessionState,
   stepReplay,
 } from '../engine/backtestEngine';
 import { getCurrentCandle } from '../engine/candleReplay';
@@ -19,22 +26,35 @@ import {
 } from '../engine/riskCalculator';
 import { useBacktestReplay } from './useBacktestReplay';
 
-const INTERVAL_MAP = {
-  '1m': '1m',
-  '5m': '5m',
-  '15m': '15m',
-  '30m': '30m',
-  '1h': '1h',
-  '4h': '4h',
-  '1D': '1d',
-};
-
 function reducer(state, action) {
   switch (action.type) {
     case 'patch':
       return { ...state, ...action.patch };
     case 'candles':
       return loadCandles(state, action.candles);
+    case 'startSession':
+      return startBacktestSessionState(state, action.session, action.candles);
+    case 'resumeSession':
+      return resumeBacktestSessionState(state, action.session, action.candles);
+    case 'mergeCandles': {
+      const currentSessionKey = backtestSessionKey({
+        symbol: state.symbol,
+        timeframe: state.timeframe,
+        sessionStartTime: state.sessionStartTime,
+        sessionEndTime: state.sessionEndTime,
+      });
+
+      if (action.sessionKey && action.sessionKey !== currentSessionKey) {
+        return state;
+      }
+
+      const currentTime = getCurrentCandle(state.candles, state.currentIndex)?.time;
+      const nextCandles = mergeCandles(state.candles, action.candles);
+      const nextIndex = currentTime
+        ? Math.max(nextCandles.findIndex((candle) => candle.time === currentTime), 0)
+        : state.currentIndex;
+      return loadCandles({ ...state, currentIndex: nextIndex }, nextCandles);
+    }
     case 'step':
       return stepReplay(state, action.direction);
     case 'placeOrder':
@@ -48,17 +68,9 @@ function reducer(state, action) {
   }
 }
 
-const normalizeKline = (item) => ({
-  time: Number(item[0]) / 1000,
-  open: Number(item[1]),
-  high: Number(item[2]),
-  low: Number(item[3]),
-  close: Number(item[4]),
-  volume: Number(item[5] || 0),
-});
-
 export function useBacktestSession() {
   const [state, dispatch] = useReducer(reducer, INITIAL_BACKTEST_STATE);
+  const [hasSession, setHasSession] = useState(false);
   const [loadStatus, setLoadStatus] = useState('idle');
   const [journalStatus, setJournalStatus] = useState('');
   const { user } = useAuth();
@@ -79,85 +91,127 @@ export function useBacktestSession() {
     });
   }, [positionSize]);
 
-  // const loadMarketData = useCallback(async () => {
-  //   setLoadStatus('loading');
-  //   try {
-  //     const startTime = state.sessionDate ? new Date(state.sessionDate).getTime() : undefined;
-  //     const { data } = await api.get('/klines', {
-  //       params: {
-  //         symbol: state.symbol,
-  //         interval: INTERVAL_MAP[state.timeframe] || '1m',
-  //         limit: 5000,
-  //         category: 'crypto',
-  //         startTime,
-  //       },
-  //     });
-  //     const candles = Array.isArray(data) && data.length
-  //       ? data.map(normalizeKline).filter((candle) => Number.isFinite(candle.time))
-  //       : generateMockCandles(state.timeframe);
-  //     dispatch({ type: 'candles', candles });
-  //     setLoadStatus('live');
-  //   } catch {
-  //     dispatch({ type: 'candles', candles: generateMockCandles(state.timeframe) });
-  //     setLoadStatus('mock');
-  //   }
-  // }, [state.sessionDate, state.symbol, state.timeframe]);
+  const startSession = useCallback(async (sessionInput) => {
+    setLoadStatus('loading');
 
-const loadMarketData = useCallback(async () => {
-  setLoadStatus('loading');
+    try {
+      const startTime = new Date(sessionInput.startTime).toISOString();
+      const endTime = new Date(sessionInput.endTime).toISOString();
+      const { candles } = await fetchOhlcvChunk(queryClient, {
+        symbol: sessionInput.symbol,
+        timeframe: sessionInput.timeframe,
+        cursor: startTime,
+        direction: 'past',
+        limit: DEFAULT_OHLCV_CHUNK_LIMIT,
+      });
 
-  try {
-        const startDate = new Date("2023-01-10");
+      if (!candles.length) {
+        throw new Error('No candles returned before the selected start time');
+      }
 
-        const endDate = new Date(startDate);
-        endDate.setMonth(endDate.getMonth() + 3);
+      const normalizedSession = {
+        ...sessionInput,
+        sessionId: sessionInput.sessionId || sessionInput.id || `bt-${Date.now()}`,
+        startTime,
+        endTime,
+      };
 
-        const start = startDate.toISOString().split("T")[0];
-        const end = endDate.toISOString().split("T")[0];
+      dispatch({
+        type: 'startSession',
+        session: normalizedSession,
+        candles,
+      });
+      setHasSession(true);
+      setLoadStatus('live');
+      return normalizedSession;
+    } catch (err) {
+      console.warn('ohlcv.session_start_failed', err);
+      setLoadStatus('idle');
+      throw err;
+    }
+  }, [queryClient]);
 
-        console.log(start, end);
+  const resumeSession = useCallback(async (sessionInput) => {
+    setLoadStatus('loading');
 
-    console.log("Requesting:", { start, end });
+    try {
+      const startTime = new Date(sessionInput.startTime || sessionInput.sessionStartTime).toISOString();
+      const endTime = new Date(sessionInput.endTime || sessionInput.sessionEndTime).toISOString();
+      const currentTime = Number(sessionInput.currentTime || 0);
+      const cursor = currentTime > 0 ? new Date(currentTime * 1000).toISOString() : startTime;
+      const { candles } = await fetchOhlcvChunk(queryClient, {
+        symbol: sessionInput.symbol,
+        timeframe: sessionInput.timeframe || '1m',
+        cursor,
+        direction: 'past',
+        limit: DEFAULT_OHLCV_CHUNK_LIMIT,
+      });
 
-    const { data } = await api.get('/ohlcv', {
-      params: {
-        symbol: state.symbol,
-        start,
-        end,
-      },
+      if (!candles.length) {
+        throw new Error('No candles returned for the selected saved session');
+      }
+
+      dispatch({
+        type: 'resumeSession',
+        session: {
+          ...sessionInput,
+          sessionId: sessionInput.sessionId || sessionInput.id,
+          startTime,
+          endTime,
+        },
+        candles,
+      });
+      setHasSession(true);
+      setLoadStatus('live');
+    } catch (err) {
+      console.warn('ohlcv.session_resume_failed', err);
+      setLoadStatus('idle');
+      throw err;
+    }
+  }, [queryClient]);
+
+  const reloadCandles = useCallback(() => {
+    if (!state.sessionStartTime || !state.sessionEndTime) return Promise.resolve();
+    return startSession({
+      sessionName: state.sessionName,
+      symbol: state.symbol,
+      timeframe: state.timeframe,
+      startTime: state.sessionStartTime,
+      endTime: state.sessionEndTime,
+      initialBalance: state.initialBalance,
     });
+  }, [
+    startSession,
+    state.initialBalance,
+    state.sessionEndTime,
+    state.sessionName,
+    state.sessionStartTime,
+    state.symbol,
+    state.timeframe,
+  ]);
 
-    console.log("🔥 Backend Response:", data);
+  const changeTimeframe = useCallback((timeframe) => {
+    if (!state.sessionStartTime || !state.sessionEndTime) {
+      dispatch({ type: 'patch', patch: { timeframe } });
+      return Promise.resolve();
+    }
 
-    const candles = data.data.map((item) => ({
-      time: new Date(item.timestamp).getTime() / 1000,
-      open: Number(item.open),
-      high: Number(item.high),
-      low: Number(item.low),
-      close: Number(item.close),
-      volume: Number(item.volume),
-    }));
-
-    dispatch({ type: 'candles', candles });
-    setLoadStatus('live');
-
-  } catch (err) {
-    console.log("❌ Error:", err);
-
-    dispatch({
-      type: 'candles',
-      candles: generateMockCandles(state.timeframe),
+    return startSession({
+      sessionName: state.sessionName,
+      symbol: state.symbol,
+      timeframe,
+      startTime: state.sessionStartTime,
+      endTime: state.sessionEndTime,
+      initialBalance: state.initialBalance,
     });
-
-    setLoadStatus('mock');
-  }
-}, [state.symbol, state.sessionDate]);
-
-
-
-  useEffect(() => {
-    loadMarketData();
-  }, [loadMarketData]);
+  }, [
+    startSession,
+    state.initialBalance,
+    state.sessionEndTime,
+    state.sessionName,
+    state.sessionStartTime,
+    state.symbol,
+  ]);
 
   const step = useCallback((direction = 1) => {
     dispatch({ type: 'step', direction });
@@ -171,6 +225,15 @@ const loadMarketData = useCallback(async () => {
 
   const setField = useCallback((field, value) => {
     dispatch({ type: 'patch', patch: { [field]: value } });
+  }, []);
+
+  const mergeLoadedCandles = useCallback((candles, metadata = {}) => {
+    if (!Array.isArray(candles) || candles.length === 0) return;
+    dispatch({
+      type: 'mergeCandles',
+      candles,
+      sessionKey: metadata.sessionKey,
+    });
   }, []);
 
   const placeOrder = useCallback((order) => {
@@ -211,12 +274,17 @@ const loadMarketData = useCallback(async () => {
     currentCandle,
     stats,
     loadStatus,
+    hasSession,
     journalStatus,
     setField,
     step,
     placeOrder,
     closePosition,
     saveTradeToJournal,
-    reloadCandles: loadMarketData,
+    startSession,
+    resumeSession,
+    reloadCandles,
+    changeTimeframe,
+    mergeLoadedCandles,
   };
 }

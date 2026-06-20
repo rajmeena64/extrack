@@ -1,0 +1,106 @@
+.custom-select {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.custom-select__trigger {
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: var(--dashboard-card-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.25;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.46);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.custom-select__trigger span {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.custom-select__trigger.is-placeholder {
+  color: var(--text-muted);
+}
+
+.custom-select__trigger:hover,
+.custom-select__trigger:focus-visible,
+.custom-select__trigger[aria-expanded="true"] {
+  outline: none;
+  border-color: color-mix(in srgb, var(--accent-success-strong) 76%, var(--primary-dark) 24%);
+  box-shadow: 0 0 0 4px rgba(88, 212, 126, 0.14);
+}
+
+.custom-select__trigger:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+  box-shadow: none;
+}
+
+.custom-select__menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  z-index: 40;
+  max-height: 284px;
+  overflow-y: auto;
+  padding: 8px;
+  border: var(--dashboard-card-border);
+  border-radius: 16px;
+  background: var(--surface-elevated, var(--bg-secondary));
+  box-shadow: 0 24px 56px -34px rgba(15, 23, 42, 0.48);
+}
+
+.custom-select__option {
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.custom-select__option:hover,
+.custom-select__option:focus-visible,
+.custom-select__option.is-selected {
+  outline: none;
+  background: rgba(88, 212, 126, 0.1);
+  color: var(--heading);
+}
+
+.custom-select__option:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.dark-mode .custom-select__trigger {
+  background: var(--bg-card);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+}
+
+.dark-mode .custom-select__menu {
+  background: #11161f;
+}

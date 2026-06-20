@@ -1,0 +1,22 @@
+[
+  { "symbol": "EURCZK", "name": "Euro / Czech Koruna", "type": "forex", "category": "exotic" },
+  { "symbol": "EURDKK", "name": "Euro / Danish Krone", "type": "forex", "category": "exotic" },
+  { "symbol": "EURHUF", "name": "Euro / Hungarian Forint", "type": "forex", "category": "exotic" },
+  { "symbol": "EURNOK", "name": "Euro / Norwegian Krone", "type": "forex", "category": "exotic" },
+  { "symbol": "EURPLN", "name": "Euro / Polish Zloty", "type": "forex", "category": "exotic" },
+  { "symbol": "EURSEK", "name": "Euro / Swedish Krona", "type": "forex", "category": "exotic" },
+  { "symbol": "EURTRY", "name": "Euro / Turkish Lira", "type": "forex", "category": "exotic" },
+  { "symbol": "SGDJPY", "name": "Singapore Dollar / Japanese Yen", "type": "forex", "category": "exotic" },
+  { "symbol": "USDCZK", "name": "US Dollar / Czech Koruna", "type": "forex", "category": "exotic" },
+  { "symbol": "USDDKK", "name": "US Dollar / Danish Krone", "type": "forex", "category": "exotic" },
+  { "symbol": "USDHKD", "name": "US Dollar / Hong Kong Dollar", "type": "forex", "category": "exotic" },
+  { "symbol": "USDHUF", "name": "US Dollar / Hungarian Forint", "type": "forex", "category": "exotic" },
+  { "symbol": "USDMXN", "name": "US Dollar / Mexican Peso", "type": "forex", "category": "exotic" },
+  { "symbol": "USDNOK", "name": "US Dollar / Norwegian Krone", "type": "forex", "category": "exotic" },
+  { "symbol": "USDPLN", "name": "US Dollar / Polish Zloty", "type": "forex", "category": "exotic" },
+  { "symbol": "USDSEK", "name": "US Dollar / Swedish Krona", "type": "forex", "category": "exotic" },
+  { "symbol": "USDSGD", "name": "US Dollar / Singapore Dollar", "type": "forex", "category": "exotic" },
+  { "symbol": "USDTRY", "name": "US Dollar / Turkish Lira", "type": "forex", "category": "exotic" },
+  { "symbol": "USDZAR", "name": "US Dollar / South African Rand", "type": "forex", "category": "exotic" },
+  { "symbol": "ZARJPY", "name": "South African Rand / Japanese Yen", "type": "forex", "category": "exotic" }
+]

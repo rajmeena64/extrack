@@ -7,10 +7,10 @@ const toWebSocketUrl = (value) => {
 };
 
 const resolveApiUrl = () => {
-  const envUrl = normalizeUrl(import.meta.env.VITE_URL);
+  const envUrl = normalizeUrl(import.meta.env.VITE_API_URL || import.meta.env.VITE_URL);
 
   if (!envUrl) {
-    console.error('Missing required frontend env variable: VITE_URL');
+    console.error('Missing required frontend env variable: VITE_API_URL or VITE_URL');
   }
 
   return envUrl;

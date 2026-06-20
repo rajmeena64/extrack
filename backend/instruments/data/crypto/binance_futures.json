@@ -1,0 +1,4538 @@
+[
+  {
+    "type": "future",
+    "symbol": "0GUSDT",
+    "name": "0G/USDT",
+    "baseAsset": "0G",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "1000000BOBUSDT",
+    "name": "1000000BOB/USDT",
+    "baseAsset": "1000000BOB",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "1000000MOGUSDT",
+    "name": "1000000MOG/USDT",
+    "baseAsset": "1000000MOG",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "1000BONKUSDC",
+    "name": "1000BONK/USDC",
+    "baseAsset": "1000BONK",
+    "quoteAsset": "USDC",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "1000BONKUSDT",
+    "name": "1000BONK/USDT",
+    "baseAsset": "1000BONK",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "1000CATUSDT",
+    "name": "1000CAT/USDT",
+    "baseAsset": "1000CAT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "1000CHEEMSUSDT",
+    "name": "1000CHEEMS/USDT",
+    "baseAsset": "1000CHEEMS",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "1000FLOKIUSDT",
+    "name": "1000FLOKI/USDT",
+    "baseAsset": "1000FLOKI",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "1000LUNCUSDT",
+    "name": "1000LUNC/USDT",
+    "baseAsset": "1000LUNC",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "1000PEPEUSDC",
+    "name": "1000PEPE/USDC",
+    "baseAsset": "1000PEPE",
+    "quoteAsset": "USDC",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "1000PEPEUSDT",
+    "name": "1000PEPE/USDT",
+    "baseAsset": "1000PEPE",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "1000RATSUSDT",
+    "name": "1000RATS/USDT",
+    "baseAsset": "1000RATS",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "1000SATSUSDT",
+    "name": "1000SATS/USDT",
+    "baseAsset": "1000SATS",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "1000SHIBUSDC",
+    "name": "1000SHIB/USDC",
+    "baseAsset": "1000SHIB",
+    "quoteAsset": "USDC",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "1000SHIBUSDT",
+    "name": "1000SHIB/USDT",
+    "baseAsset": "1000SHIB",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "1000XECUSDT",
+    "name": "1000XEC/USDT",
+    "baseAsset": "1000XEC",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "1INCHUSDT",
+    "name": "1INCH/USDT",
+    "baseAsset": "1INCH",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "1MBABYDOGEUSDT",
+    "name": "1MBABYDOGE/USDT",
+    "baseAsset": "1MBABYDOGE",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "2ZUSDT",
+    "name": "2Z/USDT",
+    "baseAsset": "2Z",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "4USDT",
+    "name": "4/USDT",
+    "baseAsset": "4",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "AAVEUSDC",
+    "name": "AAVE/USDC",
+    "baseAsset": "AAVE",
+    "quoteAsset": "USDC",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "AAVEUSDT",
+    "name": "AAVE/USDT",
+    "baseAsset": "AAVE",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ACEUSDT",
+    "name": "ACE/USDT",
+    "baseAsset": "ACE",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ACHUSDT",
+    "name": "ACH/USDT",
+    "baseAsset": "ACH",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ACTUSDT",
+    "name": "ACT/USDT",
+    "baseAsset": "ACT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ACUUSDT",
+    "name": "ACU/USDT",
+    "baseAsset": "ACU",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ACXUSDT",
+    "name": "ACX/USDT",
+    "baseAsset": "ACX",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ADAUSDC",
+    "name": "ADA/USDC",
+    "baseAsset": "ADA",
+    "quoteAsset": "USDC",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ADAUSDT",
+    "name": "ADA/USDT",
+    "baseAsset": "ADA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "AERGOUSDT",
+    "name": "AERGO/USDT",
+    "baseAsset": "AERGO",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "AEROUSDT",
+    "name": "AERO/USDT",
+    "baseAsset": "AERO",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "AEVOUSDT",
+    "name": "AEVO/USDT",
+    "baseAsset": "AEVO",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "AGLDUSDT",
+    "name": "AGLD/USDT",
+    "baseAsset": "AGLD",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "AGTUSDT",
+    "name": "AGT/USDT",
+    "baseAsset": "AGT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "AIAUSDT",
+    "name": "AIA/USDT",
+    "baseAsset": "AIA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "AIGENSYNUSDT",
+    "name": "AIGENSYN/USDT",
+    "baseAsset": "AIGENSYN",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "AINUSDT",
+    "name": "AIN/USDT",
+    "baseAsset": "AIN",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "AIOTUSDT",
+    "name": "AIOT/USDT",
+    "baseAsset": "AIOT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "AIOUSDT",
+    "name": "AIO/USDT",
+    "baseAsset": "AIO",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "AIXBTUSDT",
+    "name": "AIXBT/USDT",
+    "baseAsset": "AIXBT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "AKEUSDT",
+    "name": "AKE/USDT",
+    "baseAsset": "AKE",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "AKTUSDT",
+    "name": "AKT/USDT",
+    "baseAsset": "AKT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ALCHUSDT",
+    "name": "ALCH/USDT",
+    "baseAsset": "ALCH",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ALGOUSDT",
+    "name": "ALGO/USDT",
+    "baseAsset": "ALGO",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ALICEUSDT",
+    "name": "ALICE/USDT",
+    "baseAsset": "ALICE",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ALLOUSDT",
+    "name": "ALLO/USDT",
+    "baseAsset": "ALLO",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ALLUSDT",
+    "name": "ALL/USDT",
+    "baseAsset": "ALL",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ALPINEUSDT",
+    "name": "ALPINE/USDT",
+    "baseAsset": "ALPINE",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ALTUSDT",
+    "name": "ALT/USDT",
+    "baseAsset": "ALT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ANIMEUSDT",
+    "name": "ANIME/USDT",
+    "baseAsset": "ANIME",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ANKRUSDT",
+    "name": "ANKR/USDT",
+    "baseAsset": "ANKR",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "APEUSDT",
+    "name": "APE/USDT",
+    "baseAsset": "APE",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "API3USDT",
+    "name": "API3/USDT",
+    "baseAsset": "API3",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "APRUSDT",
+    "name": "APR/USDT",
+    "baseAsset": "APR",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "APTUSDT",
+    "name": "APT/USDT",
+    "baseAsset": "APT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ARBUSDC",
+    "name": "ARB/USDC",
+    "baseAsset": "ARB",
+    "quoteAsset": "USDC",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ARBUSDT",
+    "name": "ARB/USDT",
+    "baseAsset": "ARB",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ARCUSDT",
+    "name": "ARC/USDT",
+    "baseAsset": "ARC",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ARIAUSDT",
+    "name": "ARIA/USDT",
+    "baseAsset": "ARIA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ARKMUSDT",
+    "name": "ARKM/USDT",
+    "baseAsset": "ARKM",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ARKUSDT",
+    "name": "ARK/USDT",
+    "baseAsset": "ARK",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ARPAUSDT",
+    "name": "ARPA/USDT",
+    "baseAsset": "ARPA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ARUSDT",
+    "name": "AR/USDT",
+    "baseAsset": "AR",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ASRUSDT",
+    "name": "ASR/USDT",
+    "baseAsset": "ASR",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ASTERUSDT",
+    "name": "ASTER/USDT",
+    "baseAsset": "ASTER",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ASTRUSDT",
+    "name": "ASTR/USDT",
+    "baseAsset": "ASTR",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ATHUSDT",
+    "name": "ATH/USDT",
+    "baseAsset": "ATH",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ATOMUSDT",
+    "name": "ATOM/USDT",
+    "baseAsset": "ATOM",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ATUSDT",
+    "name": "AT/USDT",
+    "baseAsset": "AT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "AUCTIONUSDT",
+    "name": "AUCTION/USDT",
+    "baseAsset": "AUCTION",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "AUSDT",
+    "name": "A/USDT",
+    "baseAsset": "A",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "AVAAIUSDT",
+    "name": "AVAAI/USDT",
+    "baseAsset": "AVAAI",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "AVAUSDT",
+    "name": "AVA/USDT",
+    "baseAsset": "AVA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "AVAXUSDC",
+    "name": "AVAX/USDC",
+    "baseAsset": "AVAX",
+    "quoteAsset": "USDC",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "AVAXUSDT",
+    "name": "AVAX/USDT",
+    "baseAsset": "AVAX",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "AVNTUSDT",
+    "name": "AVNT/USDT",
+    "baseAsset": "AVNT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "AWEUSDT",
+    "name": "AWE/USDT",
+    "baseAsset": "AWE",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "AXLUSDT",
+    "name": "AXL/USDT",
+    "baseAsset": "AXL",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "AXSUSDT",
+    "name": "AXS/USDT",
+    "baseAsset": "AXS",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "AZTECUSDT",
+    "name": "AZTEC/USDT",
+    "baseAsset": "AZTEC",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "B2USDT",
+    "name": "B2/USDT",
+    "baseAsset": "B2",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BABYUSDT",
+    "name": "BABY/USDT",
+    "baseAsset": "BABY",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BANANAS31USDT",
+    "name": "BANANAS31/USDT",
+    "baseAsset": "BANANAS31",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BANANAUSDT",
+    "name": "BANANA/USDT",
+    "baseAsset": "BANANA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BANDUSDT",
+    "name": "BAND/USDT",
+    "baseAsset": "BAND",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BANKUSDT",
+    "name": "BANK/USDT",
+    "baseAsset": "BANK",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BANUSDT",
+    "name": "BAN/USDT",
+    "baseAsset": "BAN",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BARDUSDT",
+    "name": "BARD/USDT",
+    "baseAsset": "BARD",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BASEDUSDT",
+    "name": "BASED/USDT",
+    "baseAsset": "BASED",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BASUSDT",
+    "name": "BAS/USDT",
+    "baseAsset": "BAS",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BATUSDT",
+    "name": "BAT/USDT",
+    "baseAsset": "BAT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BBUSDT",
+    "name": "BB/USDT",
+    "baseAsset": "BB",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BCHUSDC",
+    "name": "BCH/USDC",
+    "baseAsset": "BCH",
+    "quoteAsset": "USDC",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BCHUSDT",
+    "name": "BCH/USDT",
+    "baseAsset": "BCH",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BEAMXUSDT",
+    "name": "BEAMX/USDT",
+    "baseAsset": "BEAMX",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BEATUSDT",
+    "name": "BEAT/USDT",
+    "baseAsset": "BEAT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BELUSDT",
+    "name": "BEL/USDT",
+    "baseAsset": "BEL",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BERAUSDT",
+    "name": "BERA/USDT",
+    "baseAsset": "BERA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BICOUSDT",
+    "name": "BICO/USDT",
+    "baseAsset": "BICO",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BIGTIMEUSDT",
+    "name": "BIGTIME/USDT",
+    "baseAsset": "BIGTIME",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BILLUSDT",
+    "name": "BILL/USDT",
+    "baseAsset": "BILL",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BIOUSDC",
+    "name": "BIO/USDC",
+    "baseAsset": "BIO",
+    "quoteAsset": "USDC",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BIOUSDT",
+    "name": "BIO/USDT",
+    "baseAsset": "BIO",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BIRBUSDT",
+    "name": "BIRB/USDT",
+    "baseAsset": "BIRB",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BLESSUSDT",
+    "name": "BLESS/USDT",
+    "baseAsset": "BLESS",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BLUAIUSDT",
+    "name": "BLUAI/USDT",
+    "baseAsset": "BLUAI",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BLURUSDT",
+    "name": "BLUR/USDT",
+    "baseAsset": "BLUR",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BMTUSDT",
+    "name": "BMT/USDT",
+    "baseAsset": "BMT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BNBUSDC",
+    "name": "BNB/USDC",
+    "baseAsset": "BNB",
+    "quoteAsset": "USDC",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BNBUSDT",
+    "name": "BNB/USDT",
+    "baseAsset": "BNB",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BNTUSDT",
+    "name": "BNT/USDT",
+    "baseAsset": "BNT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BOMEUSDC",
+    "name": "BOME/USDC",
+    "baseAsset": "BOME",
+    "quoteAsset": "USDC",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BOMEUSDT",
+    "name": "BOME/USDT",
+    "baseAsset": "BOME",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BRETTUSDT",
+    "name": "BRETT/USDT",
+    "baseAsset": "BRETT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BREVUSDT",
+    "name": "BREV/USDT",
+    "baseAsset": "BREV",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BROCCOLI714USDT",
+    "name": "BROCCOLI714/USDT",
+    "baseAsset": "BROCCOLI714",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BROCCOLIF3BUSDT",
+    "name": "BROCCOLIF3B/USDT",
+    "baseAsset": "BROCCOLIF3B",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BRUSDT",
+    "name": "BR/USDT",
+    "baseAsset": "BR",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BSBUSDT",
+    "name": "BSB/USDT",
+    "baseAsset": "BSB",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BSVUSDT",
+    "name": "BSV/USDT",
+    "baseAsset": "BSV",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BTCDOMUSDT",
+    "name": "BTCDOM/USDT",
+    "baseAsset": "BTCDOM",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BTCUSD1",
+    "name": "BTC/USD1",
+    "baseAsset": "BTC",
+    "quoteAsset": "USD1",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BTCUSDC",
+    "name": "BTC/USDC",
+    "baseAsset": "BTC",
+    "quoteAsset": "USDC",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BTCUSDT",
+    "name": "BTC/USDT",
+    "baseAsset": "BTC",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BTRUSDT",
+    "name": "BTR/USDT",
+    "baseAsset": "BTR",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BTWUSDT",
+    "name": "BTW/USDT",
+    "baseAsset": "BTW",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BULLAUSDT",
+    "name": "BULLA/USDT",
+    "baseAsset": "BULLA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "BUSDT",
+    "name": "B/USDT",
+    "baseAsset": "B",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "C98USDT",
+    "name": "C98/USDT",
+    "baseAsset": "C98",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "CAKEUSDT",
+    "name": "CAKE/USDT",
+    "baseAsset": "CAKE",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "CARVUSDT",
+    "name": "CARV/USDT",
+    "baseAsset": "CARV",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "CATIUSDT",
+    "name": "CATI/USDT",
+    "baseAsset": "CATI",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "CCUSDT",
+    "name": "CC/USDT",
+    "baseAsset": "CC",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "CELOUSDT",
+    "name": "CELO/USDT",
+    "baseAsset": "CELO",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "CELRUSDT",
+    "name": "CELR/USDT",
+    "baseAsset": "CELR",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "CETUSUSDT",
+    "name": "CETUS/USDT",
+    "baseAsset": "CETUS",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "CFGUSDT",
+    "name": "CFG/USDT",
+    "baseAsset": "CFG",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "CFXUSDT",
+    "name": "CFX/USDT",
+    "baseAsset": "CFX",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "CGPTUSDT",
+    "name": "CGPT/USDT",
+    "baseAsset": "CGPT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "CHILLGUYUSDT",
+    "name": "CHILLGUY/USDT",
+    "baseAsset": "CHILLGUY",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "CHIPUSDT",
+    "name": "CHIP/USDT",
+    "baseAsset": "CHIP",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "CHRUSDT",
+    "name": "CHR/USDT",
+    "baseAsset": "CHR",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "CHZUSDT",
+    "name": "CHZ/USDT",
+    "baseAsset": "CHZ",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "CKBUSDT",
+    "name": "CKB/USDT",
+    "baseAsset": "CKB",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "CLANKERUSDT",
+    "name": "CLANKER/USDT",
+    "baseAsset": "CLANKER",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "CLOUSDT",
+    "name": "CLO/USDT",
+    "baseAsset": "CLO",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "COAIUSDT",
+    "name": "COAI/USDT",
+    "baseAsset": "COAI",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "COLLECTUSDT",
+    "name": "COLLECT/USDT",
+    "baseAsset": "COLLECT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "COMPUSDT",
+    "name": "COMP/USDT",
+    "baseAsset": "COMP",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "COOKIEUSDT",
+    "name": "COOKIE/USDT",
+    "baseAsset": "COOKIE",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "COTIUSDT",
+    "name": "COTI/USDT",
+    "baseAsset": "COTI",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "COWUSDT",
+    "name": "COW/USDT",
+    "baseAsset": "COW",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "CROSSUSDT",
+    "name": "CROSS/USDT",
+    "baseAsset": "CROSS",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "CRVUSDC",
+    "name": "CRV/USDC",
+    "baseAsset": "CRV",
+    "quoteAsset": "USDC",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "CRVUSDT",
+    "name": "CRV/USDT",
+    "baseAsset": "CRV",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "CTKUSDT",
+    "name": "CTK/USDT",
+    "baseAsset": "CTK",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "CTRUSDT",
+    "name": "CTR/USDT",
+    "baseAsset": "CTR",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "CTSIUSDT",
+    "name": "CTSI/USDT",
+    "baseAsset": "CTSI",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "CUSDT",
+    "name": "C/USDT",
+    "baseAsset": "C",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "CVCUSDT",
+    "name": "CVC/USDT",
+    "baseAsset": "CVC",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "CVXUSDT",
+    "name": "CVX/USDT",
+    "baseAsset": "CVX",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "CYBERUSDT",
+    "name": "CYBER/USDT",
+    "baseAsset": "CYBER",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "CYSUSDT",
+    "name": "CYS/USDT",
+    "baseAsset": "CYS",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "DASHUSDT",
+    "name": "DASH/USDT",
+    "baseAsset": "DASH",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "DEEPUSDT",
+    "name": "DEEP/USDT",
+    "baseAsset": "DEEP",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "DEXEUSDT",
+    "name": "DEXE/USDT",
+    "baseAsset": "DEXE",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "DIAUSDT",
+    "name": "DIA/USDT",
+    "baseAsset": "DIA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "DODOXUSDT",
+    "name": "DODOX/USDT",
+    "baseAsset": "DODOX",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "DOGEUSDC",
+    "name": "DOGE/USDC",
+    "baseAsset": "DOGE",
+    "quoteAsset": "USDC",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "DOGEUSDT",
+    "name": "DOGE/USDT",
+    "baseAsset": "DOGE",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "DOGSUSDT",
+    "name": "DOGS/USDT",
+    "baseAsset": "DOGS",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "DOLOUSDT",
+    "name": "DOLO/USDT",
+    "baseAsset": "DOLO",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "DOODUSDT",
+    "name": "DOOD/USDT",
+    "baseAsset": "DOOD",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "DOTUSDT",
+    "name": "DOT/USDT",
+    "baseAsset": "DOT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "DRIFTUSDT",
+    "name": "DRIFT/USDT",
+    "baseAsset": "DRIFT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "DUSKUSDT",
+    "name": "DUSK/USDT",
+    "baseAsset": "DUSK",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "DYDXUSDT",
+    "name": "DYDX/USDT",
+    "baseAsset": "DYDX",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "DYMUSDT",
+    "name": "DYM/USDT",
+    "baseAsset": "DYM",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "EDENUSDT",
+    "name": "EDEN/USDT",
+    "baseAsset": "EDEN",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "EDGEUSDT",
+    "name": "EDGE/USDT",
+    "baseAsset": "EDGE",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "EDUUSDT",
+    "name": "EDU/USDT",
+    "baseAsset": "EDU",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "EGLDUSDT",
+    "name": "EGLD/USDT",
+    "baseAsset": "EGLD",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "EIGENUSDT",
+    "name": "EIGEN/USDT",
+    "baseAsset": "EIGEN",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ELSAUSDT",
+    "name": "ELSA/USDT",
+    "baseAsset": "ELSA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ENAUSDC",
+    "name": "ENA/USDC",
+    "baseAsset": "ENA",
+    "quoteAsset": "USDC",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ENAUSDT",
+    "name": "ENA/USDT",
+    "baseAsset": "ENA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ENJUSDT",
+    "name": "ENJ/USDT",
+    "baseAsset": "ENJ",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ENSOUSDT",
+    "name": "ENSO/USDT",
+    "baseAsset": "ENSO",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ENSUSDT",
+    "name": "ENS/USDT",
+    "baseAsset": "ENS",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "EPICUSDT",
+    "name": "EPIC/USDT",
+    "baseAsset": "EPIC",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ERAUSDT",
+    "name": "ERA/USDT",
+    "baseAsset": "ERA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ESPORTSUSDT",
+    "name": "ESPORTS/USDT",
+    "baseAsset": "ESPORTS",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ESPUSDT",
+    "name": "ESP/USDT",
+    "baseAsset": "ESP",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ETCUSDT",
+    "name": "ETC/USDT",
+    "baseAsset": "ETC",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ETHBTC",
+    "name": "ETH/BTC",
+    "baseAsset": "ETH",
+    "quoteAsset": "BTC",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ETHFIUSDC",
+    "name": "ETHFI/USDC",
+    "baseAsset": "ETHFI",
+    "quoteAsset": "USDC",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ETHFIUSDT",
+    "name": "ETHFI/USDT",
+    "baseAsset": "ETHFI",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ETHUSDC",
+    "name": "ETH/USDC",
+    "baseAsset": "ETH",
+    "quoteAsset": "USDC",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ETHUSDT",
+    "name": "ETH/USDT",
+    "baseAsset": "ETH",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ETHWUSDT",
+    "name": "ETHW/USDT",
+    "baseAsset": "ETHW",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "EULUSDT",
+    "name": "EUL/USDT",
+    "baseAsset": "EUL",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "EVAAUSDT",
+    "name": "EVAA/USDT",
+    "baseAsset": "EVAA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "FARTCOINUSDT",
+    "name": "FARTCOIN/USDT",
+    "baseAsset": "FARTCOIN",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "FETUSDT",
+    "name": "FET/USDT",
+    "baseAsset": "FET",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "FFUSDT",
+    "name": "FF/USDT",
+    "baseAsset": "FF",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "FHEUSDT",
+    "name": "FHE/USDT",
+    "baseAsset": "FHE",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "FIDAUSDT",
+    "name": "FIDA/USDT",
+    "baseAsset": "FIDA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "FIGHTUSDT",
+    "name": "FIGHT/USDT",
+    "baseAsset": "FIGHT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "FILUSDC",
+    "name": "FIL/USDC",
+    "baseAsset": "FIL",
+    "quoteAsset": "USDC",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "FILUSDT",
+    "name": "FIL/USDT",
+    "baseAsset": "FIL",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "FLOCKUSDT",
+    "name": "FLOCK/USDT",
+    "baseAsset": "FLOCK",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "FLOWUSDT",
+    "name": "FLOW/USDT",
+    "baseAsset": "FLOW",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "FLUIDUSDT",
+    "name": "FLUID/USDT",
+    "baseAsset": "FLUID",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "FLUXUSDT",
+    "name": "FLUX/USDT",
+    "baseAsset": "FLUX",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "FOGOUSDT",
+    "name": "FOGO/USDT",
+    "baseAsset": "FOGO",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "FOLKSUSDT",
+    "name": "FOLKS/USDT",
+    "baseAsset": "FOLKS",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "FORMUSDT",
+    "name": "FORM/USDT",
+    "baseAsset": "FORM",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "FRAXUSDT",
+    "name": "FRAX/USDT",
+    "baseAsset": "FRAX",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "FUSDT",
+    "name": "F/USDT",
+    "baseAsset": "F",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "GALAUSDT",
+    "name": "GALA/USDT",
+    "baseAsset": "GALA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "GASUSDT",
+    "name": "GAS/USDT",
+    "baseAsset": "GAS",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "GENIUSUSDT",
+    "name": "GENIUS/USDT",
+    "baseAsset": "GENIUS",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "GIGGLEUSDT",
+    "name": "GIGGLE/USDT",
+    "baseAsset": "GIGGLE",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "GLMUSDT",
+    "name": "GLM/USDT",
+    "baseAsset": "GLM",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "GMTUSDT",
+    "name": "GMT/USDT",
+    "baseAsset": "GMT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "GMXUSDT",
+    "name": "GMX/USDT",
+    "baseAsset": "GMX",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "GOATUSDT",
+    "name": "GOAT/USDT",
+    "baseAsset": "GOAT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "GPSUSDT",
+    "name": "GPS/USDT",
+    "baseAsset": "GPS",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "GRASSUSDT",
+    "name": "GRASS/USDT",
+    "baseAsset": "GRASS",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "GRIFFAINUSDT",
+    "name": "GRIFFAIN/USDT",
+    "baseAsset": "GRIFFAIN",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "GRTUSDT",
+    "name": "GRT/USDT",
+    "baseAsset": "GRT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "GTCUSDT",
+    "name": "GTC/USDT",
+    "baseAsset": "GTC",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "GUAUSDT",
+    "name": "GUA/USDT",
+    "baseAsset": "GUA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "GUNUSDT",
+    "name": "GUN/USDT",
+    "baseAsset": "GUN",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "GUSDT",
+    "name": "G/USDT",
+    "baseAsset": "G",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "GWEIUSDT",
+    "name": "GWEI/USDT",
+    "baseAsset": "GWEI",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "HAEDALUSDT",
+    "name": "HAEDAL/USDT",
+    "baseAsset": "HAEDAL",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "HANAUSDT",
+    "name": "HANA/USDT",
+    "baseAsset": "HANA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "HBARUSDC",
+    "name": "HBAR/USDC",
+    "baseAsset": "HBAR",
+    "quoteAsset": "USDC",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "HBARUSDT",
+    "name": "HBAR/USDT",
+    "baseAsset": "HBAR",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "HEIUSDT",
+    "name": "HEI/USDT",
+    "baseAsset": "HEI",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "HEMIUSDT",
+    "name": "HEMI/USDT",
+    "baseAsset": "HEMI",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "HFTUSDT",
+    "name": "HFT/USDT",
+    "baseAsset": "HFT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "HIVEUSDT",
+    "name": "HIVE/USDT",
+    "baseAsset": "HIVE",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "HMSTRUSDT",
+    "name": "HMSTR/USDT",
+    "baseAsset": "HMSTR",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "HOLOUSDT",
+    "name": "HOLO/USDT",
+    "baseAsset": "HOLO",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "HOMEUSDT",
+    "name": "HOME/USDT",
+    "baseAsset": "HOME",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "HOTUSDT",
+    "name": "HOT/USDT",
+    "baseAsset": "HOT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "HUMAUSDT",
+    "name": "HUMA/USDT",
+    "baseAsset": "HUMA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "HUSDT",
+    "name": "H/USDT",
+    "baseAsset": "H",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "HYPERUSDT",
+    "name": "HYPER/USDT",
+    "baseAsset": "HYPER",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "HYPEUSDT",
+    "name": "HYPE/USDT",
+    "baseAsset": "HYPE",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ICNTUSDT",
+    "name": "ICNT/USDT",
+    "baseAsset": "ICNT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ICPUSDT",
+    "name": "ICP/USDT",
+    "baseAsset": "ICP",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ICXUSDT",
+    "name": "ICX/USDT",
+    "baseAsset": "ICX",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "IDOLUSDT",
+    "name": "IDOL/USDT",
+    "baseAsset": "IDOL",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "IDUSDT",
+    "name": "ID/USDT",
+    "baseAsset": "ID",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ILVUSDT",
+    "name": "ILV/USDT",
+    "baseAsset": "ILV",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "IMXUSDT",
+    "name": "IMX/USDT",
+    "baseAsset": "IMX",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "INITUSDT",
+    "name": "INIT/USDT",
+    "baseAsset": "INIT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "INJUSDT",
+    "name": "INJ/USDT",
+    "baseAsset": "INJ",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "INUSDT",
+    "name": "IN/USDT",
+    "baseAsset": "IN",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "INXUSDT",
+    "name": "INX/USDT",
+    "baseAsset": "INX",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "IOSTUSDT",
+    "name": "IOST/USDT",
+    "baseAsset": "IOST",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "IOTAUSDT",
+    "name": "IOTA/USDT",
+    "baseAsset": "IOTA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "IOTXUSDT",
+    "name": "IOTX/USDT",
+    "baseAsset": "IOTX",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "IOUSDT",
+    "name": "IO/USDT",
+    "baseAsset": "IO",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "IPUSDC",
+    "name": "IP/USDC",
+    "baseAsset": "IP",
+    "quoteAsset": "USDC",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "IPUSDT",
+    "name": "IP/USDT",
+    "baseAsset": "IP",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "IRYSUSDT",
+    "name": "IRYS/USDT",
+    "baseAsset": "IRYS",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "JASMYUSDT",
+    "name": "JASMY/USDT",
+    "baseAsset": "JASMY",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "JCTUSDT",
+    "name": "JCT/USDT",
+    "baseAsset": "JCT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "JELLYJELLYUSDT",
+    "name": "JELLYJELLY/USDT",
+    "baseAsset": "JELLYJELLY",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "JOEUSDT",
+    "name": "JOE/USDT",
+    "baseAsset": "JOE",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "JSTUSDT",
+    "name": "JST/USDT",
+    "baseAsset": "JST",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "JTOUSDT",
+    "name": "JTO/USDT",
+    "baseAsset": "JTO",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "JUPUSDT",
+    "name": "JUP/USDT",
+    "baseAsset": "JUP",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "KAIAUSDT",
+    "name": "KAIA/USDT",
+    "baseAsset": "KAIA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "KAITOUSDC",
+    "name": "KAITO/USDC",
+    "baseAsset": "KAITO",
+    "quoteAsset": "USDC",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "KAITOUSDT",
+    "name": "KAITO/USDT",
+    "baseAsset": "KAITO",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "KASUSDT",
+    "name": "KAS/USDT",
+    "baseAsset": "KAS",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "KATUSDT",
+    "name": "KAT/USDT",
+    "baseAsset": "KAT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "KAVAUSDT",
+    "name": "KAVA/USDT",
+    "baseAsset": "KAVA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "KERNELUSDT",
+    "name": "KERNEL/USDT",
+    "baseAsset": "KERNEL",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "KGENUSDT",
+    "name": "KGEN/USDT",
+    "baseAsset": "KGEN",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "KITEUSDT",
+    "name": "KITE/USDT",
+    "baseAsset": "KITE",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "KMNOUSDT",
+    "name": "KMNO/USDT",
+    "baseAsset": "KMNO",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "KNCUSDT",
+    "name": "KNC/USDT",
+    "baseAsset": "KNC",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "KOMAUSDT",
+    "name": "KOMA/USDT",
+    "baseAsset": "KOMA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "KSMUSDT",
+    "name": "KSM/USDT",
+    "baseAsset": "KSM",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "LABUSDT",
+    "name": "LAB/USDT",
+    "baseAsset": "LAB",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "LAUSDT",
+    "name": "LA/USDT",
+    "baseAsset": "LA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "LAYERUSDT",
+    "name": "LAYER/USDT",
+    "baseAsset": "LAYER",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "LDOUSDT",
+    "name": "LDO/USDT",
+    "baseAsset": "LDO",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "LIGHTUSDT",
+    "name": "LIGHT/USDT",
+    "baseAsset": "LIGHT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "LINEAUSDT",
+    "name": "LINEA/USDT",
+    "baseAsset": "LINEA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "LINKUSDC",
+    "name": "LINK/USDC",
+    "baseAsset": "LINK",
+    "quoteAsset": "USDC",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "LINKUSDT",
+    "name": "LINK/USDT",
+    "baseAsset": "LINK",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "LISTAUSDT",
+    "name": "LISTA/USDT",
+    "baseAsset": "LISTA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "LITUSDT",
+    "name": "LIT/USDT",
+    "baseAsset": "LIT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "LPTUSDT",
+    "name": "LPT/USDT",
+    "baseAsset": "LPT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "LQTYUSDT",
+    "name": "LQTY/USDT",
+    "baseAsset": "LQTY",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "LSKUSDT",
+    "name": "LSK/USDT",
+    "baseAsset": "LSK",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "LTCUSDC",
+    "name": "LTC/USDC",
+    "baseAsset": "LTC",
+    "quoteAsset": "USDC",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "LTCUSDT",
+    "name": "LTC/USDT",
+    "baseAsset": "LTC",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "LUMIAUSDT",
+    "name": "LUMIA/USDT",
+    "baseAsset": "LUMIA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "LUNA2USDT",
+    "name": "LUNA2/USDT",
+    "baseAsset": "LUNA2",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "LYNUSDT",
+    "name": "LYN/USDT",
+    "baseAsset": "LYN",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "MAGICUSDT",
+    "name": "MAGIC/USDT",
+    "baseAsset": "MAGIC",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "MAGMAUSDT",
+    "name": "MAGMA/USDT",
+    "baseAsset": "MAGMA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "MANAUSDT",
+    "name": "MANA/USDT",
+    "baseAsset": "MANA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "MANTAUSDT",
+    "name": "MANTA/USDT",
+    "baseAsset": "MANTA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "MANTRAUSDT",
+    "name": "MANTRA/USDT",
+    "baseAsset": "MANTRA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "MASKUSDT",
+    "name": "MASK/USDT",
+    "baseAsset": "MASK",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "MAVIAUSDT",
+    "name": "MAVIA/USDT",
+    "baseAsset": "MAVIA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "MAVUSDT",
+    "name": "MAV/USDT",
+    "baseAsset": "MAV",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "MEGAUSDT",
+    "name": "MEGA/USDT",
+    "baseAsset": "MEGA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "MELANIAUSDT",
+    "name": "MELANIA/USDT",
+    "baseAsset": "MELANIA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "MEMEUSDT",
+    "name": "MEME/USDT",
+    "baseAsset": "MEME",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "MERLUSDT",
+    "name": "MERL/USDT",
+    "baseAsset": "MERL",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "METISUSDT",
+    "name": "METIS/USDT",
+    "baseAsset": "METIS",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "METUSDT",
+    "name": "MET/USDT",
+    "baseAsset": "MET",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "MEUSDT",
+    "name": "ME/USDT",
+    "baseAsset": "ME",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "MEWUSDT",
+    "name": "MEW/USDT",
+    "baseAsset": "MEW",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "MINAUSDT",
+    "name": "MINA/USDT",
+    "baseAsset": "MINA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "MIRAUSDT",
+    "name": "MIRA/USDT",
+    "baseAsset": "MIRA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "MITOUSDT",
+    "name": "MITO/USDT",
+    "baseAsset": "MITO",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "MMTUSDT",
+    "name": "MMT/USDT",
+    "baseAsset": "MMT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "MOCAUSDT",
+    "name": "MOCA/USDT",
+    "baseAsset": "MOCA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "MONUSDT",
+    "name": "MON/USDT",
+    "baseAsset": "MON",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "MOODENGUSDT",
+    "name": "MOODENG/USDT",
+    "baseAsset": "MOODENG",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "MORPHOUSDT",
+    "name": "MORPHO/USDT",
+    "baseAsset": "MORPHO",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "MOVEUSDT",
+    "name": "MOVE/USDT",
+    "baseAsset": "MOVE",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "MOVRUSDT",
+    "name": "MOVR/USDT",
+    "baseAsset": "MOVR",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "MTLUSDT",
+    "name": "MTL/USDT",
+    "baseAsset": "MTL",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "MUBARAKUSDT",
+    "name": "MUBARAK/USDT",
+    "baseAsset": "MUBARAK",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "MUSDT",
+    "name": "M/USDT",
+    "baseAsset": "M",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "MYXUSDT",
+    "name": "MYX/USDT",
+    "baseAsset": "MYX",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "NAORISUSDT",
+    "name": "NAORIS/USDT",
+    "baseAsset": "NAORIS",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "NEARUSDC",
+    "name": "NEAR/USDC",
+    "baseAsset": "NEAR",
+    "quoteAsset": "USDC",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "NEARUSDT",
+    "name": "NEAR/USDT",
+    "baseAsset": "NEAR",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "NEIROUSDT",
+    "name": "NEIRO/USDT",
+    "baseAsset": "NEIRO",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "NEOUSDC",
+    "name": "NEO/USDC",
+    "baseAsset": "NEO",
+    "quoteAsset": "USDC",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "NEOUSDT",
+    "name": "NEO/USDT",
+    "baseAsset": "NEO",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "NEWTUSDT",
+    "name": "NEWT/USDT",
+    "baseAsset": "NEWT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "NFPUSDT",
+    "name": "NFP/USDT",
+    "baseAsset": "NFP",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "NIGHTUSDT",
+    "name": "NIGHT/USDT",
+    "baseAsset": "NIGHT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "NILUSDT",
+    "name": "NIL/USDT",
+    "baseAsset": "NIL",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "NMRUSDT",
+    "name": "NMR/USDT",
+    "baseAsset": "NMR",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "NOMUSDT",
+    "name": "NOM/USDT",
+    "baseAsset": "NOM",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "NOTUSDT",
+    "name": "NOT/USDT",
+    "baseAsset": "NOT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "NXPCUSDT",
+    "name": "NXPC/USDT",
+    "baseAsset": "NXPC",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "OGNUSDT",
+    "name": "OGN/USDT",
+    "baseAsset": "OGN",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "OGUSDT",
+    "name": "OG/USDT",
+    "baseAsset": "OG",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ONDOUSDT",
+    "name": "ONDO/USDT",
+    "baseAsset": "ONDO",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ONEUSDT",
+    "name": "ONE/USDT",
+    "baseAsset": "ONE",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ONGUSDT",
+    "name": "ONG/USDT",
+    "baseAsset": "ONG",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ONTUSDT",
+    "name": "ONT/USDT",
+    "baseAsset": "ONT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ONUSDT",
+    "name": "ON/USDT",
+    "baseAsset": "ON",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "OPENUSDT",
+    "name": "OPEN/USDT",
+    "baseAsset": "OPEN",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "OPGUSDT",
+    "name": "OPG/USDT",
+    "baseAsset": "OPG",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "OPNUSDT",
+    "name": "OPN/USDT",
+    "baseAsset": "OPN",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "OPUSDT",
+    "name": "OP/USDT",
+    "baseAsset": "OP",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ORCAUSDT",
+    "name": "ORCA/USDT",
+    "baseAsset": "ORCA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ORDERUSDT",
+    "name": "ORDER/USDT",
+    "baseAsset": "ORDER",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ORDIUSDC",
+    "name": "ORDI/USDC",
+    "baseAsset": "ORDI",
+    "quoteAsset": "USDC",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ORDIUSDT",
+    "name": "ORDI/USDT",
+    "baseAsset": "ORDI",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "PARTIUSDT",
+    "name": "PARTI/USDT",
+    "baseAsset": "PARTI",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "PAXGUSDT",
+    "name": "PAXG/USDT",
+    "baseAsset": "PAXG",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "PENDLEUSDT",
+    "name": "PENDLE/USDT",
+    "baseAsset": "PENDLE",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "PENGUUSDC",
+    "name": "PENGU/USDC",
+    "baseAsset": "PENGU",
+    "quoteAsset": "USDC",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "PENGUUSDT",
+    "name": "PENGU/USDT",
+    "baseAsset": "PENGU",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "PEOPLEUSDT",
+    "name": "PEOPLE/USDT",
+    "baseAsset": "PEOPLE",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "PHAROSUSDT",
+    "name": "PHAROS/USDT",
+    "baseAsset": "PHAROS",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "PHAUSDT",
+    "name": "PHA/USDT",
+    "baseAsset": "PHA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "PIEVERSEUSDT",
+    "name": "PIEVERSE/USDT",
+    "baseAsset": "PIEVERSE",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "PIPPINUSDT",
+    "name": "PIPPIN/USDT",
+    "baseAsset": "PIPPIN",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "PIXELUSDT",
+    "name": "PIXEL/USDT",
+    "baseAsset": "PIXEL",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "PLAYUSDT",
+    "name": "PLAY/USDT",
+    "baseAsset": "PLAY",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "PLUMEUSDT",
+    "name": "PLUME/USDT",
+    "baseAsset": "PLUME",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "PNUTUSDC",
+    "name": "PNUT/USDC",
+    "baseAsset": "PNUT",
+    "quoteAsset": "USDC",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "PNUTUSDT",
+    "name": "PNUT/USDT",
+    "baseAsset": "PNUT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "POLUSDT",
+    "name": "POL/USDT",
+    "baseAsset": "POL",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "POLYXUSDT",
+    "name": "POLYX/USDT",
+    "baseAsset": "POLYX",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "POPCATUSDT",
+    "name": "POPCAT/USDT",
+    "baseAsset": "POPCAT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "PORTALUSDT",
+    "name": "PORTAL/USDT",
+    "baseAsset": "PORTAL",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "POWERUSDT",
+    "name": "POWER/USDT",
+    "baseAsset": "POWER",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "POWRUSDT",
+    "name": "POWR/USDT",
+    "baseAsset": "POWR",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "PRLUSDT",
+    "name": "PRL/USDT",
+    "baseAsset": "PRL",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "PROMPTUSDT",
+    "name": "PROMPT/USDT",
+    "baseAsset": "PROMPT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "PROMUSDT",
+    "name": "PROM/USDT",
+    "baseAsset": "PROM",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "PROVEUSDT",
+    "name": "PROVE/USDT",
+    "baseAsset": "PROVE",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "PTBUSDT",
+    "name": "PTB/USDT",
+    "baseAsset": "PTB",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "PUMPBTCUSDT",
+    "name": "PUMPBTC/USDT",
+    "baseAsset": "PUMPBTC",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "PUMPUSDT",
+    "name": "PUMP/USDT",
+    "baseAsset": "PUMP",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "PUNDIXUSDT",
+    "name": "PUNDIX/USDT",
+    "baseAsset": "PUNDIX",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "PYTHUSDT",
+    "name": "PYTH/USDT",
+    "baseAsset": "PYTH",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "QNTUSDT",
+    "name": "QNT/USDT",
+    "baseAsset": "QNT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "QTUMUSDT",
+    "name": "QTUM/USDT",
+    "baseAsset": "QTUM",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "QUSDT",
+    "name": "Q/USDT",
+    "baseAsset": "Q",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "RAREUSDT",
+    "name": "RARE/USDT",
+    "baseAsset": "RARE",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "RAVEUSDT",
+    "name": "RAVE/USDT",
+    "baseAsset": "RAVE",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "RAYSOLUSDT",
+    "name": "RAYSOL/USDT",
+    "baseAsset": "RAYSOL",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "RECALLUSDT",
+    "name": "RECALL/USDT",
+    "baseAsset": "RECALL",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "REDUSDT",
+    "name": "RED/USDT",
+    "baseAsset": "RED",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "RENDERUSDT",
+    "name": "RENDER/USDT",
+    "baseAsset": "RENDER",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "RESOLVUSDT",
+    "name": "RESOLV/USDT",
+    "baseAsset": "RESOLV",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "REZUSDT",
+    "name": "REZ/USDT",
+    "baseAsset": "REZ",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "RIFUSDT",
+    "name": "RIF/USDT",
+    "baseAsset": "RIF",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "RIVERUSDT",
+    "name": "RIVER/USDT",
+    "baseAsset": "RIVER",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "RLCUSDT",
+    "name": "RLC/USDT",
+    "baseAsset": "RLC",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ROBOUSDT",
+    "name": "ROBO/USDT",
+    "baseAsset": "ROBO",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "RONINUSDT",
+    "name": "RONIN/USDT",
+    "baseAsset": "RONIN",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ROSEUSDT",
+    "name": "ROSE/USDT",
+    "baseAsset": "ROSE",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "RPLUSDT",
+    "name": "RPL/USDT",
+    "baseAsset": "RPL",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "RSRUSDT",
+    "name": "RSR/USDT",
+    "baseAsset": "RSR",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "RUNEUSDT",
+    "name": "RUNE/USDT",
+    "baseAsset": "RUNE",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "RVNUSDT",
+    "name": "RVN/USDT",
+    "baseAsset": "RVN",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "SAFEUSDT",
+    "name": "SAFE/USDT",
+    "baseAsset": "SAFE",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "SAGAUSDT",
+    "name": "SAGA/USDT",
+    "baseAsset": "SAGA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "SAHARAUSDT",
+    "name": "SAHARA/USDT",
+    "baseAsset": "SAHARA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "SANDUSDT",
+    "name": "SAND/USDT",
+    "baseAsset": "SAND",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "SANTOSUSDT",
+    "name": "SANTOS/USDT",
+    "baseAsset": "SANTOS",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "SAPIENUSDT",
+    "name": "SAPIEN/USDT",
+    "baseAsset": "SAPIEN",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "SCRTUSDT",
+    "name": "SCRT/USDT",
+    "baseAsset": "SCRT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "SCRUSDT",
+    "name": "SCR/USDT",
+    "baseAsset": "SCR",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "SEIUSDT",
+    "name": "SEI/USDT",
+    "baseAsset": "SEI",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "SENTUSDT",
+    "name": "SENT/USDT",
+    "baseAsset": "SENT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "SFPUSDT",
+    "name": "SFP/USDT",
+    "baseAsset": "SFP",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "SHELLUSDT",
+    "name": "SHELL/USDT",
+    "baseAsset": "SHELL",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "SIGNUSDT",
+    "name": "SIGN/USDT",
+    "baseAsset": "SIGN",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "SIRENUSDT",
+    "name": "SIREN/USDT",
+    "baseAsset": "SIREN",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "SKLUSDT",
+    "name": "SKL/USDT",
+    "baseAsset": "SKL",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "SKRUSDT",
+    "name": "SKR/USDT",
+    "baseAsset": "SKR",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "SKYAIUSDT",
+    "name": "SKYAI/USDT",
+    "baseAsset": "SKYAI",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "SKYUSDT",
+    "name": "SKY/USDT",
+    "baseAsset": "SKY",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "SLPUSDT",
+    "name": "SLP/USDT",
+    "baseAsset": "SLP",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "SLXUSDT",
+    "name": "SLX/USDT",
+    "baseAsset": "SLX",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "SNXUSDT",
+    "name": "SNX/USDT",
+    "baseAsset": "SNX",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "SOLUSDC",
+    "name": "SOL/USDC",
+    "baseAsset": "SOL",
+    "quoteAsset": "USDC",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "SOLUSDT",
+    "name": "SOL/USDT",
+    "baseAsset": "SOL",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "SOLVUSDT",
+    "name": "SOLV/USDT",
+    "baseAsset": "SOLV",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "SOMIUSDT",
+    "name": "SOMI/USDT",
+    "baseAsset": "SOMI",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "SONICUSDT",
+    "name": "SONIC/USDT",
+    "baseAsset": "SONIC",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "SOONUSDT",
+    "name": "SOON/USDT",
+    "baseAsset": "SOON",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "SOPHUSDT",
+    "name": "SOPH/USDT",
+    "baseAsset": "SOPH",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "SPACEUSDT",
+    "name": "SPACE/USDT",
+    "baseAsset": "SPACE",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "SPELLUSDT",
+    "name": "SPELL/USDT",
+    "baseAsset": "SPELL",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "SPKUSDT",
+    "name": "SPK/USDT",
+    "baseAsset": "SPK",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "SPORTFUNUSDT",
+    "name": "SPORTFUN/USDT",
+    "baseAsset": "SPORTFUN",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "SPXUSDT",
+    "name": "SPX/USDT",
+    "baseAsset": "SPX",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "SQDUSDT",
+    "name": "SQD/USDT",
+    "baseAsset": "SQD",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "SSVUSDT",
+    "name": "SSV/USDT",
+    "baseAsset": "SSV",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "STABLEUSDT",
+    "name": "STABLE/USDT",
+    "baseAsset": "STABLE",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "STARUSDT",
+    "name": "STAR/USDT",
+    "baseAsset": "STAR",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "STBLUSDT",
+    "name": "STBL/USDT",
+    "baseAsset": "STBL",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "STEEMUSDT",
+    "name": "STEEM/USDT",
+    "baseAsset": "STEEM",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "STGUSDT",
+    "name": "STG/USDT",
+    "baseAsset": "STG",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "STORJUSDT",
+    "name": "STORJ/USDT",
+    "baseAsset": "STORJ",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "STOUSDT",
+    "name": "STO/USDT",
+    "baseAsset": "STO",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "STRKUSDT",
+    "name": "STRK/USDT",
+    "baseAsset": "STRK",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "STXUSDT",
+    "name": "STX/USDT",
+    "baseAsset": "STX",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "SUIUSDC",
+    "name": "SUI/USDC",
+    "baseAsset": "SUI",
+    "quoteAsset": "USDC",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "SUIUSDT",
+    "name": "SUI/USDT",
+    "baseAsset": "SUI",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "SUNUSDT",
+    "name": "SUN/USDT",
+    "baseAsset": "SUN",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "SUPERUSDT",
+    "name": "SUPER/USDT",
+    "baseAsset": "SUPER",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "SUSDT",
+    "name": "S/USDT",
+    "baseAsset": "S",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "SUSHIUSDT",
+    "name": "SUSHI/USDT",
+    "baseAsset": "SUSHI",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "SWARMSUSDT",
+    "name": "SWARMS/USDT",
+    "baseAsset": "SWARMS",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "SXTUSDT",
+    "name": "SXT/USDT",
+    "baseAsset": "SXT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "SYNUSDT",
+    "name": "SYN/USDT",
+    "baseAsset": "SYN",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "SYRUPUSDT",
+    "name": "SYRUP/USDT",
+    "baseAsset": "SYRUP",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "TACUSDT",
+    "name": "TAC/USDT",
+    "baseAsset": "TAC",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "TAGUSDT",
+    "name": "TAG/USDT",
+    "baseAsset": "TAG",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "TAIKOUSDT",
+    "name": "TAIKO/USDT",
+    "baseAsset": "TAIKO",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "TAKEUSDT",
+    "name": "TAKE/USDT",
+    "baseAsset": "TAKE",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "TAOUSDT",
+    "name": "TAO/USDT",
+    "baseAsset": "TAO",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "TAUSDT",
+    "name": "TA/USDT",
+    "baseAsset": "TA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "THETAUSDT",
+    "name": "THETA/USDT",
+    "baseAsset": "THETA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "THEUSDT",
+    "name": "THE/USDT",
+    "baseAsset": "THE",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "TIAUSDC",
+    "name": "TIA/USDC",
+    "baseAsset": "TIA",
+    "quoteAsset": "USDC",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "TIAUSDT",
+    "name": "TIA/USDT",
+    "baseAsset": "TIA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "TLMUSDT",
+    "name": "TLM/USDT",
+    "baseAsset": "TLM",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "TNSRUSDT",
+    "name": "TNSR/USDT",
+    "baseAsset": "TNSR",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "TONUSDT",
+    "name": "TON/USDT",
+    "baseAsset": "TON",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "TOSHIUSDT",
+    "name": "TOSHI/USDT",
+    "baseAsset": "TOSHI",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "TOWNSUSDT",
+    "name": "TOWNS/USDT",
+    "baseAsset": "TOWNS",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "TRADOORUSDT",
+    "name": "TRADOOR/USDT",
+    "baseAsset": "TRADOOR",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "TRBUSDT",
+    "name": "TRB/USDT",
+    "baseAsset": "TRB",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "TREEUSDT",
+    "name": "TREE/USDT",
+    "baseAsset": "TREE",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "TRIAUSDT",
+    "name": "TRIA/USDT",
+    "baseAsset": "TRIA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "TRUMPUSDC",
+    "name": "TRUMP/USDC",
+    "baseAsset": "TRUMP",
+    "quoteAsset": "USDC",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "TRUMPUSDT",
+    "name": "TRUMP/USDT",
+    "baseAsset": "TRUMP",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "TRUSTUSDT",
+    "name": "TRUST/USDT",
+    "baseAsset": "TRUST",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "TRUTHUSDT",
+    "name": "TRUTH/USDT",
+    "baseAsset": "TRUTH",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "TRXUSDT",
+    "name": "TRX/USDT",
+    "baseAsset": "TRX",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "TSTUSDT",
+    "name": "TST/USDT",
+    "baseAsset": "TST",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "TURBOUSDT",
+    "name": "TURBO/USDT",
+    "baseAsset": "TURBO",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "TURTLEUSDT",
+    "name": "TURTLE/USDT",
+    "baseAsset": "TURTLE",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "TUSDT",
+    "name": "T/USDT",
+    "baseAsset": "T",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "TUTUSDT",
+    "name": "TUT/USDT",
+    "baseAsset": "TUT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "TWTUSDT",
+    "name": "TWT/USDT",
+    "baseAsset": "TWT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "UAIUSDT",
+    "name": "UAI/USDT",
+    "baseAsset": "UAI",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "UBUSDT",
+    "name": "UB/USDT",
+    "baseAsset": "UB",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "UMAUSDT",
+    "name": "UMA/USDT",
+    "baseAsset": "UMA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "UNIUSDC",
+    "name": "UNI/USDC",
+    "baseAsset": "UNI",
+    "quoteAsset": "USDC",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "UNIUSDT",
+    "name": "UNI/USDT",
+    "baseAsset": "UNI",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "USDCUSDT",
+    "name": "USDC/USDT",
+    "baseAsset": "USDC",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "USELESSUSDT",
+    "name": "USELESS/USDT",
+    "baseAsset": "USELESS",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "USTCUSDT",
+    "name": "USTC/USDT",
+    "baseAsset": "USTC",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "USUALUSDT",
+    "name": "USUAL/USDT",
+    "baseAsset": "USUAL",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "USUSDT",
+    "name": "US/USDT",
+    "baseAsset": "US",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "VANAUSDT",
+    "name": "VANA/USDT",
+    "baseAsset": "VANA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "VANRYUSDT",
+    "name": "VANRY/USDT",
+    "baseAsset": "VANRY",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "VELODROMEUSDT",
+    "name": "VELODROME/USDT",
+    "baseAsset": "VELODROME",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "VELVETUSDT",
+    "name": "VELVET/USDT",
+    "baseAsset": "VELVET",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "VETUSDT",
+    "name": "VET/USDT",
+    "baseAsset": "VET",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "VICUSDT",
+    "name": "VIC/USDT",
+    "baseAsset": "VIC",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "VIRTUALUSDT",
+    "name": "VIRTUAL/USDT",
+    "baseAsset": "VIRTUAL",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "VTHOUSDT",
+    "name": "VTHO/USDT",
+    "baseAsset": "VTHO",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "VVVUSDT",
+    "name": "VVV/USDT",
+    "baseAsset": "VVV",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "WALUSDT",
+    "name": "WAL/USDT",
+    "baseAsset": "WAL",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "WAXPUSDT",
+    "name": "WAXP/USDT",
+    "baseAsset": "WAXP",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "WCTUSDT",
+    "name": "WCT/USDT",
+    "baseAsset": "WCT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "WETUSDT",
+    "name": "WET/USDT",
+    "baseAsset": "WET",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "WIFUSDC",
+    "name": "WIF/USDC",
+    "baseAsset": "WIF",
+    "quoteAsset": "USDC",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "WIFUSDT",
+    "name": "WIF/USDT",
+    "baseAsset": "WIF",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "WLDUSDC",
+    "name": "WLD/USDC",
+    "baseAsset": "WLD",
+    "quoteAsset": "USDC",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "WLDUSDT",
+    "name": "WLD/USDT",
+    "baseAsset": "WLD",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "WLFIUSDC",
+    "name": "WLFI/USDC",
+    "baseAsset": "WLFI",
+    "quoteAsset": "USDC",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "WLFIUSDT",
+    "name": "WLFI/USDT",
+    "baseAsset": "WLFI",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "WOOUSDT",
+    "name": "WOO/USDT",
+    "baseAsset": "WOO",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "WUSDT",
+    "name": "W/USDT",
+    "baseAsset": "W",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "XAIUSDT",
+    "name": "XAI/USDT",
+    "baseAsset": "XAI",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "XANUSDT",
+    "name": "XAN/USDT",
+    "baseAsset": "XAN",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "XAUTUSDT",
+    "name": "XAUT/USDT",
+    "baseAsset": "XAUT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "XLMUSDT",
+    "name": "XLM/USDT",
+    "baseAsset": "XLM",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "XMRUSDT",
+    "name": "XMR/USDT",
+    "baseAsset": "XMR",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "XNYUSDT",
+    "name": "XNY/USDT",
+    "baseAsset": "XNY",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "XPINUSDT",
+    "name": "XPIN/USDT",
+    "baseAsset": "XPIN",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "XPLUSDT",
+    "name": "XPL/USDT",
+    "baseAsset": "XPL",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "XRPUSDC",
+    "name": "XRP/USDC",
+    "baseAsset": "XRP",
+    "quoteAsset": "USDC",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "XRPUSDT",
+    "name": "XRP/USDT",
+    "baseAsset": "XRP",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "XTZUSDT",
+    "name": "XTZ/USDT",
+    "baseAsset": "XTZ",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "XVGUSDT",
+    "name": "XVG/USDT",
+    "baseAsset": "XVG",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "XVSUSDT",
+    "name": "XVS/USDT",
+    "baseAsset": "XVS",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "YBUSDT",
+    "name": "YB/USDT",
+    "baseAsset": "YB",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "YFIUSDT",
+    "name": "YFI/USDT",
+    "baseAsset": "YFI",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "YGGUSDT",
+    "name": "YGG/USDT",
+    "baseAsset": "YGG",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ZAMAUSDT",
+    "name": "ZAMA/USDT",
+    "baseAsset": "ZAMA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ZBTUSDT",
+    "name": "ZBT/USDT",
+    "baseAsset": "ZBT",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ZECUSDC",
+    "name": "ZEC/USDC",
+    "baseAsset": "ZEC",
+    "quoteAsset": "USDC",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ZECUSDT",
+    "name": "ZEC/USDT",
+    "baseAsset": "ZEC",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ZENUSDT",
+    "name": "ZEN/USDT",
+    "baseAsset": "ZEN",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ZEREBROUSDT",
+    "name": "ZEREBRO/USDT",
+    "baseAsset": "ZEREBRO",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ZESTUSDT",
+    "name": "ZEST/USDT",
+    "baseAsset": "ZEST",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ZETAUSDT",
+    "name": "ZETA/USDT",
+    "baseAsset": "ZETA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ZILUSDT",
+    "name": "ZIL/USDT",
+    "baseAsset": "ZIL",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ZKCUSDT",
+    "name": "ZKC/USDT",
+    "baseAsset": "ZKC",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ZKPUSDT",
+    "name": "ZKP/USDT",
+    "baseAsset": "ZKP",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ZKUSDT",
+    "name": "ZK/USDT",
+    "baseAsset": "ZK",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ZORAUSDT",
+    "name": "ZORA/USDT",
+    "baseAsset": "ZORA",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ZROUSDT",
+    "name": "ZRO/USDT",
+    "baseAsset": "ZRO",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "ZRXUSDT",
+    "name": "ZRX/USDT",
+    "baseAsset": "ZRX",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "币安人生USDT",
+    "name": "币安人生/USDT",
+    "baseAsset": "币安人生",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "我踏马来了USDT",
+    "name": "我踏马来了/USDT",
+    "baseAsset": "我踏马来了",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  },
+  {
+    "type": "future",
+    "symbol": "龙虾USDT",
+    "name": "龙虾/USDT",
+    "baseAsset": "龙虾",
+    "quoteAsset": "USDT",
+    "category": "crypto"
+  }
+]

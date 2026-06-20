@@ -4,6 +4,7 @@
 ======================= */
 .trade-header-shell {
   position: relative;
+  z-index: 10020;
   margin-bottom: 14px;
 }
 
@@ -64,12 +65,17 @@
   position: relative;
 }
 
+.toolbar-group-account .toolbar-select {
+  min-width: 150px;
+}
+
 /* =======================
    BUTTONS + SELECT
 ======================= */
 .toolbar-btn,
-.toolbar-select {
+.toolbar-select .custom-select__trigger {
   height: 38px;
+  min-height: 38px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-medium);
 
@@ -89,7 +95,7 @@
 }
 
 .toolbar-btn:hover,
-.toolbar-select:hover {
+.toolbar-select .custom-select__trigger:hover {
   border-color: var(--primary-light);
   background: var(--bg-hover);
   transform: translateY(-1px);
@@ -136,7 +142,7 @@
   background: rgba(15, 23, 42, 0.22);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
-  z-index: 9998;
+  z-index: 10000;
 }
 
 /* =======================
@@ -149,7 +155,7 @@
   right: auto;
   transform: translate(-50%, -50%);
 
-  z-index: 9999;
+  z-index: 10040;
 
   width: min(320px, calc(100vw - 24px));
   max-width: calc(100vw - 24px);
@@ -176,7 +182,7 @@
   right: auto;
   transform: translate(-50%, -50%);
 
-  z-index: 9999;
+  z-index: 10040;
 
   width: fit-content;
   max-width: calc(100vw - 24px);
@@ -210,8 +216,9 @@
 }
 
 .filter-panel input:not([type="checkbox"]),
-.filter-panel select {
+.filter-panel .custom-select__trigger {
   height: 38px;
+  min-height: 38px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-medium);
 
@@ -226,7 +233,7 @@
 }
 
 .filter-panel input:not([type="checkbox"]):focus,
-.filter-panel select:focus {
+.filter-panel .custom-select__trigger:focus-visible {
   border-color: var(--primary);
   box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.18);
 }
@@ -406,7 +413,7 @@
     justify-content: space-between;
     gap: 6px;
     background: var(--bg-card);
-    z-index: 8000;
+    z-index: 10020;
   }
 
   .trade-header-shell .app-page-header__left {

@@ -7,7 +7,6 @@ import MainContentWrapper from '@/components/Layout/MainContentWrapper';
 import StatsCards from '@/components/StatsCards/StatsCards';
 import TradesList from '@/components/myTrades/TradesList';
 import ProgressTracker from '@/components/MainContent/ProgressTracker';
-import LegacyIcon from '@/components/Common/LegacyIcon';
 import api from '@/utils/serve';
 import { markPerf, measurePerf } from '@/utils/perfMarks';
 import { loadCachedUserSettings, loadUserSettings } from '../../utils/userSettings';
@@ -44,29 +43,6 @@ const getDateScopePart = (value) => {
   if (!value) return 'all';
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? 'all' : date.toISOString().slice(0, 10);
-};
-
-const syncStatusLabels = {
-  queued: 'Queued...',
-  launching_terminal: 'Launching terminal...',
-  fetching_trades: 'Fetching trades...',
-  saving_data: 'Saving data...',
-  synced: 'Synced successfully',
-  success: 'Synced successfully',
-  failed: 'Failed',
-};
-
-const formatSyncTime = (value) => {
-  if (!value) return 'Never synced';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'Never synced';
-
-  return new Intl.DateTimeFormat(undefined, {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date);
 };
 
 function LazyDashboardSection({ children, sectionKey, fallback, perfName, delay = 100 }) {

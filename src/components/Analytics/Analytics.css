@@ -370,8 +370,9 @@
 }
 
 .ai-analysis-field input,
-.ai-analysis-field select {
+.ai-analysis-field .custom-select__trigger {
   height: 36px;
+  min-height: 36px;
   min-width: 170px;
   padding: 0 10px;
   border: 1px solid var(--border-light);

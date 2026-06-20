@@ -37,7 +37,7 @@ export default defineConfig([
     },
   },
   {
-    files: ['backend/server/**/*.js'],
+    files: ['backend/**/*.js'],
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.node,

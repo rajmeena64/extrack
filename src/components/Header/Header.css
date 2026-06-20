@@ -340,7 +340,7 @@
 }
 
 .toolbar-control--active {
-  z-index: 10000;
+  z-index: 10040;
 }
 
 .toolbar-primary--dimmed {
@@ -356,7 +356,7 @@
   left: 50%;
   right: auto;
   transform: translate(-50%, -50%);
-  z-index: 10001;
+  z-index: 10050;
   width: fit-content;
   max-width: calc(100vw - 24px);
   max-height: 85vh;
@@ -384,7 +384,7 @@
   background: #ffffff;
   border: 1px solid var(--border-light);
   box-shadow: 0 28px 70px -38px rgba(15, 23, 42, 0.42);
-  z-index: 10001;
+  z-index: 10050;
   display: flex;
   flex-direction: column;
 }
@@ -399,7 +399,7 @@
   background: #ffffff;
   border: 1px solid var(--border-light);
   box-shadow: 0 28px 70px -38px rgba(15, 23, 42, 0.42);
-  z-index: 10001;
+  z-index: 10050;
 }
 
 .dark-mode .trade-filter-menu {
@@ -1095,7 +1095,7 @@ body.dashboard-popup-open .main-content {
 }
 
 body.dashboard-popup-open .dashboard-header {
-  z-index: 10000;
+  z-index: 10030;
 }
 
 body.dashboard-popup-open .dashboard-toolbar__controls > .toolbar-primary,
@@ -1125,13 +1125,13 @@ body.dashboard-popup-open .toolbar-date-range,
 body.dashboard-popup-open .trade-filter-wrapper,
 body.dashboard-popup-open .currency-filter-wrapper {
   position: relative;
-  z-index: 10000;
+  z-index: 10030;
 }
 
 body.dashboard-popup-open .toolbar-date-range:has(.toolbar-date-range__panel),
 body.dashboard-popup-open .trade-filter-wrapper:has(.trade-filter-menu),
 body.dashboard-popup-open .currency-filter-wrapper:has(.currency-filter-menu) {
-  z-index: 10000;
+  z-index: 10040;
 }
 
 @media (max-width: 480px) {

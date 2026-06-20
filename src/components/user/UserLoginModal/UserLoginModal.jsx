@@ -3,13 +3,14 @@ import React, { useState, useEffect } from 'react';
 import './UserLoginModal.css';
 import LegacyIcon from '../../Common/LegacyIcon';
 import Logo from '../../Common/Logo';
+import CustomSelect from '../../Common/CustomSelect';
 
 import { API_URL } from "../../../utils/constants";
 import { useAuth } from '../../../context/AuthContext';
 import { useAppDialog } from '../../../context/AppDialogContext';
 import { clearClientStorage } from '../../../utils/clientStorage';
 
-function UserLoginModal({ isOpen, onClose }) {
+function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
   const { user: currentUser, setUser } = useAuth();
   const { confirm } = useAppDialog();
   const [activeTab, setActiveTab] = useState('login'); // 'login', 'signup', 'forgot'
@@ -31,6 +32,12 @@ function UserLoginModal({ isOpen, onClose }) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [editData, setEditData] = useState({});
+
+  useEffect(() => {
+    if (isOpen && !currentUser) {
+      setActiveTab(initialTab);
+    }
+  }, [currentUser, initialTab, isOpen]);
 
   // ESC key se close
   useEffect(() => {
@@ -65,6 +72,15 @@ function UserLoginModal({ isOpen, onClose }) {
   };
 
   // ✅ LOGIN API CALL
+  const handleGoogleAuth = () => {
+    if (!API_URL) {
+      alert('Google sign-in is not configured yet.');
+      return;
+    }
+
+    window.location.href = `${API_URL}/api/auth/google`;
+  };
+
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -86,6 +102,11 @@ function UserLoginModal({ isOpen, onClose }) {
 
       const responseUser = data.data?.user || data.user;
       if (data.success && responseUser) {
+        const accessToken = data.data?.accessToken;
+        if (accessToken) {
+          localStorage.setItem('accessToken', accessToken);
+        }
+
         const userData = {
           ID: responseUser.ID,
           firstName: responseUser.firstName,
@@ -334,6 +355,12 @@ function UserLoginModal({ isOpen, onClose }) {
             {/* RIGHT SIDE - FORMS */}
             <div className="form-section">
               <div className="form-container">
+                {!currentUser && (
+                  <div className="auth-brand-block">
+                    <div className="auth-brand-mark">E</div>
+                    <span>Entrack</span>
+                  </div>
+                )}
                 
                 {/* LOGIN FORM */}
                 {!currentUser && activeTab === 'login' && (
@@ -424,6 +451,13 @@ function UserLoginModal({ isOpen, onClose }) {
                     <button type="submit" className="login-btn" disabled={loading}>
                       {loading ? 'Signing In...' : 'Sign In'}
                     </button>
+
+                    <div className="auth-divider"><span>or</span></div>
+
+                    <button type="button" className="google-auth-btn" onClick={handleGoogleAuth}>
+                      <span className="google-auth-mark" aria-hidden="true">G</span>
+                      Continue with Google
+                    </button>
                     
                     <div className="switch-text">
                       Don't have an account?{' '}
@@ -497,19 +531,13 @@ function UserLoginModal({ isOpen, onClose }) {
                     
                     <div className="form-group">
                       <label>Preferred Currency</label>
-                      <select
+                      <CustomSelect
                         name="currency"
                         value={formData.currency}
                         onChange={handleInputChange}
                         className="currency-select form-input"
-                        required
-                      >
-                        {currencies.map(currency => (
-                          <option key={currency.value} value={currency.value}>
-                            {currency.label}
-                          </option>
-                        ))}
-                      </select>
+                        options={currencies}
+                      />
                     </div>
                     
                     <div className="form-group">
@@ -551,6 +579,13 @@ function UserLoginModal({ isOpen, onClose }) {
                     
                     <button type="submit" className="login-btn" disabled={loading}>
                       {loading ? 'Creating Account...' : 'Create Account'}
+                    </button>
+
+                    <div className="auth-divider"><span>or</span></div>
+
+                    <button type="button" className="google-auth-btn" onClick={handleGoogleAuth}>
+                      <span className="google-auth-mark" aria-hidden="true">G</span>
+                      Continue with Google
                     </button>
                     
                     <div className="switch-text">
@@ -652,6 +687,35 @@ function UserLoginModal({ isOpen, onClose }) {
                 )}
               </div>
             </div>
+
+            {!currentUser && (
+              <aside className="auth-showcase" aria-label="Entrack product preview">
+                <div className="auth-showcase__mark" aria-hidden="true">E</div>
+                <div className="auth-showcase__content">
+                  <span className="auth-showcase__eyebrow">Entrack</span>
+                  <h2>Welcome to Entrack</h2>
+                  <p>
+                    Review trades, replay decisions, and turn your trading history into a
+                    cleaner weekly improvement loop.
+                  </p>
+                  <p className="auth-showcase__small">
+                    Join the workspace built for serious traders who want evidence, not guesswork.
+                  </p>
+                </div>
+                <div className="auth-showcase-card">
+                  <h3>Find your edge and protect it.</h3>
+                  <p>
+                    Keep journal notes, broker activity, analytics, and replay practice together.
+                  </p>
+                  <div className="auth-avatar-stack" aria-hidden="true">
+                    <span>FX</span>
+                    <span>CR</span>
+                    <span>IN</span>
+                    <strong>+2</strong>
+                  </div>
+                </div>
+              </aside>
+            )}
           </div>
         </div>
 
@@ -659,8 +723,8 @@ function UserLoginModal({ isOpen, onClose }) {
         <div className="modal-footer">
           <p>
             © 2024 Entrack. All rights reserved. | 
-            <a href="#"> Privacy Policy</a> | 
-            <a href="#"> Terms of Service</a>
+            <a href="/privacy"> Privacy Policy</a> | 
+            <a href="/terms"> Terms of Service</a>
           </p>
         </div>
 
@@ -723,18 +787,12 @@ function UserLoginModal({ isOpen, onClose }) {
                 
                 <div className="form-group">
                   <label>Preferred Currency</label>
-                  <select
+                  <CustomSelect
                     value={editData.currency}
                     onChange={(e) => setEditData({...editData, currency: e.target.value})}
                     className="currency-select"
-                    required
-                  >
-                    {currencies.map(currency => (
-                      <option key={currency.value} value={currency.value}>
-                        {currency.label}
-                      </option>
-                    ))}
-                  </select>
+                    options={currencies}
+                  />
                 </div>
                 
                 <div className="modal-actions">

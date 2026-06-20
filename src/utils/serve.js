@@ -45,6 +45,15 @@ if (import.meta.env.DEV) {
   );
 }
 
+api.interceptors.request.use((config) => {
+  const accessToken = localStorage.getItem("accessToken");
+  if (accessToken && !config.headers?.Authorization) {
+    config.headers = config.headers || {};
+    config.headers.Authorization = `Bearer ${accessToken}`;
+  }
+  return config;
+});
+
 // =====================
 // Refresh control
 // =====================
@@ -125,11 +134,15 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        await axios.post(
+        const refreshResponse = await axios.post(
           `${API_URL}/api/auth/refresh-token`,
           {},
           { withCredentials: true }
         );
+        const refreshedToken = refreshResponse.data?.data?.accessToken;
+        if (refreshedToken) {
+          localStorage.setItem("accessToken", refreshedToken);
+        }
 
         onRefreshed();
 

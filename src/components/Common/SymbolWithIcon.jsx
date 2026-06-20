@@ -1,4 +1,14 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
+import binanceFutures from "../../../backend/instruments/data/crypto/binance_futures.json";
+
+/* =======================
+   HELPERS
+======================= */
+const getCapitalLetters = (str) =>
+  String(str || "")
+    .toUpperCase()
+    .match(/[A-Z0-9]/g)
+    ?.join("") || "";
 
 /* =======================
    FIXED SYMBOL ICONS
@@ -12,6 +22,19 @@ const fixedSymbolIcons = {
   NAS100: "/assets/commodities/usd.svg",
 };
 
+const BINANCE_FUTURES_BY_SYMBOL = binanceFutures.reduce((acc, instrument) => {
+  const key = getCapitalLetters(instrument.symbol);
+
+  if (key && instrument.baseAsset && instrument.quoteAsset) {
+    acc[key] = {
+      base: getCapitalLetters(instrument.baseAsset),
+      quote: getCapitalLetters(instrument.quoteAsset),
+    };
+  }
+
+  return acc;
+}, {});
+
 /* =======================
    SIZE MAP
 ======================= */
@@ -22,22 +45,137 @@ const SIZE_MAP = {
 };
 
 /* =======================
-   HELPERS
-======================= */
-const getCapitalLetters = (str) =>
-  (str.match(/[A-Z0-9]/g) || []).join("");
-
-/* =======================
    STABLECOINS
 ======================= */
 const STABLES = ["USDT", "USDC"];
+
+const getIconLookupCodes = (asset) => {
+  const normalized = getCapitalLetters(asset);
+  const withoutMultiplier = normalized.replace(/^\d+/, "");
+
+  return [...new Set([normalized, withoutMultiplier].filter(Boolean))];
+};
+
+const getAssetIconPaths = (asset) =>
+  getIconLookupCodes(asset).flatMap((code) => {
+    const lowerCode = code.toLowerCase();
+
+    return [
+      `/assets/crypto/color/${lowerCode}.svg`,
+      `/assets/flags/4x3/${lowerCode}.svg`,
+    ];
+  });
+
+const getPairParts = (capitalOnly) => {
+  if (BINANCE_FUTURES_BY_SYMBOL[capitalOnly]) {
+    return BINANCE_FUTURES_BY_SYMBOL[capitalOnly];
+  }
+
+  for (const stable of STABLES) {
+    if (capitalOnly.length > stable.length && capitalOnly.endsWith(stable)) {
+      return {
+        base: capitalOnly.slice(0, -stable.length),
+        quote: stable,
+      };
+    }
+
+    if (capitalOnly.length > stable.length && capitalOnly.startsWith(stable)) {
+      return {
+        base: stable,
+        quote: capitalOnly.slice(stable.length),
+      };
+    }
+  }
+
+  if (capitalOnly.length === 6) {
+    return {
+      base: capitalOnly.slice(0, 3),
+      quote: capitalOnly.slice(3),
+    };
+  }
+
+  return null;
+};
+
+function TokenIcon({ asset, paths, style, onResolved }) {
+  const [pathIndex, setPathIndex] = useState(0);
+  const src = paths[pathIndex];
+
+  if (!src) {
+    onResolved?.(asset, false);
+    return null;
+  }
+
+  return (
+    <img
+      src={src}
+      alt={asset}
+      style={style}
+      onLoad={() => onResolved?.(asset, true)}
+      onError={() => {
+        const nextIndex = pathIndex + 1;
+
+        if (nextIndex >= paths.length) {
+          onResolved?.(asset, false);
+          return;
+        }
+
+        setPathIndex(nextIndex);
+      }}
+    />
+  );
+}
+
+function PairIcon({ base, quote, iconSize, pairFlagStyle }) {
+  const [baseHasIcon, setBaseHasIcon] = useState(null);
+  const [quoteHasIcon, setQuoteHasIcon] = useState(null);
+  const basePaths = useMemo(() => getAssetIconPaths(base), [base]);
+  const quotePaths = useMemo(() => getAssetIconPaths(quote), [quote]);
+
+  if (baseHasIcon === false || quoteHasIcon === false) {
+    return null;
+  }
+
+  const handleResolved = (asset, hasIcon) => {
+    if (asset === base) setBaseHasIcon(hasIcon);
+    if (asset === quote) setQuoteHasIcon(hasIcon);
+  };
+
+  return (
+    <div style={{ position: "relative", width: iconSize, height: iconSize }}>
+      <TokenIcon
+        asset={base}
+        paths={basePaths}
+        style={{
+          ...pairFlagStyle,
+          left: 0,
+          top: iconSize / 4,
+          zIndex: 2,
+        }}
+        onResolved={handleResolved}
+      />
+
+      <TokenIcon
+        asset={quote}
+        paths={quotePaths}
+        style={{
+          ...pairFlagStyle,
+          left: iconSize / 3,
+          top: 0,
+          zIndex: 1,
+        }}
+        onResolved={handleResolved}
+      />
+    </div>
+  );
+}
 
 /* =======================
    COMPONENT
 ======================= */
 function SymbolWithIcon({ symbol, size = "md", showLabel = true }) {
   const iconSize = SIZE_MAP[size] || 18;
-  const pairSize = Math.floor(iconSize * 0.75); // 👈 smaller pair icons
+  const pairSize = Math.floor(iconSize * 0.75);
 
   const pairFlagStyle = {
     width: pairSize,
@@ -51,123 +189,7 @@ function SymbolWithIcon({ symbol, size = "md", showLabel = true }) {
   const capitalOnly = getCapitalLetters(symbol);
 
   /* =======================
-     CASE 1a : STABLECOIN START (7 length only)
-  ======================= */
-  for (const s of STABLES) {
-    if (capitalOnly.length === 7 && capitalOnly.startsWith(s)) {
-      const stable = s;
-      const coin = capitalOnly.slice(4, 7); // fixed 3 letters
-
-      const stableIcon = `/assets/crypto/color/${stable.toLowerCase()}.svg`;
-
-      const coinPaths = [
-        `/assets/flags/4x3/${coin.toLowerCase()}.svg`,
-        `/assets/crypto/color/${coin.toLowerCase()}.svg`,
-      ];
-
-      return (
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <div style={{ position: "relative", width: iconSize, height: iconSize }}>
-            {/* Stablecoin icon - LEFT position */}
-            <img
-              src={stableIcon}
-              alt={stable}
-              style={{
-                ...pairFlagStyle,
-                left: 0,
-                top: iconSize / 4,
-                zIndex: 2,
-              }}
-              onError={(e) => (e.currentTarget.style.display = "none")}
-            />
-
-            {/* Coin icon - RIGHT position */}
-            {coinPaths.map((src, i) => (
-              <img
-                key={i}
-                src={src}
-                alt={coin}
-                style={{
-                  ...pairFlagStyle,
-                  left: iconSize / 3,
-                  top: 0,
-                  zIndex: 1,
-                }}
-                onError={(e) => (e.currentTarget.style.display = "none")}
-              />
-            ))}
-          </div>
-
-          {showLabel ? (
-            <span style={{ fontSize: 10, fontWeight: 500 }}>
-              {uiSymbol}
-            </span>
-          ) : null}
-        </div>
-      );
-    }
-  }
-
-  /* =======================
-     CASE 1b : STABLECOIN END (7 length only)
-  ======================= */
-  for (const s of STABLES) {
-    if (capitalOnly.length === 7 && capitalOnly.endsWith(s)) {
-      const stable = s;
-      const coin = capitalOnly.slice(0, 3); // fixed 3 letters
-
-      const stableIcon = `/assets/crypto/color/${stable.toLowerCase()}.svg`;
-
-      const coinPaths = [
-        `/assets/flags/4x3/${coin.toLowerCase()}.svg`,
-        `/assets/crypto/color/${coin.toLowerCase()}.svg`,
-      ];
-
-      return (
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <div style={{ position: "relative", width: iconSize, height: iconSize }}>
-            {/* Coin icon - LEFT position */}
-            {coinPaths.map((src, i) => (
-              <img
-                key={i}
-                src={src}
-                alt={coin}
-                style={{
-                  ...pairFlagStyle,
-                  left: 0,
-                  top: iconSize / 4,
-                  zIndex: 2,
-                }}
-                onError={(e) => (e.currentTarget.style.display = "none")}
-              />
-            ))}
-
-            {/* Stablecoin icon - RIGHT position */}
-            <img
-              src={stableIcon}
-              alt={stable}
-              style={{
-                ...pairFlagStyle,
-                left: iconSize / 3,
-                top: 0,
-                zIndex: 1,
-              }}
-              onError={(e) => (e.currentTarget.style.display = "none")}
-            />
-          </div>
-
-          {showLabel ? (
-            <span style={{ fontSize: 10, fontWeight: 500 }}>
-              {uiSymbol}
-            </span>
-          ) : null}
-        </div>
-      );
-    }
-  }
-
-  /* =======================
-     CASE 2 : FIXED ICON
+     CASE 1 : FIXED ICON
   ======================= */
   if (fixedSymbolIcons[capitalOnly]) {
     return (
@@ -189,57 +211,20 @@ function SymbolWithIcon({ symbol, size = "md", showLabel = true }) {
   }
 
   /* =======================
-     CASE 3 : NORMAL PAIR
+     CASE 2 : DATA-DRIVEN PAIR
   ======================= */
-  if (capitalOnly.length === 6) {
-    const base = capitalOnly.slice(0, 3).toLowerCase();
-    const quote = capitalOnly.slice(3).toLowerCase();
+  const pairParts = getPairParts(capitalOnly);
 
-    const basePaths = [
-      `/assets/crypto/color/${base}.svg`,
-      `/assets/flags/4x3/${base}.svg`,
-    ];
-
-    const quotePaths = [
-      `/assets/crypto/color/${quote}.svg`,
-      `/assets/flags/4x3/${quote}.svg`,
-    ];
-
+  if (pairParts) {
     return (
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <div style={{ position: "relative", width: iconSize, height: iconSize }}>
-          {/* Base currency - LEFT position */}
-          {basePaths.map((src, i) => (
-            <img
-              key={`b-${i}`}
-              src={src}
-              alt={base}
-              style={{
-                ...pairFlagStyle,
-                left: 0,
-                top: iconSize / 4,
-                zIndex: 2,
-              }}
-              onError={(e) => (e.currentTarget.style.display = "none")}
-            />
-          ))}
-
-          {/* Quote currency - RIGHT position */}
-          {quotePaths.map((src, i) => (
-            <img
-              key={`q-${i}`}
-              src={src}
-              alt={quote}
-              style={{
-                ...pairFlagStyle,
-                left: iconSize / 3,
-                top: 0,
-                zIndex: 1,
-              }}
-              onError={(e) => (e.currentTarget.style.display = "none")}
-            />
-          ))}
-        </div>
+        <PairIcon
+          key={`${pairParts.base}-${pairParts.quote}`}
+          base={pairParts.base}
+          quote={pairParts.quote}
+          iconSize={iconSize}
+          pairFlagStyle={pairFlagStyle}
+        />
 
         {showLabel ? <span style={{ fontSize: 10 }}>{uiSymbol}</span> : null}
       </div>
@@ -253,7 +238,3 @@ function SymbolWithIcon({ symbol, size = "md", showLabel = true }) {
 }
 
 export default SymbolWithIcon;
-
-
-
-

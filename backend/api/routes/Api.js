@@ -1,6 +1,7 @@
 const express = require("express");
 const axios = require("axios");
 const { createRateLimiter } = require("../../core/rateLimiter/index");
+const { getInstrumentBySymbol } = require("../../instruments/instrumentRegistry");
 
 const router = express.Router();
 const marketDataRateLimiter = createRateLimiter({
@@ -24,9 +25,17 @@ router.get("/forex-ohlc", marketDataRateLimiter, async (req, res) => {
       });
     }
 
+    const instrument = getInstrumentBySymbol(symbol);
+    if (!instrument) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or unsupported symbol",
+      });
+    }
+
     // FCS Forex API expects symbols without a slash.
     // Example: EUR/USD becomes EURUSD.
-    const formattedSymbol = symbol.replace("/", "");
+    const formattedSymbol = instrument.symbol.replace("/", "");
 
     // Allowed timeframes.
     const allowedPeriods = ["1m", "5m", "15m", "30m", "1h", "4h", "1d", "1w", "1M"];
@@ -86,7 +95,7 @@ router.get("/forex-ohlc", marketDataRateLimiter, async (req, res) => {
 
     res.json({
       success: true,
-      symbol,
+      symbol: instrument.symbol,
       period,
       count: candles.length,
       data: candles,

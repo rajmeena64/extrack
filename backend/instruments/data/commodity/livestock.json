@@ -1,0 +1,116 @@
+[
+  {
+    "symbol": "LCATTLE",
+    "name": "Live Cattle",
+    "type": "commodity",
+    "category": "livestock"
+  },
+  {
+    "symbol": "FCATTLE",
+    "name": "Feeder Cattle",
+    "type": "commodity",
+    "category": "livestock"
+  },
+  {
+    "symbol": "LSBEEF",
+    "name": "Beef",
+    "type": "commodity",
+    "category": "livestock"
+  },
+  {
+    "symbol": "LHOG",
+    "name": "Lean Hogs",
+    "type": "commodity",
+    "category": "livestock"
+  },
+  {
+    "symbol": "LSPORK",
+    "name": "Pork",
+    "type": "commodity",
+    "category": "livestock"
+  },
+  {
+    "symbol": "LSPORKBELLIE",
+    "name": "Pork Bellies",
+    "type": "commodity",
+    "category": "livestock"
+  },
+  {
+    "symbol": "LSSHEEP",
+    "name": "Sheep",
+    "type": "commodity",
+    "category": "livestock"
+  },
+  {
+    "symbol": "LSGOATS",
+    "name": "Goats",
+    "type": "commodity",
+    "category": "livestock"
+  },
+  {
+    "symbol": "LSCHICKEN",
+    "name": "Chicken",
+    "type": "commodity",
+    "category": "livestock"
+  },
+  {
+    "symbol": "LSTURKEY",
+    "name": "Turkey",
+    "type": "commodity",
+    "category": "livestock"
+  },
+  {
+    "symbol": "LSEGGS",
+    "name": "Eggs",
+    "type": "commodity",
+    "category": "livestock"
+  },
+  {
+    "symbol": "CIM",
+    "name": "Class III Milk",
+    "type": "commodity",
+    "category": "livestock"
+  },
+  {
+    "symbol": "GDK",
+    "name": "Class IV Milk",
+    "type": "commodity",
+    "category": "livestock"
+  },
+  {
+    "symbol": "LSBUTTER",
+    "name": "Butter",
+    "type": "commodity",
+    "category": "livestock"
+  },
+  {
+    "symbol": "CSC",
+    "name": "Cheese",
+    "type": "commodity",
+    "category": "livestock"
+  },
+  {
+    "symbol": "LSDRYWHEY",
+    "name": "Dry Whey",
+    "type": "commodity",
+    "category": "livestock"
+  },
+  {
+    "symbol": "GNF",
+    "name": "Nonfat Dry Milk",
+    "type": "commodity",
+    "category": "livestock"
+  },
+  {
+    "symbol": "SMP",
+    "name": "Skim Milk Powder",
+    "type": "commodity",
+    "category": "livestock"
+  },
+  {
+    "symbol": "WMP",
+    "name": "Whole Milk Powder",
+    "type": "commodity",
+    "category": "livestock"
+  }
+]

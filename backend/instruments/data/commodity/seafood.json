@@ -1,0 +1,32 @@
+[
+  {
+    "symbol": "SDSALMON",
+    "name": "Salmon",
+    "type": "commodity",
+    "category": "seafood"
+  },
+  {
+    "symbol": "SDTUNA",
+    "name": "Tuna",
+    "type": "commodity",
+    "category": "seafood"
+  },
+  {
+    "symbol": "SDSHRIMP",
+    "name": "Shrimp",
+    "type": "commodity",
+    "category": "seafood"
+  },
+  {
+    "symbol": "SDFISHMEAL",
+    "name": "Fishmeal",
+    "type": "commodity",
+    "category": "seafood"
+  },
+  {
+    "symbol": "SDFISHOIL",
+    "name": "Fish Oil",
+    "type": "commodity",
+    "category": "seafood"
+  }
+]

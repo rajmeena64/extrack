@@ -1,8 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { X } from '../../../icons/lucideIcons';
+import { EllipsisVertical, X } from '../../../icons/lucideIcons';
 import { calculatePositionSize, calculateRR, calculateReward, calculateRisk, validateOrder } from '../engine/riskCalculator';
 
-const RISK_OPTIONS = [0.5, 1, 2, 3, 5];
 const currency = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 });
 
 function numberValue(value) {
@@ -17,15 +16,11 @@ function BacktestOrderPanel({
   onPlaceOrder,
   onJournalTrade,
 }) {
-  const [advancedOpen, setAdvancedOpen] = useState(true);
-  const [balanceMode, setBalanceMode] = useState('current');
   const [targetEnabled, setTargetEnabled] = useState(true);
   const [stopEnabled, setStopEnabled] = useState(true);
-  const [autoBreakeven, setAutoBreakeven] = useState(false);
-  const [rrInputMode, setRrInputMode] = useState('price');
 
   const marketPrice = currentCandle?.close || state.entryPrice || 0;
-  const effectiveBalance = balanceMode === 'initial' ? state.initialBalance : state.balance;
+  const effectiveBalance = state.balance;
   const stopLoss = stopEnabled ? numberValue(state.stopLoss) : 0;
   const takeProfit = targetEnabled ? numberValue(state.takeProfit) : 0;
 
@@ -84,22 +79,39 @@ function BacktestOrderPanel({
   };
 
   const sideLabel = state.selectedOrderSide === 'buy' ? 'Buy' : 'Sell';
+  const oppositeSideLabel = state.selectedOrderSide === 'buy' ? 'Sell' : 'Buy';
+  const displayPrice = marketPrice.toFixed(2);
+  const orderTypeLabel = state.orderType === 'market' ? 'MKT' : state.orderType.toUpperCase();
 
   return (
     <aside className="backtest-order-panel">
       <div className="backtest-panel-heading">
         <div>
-          <span>Place Order</span>
-          <strong>{state.symbol}</strong>
+          <strong>{state.symbol}, Trading</strong>
         </div>
+        <button className="backtest-panel-more" type="button" title="Order settings" aria-label="Order settings">
+          <EllipsisVertical size={16} aria-hidden="true" />
+        </button>
         <button className="backtest-panel-close" type="button" onClick={onClose} title="Hide order panel" aria-label="Hide order panel">
-          <X size={16} aria-hidden="true" />
+          <X size={20} aria-hidden="true" />
         </button>
       </div>
 
+      <div className="backtest-ticket-tabs" role="tablist" aria-label="Order views">
+        <button type="button" className="is-active">Order</button>
+        <button type="button">DOM</button>
+      </div>
+
       <div className="backtest-side-toggle">
-        <button type="button" className={state.selectedOrderSide === 'buy' ? 'is-buy is-active' : 'is-buy'} onClick={() => onFieldChange('selectedOrderSide', 'buy')}>BUY</button>
-        <button type="button" className={state.selectedOrderSide === 'sell' ? 'is-sell is-active' : 'is-sell'} onClick={() => onFieldChange('selectedOrderSide', 'sell')}>SELL</button>
+        <button type="button" className={state.selectedOrderSide === 'sell' ? 'is-sell is-active' : 'is-sell'} onClick={() => onFieldChange('selectedOrderSide', 'sell')}>
+          <span>Sell</span>
+          <strong>{displayPrice}</strong>
+        </button>
+        <span className="backtest-ticket-spread">0.00</span>
+        <button type="button" className={state.selectedOrderSide === 'buy' ? 'is-buy is-active' : 'is-buy'} onClick={() => onFieldChange('selectedOrderSide', 'buy')}>
+          <span>Buy</span>
+          <strong>{displayPrice}</strong>
+        </button>
       </div>
 
       <div className="backtest-segmented">
@@ -108,65 +120,43 @@ function BacktestOrderPanel({
         ))}
       </div>
 
-      <label className="backtest-toggle-row">
-        <span>Advanced order</span>
-        <input type="checkbox" checked={advancedOpen} onChange={(event) => setAdvancedOpen(event.target.checked)} />
-      </label>
-
-      <div className="backtest-segmented backtest-segmented--wide">
-        <button type="button" className={balanceMode === 'current' ? 'is-active' : ''} onClick={() => setBalanceMode('current')}>Current balance</button>
-        <button type="button" className={balanceMode === 'initial' ? 'is-active' : ''} onClick={() => setBalanceMode('initial')}>Initial balance</button>
-      </div>
-
-      <div className="backtest-risk-buttons">
-        {RISK_OPTIONS.map((percent) => (
-          <button key={percent} type="button" className={state.riskPercent === percent ? 'is-active' : ''} onClick={() => handleRiskPercent(percent)}>
-            {percent}%
-          </button>
-        ))}
-      </div>
-
       <div className="backtest-form-grid">
-        <label><span>Custom max risk %</span><input type="number" min="0" step="0.1" value={state.riskPercent} onChange={(event) => handleRiskPercent(Number(event.target.value))} /></label>
-        <label><span>Max risk amount</span><input type="number" min="0" step="1" value={state.riskAmount} onChange={(event) => onFieldChange('riskAmount', Number(event.target.value))} /></label>
-        <label><span>Position size</span><input readOnly value={calculations.quantity} /></label>
-        <label><span>Market price</span><input readOnly value={marketPrice.toFixed(5)} /></label>
+        <label><span>Units</span><input type="number" min="0" step="1" value={state.riskAmount} onChange={(event) => onFieldChange('riskAmount', Number(event.target.value))} /></label>
       </div>
 
-      {advancedOpen && (
-        <>
-          <label className="backtest-check-input">
+      <div className="backtest-advanced-ticket">
+        <div className="backtest-protection-grid">
+          <label className="backtest-protection-toggle">
             <input type="checkbox" checked={targetEnabled} onChange={(event) => setTargetEnabled(event.target.checked)} />
-            <span>Profit target</span>
-            <input type="number" value={state.takeProfit || ''} onChange={(event) => onFieldChange('takeProfit', Number(event.target.value))} />
+            <span>Take Profit</span>
           </label>
-
-          <label className="backtest-check-input">
+          <label className="backtest-protection-toggle">
             <input type="checkbox" checked={stopEnabled} onChange={(event) => setStopEnabled(event.target.checked)} />
-            <span>Stop loss</span>
-            <input type="number" value={state.stopLoss || ''} onChange={(event) => onFieldChange('stopLoss', Number(event.target.value))} />
+            <span>Stop Loss</span>
           </label>
 
-          <label className="backtest-toggle-row">
-            <span>Auto breakeven</span>
-            <input type="checkbox" checked={autoBreakeven} onChange={(event) => setAutoBreakeven(event.target.checked)} />
-          </label>
-
-          <div className="backtest-segmented">
-            {['price', 'reward', 'R multiple'].map((mode) => (
-              <button key={mode} type="button" className={rrInputMode === mode ? 'is-active' : ''} onClick={() => setRrInputMode(mode)}>{mode}</button>
-            ))}
+          <div className={targetEnabled ? 'backtest-protection-box' : 'backtest-protection-box is-disabled'}>
+            <input type="number" min="0" step="0.1" value={state.riskPercent} onChange={(event) => handleRiskPercent(Number(event.target.value))} aria-label="Take profit ticks" />
+            <input type="number" value={state.takeProfit || ''} onChange={(event) => onFieldChange('takeProfit', Number(event.target.value))} aria-label="Take profit price" />
+            <input readOnly value={currency.format(calculations.rewardAmount)} aria-label="Take profit money" />
+            <input readOnly value={calculations.rrRatio ? `${calculations.rrRatio}:1` : '0.00'} aria-label="Take profit ratio" />
           </div>
-        </>
-      )}
 
-      <dl className="backtest-calcs">
-        <div><dt>Reward amount</dt><dd className="is-positive">{currency.format(calculations.rewardAmount)}</dd></div>
-        <div><dt>Risk amount</dt><dd className="is-negative">{currency.format(calculations.riskAmount)}</dd></div>
-        <div><dt>Total balance after trade</dt><dd>{currency.format(effectiveBalance + calculations.rewardAmount)}</dd></div>
-        <div><dt>Position size</dt><dd>{calculations.quantity}</dd></div>
-        <div><dt>R:R ratio</dt><dd>{calculations.rrRatio}:1</dd></div>
-      </dl>
+          <div className="backtest-protection-labels" aria-hidden="true">
+            <span>Ticks</span>
+            <span>Price</span>
+            <span>Money</span>
+            <span>%</span>
+          </div>
+
+          <div className={stopEnabled ? 'backtest-protection-box' : 'backtest-protection-box is-disabled'}>
+            <input type="number" min="0" step="1" value={state.riskAmount} onChange={(event) => onFieldChange('riskAmount', Number(event.target.value))} aria-label="Stop loss ticks" />
+            <input type="number" value={state.stopLoss || ''} onChange={(event) => onFieldChange('stopLoss', Number(event.target.value))} aria-label="Stop loss price" />
+            <input readOnly value={currency.format(calculations.riskAmount)} aria-label="Stop loss money" />
+            <input readOnly value={`${state.riskPercent || 0}%`} aria-label="Stop loss percent" />
+          </div>
+        </div>
+      </div>
 
       {calculations.errors.length > 0 && (
         <div className="backtest-order-errors">{calculations.errors[0]}</div>
@@ -174,11 +164,22 @@ function BacktestOrderPanel({
 
       <div className="backtest-order-actions">
         <button type="button" className={state.selectedOrderSide === 'buy' ? 'is-buy' : 'is-sell'} onClick={() => handlePlaceOrder(false)}>
-          {sideLabel} {calculations.quantity} {state.symbol}
+          <strong>{sideLabel}</strong>
+          <span>{calculations.quantity} {state.symbol} {orderTypeLabel}</span>
         </button>
         <button type="button" onClick={() => handlePlaceOrder(true)}>
           {sideLabel} and Journal
         </button>
+      </div>
+
+      <div className="backtest-order-info">
+        <strong>Order info</strong>
+        <dl className="backtest-calcs">
+          <div><dt>Opposite side</dt><dd>{oppositeSideLabel}</dd></div>
+          <div><dt>Position size</dt><dd>{calculations.quantity}</dd></div>
+          <div><dt>Tick value</dt><dd>{currency.format(calculations.riskAmount / Math.max(calculations.quantity, 1))}</dd></div>
+          <div><dt>Total balance after trade</dt><dd>{currency.format(effectiveBalance + calculations.rewardAmount)}</dd></div>
+        </dl>
       </div>
     </aside>
   );

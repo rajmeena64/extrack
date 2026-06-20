@@ -85,6 +85,331 @@ background-color: transparent;
   color: #f8fafc;
 }
 
+.calendar-template-header {
+  position: relative;
+  min-height: 36px;
+  margin: 0 0 10px;
+  padding: 4px;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) 30px;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface-subtle) 72%, var(--bg-card));
+}
+
+.calendar-template-header__nav {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.calendar-template-header__nav:hover {
+  border-color: var(--border-medium);
+  color: var(--primary);
+  background: #f8fafc;
+}
+
+.trade-calendar-template {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
+
+.trade-calendar-template--range {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.trade-calendar-pane {
+  min-width: 0;
+  padding: 0 14px 0 0;
+}
+
+.trade-calendar-pane + .trade-calendar-pane {
+  padding: 0 0 0 14px;
+  border-left: 1px solid var(--border-light);
+}
+
+.calendar-month-controls {
+  position: relative;
+  min-height: 36px;
+  margin: 0 0 10px;
+  padding: 4px;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) 30px;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface-subtle) 72%, var(--bg-card));
+}
+
+.calendar-month-controls__center {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.calendar-month-controls__nav {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.calendar-month-controls__nav:hover {
+  border-color: var(--border-medium);
+  color: var(--primary);
+  background: #f8fafc;
+}
+
+.calendar-template-header__controls {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  gap: 0;
+}
+
+.calendar-template-header--range .calendar-template-header__controls {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+}
+
+.calendar-template-header__pane {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.calendar-template-header__month {
+  position: relative;
+  min-width: 0;
+}
+
+.calendar-template-header__month-button,
+.calendar-template-header__year {
+  height: 28px;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  background: var(--bg-card);
+  color: var(--heading);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.calendar-template-header__month-button {
+  min-width: 68px;
+  padding: 0 10px;
+  cursor: pointer;
+}
+
+.calendar-template-header__year-wrap {
+  position: relative;
+}
+
+.calendar-template-header__year {
+  width: 70px;
+  padding: 0 8px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.calendar-template-header__month-button:hover,
+.calendar-template-header__month-button[aria-expanded="true"],
+.calendar-template-header__year:hover,
+.calendar-template-header__year[aria-expanded="true"] {
+  border-color: color-mix(in srgb, var(--primary) 38%, var(--border-light));
+  outline: none;
+}
+
+.calendar-template-header > .calendar-template-header__month-menu,
+.calendar-template-header > .calendar-template-header__year-menu,
+.calendar-month-controls > .calendar-template-header__month-menu,
+.calendar-month-controls > .calendar-template-header__year-menu {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 7px);
+  padding: 6px;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  background: var(--bg-card);
+  box-shadow: 0 18px 42px -28px rgba(15, 23, 42, 0.44);
+}
+
+.calendar-template-header__menu--start {
+  left: 48px;
+}
+
+.calendar-template-header__menu--end {
+  right: 48px;
+}
+
+.calendar-month-controls > .calendar-template-header__month-menu,
+.calendar-month-controls > .calendar-template-header__year-menu {
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.calendar-template-header__month-menu {
+  width: 188px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.calendar-template-header__month-menu button {
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.calendar-template-header__month-menu button:hover,
+.calendar-template-header__month-menu button.is-active {
+  background: color-mix(in srgb, var(--primary) 10%, var(--bg-card));
+  color: var(--primary);
+}
+
+.calendar-template-header__year-menu {
+  width: 210px;
+}
+
+.calendar-template-header__year-menu-nav {
+  height: 28px;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 28px;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 5px;
+}
+
+.calendar-template-header__year-menu-nav button {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--surface-subtle) 76%, transparent);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.calendar-template-header__year-menu-nav span {
+  min-width: 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1;
+  text-align: center;
+}
+
+.calendar-template-header__year-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.calendar-template-header__year-grid button {
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.calendar-template-header__year-menu-nav button:hover,
+.calendar-template-header__year-grid button:hover,
+.calendar-template-header__year-grid button.is-active {
+  background: color-mix(in srgb, var(--primary) 10%, var(--bg-card));
+  color: var(--primary);
+}
+
+.calendar-template-header__next {
+  min-width: 0;
+  height: 28px;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-left: 0;
+  color: var(--heading);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.dark-mode .calendar-template-header {
+  background: #111827;
+  border-color: #242424;
+}
+
+.dark-mode .calendar-month-controls {
+  background: #111827;
+  border-color: #242424;
+}
+
+.dark-mode .calendar-template-header__nav,
+.dark-mode .calendar-month-controls__nav,
+.dark-mode .calendar-template-header__month-button,
+.dark-mode .calendar-template-header__year,
+.dark-mode .calendar-template-header__month-menu,
+.dark-mode .calendar-template-header__year-menu {
+  background: #090909;
+  border-color: #242424;
+  color: #f8fafc;
+}
+
+.dark-mode .calendar-template-header__nav:hover {
+  background: #111827;
+  color: #ffffff;
+}
+
+.dark-mode .calendar-month-controls__nav:hover {
+  background: #111827;
+  color: #ffffff;
+}
+
+.dark-mode .calendar-template-header__next {
+  border-left-color: #242424;
+  color: #94a3b8;
+}
+
 /* months wrapper */
 .trade-rdp .rdp-months {
   display: grid;
@@ -114,6 +439,18 @@ background-color: transparent;
 
 .dark-mode .trade-rdp .rdp-month:last-child {
   border-left-color: #242424;
+}
+
+.trade-calendar-template__rdp .rdp-months {
+  grid-template-columns: 1fr;
+}
+
+.trade-calendar-template__rdp .rdp-month {
+  padding: 0 0 10px;
+}
+
+.trade-calendar-template__rdp .rdp-month:last-child {
+  border-left: 0;
 }
 
 /* caption */
@@ -402,6 +739,12 @@ background-color: transparent;
 .trade-date-picker__input-preview-icon {
   color: var(--text-secondary);
   font-size: 16px;
+}
+
+.trade-rdp.trade-calendar-template .rdp-month_caption,
+.trade-rdp.trade-calendar-template .rdp-caption,
+.trade-rdp.trade-calendar-template .rdp-nav {
+  display: none !important;
 }
 
 

@@ -1,0 +1,9 @@
+[
+  { "symbol": "AAPL", "name": "Apple Inc.", "type": "stock", "category": "us" },
+  { "symbol": "MSFT", "name": "Microsoft Corporation", "type": "stock", "category": "us" },
+  { "symbol": "NVDA", "name": "NVIDIA Corporation", "type": "stock", "category": "us" },
+  { "symbol": "TSLA", "name": "Tesla Inc.", "type": "stock", "category": "us" },
+  { "symbol": "AMZN", "name": "Amazon.com Inc.", "type": "stock", "category": "us" },
+  { "symbol": "GOOGL", "name": "Alphabet Inc.", "type": "stock", "category": "us" },
+  { "symbol": "META", "name": "Meta Platforms Inc.", "type": "stock", "category": "us" }
+]

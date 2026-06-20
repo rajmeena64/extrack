@@ -3,6 +3,7 @@ import { Mail } from '../../icons/lucideIcons';
 import FacebookIcon from '@mui/icons-material/Facebook';
 import InstagramIcon from '@mui/icons-material/Instagram';
 import TwitterIcon from '@mui/icons-material/Twitter';
+import { SUPPORT_EMAIL, SUPPORT_MAILTO } from '../../config/supportContact';
 
 const LandingFooter = () => {
   return (
@@ -60,8 +61,8 @@ const LandingFooter = () => {
             </h4>
             <ul className="space-y-md text-body-sm text-on-surface-variant">
               <li>
-                <a className="hover:text-primary transition-colors flex items-center gap-2" href="mailto:support@entrack.in">
-                  <Mail size={14} /> support@entrack.in
+                <a className="hover:text-primary transition-colors flex items-center gap-2" href={SUPPORT_MAILTO}>
+                  <Mail size={14} /> {SUPPORT_EMAIL}
                 </a>
               </li>
               <li>
@@ -85,12 +86,12 @@ const LandingFooter = () => {
             <h4 className="font-label-caps text-label-caps text-on-surface mb-lg uppercase tracking-widest">Legal</h4>
             <ul className="space-y-md text-body-sm text-on-surface-variant">
               <li>
-                <a className="hover:text-primary transition-colors" href="#">
+                <a className="hover:text-primary transition-colors" href="/privacy">
                   Privacy Policy
                 </a>
               </li>
               <li>
-                <a className="hover:text-primary transition-colors" href="#">
+                <a className="hover:text-primary transition-colors" href="/terms">
                   Terms of Service
                 </a>
               </li>

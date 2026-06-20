@@ -241,10 +241,15 @@
 }
 
 .add-trade-header .broker-dropdown {
+  min-width: 100px;
+  width: 120px;
+}
+
+.add-trade-header .broker-dropdown .custom-select__trigger {
   background: transparent;
   border: none;
   padding: 0 4px;
-  min-width: 100px;
+  width: 100%;
   height: auto;
   min-height: unset;
   font-weight: 700;
@@ -257,7 +262,7 @@
   appearance: none;
 }
 
-.add-trade-header .broker-dropdown:focus {
+.add-trade-header .broker-dropdown .custom-select__trigger:focus-visible {
   outline: none;
 }
 
@@ -278,6 +283,9 @@
 .add-trade-hero .broker-dropdown {
   width: 100%;
   min-width: 176px;
+}
+
+.add-trade-hero .broker-dropdown .custom-select__trigger {
   min-height: 38px;
   height: 38px;
   border-radius: 8px;
@@ -287,7 +295,7 @@
   font-weight: 600;
 }
 
-.dark-mode .add-trade-hero .broker-dropdown {
+.dark-mode .add-trade-hero .broker-dropdown .custom-select__trigger {
   background: var(--bg-card);
   border-color: #242424;
 }
@@ -313,6 +321,9 @@
 
 .broker-dropdown {
   min-width: 190px;
+}
+
+.broker-dropdown .custom-select__trigger {
   min-height: 34px;
   padding: 6px 10px;
   border-radius: 12px;
@@ -452,8 +463,12 @@
 }
 
 .category-top select,
+.category-top .custom-select__trigger,
 .form-group input,
 .form-group select,
+.form-group .custom-select__trigger,
+.form-group .custom-time-picker__trigger,
+.trade-single-date-field__trigger,
 .form-group textarea {
   width: 100%;
   min-height: 48px;
@@ -469,16 +484,24 @@
 }
 
 .dark-mode .category-top select,
+.dark-mode .category-top .custom-select__trigger,
 .dark-mode .form-group input,
 .dark-mode .form-group select,
+.dark-mode .form-group .custom-select__trigger,
+.dark-mode .form-group .custom-time-picker__trigger,
+.dark-mode .trade-single-date-field__trigger,
 .dark-mode .form-group textarea {
   background: var(--bg-card);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
 }
 
 .category-top select:focus,
+.category-top .custom-select__trigger:focus-visible,
 .form-group input:focus,
 .form-group select:focus,
+.form-group .custom-select__trigger:focus-visible,
+.form-group .custom-time-picker__trigger:focus-visible,
+.trade-single-date-field__trigger:focus-visible,
 .form-group textarea:focus {
   outline: none;
   border-color: color-mix(in srgb, var(--accent-success-strong) 76%, var(--primary-dark) 24%);
@@ -589,6 +612,13 @@
   padding-left: 40px !important;
 }
 
+.symbol-input-shell input:read-only[aria-disabled="true"] {
+  cursor: pointer;
+  opacity: 0.62;
+  background: color-mix(in srgb, var(--bg-card) 78%, var(--surface-subtle) 22%);
+}
+
+.symbol-category-hint,
 .symbol-suggestions {
   position: absolute;
   top: calc(100% + 8px);
@@ -605,7 +635,29 @@
   box-shadow: 0 24px 50px -34px rgba(15, 23, 42, 0.34);
 }
 
+.symbol-category-hint {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.symbol-category-hint::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 8px;
+  border-radius: 999px;
+  background: var(--accent-success-strong);
+  vertical-align: 1px;
+}
+
 .dark-mode .symbol-suggestions {
+  background: #11161f;
+}
+
+.dark-mode .symbol-category-hint {
   background: #11161f;
 }
 
@@ -619,12 +671,68 @@
   padding: 10px 12px;
   display: flex;
   align-items: center;
+  gap: 10px;
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
 
+.symbol-suggestion-item > span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .symbol-suggestion-item:hover {
   background: rgba(88, 212, 126, 0.12);
+}
+
+.trade-single-date-field {
+  position: relative;
+  width: 100%;
+}
+
+.trade-single-date-field__trigger {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.trade-single-date-field__trigger span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trade-single-date-field__trigger.is-placeholder {
+  color: var(--text-muted);
+}
+
+.trade-single-date-field__popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 45;
+  width: 318px;
+  max-width: calc(100vw - 32px);
+  padding: 12px;
+  border: var(--dashboard-card-border);
+  border-radius: 16px;
+  background: var(--surface-elevated, var(--bg-secondary));
+  box-shadow: 0 24px 56px -34px rgba(15, 23, 42, 0.48);
+}
+
+.dark-mode .trade-single-date-field__popover {
+  background: #11161f;
+}
+
+.add-trade-date-rdp .rdp-month_caption,
+.add-trade-date-rdp .rdp-caption,
+.add-trade-date-rdp .rdp-nav {
+  display: none !important;
 }
 
 /* ===== SCREENSHOT ===== */
@@ -931,6 +1039,28 @@
   padding: clamp(14px, 2vw, 20px);
 }
 
+.broker-sync-section {
+  width: 100%;
+}
+
+.broker-sync-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.broker-sync-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.sync-connect-more-btn {
+  min-width: 150px;
+  white-space: nowrap;
+}
+
 .mt5-connect-section {
   max-width: 620px;
 }
@@ -939,11 +1069,30 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
+  padding: 16px;
+  border: 1px solid var(--divider-strong);
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--surface-subtle) 88%, white 12%);
+}
+
+.dark-mode .mt5-connect-panel {
+  background: color-mix(in srgb, var(--surface-subtle) 92%, transparent);
+}
+
+.sync-form-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--heading);
+  font-size: 13px;
+  font-weight: 800;
 }
 
 .mt5-connect-form {
   display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
   gap: 14px;
+  align-items: end;
 }
 
 .mt5-connect-form .btn {
@@ -1227,7 +1376,7 @@
 
 .account-header {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
 }
@@ -1365,7 +1514,7 @@
 
 .account-details {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px 12px;
   margin-top: 12px;
   padding-top: 12px;
@@ -1594,17 +1743,22 @@
     grid-template-columns: 1fr;
   }
 
+  .mt5-connect-form {
+    grid-template-columns: 1fr;
+  }
+
   .form-group--broker {
     grid-column: auto;
   }
 
   .sync-panel-head {
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
   }
 
   .api-status,
-  .account-count-pill {
+  .account-count-pill,
+  .sync-connect-more-btn {
     align-self: flex-start;
   }
 

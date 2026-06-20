@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Calendar, ChartBar } from "../../icons/lucideIcons";
 import api from "../../utils/serve";
+import CustomSelect from "../Common/CustomSelect";
 import { formatCurrency } from "../../utils/Currency";
 import { getTradeDisplayTime, toTradeDateKey } from "../../utils/tradeTime";
 
@@ -109,14 +110,15 @@ function AIAnalysis({ trades = [], currencyCode = "USD" }) {
             <ChartBar size={14} />
             Scope
           </label>
-          <select
+          <CustomSelect
             id="ai-analysis-scope"
             value={analysisScope}
             onChange={(event) => setAnalysisScope(event.target.value)}
-          >
-            <option value="day">Selected day</option>
-            <option value="dashboard">Full dashboard</option>
-          </select>
+            options={[
+              { value: 'day', label: 'Selected day' },
+              { value: 'dashboard', label: 'Full dashboard' },
+            ]}
+          />
         </div>
 
         <div className="ai-analysis-field">

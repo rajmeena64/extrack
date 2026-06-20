@@ -1,6 +1,7 @@
 const TABLES = {
   users: 'app_auth.users',
   refreshTokens: 'app_auth.refresh_tokens',
+  oauthLoginCodes: 'app_auth.oauth_login_codes',
   emailVerifications: 'app_auth.email_verifications',
   passwordResets: 'app_auth.password_resets',
   userSettings: 'app.user_settings',
@@ -32,6 +33,9 @@ const USER_SELECT = `
   mobile_normalized,
   mobile_verified_at,
   email_verified_at,
+  google_id,
+  auth_provider,
+  profile_picture,
   account_type AS "accountType",
   status,
   created_at AS "createdAt",

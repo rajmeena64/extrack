@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import "./TradeView.css";
 
 import SymbolWithIcon from "../Common/SymbolWithIcon";
+import CustomSelect from "../Common/CustomSelect";
 import { getTradeDisplayDate, getTradeDisplayTime } from "../../utils/tradeTime";
 import api from "../../utils/serve";
 import { saveUserSettings } from "../../utils/userSettings";
@@ -446,30 +447,30 @@ function TradeView({ trades = [] }) {
                 <div className="toolbar-dropdown filter-panel popup-elevated">
                   <h4>Advanced Filters</h4>
 
-                  <select
+                  <CustomSelect
                     value={filters.symbol}
                     onChange={(e) =>
                       setFilters({ ...filters, symbol: e.target.value })
                     }
-                  >
-                    <option value="">All Symbols</option>
-                    {uniqueSymbols.map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
-                  </select>
+                    options={[
+                      { value: '', label: 'All Symbols' },
+                      ...uniqueSymbols.map((s) => ({ value: s, label: s })),
+                    ]}
+                    placeholder="All Symbols"
+                  />
 
-                  <select
+                  <CustomSelect
                     value={filters.tradeType}
                     onChange={(e) =>
                       setFilters({ ...filters, tradeType: e.target.value })
                     }
-                  >
-                    <option value="">All Types</option>
-                    <option value="buy">Buy</option>
-                    <option value="sell">Sell</option>
-                  </select>
+                    options={[
+                      { value: '', label: 'All Types' },
+                      { value: 'buy', label: 'Buy' },
+                      { value: 'sell', label: 'Sell' },
+                    ]}
+                    placeholder="All Types"
+                  />
 
                   <label>
                     <input
@@ -515,26 +516,29 @@ function TradeView({ trades = [] }) {
                     }}
                   />
 
-                  <select
+                  <CustomSelect
                     value={filters.sortBy}
                     onChange={(e) =>
                       setFilters({ ...filters, sortBy: e.target.value })
                     }
-                  >
-                    <option value="">Sort By</option>
-                    <option value="pnl">P&L</option>
-                    <option value="date">Date</option>
-                  </select>
+                    options={[
+                      { value: '', label: 'Sort By' },
+                      { value: 'pnl', label: 'P&L' },
+                      { value: 'date', label: 'Date' },
+                    ]}
+                    placeholder="Sort By"
+                  />
 
-                  <select
+                  <CustomSelect
                     value={filters.order}
                     onChange={(e) =>
                       setFilters({ ...filters, order: e.target.value })
                     }
-                  >
-                    <option value="desc">High → Low</option>
-                    <option value="asc">Low → High</option>
-                  </select>
+                    options={[
+                      { value: 'desc', label: 'High to Low' },
+                      { value: 'asc', label: 'Low to High' },
+                    ]}
+                  />
 
                   <button className="toolbar-action-btn" onClick={resetFilters}>
                     Reset
@@ -584,17 +588,18 @@ function TradeView({ trades = [] }) {
             {/* ACCOUNT */}
             <div className="toolbar-group toolbar-group-account">
               <Ratio size={IconSize} className="toolbar-svg-icon toolbar-select-icon" aria-hidden="true" />
-              <select
+              <CustomSelect
                 className="toolbar-select"
                 value={selectedAccount}
                 aria-label="Account filter"
                 onChange={(e) => setSelectedAccount(e.target.value)}
-              >
-                <option>All Accounts</option>
-                <option>Live Account</option>
-                <option>Demo Account</option>
-                <option>Funded Account</option>
-              </select>
+                options={[
+                  { value: 'All Accounts', label: 'All Accounts' },
+                  { value: 'Live Account', label: 'Live Account' },
+                  { value: 'Demo Account', label: 'Demo Account' },
+                  { value: 'Funded Account', label: 'Funded Account' },
+                ]}
+              />
             </div>
 
             {/* COLUMNS */}

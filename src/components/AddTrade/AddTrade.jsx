@@ -4,6 +4,7 @@ import ManualTradeForm from './ManualTradeForm';
 import ApiImportForm from './ApiImportForm';
 import './AddTrade.css';
 import LegacyIcon from '../Common/LegacyIcon';
+import CustomSelect from '../Common/CustomSelect';
 import { API_URL } from "../../utils/constants";
 import MainContentWrapper from '../Layout/MainContentWrapper';
 import PageHeader from '../Layout/PageHeader';
@@ -32,22 +33,17 @@ function AddTrade({ trades }) {
           actions={(
             <>
             {activeTab === 'manual' && (
-              <label className="broker-select-card">
+              <div className="broker-select-card">
                 <LegacyIcon className="fas fa-network-wired broker-select-icon" />
                 <span className="broker-select-card__label">Broker</span>
-                <select
+                <CustomSelect
                   className="broker-dropdown"
                   value={selectedBrokerId}
                   onChange={(e) => setSelectedBrokerId(parseInt(e.target.value, 10))}
-                >
-                  {brokers.map((broker) => (
-                    <option key={broker.id} value={broker.id}>
-                      {broker.name}
-                    </option>
-                  ))}
-                </select>
-                <LegacyIcon className="fas fa-chevron-down broker-select-chevron" />
-              </label>
+                  options={brokers.map((broker) => ({ value: broker.id, label: broker.name }))}
+                  ariaLabel="Broker"
+                />
+              </div>
             )}
 
             <div className="trade-tabs">

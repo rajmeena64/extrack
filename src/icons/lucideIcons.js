@@ -25,6 +25,7 @@ export {
   CircleCheck,
   CircleDollarSign,
   CircleUserRound,
+  Clock,
   CloudUpload,
   Code2,
   EllipsisVertical,

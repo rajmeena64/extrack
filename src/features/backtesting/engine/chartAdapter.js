@@ -51,6 +51,24 @@ export function createChartInstance(container, options = {}) {
       rightOffset: RIGHT_EMPTY_BARS,
       fixRightEdge: false,
       rightBarStaysOnScroll: false,
+      shiftVisibleRangeOnNewBar: false,
+      barSpacing: 8,
+      minBarSpacing: 2,
+    },
+    handleScroll: {
+      mouseWheel: true,
+      pressedMouseMove: true,
+      horzTouchDrag: true,
+      vertTouchDrag: true,
+    },
+    handleScale: {
+      axisPressedMouseMove: true,
+      mouseWheel: true,
+      pinch: true,
+    },
+    kineticScroll: {
+      mouse: false,
+      touch: false,
     },
     crosshair: {
       mode: CrosshairMode.Normal,
@@ -59,9 +77,9 @@ export function createChartInstance(container, options = {}) {
   });
 
   const candleSeries = chart.addSeries(CandlestickSeries, {
-    upColor: getThemeColor('--accent-success', '#22c55e'),
+    upColor: '#2563eb',
     downColor: getThemeColor('--accent-danger', '#ef4444'),
-    wickUpColor: getThemeColor('--accent-success', '#22c55e'),
+    wickUpColor: '#2563eb',
     wickDownColor: getThemeColor('--accent-danger', '#ef4444'),
     borderVisible: false,
   });
@@ -99,9 +117,9 @@ export function applyTheme(instance) {
     },
   });
   instance.candleSeries.applyOptions({
-    upColor: getThemeColor('--accent-success', '#22c55e'),
+    upColor: '#2563eb',
     downColor: getThemeColor('--accent-danger', '#ef4444'),
-    wickUpColor: getThemeColor('--accent-success', '#22c55e'),
+    wickUpColor: '#2563eb',
     wickDownColor: getThemeColor('--accent-danger', '#ef4444'),
   });
 }

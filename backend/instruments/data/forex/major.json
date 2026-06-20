@@ -1,0 +1,9 @@
+[
+  { "symbol": "EURUSD", "name": "Euro / US Dollar", "type": "forex", "category": "major" },
+  { "symbol": "GBPUSD", "name": "British Pound / US Dollar", "type": "forex", "category": "major" },
+  { "symbol": "USDJPY", "name": "US Dollar / Japanese Yen", "type": "forex", "category": "major" },
+  { "symbol": "USDCHF", "name": "US Dollar / Swiss Franc", "type": "forex", "category": "major" },
+  { "symbol": "USDCAD", "name": "US Dollar / Canadian Dollar", "type": "forex", "category": "major" },
+  { "symbol": "AUDUSD", "name": "Australian Dollar / US Dollar", "type": "forex", "category": "major" },
+  { "symbol": "NZDUSD", "name": "New Zealand Dollar / US Dollar", "type": "forex", "category": "major" }
+]
