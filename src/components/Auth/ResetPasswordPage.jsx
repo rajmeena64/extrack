@@ -47,7 +47,7 @@ function ResetPasswordPage() {
   };
 
   return (
-    <main className="auth-page">
+    <main className="auth-route">
       <section className="auth-panel">
         <Logo />
         <h1>Reset password</h1>

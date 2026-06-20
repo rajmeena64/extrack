@@ -49,7 +49,7 @@ function VerifyEmailPage() {
   }, [token]);
 
   return (
-    <main className="auth-page">
+    <main className="auth-route">
       <section className="auth-panel">
         <Logo />
         <h1>Email verification</h1>

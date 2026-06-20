@@ -34,12 +34,11 @@ const BCRYPT_COST = Number.isFinite(configuredBcryptCost) && configuredBcryptCos
   : 12;
 const VERIFY_TOKEN_MINUTES = Number.parseInt(process.env.EMAIL_VERIFY_TOKEN_MINUTES || '60', 10);
 const RESET_TOKEN_MINUTES = Number.parseInt(process.env.PASSWORD_RESET_TOKEN_MINUTES || '30', 10);
-const GENERIC_LOGIN_ERROR = 'Invalid email or password';
+const GENERIC_LOGIN_ERROR = 'Invalid email, phone, or password';
 const GENERIC_RESET_MESSAGE = 'If an account exists, password reset instructions have been sent';
 const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const GOOGLE_USERINFO_URL = 'https://openidconnect.googleapis.com/v1/userinfo';
-const OAUTH_CODE_MINUTES = Number.parseInt(process.env.OAUTH_LOGIN_CODE_MINUTES || '5', 10);
 const commonPasswords = new Set([
   'password1234',
   'password12345',
@@ -52,13 +51,13 @@ const commonPasswords = new Set([
 const signupLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000,
   max: 5,
-  keyGenerator: (req) => `${req.ip}:${String(req.body?.email || '').trim().toLowerCase()}`,
+  keyGenerator: (req) => `${req.ip}:${String(req.body?.email || req.body?.mobile || req.body?.phone || '').trim().toLowerCase()}`,
   message: 'Too many signup attempts. Please try again later.',
 });
 const loginLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000,
   max: 10,
-  keyGenerator: (req) => `${req.ip}:${String(req.body?.email || '').trim().toLowerCase()}`,
+  keyGenerator: (req) => `${req.ip}:${String(req.body?.email || req.body?.phone || '').trim().toLowerCase()}`,
   message: 'Too many login attempts. Please try again later.',
 });
 const resendLimiter = createRateLimiter({
@@ -91,7 +90,10 @@ const fail = (res, status, message, code, data) => res.status(status).json({ suc
 
 function getDisplayName(input) {
   if (input.name) return input.name;
-  return [input.firstName, input.lastName].filter(Boolean).join(' ').trim();
+  const providedName = [input.firstName, input.lastName].filter(Boolean).join(' ').trim();
+  if (providedName) return providedName;
+
+  return 'Entrack User';
 }
 
 function splitName(name) {
@@ -104,16 +106,22 @@ function splitName(name) {
 
 function safeUser(user) {
   const fullName = user.name || [user.firstName, user.lastName].filter(Boolean).join(' ');
+  const firstName = user.firstName || splitName(fullName).firstName;
+  const lastName = user.lastName || splitName(fullName).lastName;
+  const isPlaceholderProfile = fullName === 'Entrack User'
+    || (firstName === 'Entrack' && lastName === 'User');
+
   return {
     ID: user.ID,
     id: user.ID,
     name: fullName,
-    firstName: user.firstName || splitName(fullName).firstName,
-    lastName: user.lastName || splitName(fullName).lastName,
+    firstName,
+    lastName,
     email: user.email_original || user.email,
     phone: user.mobile_normalized || user.phone || null,
     accountType: user.accountType || 'manual',
     preferred_currency: user.preferred_currency || 'USD',
+    profileComplete: Boolean(!isPlaceholderProfile && String(firstName || '').trim() && String(lastName || '').trim()),
     email_verified_at: user.email_verified_at || null,
     profilePicture: user.profile_picture || null,
     authProvider: user.auth_provider || 'local',
@@ -139,6 +147,30 @@ async function findUserByEmail(emailNormalized) {
   return result.rows[0] || null;
 }
 
+async function findUserByLogin(input) {
+  if (input.email) return findUserByEmail(input.email);
+
+  const phone = input.phone;
+  const phoneDigits = String(phone || '').replace(/\D/g, '');
+  const indianPhone = phoneDigits.startsWith('91') && phoneDigits.length === 12
+    ? phoneDigits.slice(2)
+    : phoneDigits;
+  const phoneCandidates = Array.from(new Set([
+    phone,
+    phoneDigits,
+    indianPhone,
+    indianPhone ? `+91${indianPhone}` : null,
+    phoneDigits ? `+${phoneDigits}` : null,
+  ].filter(Boolean)));
+  const result = await pool.query(
+    `SELECT ${USER_SELECT} FROM ${TABLES.users}
+     WHERE (mobile_normalized = ANY($1::text[]) OR phone = ANY($1::text[]))
+       AND COALESCE(status, CASE WHEN is_deleted THEN 'deleted' ELSE 'active' END) = 'active'`,
+    [phoneCandidates]
+  );
+  return result.rows[0] || null;
+}
+
 function normalizeUrl(value) {
   return String(value || '').trim().replace(/\/+$/, '');
 }
@@ -152,8 +184,8 @@ function getGoogleCallbackUrl() {
 }
 
 function redirectOAuthError(res, code) {
-  const url = new URL('/auth/oauth-callback', getFrontendUrl());
-  url.searchParams.set('oauth_error', code);
+  console.warn('auth.google_redirect_error', { code });
+  const url = new URL('/', getFrontendUrl());
   return res.redirect(url.toString());
 }
 
@@ -332,20 +364,6 @@ async function upsertGoogleUser(profile) {
   }
 }
 
-async function createOAuthLoginCode(userId) {
-  const rawCode = generateRawToken(32);
-  const codeHash = hashToken(rawCode);
-  const expiresAt = new Date(Date.now() + OAUTH_CODE_MINUTES * 60 * 1000);
-
-  await pool.query(
-    `INSERT INTO ${TABLES.oauthLoginCodes} (user_id, code_hash, expires_at)
-     VALUES ($1, $2, $3)`,
-    [userId, codeHash, expiresAt]
-  );
-
-  return rawCode;
-}
-
 function authRequired(req, res, next) {
   try {
     const bearer = String(req.headers.authorization || '').startsWith('Bearer ')
@@ -367,7 +385,7 @@ router.post('/signup', signupLimiter, async (req, res) => {
   if (parsed.error) return fail(res, 400, parsed.error, 'VALIDATION_ERROR', { field: parsed.field });
 
   const input = parsed.data;
-  const emailNormalized = input.email;
+  const emailNormalized = input.email || null;
   const emailOriginal = String(req.body.email || '').trim();
   const mobileNormalized = input.mobile || input.phone || null;
   const name = getDisplayName(input);
@@ -385,15 +403,28 @@ router.post('/signup', signupLimiter, async (req, res) => {
 
     await client.query('BEGIN');
 
-    const existingUser = await client.query(
-      `SELECT id AS "ID" FROM ${TABLES.users}
-       WHERE COALESCE(email_normalized, lower(email)) = $1
-         AND COALESCE(status, CASE WHEN is_deleted THEN 'deleted' ELSE 'active' END) = 'active'`,
-      [emailNormalized]
-    );
+    const existingUser = emailNormalized
+      ? await client.query(
+          `SELECT id AS "ID" FROM ${TABLES.users}
+           WHERE COALESCE(email_normalized, lower(email)) = $1
+             AND COALESCE(status, CASE WHEN is_deleted THEN 'deleted' ELSE 'active' END) = 'active'`,
+          [emailNormalized]
+        )
+      : await client.query(
+          `SELECT id AS "ID" FROM ${TABLES.users}
+           WHERE (mobile_normalized = $1 OR phone = $1 OR phone = $2)
+             AND COALESCE(status, CASE WHEN is_deleted THEN 'deleted' ELSE 'active' END) = 'active'`,
+          [mobileNormalized, String(mobileNormalized || '').replace(/\D/g, '')]
+        );
+
     if (existingUser.rows.length > 0) {
       await client.query('ROLLBACK');
-      return fail(res, 409, 'This email is already registered. Please login.', 'EMAIL_REGISTERED');
+      return fail(res, 409, 'This account is already registered. Please login.', 'ACCOUNT_REGISTERED');
+    }
+
+    if (!emailNormalized) {
+      await client.query('ROLLBACK');
+      return fail(res, 400, 'Mobile signup requires verification code.', 'MOBILE_VERIFICATION_REQUIRED');
     }
 
     const pendingResult = await client.query(
@@ -550,23 +581,26 @@ router.post('/resend-verification', resendLimiter, async (req, res) => {
 router.post('/login', loginLimiter, async (req, res) => {
   const parsed = parseBody(loginSchema, req.body);
   if (parsed.error) return fail(res, 400, GENERIC_LOGIN_ERROR, 'INVALID_CREDENTIALS');
+  if (parsed.data.phone && !parsed.data.email) {
+    return fail(res, 503, 'Phone login is currently unavailable.', 'PHONE_LOGIN_UNAVAILABLE');
+  }
 
   try {
     logAuthTableUse('login_user_lookup', TABLES.users);
 
-    const user = await findUserByEmail(parsed.data.email);
+    const user = await findUserByLogin(parsed.data);
     if (!user || !getPasswordHash(user)) {
-      console.info('auth.login_failed', { email: parsed.data.email, reason: 'not_found' });
+      console.info('auth.login_failed', { method: parsed.data.email ? 'email' : 'phone', reason: 'not_found' });
       return fail(res, 401, GENERIC_LOGIN_ERROR, 'INVALID_CREDENTIALS');
     }
 
     const passwordOk = await bcrypt.compare(parsed.data.password, getPasswordHash(user));
     if (!passwordOk) {
-      console.info('auth.login_failed', { email: parsed.data.email, reason: 'bad_password' });
+      console.info('auth.login_failed', { method: parsed.data.email ? 'email' : 'phone', reason: 'bad_password' });
       return fail(res, 401, GENERIC_LOGIN_ERROR, 'INVALID_CREDENTIALS');
     }
 
-    if (!user.email_verified_at) {
+    if (parsed.data.email && !user.email_verified_at) {
       return fail(res, 403, 'Please verify your email before logging in.', 'EMAIL_NOT_VERIFIED');
     }
 
@@ -629,9 +663,9 @@ router.get('/google/callback', async (req, res) => {
     if (!profile.googleId) return redirectOAuthError(res, 'invalid_profile');
 
     const userId = await upsertGoogleUser(profile);
-    const loginCode = await createOAuthLoginCode(userId);
-    const redirectUrl = new URL('/auth/oauth-callback', getFrontendUrl());
-    redirectUrl.searchParams.set('code', loginCode);
+    await issueSession(pool, res, userId, req);
+    await pool.query(`UPDATE ${TABLES.users} SET last_login_at = NOW(), updated_at = NOW() WHERE id = $1`, [userId]);
+    const redirectUrl = new URL('/dashboard', getFrontendUrl());
     return res.redirect(redirectUrl.toString());
   } catch (callbackError) {
     console.error('auth.google_callback_failed', { error: callbackError.message });
@@ -642,74 +676,6 @@ router.get('/google/callback', async (req, res) => {
       return redirectOAuthError(res, 'oauth_migration_required');
     }
     return redirectOAuthError(res, 'google_callback_failed');
-  }
-});
-
-router.post('/oauth/exchange', loginLimiter, async (req, res) => {
-  const code = String(req.body?.code || '').trim();
-  if (!code) return fail(res, 400, 'OAuth code is required', 'OAUTH_CODE_REQUIRED');
-
-  const codeHash = hashToken(code);
-  const client = await pool.connect();
-
-  try {
-    await client.query('BEGIN');
-    const codeResult = await client.query(
-      `SELECT * FROM ${TABLES.oauthLoginCodes}
-       WHERE code_hash = $1
-       FOR UPDATE`,
-      [codeHash]
-    );
-    const storedCode = codeResult.rows[0];
-
-    if (!storedCode) {
-      await client.query('ROLLBACK');
-      return fail(res, 400, 'Invalid OAuth code', 'INVALID_OAUTH_CODE');
-    }
-
-    if (storedCode.used_at) {
-      await client.query('ROLLBACK');
-      return fail(res, 400, 'OAuth code already used', 'OAUTH_CODE_USED');
-    }
-
-    if (new Date(storedCode.expires_at) <= new Date()) {
-      await client.query('ROLLBACK');
-      return fail(res, 400, 'OAuth code expired', 'OAUTH_CODE_EXPIRED');
-    }
-
-    await client.query(
-      `UPDATE ${TABLES.oauthLoginCodes}
-       SET used_at = NOW()
-       WHERE id = $1`,
-      [storedCode.id]
-    );
-
-    const userResult = await client.query(
-      `SELECT ${USER_SELECT} FROM ${TABLES.users}
-       WHERE id = $1
-         AND COALESCE(status, CASE WHEN is_deleted THEN 'deleted' ELSE 'active' END) = 'active'`,
-      [storedCode.user_id]
-    );
-    const user = userResult.rows[0];
-
-    if (!user) {
-      await client.query('ROLLBACK');
-      return fail(res, 404, 'User not found', 'USER_NOT_FOUND');
-    }
-
-    await client.query('COMMIT');
-    const session = await issueSession(pool, res, user.ID, req);
-    return ok(res, 'Google login successful', {
-      user: safeUser(user),
-      accessToken: session.accessToken,
-      refreshExpiresAt: session.expiresAt,
-    }, 'GOOGLE_LOGIN_SUCCESS');
-  } catch (exchangeError) {
-    await client.query('ROLLBACK').catch(() => null);
-    console.error('auth.oauth_exchange_failed', { error: exchangeError.message });
-    return fail(res, 500, 'OAuth exchange failed', 'OAUTH_EXCHANGE_FAILED');
-  } finally {
-    client.release();
   }
 });
 
@@ -902,6 +868,59 @@ router.get('/me', authRequired, async (req, res) => {
     return ok(res, 'Profile loaded', { user: safeUser(result.rows[0]) }, 'ME_LOADED');
   } catch (error) {
     return fail(res, 500, 'Could not load profile', 'ME_FAILED');
+  }
+});
+
+router.post('/profile', authRequired, async (req, res) => {
+  const firstName = String(req.body?.firstName || '').trim().replace(/\s+/g, ' ');
+  const lastName = String(req.body?.lastName || '').trim().replace(/\s+/g, ' ');
+  const phone = String(req.body?.phone || '').trim();
+  const preferredCurrency = String(req.body?.preferred_currency || req.body?.currency || 'USD')
+    .trim()
+    .toUpperCase();
+
+  if (firstName.length < 2 || firstName.length > 80) {
+    return fail(res, 400, 'First name must be between 2 and 80 characters', 'INVALID_FIRST_NAME');
+  }
+
+  if (lastName.length < 1 || lastName.length > 80) {
+    return fail(res, 400, 'Last name is required', 'INVALID_LAST_NAME');
+  }
+
+  if (!/^[\p{L} .'-]+$/u.test(firstName) || !/^[\p{L} .'-]+$/u.test(lastName)) {
+    return fail(res, 400, 'Name contains unsupported characters', 'INVALID_NAME');
+  }
+
+  if (phone && !/^\+[1-9]\d{7,14}$/.test(phone)) {
+    return fail(res, 400, 'Use phone in E.164 format, for example +919876543210', 'INVALID_PHONE');
+  }
+
+  if (!/^[A-Z]{3}$/.test(preferredCurrency)) {
+    return fail(res, 400, 'Invalid preferred currency', 'INVALID_CURRENCY');
+  }
+
+  try {
+    const fullName = [firstName, lastName].join(' ');
+    const result = await pool.query(
+      `UPDATE ${TABLES.users}
+       SET first_name = $1,
+           last_name = $2,
+           name = $3,
+           phone = COALESCE(NULLIF($4, ''), phone),
+           mobile_normalized = COALESCE(NULLIF($4, ''), mobile_normalized),
+           preferred_currency = $5,
+           updated_at = NOW()
+       WHERE id = $6
+         AND COALESCE(status, CASE WHEN is_deleted THEN 'deleted' ELSE 'active' END) = 'active'
+       RETURNING ${USER_SELECT}`,
+      [firstName, lastName, fullName, phone, preferredCurrency, req.userId]
+    );
+
+    if (result.rows.length === 0) return fail(res, 404, 'User not found', 'USER_NOT_FOUND');
+    return ok(res, 'Profile updated', { user: safeUser(result.rows[0]) }, 'PROFILE_UPDATED');
+  } catch (error) {
+    console.error('auth.profile_update_failed', { error: error.message });
+    return fail(res, 500, 'Could not update profile', 'PROFILE_UPDATE_FAILED');
   }
 });
 

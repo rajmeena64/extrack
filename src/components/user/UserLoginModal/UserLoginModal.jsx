@@ -10,6 +10,29 @@ import { useAuth } from '../../../context/AuthContext';
 import { useAppDialog } from '../../../context/AppDialogContext';
 import { clearClientStorage } from '../../../utils/clientStorage';
 
+function GoogleIcon() {
+  return (
+    <svg className="google-auth-icon" viewBox="0 0 18 18" aria-hidden="true" focusable="false">
+      <path
+        fill="#4285F4"
+        d="M17.64 9.2c0-.64-.06-1.26-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.58 2.68-3.9 2.68-6.62z"
+      />
+      <path
+        fill="#34A853"
+        d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M3.97 10.72A5.41 5.41 0 0 1 3.68 9c0-.6.1-1.18.29-1.72V4.95H.96A9 9 0 0 0 0 9c0 1.45.35 2.82.96 4.05l3.01-2.33z"
+      />
+      <path
+        fill="#EA4335"
+        d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.9 11.43 0 9 0A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"
+      />
+    </svg>
+  );
+}
+
 function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
   const { user: currentUser, setUser } = useAuth();
   const { confirm } = useAppDialog();
@@ -24,20 +47,26 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
     confirmPassword: '',
     forgotEmail: '',
     currency: 'USD',
-    phoneNumber: ''
+    signupName: ''
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [formError, setFormError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [editData, setEditData] = useState({});
+  const phoneLoginUnavailableMessage = 'Phone login is currently unavailable.';
 
   useEffect(() => {
     if (isOpen && !currentUser) {
       setActiveTab(initialTab);
     }
   }, [currentUser, initialTab, isOpen]);
+
+  useEffect(() => {
+    setFormError('');
+  }, [activeTab, loginMethod]);
 
   // ESC key se close
   useEffect(() => {
@@ -59,15 +88,26 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
     };
   }, [isOpen]);
 
+  const digitsOnly = (value) => String(value || '').replace(/\D/g, '').slice(0, 15);
+  const toPhoneCredential = (value) => {
+    const digits = digitsOnly(value);
+    return digits ? `+${digits}` : '';
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    const nextValue = ['phone'].includes(name) ? digitsOnly(value) : value;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: nextValue
     }));
     
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+
+    if (formError) {
+      setFormError('');
     }
   };
 
@@ -81,14 +121,40 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
     window.location.href = `${API_URL}/api/auth/google`;
   };
 
+  const handlePhoneLoginUnavailable = () => {
+    setLoginMethod('email');
+    setFormError(phoneLoginUnavailableMessage);
+  };
+
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
+    setFormError('');
+
+    if (loginMethod === 'phone') {
+      setFormError(phoneLoginUnavailableMessage);
+      return;
+    }
+
+    if (loginMethod === 'email' && !formData.email.trim()) {
+      setFormError('Please enter your email address.');
+      return;
+    }
+
+    if (loginMethod === 'phone' && digitsOnly(formData.phone).length < 8) {
+      setFormError('Please enter a valid phone number with country code.');
+      return;
+    }
+
+    if (!formData.password) {
+      setFormError('Please enter your password.');
+      return;
+    }
+
     setLoading(true);
     
-    const loginData = {
-      email: formData.email,
-      password: formData.password
-    };
+    const loginData = loginMethod === 'email'
+      ? { email: formData.email, password: formData.password }
+      : { phone: toPhoneCredential(formData.phone), password: formData.password };
 
     try {
       const response = await fetch(`${API_URL}/api/auth/login`, {
@@ -114,18 +180,21 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
           email: responseUser.email,
           phone: responseUser.phone,
           accountType: responseUser.accountType || 'manual',
-          preferred_currency: responseUser.preferred_currency || 'USD'
+          preferred_currency: responseUser.preferred_currency || 'USD',
+          profileComplete: responseUser.profileComplete,
+          profilePicture: responseUser.profilePicture,
+          authProvider: responseUser.authProvider
         };
         
         setUser(userData);
         
-        alert(`Welcome back ${responseUser.firstName}!`);
+        alert(`Welcome back ${responseUser.firstName || 'there'}!`);
         onClose();
       } else {
-        alert('Error: ' + (data.message || data.error));
+        setFormError(data.message || data.error || 'Sign in failed.');
       }
     } catch {
-      alert('Network error. Check if server is running.');
+      setFormError('Network error. Check if server is running.');
     } finally {
       setLoading(false);
     }
@@ -134,23 +203,35 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
   // ✅ SIGNUP API CALL
   const handleSignupSubmit = async (e) => {
     e.preventDefault();
-    
-    if (formData.password !== formData.confirmPassword) {
-      alert('Passwords do not match!');
+
+    setFormError('');
+
+    if (loginMethod === 'email' && !formData.email.trim()) {
+      setFormError('Please enter your email address.');
+      return;
+    }
+
+    if (!formData.password) {
+      setFormError('Please create a password.');
+      return;
+    }
+
+    if (formData.password.length < 12) {
+      setFormError('Password must be at least 12 characters long.');
       return;
     }
     
+    if (formData.password !== formData.confirmPassword) {
+      setFormError('Passwords do not match.');
+      return;
+    }
+
     setLoading(true);
-    
+
     const signupData = {
-      name: `${formData.firstName} ${formData.lastName}`.trim(),
-      firstName: formData.firstName,
-      lastName: formData.lastName,
       email: formData.email,
-      mobile: formData.phoneNumber || null,
       password: formData.password,
       confirmPassword: formData.confirmPassword,
-      preferred_currency: formData.currency
     };
 
     try {
@@ -163,14 +244,23 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
 
       const data = await response.json();
 
-      if (data.success) {
+      const responseUser = data.data?.user || data.user;
+      if (data.success && responseUser) {
+        const accessToken = data.data?.accessToken;
+        if (accessToken) {
+          localStorage.setItem('accessToken', accessToken);
+        }
+
+        setUser(responseUser);
+        onClose();
+      } else if (data.success) {
         alert(data.message || 'Verification link sent to your email');
         setActiveTab('login');
       } else {
-        alert('Error: ' + (data.message || data.error));
+        setFormError(data.message || data.error || 'Signup failed.');
       }
     } catch {
-      alert('Network error. Check if server is running.');
+      setFormError('Network error. Check if server is running.');
     } finally {
       setLoading(false);
     }
@@ -179,6 +269,13 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
   // ✅ FORGOT PASSWORD API CALL
   const handleForgotSubmit = async (e) => {
     e.preventDefault();
+    setFormError('');
+
+    if (!formData.forgotEmail.trim()) {
+      setFormError('Please enter your email address.');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -194,7 +291,7 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
       alert(data.message || 'If an account exists, password reset instructions have been sent');
       setActiveTab('login');
     } catch {
-      alert('⚠️ Network error. Check if server is running.');
+      setFormError('Network error. Check if server is running.');
     } finally {
       setLoading(false);
     }
@@ -230,7 +327,7 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
         firstName: currentUser.firstName,
         lastName: currentUser.lastName,
         email: currentUser.email,
-        phone: currentUser.phone,
+        phone: digitsOnly(currentUser.phone),
         currency: currentUser.preferred_currency || 'USD'
       });
       setIsEditModalOpen(true);
@@ -242,7 +339,7 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
       firstName: editData.firstName,
       lastName: editData.lastName,
       email: editData.email,
-      phone: editData.phone,
+      phone: toPhoneCredential(editData.phone),
       preferred_currency: editData.currency
     };
 
@@ -364,11 +461,13 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
                 
                 {/* LOGIN FORM */}
                 {!currentUser && activeTab === 'login' && (
-                  <form id="loginForm" onSubmit={handleLoginSubmit}>
+                  <form id="loginForm" onSubmit={handleLoginSubmit} autoComplete="off" noValidate>
                     <div className="form-header">
                       <h2>Welcome Back</h2>
                       <p>Sign in to your trading account</p>
                     </div>
+
+                    {formError && <div className="auth-form-error">{formError}</div>}
                     
                     <div className="login-options">
                       <button 
@@ -381,7 +480,7 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
                       <button 
                         type="button" 
                         className={`login-option-btn ${loginMethod === 'phone' ? 'active' : ''}`}
-                        onClick={() => setLoginMethod('phone')}
+                        onClick={handlePhoneLoginUnavailable}
                       >
                         Phone
                       </button>
@@ -397,6 +496,7 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
                           onChange={handleInputChange}
                           className="form-input"
                           placeholder="Enter your email"
+                          autoComplete="off"
                           required
                         />
                       </div>
@@ -407,11 +507,14 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
                         <label>Phone Number</label>
                         <input
                           type="tel"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
                           name="phone"
                           value={formData.phone}
                           onChange={handleInputChange}
                           className="form-input"
-                          placeholder="Enter your phone number"
+                          placeholder="919876543210"
+                          autoComplete="off"
                           required
                         />
                       </div>
@@ -427,6 +530,7 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
                           onChange={handleInputChange}
                           className="form-input"
                           placeholder="Enter your password"
+                          autoComplete="new-password"
                           required
                         />
                         <button 
@@ -455,7 +559,7 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
                     <div className="auth-divider"><span>or</span></div>
 
                     <button type="button" className="google-auth-btn" onClick={handleGoogleAuth}>
-                      <span className="google-auth-mark" aria-hidden="true">G</span>
+                      <span className="google-auth-mark" aria-hidden="true"><GoogleIcon /></span>
                       Continue with Google
                     </button>
                     
@@ -471,39 +575,14 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
                   </form>
                 )}                           {/* SIGNUP FORM */}
                 {!currentUser && activeTab === 'signup' && (
-                  <form id="signupForm" onSubmit={handleSignupSubmit}>
+                  <form id="signupForm" onSubmit={handleSignupSubmit} autoComplete="off" noValidate>
                     <div className="form-header">
                       <h2>Create Account</h2>
-                      <p>Sign up for your trading account</p>
+                      <p>Start with the essentials. We will ask for profile details next.</p>
                     </div>
-                    
-                    <div className="name-fields">
-                      <div className="form-group">
-                        <label>First Name</label>
-                        <input
-                          type="text"
-                          name="firstName"
-                          value={formData.firstName}
-                          onChange={handleInputChange}
-                          className="form-input"
-                          placeholder="First name"
-                          required
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Last Name</label>
-                        <input
-                          type="text"
-                          name="lastName"
-                          value={formData.lastName}
-                          onChange={handleInputChange}
-                          className="form-input"
-                          placeholder="Last name"
-                          required
-                        />
-                      </div>
-                    </div>
-                    
+
+                    {formError && <div className="auth-form-error">{formError}</div>}
+
                     <div className="form-group">
                       <label>Email Address</label>
                       <input
@@ -513,33 +592,11 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
                         onChange={handleInputChange}
                         className="form-input"
                         placeholder="Enter your email"
+                        autoComplete="off"
                         required
                       />
                     </div>
-                    
-                    <div className="form-group">
-                      <label>Phone Number</label>
-                      <input
-                        type="tel"
-                        name="phoneNumber"
-                        value={formData.phoneNumber}
-                        onChange={handleInputChange}
-                        className="form-input"
-                        placeholder="+919876543210 (optional)"
-                      />
-                    </div>
-                    
-                    <div className="form-group">
-                      <label>Preferred Currency</label>
-                      <CustomSelect
-                        name="currency"
-                        value={formData.currency}
-                        onChange={handleInputChange}
-                        className="currency-select form-input"
-                        options={currencies}
-                      />
-                    </div>
-                    
+
                     <div className="form-group">
                       <label>Password</label>
                       <div className="password-wrapper">
@@ -551,9 +608,10 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
                           className="form-input"
                           placeholder="Create a password"
                           minLength={12}
+                          autoComplete="new-password"
                           required
                         />
-                        <button 
+                        <button
                           type="button"
                           className="toggle-password"
                           onClick={() => setShowPassword(!showPassword)}
@@ -562,29 +620,32 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
                         </button>
                       </div>
                     </div>
-                    
-                    <div className="form-group">
-                      <label>Confirm Password</label>
-                      <input
-                        type="password"
-                        name="confirmPassword"
-                        value={formData.confirmPassword}
-                        onChange={handleInputChange}
-                        className="form-input"
-                        placeholder="Confirm your password"
-                        minLength={12}
-                        required
-                      />
-                    </div>
-                    
-                    <button type="submit" className="login-btn" disabled={loading}>
-                      {loading ? 'Creating Account...' : 'Create Account'}
-                    </button>
+
+                        {formData.password && (
+                          <div className="form-group">
+                            <label>Confirm Password</label>
+                            <input
+                              type="password"
+                              name="confirmPassword"
+                              value={formData.confirmPassword}
+                              onChange={handleInputChange}
+                              className="form-input"
+                              placeholder="Confirm your password"
+                              minLength={12}
+                              autoComplete="new-password"
+                              required
+                            />
+                          </div>
+                        )}
+
+                        <button type="submit" className="login-btn" disabled={loading}>
+                          {loading ? 'Creating Account...' : 'Create Account'}
+                        </button>
 
                     <div className="auth-divider"><span>or</span></div>
 
                     <button type="button" className="google-auth-btn" onClick={handleGoogleAuth}>
-                      <span className="google-auth-mark" aria-hidden="true">G</span>
+                      <span className="google-auth-mark" aria-hidden="true"><GoogleIcon /></span>
                       Continue with Google
                     </button>
                     
@@ -602,11 +663,13 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
 
                 {/* FORGOT PASSWORD FORM */}
                 {!currentUser && activeTab === 'forgot' && (
-                  <form id="forgotPasswordForm" onSubmit={handleForgotSubmit}>
+                  <form id="forgotPasswordForm" onSubmit={handleForgotSubmit} autoComplete="off" noValidate>
                     <div className="form-header">
                       <h2>Reset Password</h2>
                       <p>Enter your email to reset password</p>
                     </div>
+
+                    {formError && <div className="auth-form-error">{formError}</div>}
                     
                     <div className="form-group">
                       <label>Email Address</label>
@@ -617,6 +680,7 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
                         onChange={handleInputChange}
                         className="form-input"
                         placeholder="Enter your email"
+                        autoComplete="off"
                         required
                       />
                     </div>
@@ -779,8 +843,10 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
                   <input
                     type="tel"
                     value={editData.phone}
-                    onChange={(e) => setEditData({...editData, phone: e.target.value})}
+                    onChange={(e) => setEditData({...editData, phone: digitsOnly(e.target.value)})}
                     className="form-input"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     required
                   />
                 </div>
@@ -828,6 +894,7 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
                     id="deletePassword"
                     className="form-input"
                     placeholder="Your password"
+                    autoComplete="new-password"
                   />
                 </div>
               </div>

@@ -456,6 +456,21 @@
   line-height: 1.55;
 }
 
+.auth-form-error {
+  position: relative;
+  z-index: 3;
+  margin: 0 0 18px;
+  padding: 12px 14px;
+  border: 1px solid rgba(185, 28, 28, 0.16);
+  border-radius: 12px;
+  background: #fff1f2;
+  color: #9f1239;
+  font-size: 13px;
+  line-height: 1.45;
+  font-weight: 800;
+  box-shadow: 0 12px 30px rgba(159, 18, 57, 0.10);
+}
+
 .login-options {
   padding: 4px;
   border-radius: 999px;
@@ -504,6 +519,12 @@
 
 .form-input::placeholder {
   color: rgba(15, 23, 42, 0.34);
+}
+
+.form-input:disabled {
+  color: rgba(15, 23, 42, 0.54);
+  background: rgba(255, 255, 255, 0.72);
+  cursor: not-allowed;
 }
 
 .form-input:focus,
@@ -594,11 +615,13 @@
   height: 22px;
   display: inline-grid;
   place-items: center;
-  border-radius: 50%;
-  border: 1px solid rgba(15, 23, 42, 0.12);
-  color: #1a73e8;
-  font-size: 13px;
-  font-weight: 950;
+  flex: 0 0 22px;
+}
+
+.google-auth-icon {
+  width: 18px;
+  height: 18px;
+  display: block;
 }
 
 .switch-text {

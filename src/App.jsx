@@ -15,7 +15,7 @@ import { loadCachedUserSettings, loadUserSettings, saveUserSettings } from './ut
 import { markPerf, measurePerf } from './utils/perfMarks';
 import VerifyEmailPage from './components/Auth/VerifyEmailPage';
 import ResetPasswordPage from './components/Auth/ResetPasswordPage';
-import OAuthCallbackPage from './components/Auth/OAuthCallbackPage';
+import ProfileOnboardingPage from './components/Auth/ProfileOnboardingPage';
 import LandingPage from './components/Landing/LandingPage';
 import AppShell from './components/Layout/AppShell';
 import MainContentWrapper from './components/Layout/MainContentWrapper';
@@ -116,6 +116,12 @@ function Profile() {
     </MainContentWrapper>
   );
 }
+
+const isProfileComplete = (user) => (
+  user?.profileComplete === undefined || user?.profileComplete === null
+    ? Boolean(String(user?.firstName || '').trim() && String(user?.lastName || '').trim())
+    : Boolean(user.profileComplete)
+);
 
 const normalizeRoutePath = (pathname) => {
   const normalized = String(pathname || '/').replace(/\/+$/, '') || '/';
@@ -225,7 +231,6 @@ function CachedMainRoutes({
             <Route path="/documentation/*" element={<LandingPage />} />
             <Route path="/privacy" element={<LandingPage />} />
             <Route path="/terms" element={<LandingPage />} />
-            <Route path="/auth/oauth-callback" element={<OAuthCallbackPage />} />
             <Route path="/verify-email" element={<VerifyEmailPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route
@@ -238,6 +243,62 @@ function CachedMainRoutes({
         </Suspense>
       )}
     </>
+  );
+}
+
+function AuthenticatedApp({
+  tradeMode,
+  setTradeMode,
+  trades,
+  convertedDashboardTrades,
+  dashboardDateRange,
+  setDashboardDateRange,
+  dashboardCurrency,
+  defaultDashboardCurrency,
+  handleDashboardCurrencyChange,
+  isTradesLoading,
+  mt5Accounts,
+}) {
+  const { user } = useAuth();
+  const location = useLocation();
+  const currentPath = normalizeRoutePath(location.pathname);
+
+  if (currentPath === '/auth/oauth-callback') {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  if (!isProfileComplete(user)) {
+    return (
+      <Routes>
+        <Route path="/profile-setup" element={<ProfileOnboardingPage />} />
+        <Route
+          path="*"
+          element={<Navigate to="/profile-setup" replace state={{ from: location.pathname }} />}
+        />
+      </Routes>
+    );
+  }
+
+  if (currentPath === '/profile-setup') {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return (
+    <AppShell>
+      <CachedMainRoutes
+        tradeMode={tradeMode}
+        setTradeMode={setTradeMode}
+        trades={trades}
+        convertedDashboardTrades={convertedDashboardTrades}
+        dashboardDateRange={dashboardDateRange}
+        setDashboardDateRange={setDashboardDateRange}
+        dashboardCurrency={dashboardCurrency}
+        defaultDashboardCurrency={defaultDashboardCurrency}
+        handleDashboardCurrencyChange={handleDashboardCurrencyChange}
+        isTradesLoading={isTradesLoading}
+        mt5Accounts={mt5Accounts}
+      />
+    </AppShell>
   );
 }
 
@@ -585,26 +646,24 @@ function App() {
     <BrowserRouter>
     <ThemeProvider>
       {user ? (
-        <AppShell>
-          <CachedMainRoutes
-            tradeMode={tradeMode}
-            setTradeMode={handleTradeModeChange}
-            trades={trades}
-            convertedDashboardTrades={convertedDashboardTrades}
-            dashboardDateRange={dashboardDateRange}
-            setDashboardDateRange={setDashboardDateRange}
-            dashboardCurrency={dashboardCurrency}
-            defaultDashboardCurrency={defaultDashboardCurrency}
-            handleDashboardCurrencyChange={handleDashboardCurrencyChange}
-            isTradesLoading={isTradesLoading}
-            mt5Accounts={mt5AccountsQuery.data || []}
-          />
-        </AppShell>
+        <AuthenticatedApp
+          tradeMode={tradeMode}
+          setTradeMode={handleTradeModeChange}
+          trades={trades}
+          convertedDashboardTrades={convertedDashboardTrades}
+          dashboardDateRange={dashboardDateRange}
+          setDashboardDateRange={setDashboardDateRange}
+          dashboardCurrency={dashboardCurrency}
+          defaultDashboardCurrency={defaultDashboardCurrency}
+          handleDashboardCurrencyChange={handleDashboardCurrencyChange}
+          isTradesLoading={isTradesLoading}
+          mt5Accounts={mt5AccountsQuery.data || []}
+        />
       ) : (
         <Routes>
           <Route path="/verify-email" element={<VerifyEmailPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route path="/auth/oauth-callback" element={<OAuthCallbackPage />} />
+          <Route path="/auth/oauth-callback" element={<Navigate to="/" replace />} />
           <Route path="*" element={<LandingPage />} />
         </Routes>
       )}

@@ -38,7 +38,7 @@ Production example:
 
 ```bash
 GOOGLE_CALLBACK_URL=https://api.entrack.in/api/auth/google/callback
-FRONTEND_URL=https://www.entrack.in
+FRONTEND_URL=https://entrack.in
 ALLOWED_ORIGINS=https://www.entrack.in,https://entrack.in
 COOKIE_SECURE=true
 COOKIE_SAMESITE=none

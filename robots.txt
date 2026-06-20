@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://www.entrack.in/sitemap.xml
+Sitemap: https://entrack.in/sitemap.xml

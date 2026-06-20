@@ -21,11 +21,12 @@ const mobileSchema = z
     z.literal(''),
     z.undefined(),
     z.null(),
-    z.string().trim().regex(/^\+[1-9]\d{7,14}$/, 'Use E.164 format, for example +919876543210'),
+    z.string().trim().regex(/^\+?[1-9]\d{7,14}$/, 'Use country code with phone number, for example 919876543210'),
   ])
   .transform((value) => {
     if (!value) return null;
-    return String(value).trim();
+    const digits = String(value).replace(/\D/g, '');
+    return digits ? `+${digits}` : null;
   });
 
 const passwordSchema = z
@@ -40,7 +41,7 @@ const signupSchema = z
     name: nameSchema.optional(),
     firstName: nameSchema.optional(),
     lastName: z.string().trim().max(80).optional().nullable(),
-    email: emailSchema,
+    email: emailSchema.optional(),
     mobile: mobileSchema.optional(),
     phone: mobileSchema.optional(),
     password: passwordSchema,
@@ -48,19 +49,26 @@ const signupSchema = z
     preferred_currency: z.string().trim().length(3).optional(),
   })
   .strict()
-  .refine((value) => value.name || value.firstName, {
-    message: 'Name is required',
-    path: ['name'],
+  .refine((value) => value.email || value.mobile || value.phone, {
+    message: 'Email or phone is required',
+    path: ['email'],
   })
   .refine((value) => value.password === value.confirmPassword, {
     message: 'Passwords do not match',
     path: ['confirmPassword'],
   });
 
-const loginSchema = z.object({
-  email: emailSchema,
-  password: z.string().min(1).max(128),
-}).strict();
+const loginSchema = z
+  .object({
+    email: emailSchema.optional(),
+    phone: mobileSchema.optional(),
+    password: z.string().min(1).max(128),
+  })
+  .strict()
+  .refine((value) => value.email || value.phone, {
+    message: 'Email or phone is required',
+    path: ['email'],
+  });
 
 const emailOnlySchema = z.object({
   email: emailSchema,

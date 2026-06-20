@@ -1,6 +1,11 @@
 {
   "redirects": [
     {
+      "source": "/auth/oauth-callback",
+      "destination": "/",
+      "permanent": false
+    },
+    {
       "source": "/(.*)",
       "has": [
         {
@@ -8,7 +13,18 @@
           "value": "extrack-pi.vercel.app"
         }
       ],
-      "destination": "https://www.entrack.in/$1",
+      "destination": "https://entrack.in/$1",
+      "permanent": true
+    },
+    {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.entrack.in"
+        }
+      ],
+      "destination": "https://entrack.in/$1",
       "permanent": true
     }
   ],
