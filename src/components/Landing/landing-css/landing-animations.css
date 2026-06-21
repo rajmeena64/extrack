@@ -1,0 +1,26 @@
+    @keyframes brokerFlow {
+      from { transform: translateY(0); }
+      to { transform: translateY(-100%); }
+    }
+
+
+    @media (prefers-reduced-motion: reduce) {
+      .broker-track,
+      .broker-track.track-two {
+        animation: none;
+      }
+
+      .slider__slide,
+      .slider__title span {
+        will-change: auto;
+      }
+
+      .entrack-landing *,
+.entrack-landing *::before,
+.entrack-landing *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }

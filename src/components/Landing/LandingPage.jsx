@@ -1,11 +1,9 @@
 import React, { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
-import landingMarkup from './landingMarkup';
 import { legalDocuments } from './legalDocuments';
+import LandingHome from './LandingHome';
 import './LandingPage.css';
 
 const UserLoginModal = lazy(() => import('../user/UserLoginModal/UserLoginModal'));
-
-const ctaLabels = new Set(['start tracking', 'get started', 'sign in', 'login', 'sign up']);
 
 const documentationSections = [
   ['dashboard', 'Dashboard', 'Overview', 'See account health and trading performance at a glance.'],
@@ -1342,7 +1340,6 @@ function DemoPage() {
 function LandingPage() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginModalTab, setLoginModalTab] = useState('login');
-  const landingRef = useRef(null);
   const normalizedPath = window.location.pathname.replace(/\/+$/, '') || '/';
   const isDocumentationPage = normalizedPath.startsWith('/documentation');
   const isAnalyticsGuidePage = normalizedPath === '/analytics' || normalizedPath.startsWith('/analytics/');
@@ -1350,60 +1347,13 @@ function LandingPage() {
   const isDemoPage = normalizedPath === '/demo' || normalizedPath.startsWith('/demo/');
   const featureSection = getFeatureSectionFromPath();
 
-  useEffect(() => {
-    const root = landingRef.current;
-    if (!root) return undefined;
+  const openLoginModal = (tab = 'login') => {
+    setLoginModalTab(tab);
+    setShowLoginModal(true);
+  };
 
-    const moduleCarousel = root.querySelector('#moduleCarousel');
-    const moduleCards = moduleCarousel ? [...moduleCarousel.querySelectorAll('.module-card')] : [];
-    let activeModule = Math.max(0, moduleCards.findIndex((card) => card.classList.contains('is-open')));
-
-    const setActiveModule = (index) => {
-      if (!moduleCards.length) return;
-      activeModule = ((index % moduleCards.length) + moduleCards.length) % moduleCards.length;
-      moduleCards.forEach((card, cardIndex) => card.classList.toggle('is-open', cardIndex === activeModule));
-      moduleCards[activeModule].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-    };
-
-    const moduleNext = root.querySelector('#moduleNext');
-    const modulePrev = root.querySelector('#modulePrev');
-    const handleModuleNext = () => setActiveModule(activeModule + 1);
-    const handleModulePrev = () => setActiveModule(activeModule - 1);
-    const cardHandlers = moduleCards.map((card, index) => {
-      const handler = () => setActiveModule(index);
-      card.addEventListener('click', handler);
-      return { card, handler };
-    });
-
-    moduleNext?.addEventListener('click', handleModuleNext);
-    modulePrev?.addEventListener('click', handleModulePrev);
-
-    return () => {
-      moduleNext?.removeEventListener('click', handleModuleNext);
-      modulePrev?.removeEventListener('click', handleModulePrev);
-      cardHandlers.forEach(({ card, handler }) => card.removeEventListener('click', handler));
-    };
-  }, []);
-
-  const handleLandingClick = (event) => {
-    const element = event.target.closest('button, a');
-    const root = landingRef.current;
-    if (!root) return;
-
-    if (!element || !root.contains(element)) return;
-
-    const label = element.textContent?.trim().toLowerCase();
-    if (ctaLabels.has(label)) {
-      event.preventDefault();
-      setLoginModalTab(label === 'sign up' ? 'signup' : 'login');
-      setShowLoginModal(true);
-      return;
-    }
-
-    if (label === 'view demo') {
-      event.preventDefault();
-      window.location.href = '/demo';
-    }
+  const handleViewDemo = () => {
+    window.location.href = '/demo';
   };
 
   return (
@@ -1420,11 +1370,12 @@ function LandingPage() {
         <LegalPage document={legalDocument} />
       ) : (
         <>
-          <div
-            ref={landingRef}
-            className="entrack-landing"
-            onClick={handleLandingClick}
-            dangerouslySetInnerHTML={{ __html: landingMarkup }}
+          <LandingHome
+            onLogin={() => openLoginModal('login')}
+            onSignUp={() => openLoginModal('signup')}
+            onStartTracking={() => openLoginModal('login')}
+            onGetStarted={() => openLoginModal('login')}
+            onViewDemo={handleViewDemo}
           />
           <Suspense fallback={null}>
             <UserLoginModal

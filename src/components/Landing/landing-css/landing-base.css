@@ -1,0 +1,62 @@
+    @import url("https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700;800&display=swap");
+
+    .entrack-landing *,
+.entrack-landing *::before,
+.entrack-landing *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    .entrack-landing {
+      --bg: #010204;
+      --text: #f8fafc;
+      --muted: rgba(248, 250, 252, 0.68);
+      --faint: rgba(248, 250, 252, 0.42);
+      --line: rgba(255, 255, 255, 0.11);
+      --blue: #5b7cfa;
+      --cyan: #2dd4ff;
+      --violet: #8b5cf6;
+      --green: #22c55e;
+      --container: 1180px;
+      --ease: cubic-bezier(0.19, 1, 0.22, 1);
+    }
+
+    .entrack-landing {
+      width: 100%;
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Instrument Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      scroll-behavior: smooth;
+    }
+
+    .entrack-landing a,
+.entrack-landing button {
+      font: inherit;
+      color: inherit;
+    }
+.entrack-landing button {
+      border: none;
+      cursor: pointer;
+    }
+
+    .page-bg {
+      position: fixed;
+      inset: 0;
+      z-index: -4;
+      background: #010204;
+    }
+
+    .page-bg::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 52% 46%, rgba(91,124,250,0.08), rgba(0,0,0,0.68) 62%, rgba(0,0,0,0.96) 100%),
+        linear-gradient(180deg, rgba(1,2,4,0.10), rgba(1,2,4,0.90));
+      pointer-events: none;
+    }
+
