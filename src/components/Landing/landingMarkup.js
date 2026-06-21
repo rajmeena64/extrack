@@ -11,7 +11,7 @@ const landingMarkup = `<div class="page-bg" aria-hidden="true"></div>
 
       <nav class="slider__links" aria-label="Primary navigation">
         <a href="#features">Journal</a>
-        <a href="#dashboard-preview">Analytics</a>
+        <a href="/analytics">Analytics</a>
         <a href="#modules">Replay</a>
         <a href="#brokers">Brokers</a>
         <a href="/documentation/journal">Documentation</a>
@@ -53,7 +53,7 @@ const landingMarkup = `<div class="page-bg" aria-hidden="true"></div>
           <div class="feature-content">
             <div class="feature-tag">Brokers</div>
             <h3 class="feature-title">Supported Brokers</h3>
-            <p class="feature-text">Exness, IC Markets, Binance, Bybit, Zerodha, Angel One aur popular brokers ko clean list me dikhaye.</p>
+            <p class="feature-text">Keep Exness, IC Markets, Binance, Bybit, Zerodha, Angel One and popular brokers in one clean list.</p>
             <a class="feature-link" href="/features/brokers">View brokers →</a>
           </div>
         </article>
@@ -63,7 +63,7 @@ const landingMarkup = `<div class="page-bg" aria-hidden="true"></div>
             <div class="feature-tag">Analytics</div>
             <h3 class="feature-title">Find Weakness</h3>
             <p class="feature-text">Break down win rate, RR, symbols, weekdays, sessions and repeated behavior that quietly hurts performance.</p>
-            <a class="feature-link" href="/features/analytics">Analyze →</a>
+            <a class="feature-link" href="/analytics">Analyze -></a>
           </div>
         </article>
 
@@ -119,19 +119,19 @@ const landingMarkup = `<div class="page-bg" aria-hidden="true"></div>
 
       <div class="dashboard-layout">
         <div class="stat-grid">
-          <article class="glass-card" style="--card-bg: radial-gradient(circle at 20% 15%, rgba(96,165,250,.48), transparent 34%), linear-gradient(135deg, #111827, #172554 55%, #020617);">
+          <article class="glass-card" style="--card-bg: radial-gradient(circle at 18% 12%, rgba(255,255,255,.08), transparent 34%), radial-gradient(circle at 92% 12%, rgba(45,212,255,.10), transparent 26%), linear-gradient(135deg, #101012, #050506 58%, #010204);">
             <div class="glass-card-top"><span>MT5 Account</span><span class="dot-live"></span></div>
             <div class="glass-metric">$12.4k</div>
             <p>Live balance, equity and account health stay visible inside the same workspace.</p>
           </article>
 
-          <article class="glass-card" style="--card-bg: radial-gradient(circle at 25% 15%, rgba(168,85,247,.5), transparent 34%), linear-gradient(135deg, #111827, #312e81 55%, #020617);">
+          <article class="glass-card" style="--card-bg: radial-gradient(circle at 18% 12%, rgba(255,79,216,.13), transparent 30%), radial-gradient(circle at 92% 12%, rgba(45,212,255,.08), transparent 26%), linear-gradient(135deg, #101012, #060607 58%, #010204);">
             <div class="glass-card-top"><span>Journal</span><span class="dot-live"></span></div>
             <div class="glass-metric">68%</div>
             <p>See whether your setups are actually working across symbols and sessions.</p>
           </article>
 
-          <article class="glass-card" style="--card-bg: radial-gradient(circle at 25% 15%, rgba(34,197,94,.42), transparent 34%), linear-gradient(135deg, #111827, #064e3b 55%, #020617);">
+          <article class="glass-card" style="--card-bg: radial-gradient(circle at 18% 12%, rgba(34,197,94,.10), transparent 32%), radial-gradient(circle at 92% 12%, rgba(45,212,255,.08), transparent 26%), linear-gradient(135deg, #101012, #060607 58%, #010204);">
             <div class="glass-card-top"><span>Risk</span><span class="dot-live"></span></div>
             <div class="glass-metric">1:3.2</div>
             <p>Track average RR and keep risk discipline clear before, during and after trades.</p>
@@ -145,7 +145,7 @@ const landingMarkup = `<div class="page-bg" aria-hidden="true"></div>
           </div>
           <div class="window-content">
             <div class="chart-panel">
-              <div class="chart-label"><span>XAUUSD Replay</span><span>+8.4R this month</span></div>
+              <div class="chart-label"><span>XAUUSD Replay</span><span class="pink-chip">+8.4R this month</span></div>
               <div class="chart-line"></div>
               <div class="candle-row" aria-hidden="true">
                 <span class="candle" style="height:44px"></span>
@@ -163,7 +163,7 @@ const landingMarkup = `<div class="page-bg" aria-hidden="true"></div>
               </div>
             </div>
             <aside class="side-panel">
-              <div class="mini-panel"><span>Best session</span><strong>London Open</strong><p>Cleaner entries and strongest win rate.</p></div>
+              <div class="mini-panel"><span class="pink-chip">Best session</span><strong>London Open</strong><p>Cleaner entries and strongest win rate.</p></div>
               <div class="mini-panel"><span>Main leak</span><strong>Late exits</strong><p>Winners cut too early after first pullback.</p></div>
               <div class="mini-panel"><span>Next focus</span><strong>Hold to 1:3</strong><p>Replay 20 examples before live trading.</p></div>
             </aside>
@@ -216,7 +216,7 @@ const landingMarkup = `<div class="page-bg" aria-hidden="true"></div>
             <div class="module-content">
               <div class="module-eyebrow">Brokers</div>
               <h3>Broker Directory</h3>
-              <p>Broker names, market type aur trading source ko journal aur analytics ke saath clean tarike se organise karo.</p>
+              <p>Organize broker names, market type and trading source cleanly with journal and analytics context.</p>
               <span class="module-cta">Explore module →</span>
             </div>
           </article>
@@ -239,16 +239,6 @@ const landingMarkup = `<div class="page-bg" aria-hidden="true"></div>
     </section>
 
     <section class="section-block broker-block" id="brokers">
-      <div class="section-top">
-        <div>
-          <a class="section-kicker section-doc-link" href="/documentation/brokers">Broker workspace</a>
-          <h2 class="section-heading"><a class="heading-doc-link" href="/documentation/brokers">One clean view for every broker you trade with.</a></h2>
-        </div>
-        <p class="section-copy">
-          Compare accounts, markets, and execution quality without switching tabs or losing context.
-        </p>
-      </div>
-
       <div class="broker-stage" aria-label="Broker coverage preview">
         <div class="broker-center-copy">
           <div class="broker-pill">connected review</div>
@@ -326,7 +316,7 @@ const landingMarkup = `<div class="page-bg" aria-hidden="true"></div>
 
     <div class="site-footer-links">
       <a href="#features">Features</a>
-      <a href="#dashboard-preview">Analytics</a>
+      <a href="/analytics">Analytics</a>
       <a href="#modules">Modules</a>
       <a href="#brokers">Brokers</a>
       <a href="/privacy">Privacy</a>

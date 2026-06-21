@@ -3,7 +3,7 @@
 
 // const pool = new Pool({
 //   connectionString: process.env.DATABASE_URL,
-//   ssl: false, // 🔥 LOCAL DB ke liye ye IMPORTANT hai
+//   ssl: false, // Important for local database connections.
 // });
 
 // module.exports = pool;

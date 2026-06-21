@@ -1,7 +1,7 @@
 
 
 
-// ✅ Ek line mein import + export dono
+// Import and export in one line.
 export { 
   Calendar, 
   ChevronLeft, 

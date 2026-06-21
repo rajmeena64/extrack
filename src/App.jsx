@@ -304,6 +304,9 @@ function AuthenticatedApp({
 
 function App() {
   const { user, isAuthLoading } = useAuth();
+  const isOAuthReturnPending = useMemo(() => (
+    typeof window !== 'undefined' && sessionStorage.getItem('entrack:oauthPending') === 'true'
+  ), []);
   const cachedSettings = useMemo(() => loadCachedUserSettings(), []);
   const cachedDashboardSettings = cachedSettings?.dashboard || {};
   const [tradeMode, setTradeMode] = useState(
@@ -331,6 +334,11 @@ function App() {
     markPerf('shell-visible');
     measurePerf('visible-shell-from-start', 'app-start', 'shell-visible');
   }, []);
+
+  useEffect(() => {
+    if (isAuthLoading || typeof window === 'undefined') return;
+    sessionStorage.removeItem('entrack:oauthPending');
+  }, [isAuthLoading]);
 
   useEffect(() => {
     if (!user?.ID || typeof window === 'undefined') return undefined;
@@ -641,6 +649,10 @@ function App() {
     Boolean(user?.ID) &&
     tradesQuery.isPending &&
     !Array.isArray(tradesQuery.data);
+
+  if (isAuthLoading && isOAuthReturnPending) {
+    return null;
+  }
 
   return (
     <BrowserRouter>

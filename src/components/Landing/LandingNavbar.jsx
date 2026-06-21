@@ -12,7 +12,7 @@ const LandingNavbar = ({ darkMode, toggleDarkMode, onSignIn, mobileMenuOpen, set
       <nav className="hero-nav" aria-label="Main navigation">
         <a href="#replay">Replay</a>
         <a href="#features">Journal</a>
-        <a href="#analytics">Analytics</a>
+        <a href="/analytics">Analytics</a>
         <a href="#pricing">Pricing</a>
         <a href="#faq">AI Assistant</a>
       </nav>
@@ -46,7 +46,7 @@ const LandingNavbar = ({ darkMode, toggleDarkMode, onSignIn, mobileMenuOpen, set
         <div className="fixed inset-x-0 top-[70px] bg-surface-container-high border-b border-outline-variant p-lg flex flex-col gap-md z-[100] md:hidden animate-fadeIn shadow-2xl">
           <a href="#replay" onClick={() => setMobileMenuOpen(false)} className="text-xl font-bold py-3 border-b border-outline-variant/30">Replay</a>
           <a href="#features" onClick={() => setMobileMenuOpen(false)} className="text-xl font-bold py-3 border-b border-outline-variant/30">Journal</a>
-          <a href="#analytics" onClick={() => setMobileMenuOpen(false)} className="text-xl font-bold py-3 border-b border-outline-variant/30">Analytics</a>
+          <a href="/analytics" onClick={() => setMobileMenuOpen(false)} className="text-xl font-bold py-3 border-b border-outline-variant/30">Analytics</a>
           <a href="#pricing" onClick={() => setMobileMenuOpen(false)} className="text-xl font-bold py-3 border-b border-outline-variant/30">Pricing</a>
           
           <div className="flex items-center justify-between py-4 border-b border-outline-variant/30">

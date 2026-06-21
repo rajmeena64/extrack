@@ -392,18 +392,18 @@
 
 /* ===== BASE CARDS ===== */
 
-.form-container,
-.form-card,
-.api-card {
+.add-trade-form-container,
+.add-trade-form-card,
+.add-trade-api-card {
   background: var(--bg-card);
   border: var(--dashboard-card-border);
   border-radius: var(--dashboard-card-radius);
   box-shadow: var(--dashboard-card-shadow);
 }
 
-.form-container,
-.api-card,
-.form-card.csv-upload-section,
+.add-trade-form-container,
+.add-trade-api-card,
+.add-trade-form-card.csv-upload-section,
 .horizontal-entry-form {
   padding: 20px;
 }
@@ -415,7 +415,7 @@
   border-radius: var(--dashboard-card-radius);
 }
 
-.form-container.manual-section {
+.add-trade-form-container.manual-section {
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -852,7 +852,7 @@
 .btn-group-horizontal,
 .btn-group,
 .connection-buttons,
-.modal-actions {
+.add-trade-modal-actions {
   display: flex;
   gap: 12px;
   justify-content: flex-end;
@@ -912,7 +912,7 @@
   width: 100%;
 }
 
-.form-card.csv-upload-section {
+.add-trade-form-card.csv-upload-section {
   padding: 20px;
 }
 
@@ -1139,12 +1139,12 @@
   align-items: start;
 }
 
-.api-card {
+.add-trade-api-card {
   padding: clamp(14px, 2vw, 20px);
   overflow: visible;
 }
 
-.form-layout > .form-card {
+.form-layout > .add-trade-form-card {
   padding: clamp(14px, 2vw, 18px);
 }
 
@@ -1607,7 +1607,7 @@
   margin-top: 6px;
 }
 
-.modal {
+.add-trade-modal {
   position: fixed;
   inset: 0;
   z-index: 999;
@@ -1619,8 +1619,7 @@
   backdrop-filter: blur(10px);
 }
 
-.modal-content {
-  width: min(420px, 100%);
+.add-trade-modal-content {
   padding: 22px;
   border-radius: 24px;
   border: var(--dashboard-card-border);
@@ -1628,12 +1627,12 @@
   box-shadow: 0 28px 60px -34px rgba(15, 23, 42, 0.5);
 }
 
-.modal-content h3 {
+.add-trade-modal-content h3 {
   margin-bottom: 10px;
   color: var(--heading);
 }
 
-.modal-content p {
+.add-trade-modal-content p {
   color: var(--text-secondary);
   line-height: 1.6;
 }
@@ -1726,9 +1725,9 @@
     font-size: 18px;
   }
 
-  .form-container,
-  .api-card,
-  .form-card.csv-upload-section,
+  .add-trade-form-container,
+  .add-trade-api-card,
+  .add-trade-form-card.csv-upload-section,
   .horizontal-entry-form,
   .api-section {
     padding: 14px;
@@ -1769,7 +1768,7 @@
   .btn-group-horizontal,
   .btn-group,
   .connection-buttons,
-  .modal-actions {
+  .add-trade-modal-actions {
     flex-direction: column;
   }
 
@@ -1823,8 +1822,9 @@
     padding-inline: 16px;
   }
 
-  .modal-content {
+  .add-trade-modal-content {
     padding: 18px;
     border-radius: 20px;
   }
 }
+

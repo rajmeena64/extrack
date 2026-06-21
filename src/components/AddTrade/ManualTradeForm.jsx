@@ -15,7 +15,7 @@ function ManualTradeForm({ API_URL, csvData, setCsvData,trades }) {
   };
 
   return (
-    <div className="form-container manual-section" style={{display: 'block'}}>
+    <div className="add-trade-form-container manual-section" style={{display: 'block'}}>
       {/* Upload Options */}
       <div className="upload-options">
         <div 
@@ -49,3 +49,4 @@ function ManualTradeForm({ API_URL, csvData, setCsvData,trades }) {
 }
 
 export default ManualTradeForm;
+

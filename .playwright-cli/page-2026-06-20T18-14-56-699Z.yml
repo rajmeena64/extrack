@@ -1,0 +1,350 @@
+- generic [ref=e3]:
+  - main [ref=e5]:
+    - generic [ref=e6]:
+      - link "Entrack home" [ref=e7] [cursor=pointer]:
+        - /url: "#"
+        - generic [ref=e8]: E
+        - generic [ref=e9]: Entrack
+      - navigation "Primary navigation" [ref=e10]:
+        - link "Journal" [ref=e11] [cursor=pointer]:
+          - /url: "#features"
+        - link "Analytics" [ref=e12] [cursor=pointer]:
+          - /url: "#dashboard-preview"
+        - link "Replay" [ref=e13] [cursor=pointer]:
+          - /url: "#modules"
+        - link "Brokers" [ref=e14] [cursor=pointer]:
+          - /url: "#brokers"
+        - link "Documentation" [ref=e15] [cursor=pointer]:
+          - /url: /documentation/journal
+      - generic "Account actions" [ref=e17]:
+        - button "Login" [ref=e18] [cursor=pointer]
+        - button "Sign Up" [ref=e19] [cursor=pointer]
+    - generic [ref=e20]:
+      - generic [ref=e21]:
+        - generic [ref=e22]:
+          - link "Core workflow" [ref=e23] [cursor=pointer]:
+            - /url: /documentation/journal
+          - heading "Everything you need to review your trading ." [level=1] [ref=e24]:
+            - link "Everything you need to review your trading ." [ref=e25] [cursor=pointer]:
+              - /url: /documentation/journal
+              - text: Everything you need to review your
+              - generic [ref=e26]: trading
+              - text: .
+        - generic [ref=e27]:
+          - button "View Demo" [ref=e28] [cursor=pointer]
+          - paragraph [ref=e29]: Journal, broker coverage, analytics, and replay in one trading workspace.
+      - generic [ref=e30]:
+        - article [ref=e31]:
+          - generic [ref=e32]:
+            - generic [ref=e33]: Journal
+            - heading "Track Every Trade" [level=3] [ref=e34]
+            - paragraph [ref=e35]: Log entry, exit, screenshots, notes, risk, mistakes, setup quality and the lesson behind every position.
+            - link "Explore →" [ref=e36] [cursor=pointer]:
+              - /url: /features/journal
+        - article [ref=e37]:
+          - generic [ref=e38]:
+            - generic [ref=e39]: Brokers
+            - heading "Supported Brokers" [level=3] [ref=e40]
+            - paragraph [ref=e41]: Exness, IC Markets, Binance, Bybit, Zerodha, Angel One aur popular brokers ko clean list me dikhaye.
+            - link "View brokers →" [ref=e42] [cursor=pointer]:
+              - /url: /features/brokers
+        - article [ref=e43]:
+          - generic [ref=e44]:
+            - generic [ref=e45]: Analytics
+            - heading "Find Weakness" [level=3] [ref=e46]
+            - paragraph [ref=e47]: Break down win rate, RR, symbols, weekdays, sessions and repeated behavior that quietly hurts performance.
+            - link "Analyze →" [ref=e48] [cursor=pointer]:
+              - /url: /features/analytics
+        - article [ref=e49]:
+          - generic [ref=e50]:
+            - generic [ref=e51]: Backtest
+            - heading "Replay Markets" [level=3] [ref=e52]
+            - paragraph [ref=e53]: Practice entries, exits and risk rules with historical candles before risking money in live markets.
+            - link "Replay →" [ref=e54] [cursor=pointer]:
+              - /url: /features/replay
+    - region "Product image preview" [ref=e56]:
+      - generic [ref=e57]:
+        - img "Trading chart side preview"
+        - img "Trading dashboard preview" [ref=e58]
+        - img "Market replay side preview"
+    - generic [ref=e59]:
+      - generic [ref=e60]:
+        - generic [ref=e61]:
+          - link "Performance overview" [ref=e62] [cursor=pointer]:
+            - /url: /documentation/dashboard
+          - heading "Your stats should feel readable, not noisy." [level=2] [ref=e63]:
+            - link "Your stats should feel readable, not noisy." [ref=e64] [cursor=pointer]:
+              - /url: /documentation/dashboard
+        - paragraph [ref=e65]: Monitor account health, risk, sessions, and repeatable performance patterns.
+      - generic [ref=e66]:
+        - generic [ref=e67]:
+          - article [ref=e68]:
+            - generic [ref=e70]: MT5 Account
+            - generic [ref=e72]: $12.4k
+            - paragraph [ref=e73]: Live balance, equity and account health stay visible inside the same workspace.
+          - article [ref=e74]:
+            - generic [ref=e76]: Journal
+            - generic [ref=e78]: 68%
+            - paragraph [ref=e79]: See whether your setups are actually working across symbols and sessions.
+          - article [ref=e80]:
+            - generic [ref=e82]: Risk
+            - generic [ref=e84]: 1:3.2
+            - paragraph [ref=e85]: Track average RR and keep risk discipline clear before, during and after trades.
+        - generic "Entrack dashboard mockup" [ref=e86]:
+          - generic [ref=e92]: Entrack / Performance
+          - generic [ref=e93]:
+            - generic [ref=e95]:
+              - generic [ref=e96]: XAUUSD Replay
+              - generic [ref=e97]: +8.4R this month
+            - complementary [ref=e112]:
+              - generic [ref=e113]:
+                - generic [ref=e114]: Best session
+                - strong [ref=e115]: London Open
+                - paragraph [ref=e116]: Cleaner entries and strongest win rate.
+              - generic [ref=e117]:
+                - generic [ref=e118]: Main leak
+                - strong [ref=e119]: Late exits
+                - paragraph [ref=e120]: Winners cut too early after first pullback.
+              - generic [ref=e121]:
+                - generic [ref=e122]: Next focus
+                - strong [ref=e123]: Hold to 1:3
+                - paragraph [ref=e124]: Replay 20 examples before live trading.
+    - generic [ref=e125]:
+      - generic [ref=e126]:
+        - generic [ref=e127]:
+          - link "Core tools" [ref=e128] [cursor=pointer]:
+            - /url: /documentation/add-trade
+          - heading "Open only the tool you need right now." [level=2] [ref=e129]:
+            - link "Open only the tool you need right now." [ref=e130] [cursor=pointer]:
+              - /url: /documentation/add-trade
+        - paragraph [ref=e131]: Move between journal, analytics, replay, broker coverage, and risk tools without breaking your workflow.
+      - generic [ref=e133]:
+        - article [ref=e134] [cursor=pointer]:
+          - generic [ref=e135]:
+            - generic [ref=e136]: Journal
+            - heading "Trade Journal" [level=3] [ref=e137]
+            - paragraph [ref=e138]: Track every setup, screenshot, mistake and lesson in one clean trading workspace built for serious review.
+            - generic [ref=e139]: Explore module →
+        - article [ref=e140] [cursor=pointer]:
+          - generic [ref=e141]:
+            - generic [ref=e142]: Analytics
+            - heading "Performance Analytics" [level=3] [ref=e143]
+            - paragraph [ref=e144]: See win rate, risk reward, daily PnL, mistakes and patterns without digging through messy spreadsheets.
+            - generic [ref=e145]: Explore module →
+        - article [ref=e146] [cursor=pointer]:
+          - generic [ref=e147]:
+            - generic [ref=e148]: Replay
+            - heading "Backtest Replay" [level=3] [ref=e149]
+            - paragraph [ref=e150]: Replay candles, place virtual trades, test strategy rules and build confidence before risking real capital.
+            - generic [ref=e151]: Explore module →
+        - article [ref=e152] [cursor=pointer]:
+          - generic [ref=e153]:
+            - generic [ref=e154]: Brokers
+            - heading "Broker Directory" [level=3] [ref=e155]
+            - paragraph [ref=e156]: Broker names, market type aur trading source ko journal aur analytics ke saath clean tarike se organise karo.
+            - generic [ref=e157]: Explore module →
+        - article [ref=e158] [cursor=pointer]:
+          - generic [ref=e159]:
+            - generic [ref=e160]: Risk
+            - heading "Risk Control" [level=3] [ref=e161]
+            - paragraph [ref=e162]: Keep risk visible with daily limits, position sizing, drawdown checks and rule-based trading stats.
+            - generic [ref=e163]: Explore module →
+      - generic [ref=e164]:
+        - button "Previous module" [ref=e165] [cursor=pointer]: ‹
+        - button "Next module" [ref=e166] [cursor=pointer]: ›
+    - generic [ref=e167]:
+      - generic [ref=e168]:
+        - generic [ref=e169]:
+          - link "Broker workspace" [ref=e170] [cursor=pointer]:
+            - /url: /documentation/brokers
+          - heading "One clean view for every broker you trade with." [level=2] [ref=e171]:
+            - link "One clean view for every broker you trade with." [ref=e172] [cursor=pointer]:
+              - /url: /documentation/brokers
+        - paragraph [ref=e173]: Compare accounts, markets, and execution quality without switching tabs or losing context.
+      - generic "Broker coverage preview" [ref=e174]:
+        - generic:
+          - generic: connected review
+          - heading "Know where your edge performs best." [level=3]
+          - paragraph: Bring broker activity into one calm dashboard and spot the accounts, symbols, and sessions that actually deserve your focus.
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - img
+              - generic: Exness
+              - generic: forex broker
+            - generic:
+              - generic: IC
+              - generic: IC Markets
+              - generic: forex broker
+            - generic:
+              - generic: PP
+              - generic: Pepperstone
+              - generic: cfd broker
+            - generic:
+              - generic: FP
+              - generic: FP Markets
+              - generic: cfd broker
+            - generic:
+              - generic:
+                - img
+              - generic: XM
+              - generic: forex broker
+            - generic:
+              - generic: OC
+              - generic: Octa
+              - generic: forex broker
+            - generic:
+              - generic: HF
+              - generic: HFM
+              - generic: cfd broker
+            - generic:
+              - generic: OA
+              - generic: OANDA
+              - generic: forex broker
+            - generic:
+              - generic: FC
+              - generic: FOREX.com
+              - generic: forex broker
+            - generic:
+              - generic: TK
+              - generic: Tickmill
+              - generic: forex broker
+            - generic:
+              - generic: AV
+              - generic: AvaTrade
+              - generic: cfd broker
+            - generic:
+              - generic: 8C
+              - generic: Eightcap
+              - generic: cfd broker
+            - generic:
+              - generic: FX
+              - generic: FXTM
+              - generic: forex broker
+            - generic:
+              - generic:
+                - img
+              - generic: Vantage
+              - generic: cfd broker
+            - generic:
+              - generic: BN
+              - generic: Binance
+              - generic: crypto exchange
+            - generic:
+              - generic: BY
+              - generic: Bybit
+              - generic: crypto exchange
+            - generic:
+              - generic: OK
+              - generic: OKX
+              - generic: crypto exchange
+            - generic:
+              - generic: IB
+              - generic: Interactive Brokers
+              - generic: global broker
+          - generic:
+            - generic:
+              - generic: DN
+              - generic: Dhan
+              - generic: india broker
+            - generic:
+              - generic: ZR
+              - generic: Zerodha
+              - generic: india broker
+            - generic:
+              - generic: UP
+              - generic: Upstox
+              - generic: india broker
+            - generic:
+              - generic: AG
+              - generic: Angel One
+              - generic: india broker
+            - generic:
+              - generic: DR
+              - generic: Deriv
+              - generic: cfd broker
+            - generic:
+              - generic: FB
+              - generic: FBS
+              - generic: forex broker
+            - generic:
+              - generic: RO
+              - generic: RoboForex
+              - generic: forex broker
+            - generic:
+              - generic: TM
+              - generic: TMGM
+              - generic: cfd broker
+            - generic:
+              - generic: SK
+              - generic: Skilling
+              - generic: cfd broker
+            - generic:
+              - generic: ET
+              - generic: eToro
+              - generic: multi asset
+            - generic:
+              - generic: SAX
+              - generic: Saxo
+              - generic: global broker
+            - generic:
+              - generic: CM
+              - generic: CMC Markets
+              - generic: cfd broker
+            - generic:
+              - generic: IG
+              - generic: IG
+              - generic: global broker
+            - generic:
+              - generic: QS
+              - generic: Questrade
+              - generic: global broker
+            - generic:
+              - generic: WB
+              - generic: Webull
+              - generic: stock broker
+            - generic:
+              - generic: RH
+              - generic: Robinhood
+              - generic: stock broker
+            - generic:
+              - generic: MO
+              - generic: moomoo
+              - generic: stock broker
+            - generic:
+              - generic: TT
+              - generic: TradeStation
+              - generic: stock broker
+        - generic: broker names only · no platform lock-in
+    - generic [ref=e176]:
+      - generic [ref=e177]: Start cleaner
+      - heading "Make every trading day easier to review." [level=2] [ref=e178]
+      - paragraph [ref=e179]: Entrack is for traders who want one focused place for trades, screenshots, broker list, replay and performance improvement.
+      - generic [ref=e180]:
+        - button "Start Tracking" [ref=e181] [cursor=pointer]
+        - button "View Demo" [ref=e182] [cursor=pointer]
+  - contentinfo [ref=e183]:
+    - generic [ref=e184]:
+      - generic "Entrack footer" [ref=e185]:
+        - generic [ref=e186]: E
+        - generic [ref=e187]: Entrack
+      - paragraph [ref=e188]: Trading journal, broker coverage, analytics, and replay tools built for focused trade review.
+      - link "support@entrack.in" [ref=e189] [cursor=pointer]:
+        - /url: mailto:support@entrack.in
+    - generic [ref=e190]:
+      - link "Features" [ref=e191] [cursor=pointer]:
+        - /url: "#features"
+      - link "Analytics" [ref=e192] [cursor=pointer]:
+        - /url: "#dashboard-preview"
+      - link "Modules" [ref=e193] [cursor=pointer]:
+        - /url: "#modules"
+      - link "Brokers" [ref=e194] [cursor=pointer]:
+        - /url: "#brokers"
+      - link "Privacy" [ref=e195] [cursor=pointer]:
+        - /url: /privacy
+      - link "Terms" [ref=e196] [cursor=pointer]:
+        - /url: /terms
+      - link "Support" [ref=e197] [cursor=pointer]:
+        - /url: mailto:support@entrack.in
+    - generic [ref=e198]: © 2026 Entrack. Built for focused traders.

@@ -452,7 +452,7 @@ function ManualEntryForm() {
     <>
     {saveError ? <div className="trade-save-error-toast" role="alert">{saveError}</div> : null}
     {isSavingTrade ? <TradeSaveOverlay label="Saving trade and refreshing dashboard..." /> : null}
-    <div className="form-card horizontal-entry-form" aria-busy={isSavingTrade}>
+    <div className="add-trade-form-card horizontal-entry-form" aria-busy={isSavingTrade}>
       {/* Top-left Category */}
       <div className="form-group category-top">
         <label htmlFor="category">Category</label>
@@ -590,7 +590,7 @@ function ManualEntryForm() {
       </div>
 
       {/* Screenshot Section */}
-      <div className="form-card screenshot-section-horizontal">
+      <div className="add-trade-form-card screenshot-section-horizontal">
         {!previewImage ? (
           <div className="screenshot-upload" id="screenshotUpload">
             <div className="upload-icon">
@@ -645,3 +645,4 @@ function ManualEntryForm() {
 }
 
 export default ManualEntryForm; 
+

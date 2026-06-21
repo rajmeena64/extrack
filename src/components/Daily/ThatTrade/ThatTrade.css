@@ -386,7 +386,7 @@
 /* =======================
    MODAL STYLES
 ======================= */
-.modal-overlay {
+.trade-detail-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -400,7 +400,7 @@
   animation: fadeIn 0.2s ease;
 }
 
-.modal-content {
+.trade-detail-modal-content {
   background: var(--bg-card);
   border: 1px solid var(--border-medium);
   border-radius: 16px;
@@ -411,7 +411,7 @@
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
 }
 
-.modal-header {
+.trade-detail-modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -423,7 +423,7 @@
   z-index: 10;
 }
 
-.modal-header h3 {
+.trade-detail-modal-header h3 {
   font-size: 18px;
   font-weight: 600;
   color: var(--text-primary);
@@ -433,11 +433,11 @@
   gap: 10px;
 }
 
-.modal-header h3 i {
+.trade-detail-modal-header h3 i {
   color: var(--purple);
 }
 
-.modal-close {
+.trade-detail-modal-close {
   background: none;
   border: none;
   font-size: 28px;
@@ -454,13 +454,13 @@
   border-radius: 50%;
 }
 
-.modal-close:hover {
+.trade-detail-modal-close:hover {
   color: var(--loss-color);
   background: rgba(239, 68, 68, 0.1);
   transform: rotate(90deg);
 }
 
-.modal-body {
+.trade-detail-modal-body {
   padding: 24px;
 }
 
@@ -545,7 +545,7 @@
 }
 
 /* Modal Actions */
-.modal-actions {
+.trade-detail-modal-actions {
   display: flex;
   gap: 12px;
   justify-content: flex-end;
@@ -797,7 +797,7 @@
 ======================= */
 .trade-stats-panel::-webkit-scrollbar,
 .trade-content::-webkit-scrollbar,
-.modal-content::-webkit-scrollbar,
+.trade-detail-modal-content::-webkit-scrollbar,
 .screenshots-grid::-webkit-scrollbar,
 .strategy-display::-webkit-scrollbar,
 .note-display::-webkit-scrollbar {
@@ -806,7 +806,7 @@
 
 .trade-stats-panel::-webkit-scrollbar-track,
 .trade-content::-webkit-scrollbar-track,
-.modal-content::-webkit-scrollbar-track,
+.trade-detail-modal-content::-webkit-scrollbar-track,
 .screenshots-grid::-webkit-scrollbar-track,
 .strategy-display::-webkit-scrollbar-track,
 .note-display::-webkit-scrollbar-track {
@@ -816,7 +816,7 @@
 
 .trade-stats-panel::-webkit-scrollbar-thumb,
 .trade-content::-webkit-scrollbar-thumb,
-.modal-content::-webkit-scrollbar-thumb,
+.trade-detail-modal-content::-webkit-scrollbar-thumb,
 .screenshots-grid::-webkit-scrollbar-thumb,
 .strategy-display::-webkit-scrollbar-thumb,
 .note-display::-webkit-scrollbar-thumb {
@@ -826,7 +826,7 @@
 
 .trade-stats-panel::-webkit-scrollbar-thumb:hover,
 .trade-content::-webkit-scrollbar-thumb:hover,
-.modal-content::-webkit-scrollbar-thumb:hover,
+.trade-detail-modal-content::-webkit-scrollbar-thumb:hover,
 .screenshots-grid::-webkit-scrollbar-thumb:hover,
 .strategy-display::-webkit-scrollbar-thumb:hover,
 .note-display::-webkit-scrollbar-thumb:hover {
@@ -887,16 +887,16 @@
     grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
   }
   
-  .modal-content {
+  .trade-detail-modal-content {
     width: 95%;
     margin: 10px;
   }
   
-  .modal-header {
+  .trade-detail-modal-header {
     padding: 16px;
   }
   
-  .modal-body {
+  .trade-detail-modal-body {
     padding: 16px;
   }
   
@@ -1050,3 +1050,4 @@
     font-size: 24px;
   }
 }    
+

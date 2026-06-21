@@ -70,6 +70,360 @@ const documentationSections = [
   privacy: 'Privacy note: keep passwords, API keys, access tokens, recovery phrases, broker secrets and personal identity documents out of notes, examples and visible documentation.',
 }));
 
+const analyticsGuideSections = [
+  {
+    slug: 'overview',
+    label: 'Analytics Overview',
+    eyebrow: 'Start Here',
+    title: 'All trading analytics in one improvement system.',
+    intro: 'The Analytics page explains what each Entrack analytics tool does, how it reads your trading data, and how a trader can use the result to improve decisions without guessing.',
+    works: [
+      'It connects dashboard stats, radar scores, calendar behavior, day review, charts, heatmaps, AI review and replay into one learning flow.',
+      'Each tool starts from your own trades, notes, timestamps, symbols, P&L and review habits.',
+      'The goal is not to promise profit. The goal is to make repeated behavior visible so you can fix one thing at a time.',
+    ],
+    improves: [
+      'See where your edge is strong before increasing size.',
+      'Find weak sessions, symbols, weekdays, exits or risk habits before they become expensive.',
+      'Turn scattered trades into a clear review routine: capture, measure, inspect, decide, practice.',
+    ],
+    features: ['Feature sidebar', 'Deep tool pages', 'Trader-focused explanations', 'Improvement workflow'],
+  },
+  {
+    slug: 'dashboard',
+    label: 'Dashboard',
+    eyebrow: 'Performance Base',
+    title: 'Dashboard shows account health before deep analysis.',
+    intro: 'Dashboard is the first analytics layer. It gives you a clean view of P&L, win rate, trading activity, currency-adjusted performance and recent account movement.',
+    works: [
+      'It reads your filtered trade history and converts it into summary cards, lists and visual panels.',
+      'Date range and currency filters help you compare periods without mixing old and new behavior.',
+      'Dashboard is the place to notice what needs deeper review, then jump into calendar, radar, day review or analytics.',
+    ],
+    improves: [
+      'You stop judging performance from one emotional trade.',
+      'You can compare periods and ask better questions, such as whether the month is profitable because of quality or just one oversized winner.',
+      'You quickly see if risk, activity or consistency is drifting.',
+    ],
+    features: ['P&L summary', 'Win rate scan', 'Currency-aware stats', 'Date filtering', 'Trade mode filtering'],
+  },
+  {
+    slug: 'radar',
+    label: 'Radar Score',
+    eyebrow: 'Quality Score',
+    title: 'Radar turns trading quality into one readable score.',
+    intro: 'Radar scores your trading across win rate, profit factor, average win/loss, recovery, drawdown control and consistency.',
+    works: [
+      'It uses closed trades and normalizes each metric from 0 to 100.',
+      'The radar shape shows whether your results are balanced or dependent on one strong area.',
+      'The overall grade helps you understand if the account is excellent, good, average or needs work.',
+    ],
+    improves: [
+      'You can see the exact weak side of your trading instead of saying "I am inconsistent" vaguely.',
+      'If win rate is fine but average win/loss is weak, you know exits need work.',
+      'If drawdown score is poor, you know risk control needs attention before strategy changes.',
+    ],
+    features: ['Overall score', 'Profit factor', 'Average win/loss', 'Recovery factor', 'Drawdown control', 'Consistency'],
+  },
+  {
+    slug: 'progress-tracker',
+    label: 'Progress Tracker',
+    eyebrow: 'Consistency',
+    title: 'Progress Tracker shows how regularly you are building data.',
+    intro: 'Progress Tracker is a weekly activity heatmap. It shows when you traded and how consistently records are coming into the journal.',
+    works: [
+      'It groups trades by weekday and week, then shades the grid by trading activity.',
+      'Month markers help you understand how activity changes over time.',
+      'It is useful even before advanced statistics become meaningful because consistency starts with data capture.',
+    ],
+    improves: [
+      'You can detect overtrading clusters and missing review days.',
+      'You can confirm whether improvement came from a repeatable process or just random activity.',
+      'It encourages a steady review habit instead of a burst of journaling after losses.',
+    ],
+    features: ['Weekly heatmap', 'Weekday rows', 'Month markers', 'Activity intensity', 'Consistency signal'],
+  },
+  {
+    slug: 'calendar',
+    label: 'P&L Calendar',
+    eyebrow: 'Daily Pattern',
+    title: 'P&L Calendar makes every trading day visible.',
+    intro: 'The calendar shows daily P&L, trade count, win rate, breakeven days and weekly summaries, so daily behavior is easy to inspect.',
+    works: [
+      'Each day cell summarizes trades from that calendar date.',
+      'Positive, negative, flat and breakeven days use separate visual states.',
+      'Clicking a trading day opens the specific Day Review for that date.',
+    ],
+    improves: [
+      'You can find which weekdays repeatedly hurt performance.',
+      'You can spot streaks, revenge-trading days or breakeven survival days.',
+      'You can plan future sessions around days that historically deserve more caution.',
+    ],
+    features: ['Daily P&L', 'Trade count', 'Win rate', 'Breakeven marking', 'Weekly cards', 'Calendar image export'],
+  },
+  {
+    slug: 'day-review',
+    label: 'Day Review',
+    eyebrow: 'Daily Lesson',
+    title: 'Day Review turns one session into a clear lesson.',
+    intro: 'Day Review explains a single trading day with stats, intraday P&L curve, largest winner, largest loser, checklist, symbol breakdown and session breakdown.',
+    works: [
+      'It filters trades to one date and calculates net P&L, win rate, profit factor, drawdown and streaks.',
+      'It highlights the best and worst trades so review starts with the decisions that mattered most.',
+      'It separates symbol and session results to show where the day was won or lost.',
+    ],
+    improves: [
+      'You finish the day with one lesson instead of a vague feeling.',
+      'You can identify if the damage came from a symbol, session, streak or payout problem.',
+      'You can build a next-session focus before repeating the same mistake.',
+    ],
+    features: ['Intraday curve', 'Largest winner', 'Largest loser', 'Daily checklist', 'Symbol breakdown', 'Session breakdown'],
+  },
+  {
+    slug: 'ai-analysis',
+    label: 'AI Analysis',
+    eyebrow: 'Review Assistant',
+    title: 'AI Analysis summarizes behavior into review prompts.',
+    intro: 'AI Analysis uses your trade history and selected currency context to produce a readable review of strengths, weaknesses and next actions.',
+    works: [
+      'It receives structured trade data and turns it into plain-language feedback.',
+      'It is strongest when trade records include notes, strategy labels and clean timestamps.',
+      'It should be treated as a review assistant, not as financial advice.',
+    ],
+    improves: [
+      'You get a faster draft of what to review after a busy session.',
+      'You can catch repeated mistakes that are hard to notice manually.',
+      'You can turn the AI output into one practical rule for the next trading day.',
+    ],
+    features: ['Behavior summary', 'Mistake detection', 'Improvement prompts', 'Currency context', 'Human review required'],
+  },
+  {
+    slug: 'specific-day-chart',
+    label: 'Specific Day Chart',
+    eyebrow: 'Trade Context',
+    title: 'Specific Day Chart shows what happened around a trade.',
+    intro: 'The charting view loads historical candles for the selected symbol and date, then marks entries and exits so the trade can be reviewed visually.',
+    works: [
+      'It fetches market candles for the symbol, timeframe and selected date.',
+      'It places entry and exit markers on the candle chart when trade timing is available.',
+      'It supports multiple timeframes so you can review execution context at different levels.',
+    ],
+    improves: [
+      'You can see if the entry was late, early or against market structure.',
+      'You can compare exits against the move that followed instead of relying on memory.',
+      'You can turn screenshots and chart evidence into better rules.',
+    ],
+    features: ['Candlestick chart', 'Entry markers', 'Exit markers', '1m/5m/15m/1h views', 'Full-day context'],
+  },
+  {
+    slug: 'charting-analytics',
+    label: 'Charting Analytics',
+    eyebrow: 'Equity Curve',
+    title: 'Charting Analytics reveals the shape of performance.',
+    intro: 'Charting analytics covers performance curves and visual breakdowns that show how P&L changes across trades, days or selected periods.',
+    works: [
+      'It converts trade results into cumulative movement so trend, chop and drawdown are easier to see.',
+      'It helps compare whether gains are smooth, lumpy, fragile or recovering after losses.',
+      'It supports the Day Review and dashboard by turning raw numbers into a visible path.',
+    ],
+    improves: [
+      'You can identify whether the account is growing steadily or relying on rare spikes.',
+      'You can see when a losing streak begins instead of noticing too late.',
+      'You can adjust risk when the curve shows instability.',
+    ],
+    features: ['Cumulative P&L', 'Intraday curve', 'Period comparison', 'Drawdown visibility', 'Performance trend'],
+  },
+  {
+    slug: 'heatmap',
+    label: 'Heatmap',
+    eyebrow: 'Behavior Map',
+    title: 'Heatmap helps find repeated performance patterns.',
+    intro: 'The heatmap analytics view is for spotting where results cluster across time, sessions, symbols or trading behavior.',
+    works: [
+      'It groups trading outcomes into visual blocks so heavy profit and loss areas stand out quickly.',
+      'It is useful when table rows are too slow to scan.',
+      'It turns repeated behavior into something visible enough to act on.',
+    ],
+    improves: [
+      'You can stop trading low-quality time windows that repeatedly produce losses.',
+      'You can focus practice on setups or sessions where your edge is actually visible.',
+      'You can compare behavior before and after a rule change.',
+    ],
+    features: ['Pattern scanning', 'Loss clusters', 'Profit clusters', 'Session review', 'Symbol behavior'],
+  },
+  {
+    slug: 'replay-backtesting',
+    label: 'Replay & Backtesting',
+    eyebrow: 'Practice',
+    title: 'Replay lets you practice the lesson before live trading.',
+    intro: 'Replay and backtesting help traders test entries, exits and risk rules on historical candles without risking live capital.',
+    works: [
+      'It replays candle movement and lets the trader make decisions as the market unfolds.',
+      'Virtual execution turns rules into practice instead of theory.',
+      'Backtest stats can be compared with journal analytics to see whether live behavior matches the plan.',
+    ],
+    improves: [
+      'You can practice the exact mistake found in Day Review or Radar.',
+      'You can build confidence in a rule before increasing live risk.',
+      'You can separate strategy weakness from execution weakness.',
+    ],
+    features: ['Historical candles', 'Virtual orders', 'Playback controls', 'Risk calculator', 'Practice loop'],
+  },
+  {
+    slug: 'broker-session-insights',
+    label: 'Broker & Session Insights',
+    eyebrow: 'Source Quality',
+    title: 'Broker and session insights show where performance comes from.',
+    intro: 'Broker and session analytics help compare trading results across accounts, platforms, markets and trading sessions.',
+    works: [
+      'Broker identity, symbol category and session timing stay attached to each trade where available.',
+      'Breakdowns reveal whether performance changes by source, market or time window.',
+      'This helps the trader review environment quality, not just individual decisions.',
+    ],
+    improves: [
+      'You can focus capital and attention where execution is cleaner.',
+      'You can reduce activity in sessions that repeatedly create poor decisions.',
+      'You can compare manual and imported trades without losing context.',
+    ],
+    features: ['Broker context', 'Session breakdown', 'Symbol categories', 'Manual/API trade separation', 'Source comparison'],
+  },
+];
+
+const analyticsFeatureVisuals = {
+  overview: {
+    image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1400&q=85',
+    imageAlt: 'Trading analytics dashboard with performance charts',
+    definition: 'Entrack Analytics is the full review layer of the product. It collects your trading records, turns them into performance signals, and helps you decide what to improve next.',
+    bestFor: 'Use this when you want a complete view of your trading behavior instead of checking one isolated stat.',
+    input: 'Trades, P&L, dates, symbols, sessions, notes and account context.',
+    output: 'A clear map of strengths, leaks, review pages and practice areas.',
+    signals: ['Whether your review system has enough data', 'Which analytics page should be opened first', 'Which part of trading needs the next decision'],
+    mistakes: ['Jumping between tools without a review order', 'Reacting to one trade instead of reading the full record', 'Ignoring missing notes or incomplete trade data'],
+    routine: ['Start with the overview', 'Choose the weakest visible area', 'Open that dedicated analytics page', 'Write one action for the next session'],
+  },
+  dashboard: {
+    image: 'https://images.unsplash.com/photo-1642790551116-18e150f248e8?w=1400&q=85',
+    imageAlt: 'Performance dashboard on a trading workspace',
+    definition: 'Dashboard is the quick health check of your trading account. It tells you whether the current period is stable, risky, improving or drifting.',
+    bestFor: 'Use it at the start of review before opening deeper tools.',
+    input: 'Filtered trades, account currency, date range and trade source.',
+    output: 'P&L, win rate, trade activity, account overview and links to deeper review.',
+    signals: ['Account direction for the selected period', 'Whether trade volume is normal or excessive', 'Whether recent P&L matches the quality of decisions'],
+    mistakes: ['Judging the week from one large winner', 'Missing a drop in account health', 'Comparing periods without the same date or currency filters'],
+    routine: ['Set the date range', 'Check P&L and win rate together', 'Look for unusual trade count', 'Open the tool that explains the weakest number'],
+  },
+  radar: {
+    image: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=1400&q=85',
+    imageAlt: 'Analyst reviewing score charts and performance metrics',
+    definition: 'Radar Score compresses multiple performance qualities into one shape. It shows if your trading is balanced or if one weak metric is damaging the whole system.',
+    bestFor: 'Use it when results feel confusing and you need to know which metric needs attention first.',
+    input: 'Closed trades, wins, losses, gross profit, gross loss and equity movement.',
+    output: 'A 0-100 score across win rate, profit factor, average win/loss, recovery, drawdown and consistency.',
+    signals: ['Whether the strategy is balanced or one-sided', 'If exits are weaker than entries', 'If drawdown control is damaging an otherwise good system'],
+    mistakes: ['Only watching win rate', 'Ignoring average loss size', 'Thinking profit factor is good while recovery is poor'],
+    routine: ['Read the lowest radar spoke', 'Compare it with the overall score', 'Open trades connected to that weakness', 'Adjust one rule before the next live session'],
+  },
+  'progress-tracker': {
+    image: 'https://images.unsplash.com/photo-1497366754035-f200968a6e72?w=1400&q=85',
+    imageAlt: 'Weekly planning wall showing consistent activity',
+    definition: 'Progress Tracker is a consistency map. It shows whether you are building enough clean trading data to actually learn from your journal.',
+    bestFor: 'Use it to catch overtrading clusters, missing review days and inconsistent journaling.',
+    input: 'Trade timestamps grouped by day and week.',
+    output: 'A weekly activity heatmap showing trading rhythm and data consistency.',
+    signals: ['Days with unusually heavy activity', 'Weeks where journaling stopped', 'Whether trading is consistent enough to measure'],
+    mistakes: ['Trading intensely after losses', 'Skipping records on difficult days', 'Believing a strategy changed when only activity changed'],
+    routine: ['Scan the densest blocks', 'Mark missing review days', 'Compare activity with P&L calendar', 'Set a weekly journaling target'],
+  },
+  calendar: {
+    image: 'https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=1400&q=85',
+    imageAlt: 'Calendar planning board for daily trading review',
+    definition: 'P&L Calendar turns every trading day into a visible result block. It makes daily performance patterns easy to scan.',
+    bestFor: 'Use it to find red-day patterns, weekly behavior and days that need a deeper Day Review.',
+    input: 'Daily trades, P&L, win count, notes and breakeven marking.',
+    output: 'Daily P&L cells, weekly totals, trading-day count and direct day-review access.',
+    signals: ['Repeated red weekdays', 'Weeks saved by one day or damaged by one day', 'Breakeven days where risk control mattered'],
+    mistakes: ['Repeating the same bad weekday behavior', 'Ignoring small daily losses that stack up', 'Treating every red day as the same problem'],
+    routine: ['Open the current month', 'Find the strongest and weakest day cells', 'Open Day Review for the worst day', 'Set a rule for that weekday or session'],
+  },
+  'day-review': {
+    image: 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=1400&q=85',
+    imageAlt: 'Desk setup for reviewing a trading day with notes',
+    definition: 'Day Review is the post-session breakdown. It explains what happened on one specific date and turns it into one practical lesson.',
+    bestFor: 'Use it after every active session, especially after emotional wins or losses.',
+    input: 'All trades from one date, session time, symbols, P&L and notes.',
+    output: 'Net P&L, intraday curve, largest winner, largest loser, checklist, session and symbol breakdown.',
+    signals: ['Where the session turned', 'Which trade controlled the day', 'Whether the day was a strategy issue or behavior issue'],
+    mistakes: ['Carrying emotion into the next session', 'Ignoring the largest loser', 'Calling a profitable day good when execution was poor'],
+    routine: ['Open the exact date', 'Read the intraday curve', 'Compare largest winner and loser', 'Write the next-session lesson'],
+  },
+  'specific-day-chart': {
+    image: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1400&q=85',
+    imageAlt: 'Candlestick chart for trade timing analysis',
+    definition: 'Specific Day Chart brings candle context into trade review. It shows where entries and exits happened on the actual market move.',
+    bestFor: 'Use it when you need to review execution quality, entry timing and exit discipline.',
+    input: 'Symbol, trade date, timeframe, entry price, exit price and timestamps.',
+    output: 'A candle chart with trade markers and full-day context.',
+    signals: ['Entry timing against market structure', 'Exit quality after the trade', 'Whether the trade followed the setup or chased price'],
+    mistakes: ['Entering after the move is already extended', 'Exiting before the planned target without evidence', 'Reviewing trades without chart context'],
+    routine: ['Select the trade date', 'Check the entry marker', 'Switch timeframes', 'Compare exit marker with the move that followed'],
+  },
+  'charting-analytics': {
+    image: 'https://images.unsplash.com/photo-1642543492481-44e81e3914a7?w=1400&q=85',
+    imageAlt: 'Financial chart analytics displayed on screens',
+    definition: 'Charting Analytics shows the shape of performance. It helps you see whether your account is climbing steadily or surviving through random spikes.',
+    bestFor: 'Use it to understand equity curve quality, drawdown periods and recovery behavior.',
+    input: 'Trade-by-trade or day-by-day P&L sequence.',
+    output: 'Cumulative P&L curve, drawdown visibility and trend quality.',
+    signals: ['Smooth growth versus spike-based growth', 'Where drawdown starts and ends', 'Whether recovery is strong or fragile'],
+    mistakes: ['Increasing size during unstable curves', 'Ignoring a flattening equity line', 'Treating one profit spike as a stable edge'],
+    routine: ['Read the curve direction', 'Mark the largest drawdown zone', 'Inspect trades inside that zone', 'Reduce or refine risk if the curve is unstable'],
+  },
+  heatmap: {
+    image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=1400&q=85',
+    imageAlt: 'Data heatmap and analytics screen',
+    definition: 'Heatmap makes repeated behavior visible. Instead of reading tables, you scan blocks and instantly see where profit or damage clusters.',
+    bestFor: 'Use it when you want to identify weak sessions, symbols, weekdays or behavior zones quickly.',
+    input: 'Grouped trade results across time, symbols, sessions or categories.',
+    output: 'Visual clusters of strong and weak performance areas.',
+    signals: ['Profit clusters worth repeating', 'Loss clusters that need rules', 'Categories that look fine in tables but weak visually'],
+    mistakes: ['Missing patterns hidden in rows', 'Trading a weak symbol because a few trades looked good', 'Ignoring repeated low-quality sessions'],
+    routine: ['Pick the heatmap grouping', 'Find the darkest weak cluster', 'Open trades from that cluster', 'Create an avoid-or-reduce rule'],
+  },
+  'ai-analysis': {
+    image: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=1400&q=85',
+    imageAlt: 'AI analytics interface for structured review',
+    definition: 'AI Analysis converts trade data into plain-language feedback. It acts like a review assistant that summarizes repeated patterns.',
+    bestFor: 'Use it when you want a fast review draft after a busy session or week.',
+    input: 'Trades, notes, strategy labels, P&L, dates and selected currency context.',
+    output: 'Strengths, weaknesses, repeated mistakes and next-action prompts.',
+    signals: ['Repeated mistakes across many trades', 'Missing context in notes', 'Behavior themes that are hard to spot manually'],
+    mistakes: ['Using AI output without checking the trades', 'Expecting predictions instead of review', 'Feeding incomplete notes and trusting the summary blindly'],
+    routine: ['Select the trade period', 'Generate the analysis', 'Verify the claim against actual trades', 'Keep only one action item'],
+  },
+  'replay-backtesting': {
+    image: 'https://images.unsplash.com/photo-1642790106117-e829e14a795f?w=1400&q=85',
+    imageAlt: 'Trader practicing with historical chart replay',
+    definition: 'Replay and Backtesting let you practice your rule before using live money. It converts lessons into reps.',
+    bestFor: 'Use it after analytics identifies a mistake you need to train out.',
+    input: 'Historical candles, strategy rules, virtual orders and risk settings.',
+    output: 'Practice trades, replay stats and confidence in execution rules.',
+    signals: ['Whether a rule works before live execution', 'How often you break the plan under replay', 'Where entries or exits fail repeatedly'],
+    mistakes: ['Changing live strategy without practice', 'Trusting memory instead of replay evidence', 'Skipping execution reps after finding a weakness'],
+    routine: ['Choose the weakness from analytics', 'Replay similar market conditions', 'Place virtual trades by rule', 'Compare replay behavior with live journal behavior'],
+  },
+  'broker-session-insights': {
+    image: 'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=1400&q=85',
+    imageAlt: 'Trading workstation comparing market sources and sessions',
+    definition: 'Broker and Session Insights show where performance actually comes from: account, broker, market, symbol or time window.',
+    bestFor: 'Use it when one broker, session or source feels different but you need proof from data.',
+    input: 'Broker/account source, trade mode, symbol category, session timing and P&L.',
+    output: 'Source comparison, session quality and where your edge performs best.',
+    signals: ['Which account source performs best', 'Which session creates the cleanest trades', 'Whether manual and imported trades behave differently'],
+    mistakes: ['Blaming the market when one source is the issue', 'Mixing broker data without context', 'Trading the same size in weak sessions'],
+    routine: ['Separate results by source', 'Compare session performance', 'Check symbols inside weak sources', 'Move focus toward the cleanest source-session pair'],
+  },
+};
+
 function DocumentationPage() {
   const requestedSlug = window.location.pathname.split('/').filter(Boolean)[1] || 'journal';
   const activeSection = documentationSections.find((section) => section.slug === requestedSlug) || documentationSections[0];
@@ -142,6 +496,148 @@ function DocumentationPage() {
             <div className="docs-privacy-note">
               <strong>Privacy and sensitive data</strong>
               <p>{activeSection.privacy}</p>
+            </div>
+          </section>
+        </article>
+      </main>
+    </div>
+  );
+}
+
+function AnalyticsGuidePage() {
+  const requestedSlug = window.location.pathname.split('/').filter(Boolean)[1] || 'overview';
+  const activeSection = analyticsGuideSections.find((section) => section.slug === requestedSlug) || analyticsGuideSections[0];
+  const activeIndex = Math.max(0, analyticsGuideSections.findIndex((section) => section.slug === activeSection.slug));
+  const visual = analyticsFeatureVisuals[activeSection.slug] || analyticsFeatureVisuals.overview;
+
+  return (
+    <div className="entrack-landing analytics-guide-page">
+      <div className="page-bg" aria-hidden="true" />
+      <header className="analytics-guide-topbar">
+        <a href="/" className="brand" aria-label="Entrack home">
+          <span className="brand__mark">E</span>
+          <span>Entrack</span>
+        </a>
+        <nav className="analytics-guide-toplinks" aria-label="Analytics navigation">
+          <a href="/">Home</a>
+          <a href="/demo">Demo</a>
+          <a href="/documentation/analytics">Reference</a>
+        </nav>
+      </header>
+
+      <main className="analytics-guide-shell">
+        <aside className="analytics-tool-rail" aria-label="Analytics feature list">
+          <div className="analytics-tool-rail__title">
+            <span>Analytics Menu</span>
+            <strong>{String(activeIndex + 1).padStart(2, '0')}</strong>
+          </div>
+          {analyticsGuideSections.map((section) => (
+            <a
+              key={section.slug}
+              className={`analytics-tool-link ${section.slug === activeSection.slug ? 'is-active' : ''}`}
+              href={`/analytics/${section.slug}`}
+            >
+              <small>{section.eyebrow}</small>
+              <span>{section.label}</span>
+            </a>
+          ))}
+        </aside>
+
+        <article className="analytics-guide-workspace">
+          <section className="analytics-product-hero">
+            <div className="analytics-product-copy">
+              <span className="analytics-product-kicker">Trading analytics system</span>
+              <h1>{activeSection.title}</h1>
+              <p>{activeSection.intro}</p>
+              <div className="analytics-feature-strip" aria-label="Selected analytics features">
+                {activeSection.features.map((feature) => (
+                  <span key={feature}>{feature}</span>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <section className="analytics-image-band">
+            <figure className="analytics-feature-visual">
+              <img src={visual.image} alt={visual.imageAlt} />
+              <figcaption>
+                <span>{activeSection.eyebrow}</span>
+                <strong>{activeSection.label}</strong>
+              </figcaption>
+            </figure>
+          </section>
+
+          <section className="analytics-definition-section">
+            <div className="analytics-definition-copy">
+              <span>Feature definition</span>
+              <h2>What is {activeSection.label}?</h2>
+              <p>{visual.definition}</p>
+            </div>
+
+            <div className="analytics-definition-cards">
+              <article>
+                <span>Best used for</span>
+                <p>{visual.bestFor}</p>
+              </article>
+              <article>
+                <span>Input data</span>
+                <p>{visual.input}</p>
+              </article>
+              <article>
+                <span>Output insight</span>
+                <p>{visual.output}</p>
+              </article>
+            </div>
+          </section>
+
+          <section className="analytics-explain-grid">
+            <div className="analytics-explain-panel">
+              <span>Feature mechanics</span>
+              <h2>How {activeSection.label} works</h2>
+              <ul>
+                {activeSection.works.map((point) => (
+                  <li key={point}>{point}</li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="analytics-explain-panel analytics-explain-panel--improve">
+              <span>Trading improvement</span>
+              <h2>Why {activeSection.label} matters</h2>
+              <ul>
+                {activeSection.improves.map((point) => (
+                  <li key={point}>{point}</li>
+                ))}
+              </ul>
+            </div>
+          </section>
+
+          <section className="analytics-specific-grid">
+            <div className="analytics-specific-panel">
+              <span>Signals to watch</span>
+              <ul>
+                {visual.signals.map((signal) => (
+                  <li key={signal}>{signal}</li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="analytics-specific-panel">
+              <span>Mistakes this catches</span>
+              <ul>
+                {visual.mistakes.map((mistake) => (
+                  <li key={mistake}>{mistake}</li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="analytics-specific-panel analytics-specific-panel--routine">
+              <span>Review routine for this page</span>
+              <ol>
+                {visual.routine.map((step) => (
+                  <li key={step}>{step}</li>
+                ))}
+              </ol>
             </div>
           </section>
         </article>
@@ -248,19 +744,6 @@ const demoSections = [
       'AI analysis turns trade data into a readable review draft.',
       'It can highlight repeated mistakes, strengths and questions for the next session.',
       'The trader stays in control and uses AI as a review assistant.',
-    ],
-  },
-  {
-    slug: 'day-review',
-    title: 'Day review',
-    eyebrow: 'Daily Review',
-    image: 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=1400&q=80',
-    description: 'Turn one trading day into a clear lesson before the next session begins.',
-    features: ['Daily summary', 'Mistake review', 'Next-session focus'],
-    details: [
-      'Day review compresses one session into the decisions that mattered.',
-      'It helps traders name one improvement instead of carrying vague frustration.',
-      'The page connects trades, notes and performance into a daily lesson.',
     ],
   },
 ];
@@ -862,6 +1345,7 @@ function LandingPage() {
   const landingRef = useRef(null);
   const normalizedPath = window.location.pathname.replace(/\/+$/, '') || '/';
   const isDocumentationPage = normalizedPath.startsWith('/documentation');
+  const isAnalyticsGuidePage = normalizedPath === '/analytics' || normalizedPath.startsWith('/analytics/');
   const legalDocument = normalizedPath === '/privacy' ? legalDocuments.privacy : normalizedPath === '/terms' ? legalDocuments.terms : null;
   const isDemoPage = normalizedPath === '/demo' || normalizedPath.startsWith('/demo/');
   const featureSection = getFeatureSectionFromPath();
@@ -926,6 +1410,8 @@ function LandingPage() {
     <>
       {featureSection ? (
         <FeatureDetailPage section={featureSection} />
+      ) : isAnalyticsGuidePage ? (
+        <AnalyticsGuidePage />
       ) : isDemoPage ? (
         <DemoPage />
       ) : isDocumentationPage ? (

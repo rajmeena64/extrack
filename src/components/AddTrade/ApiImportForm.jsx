@@ -177,7 +177,7 @@ function ApiImportForm() {
   const accountCountLabel = `${accounts.length} connected ${accounts.length === 1 ? 'account' : 'accounts'}`;
 
   return (
-    <div className="form-container api-section broker-sync-section">
+    <div className="add-trade-form-container api-section broker-sync-section">
       <div className="broker-sync-panel">
         <div className="sync-panel-head">
           <div>
@@ -373,3 +373,4 @@ function ApiImportForm() {
 }
 
 export default ApiImportForm;
+

@@ -86,7 +86,7 @@ function AIAnalysis({ trades = [], currencyCode = "USD" }) {
       });
 
       if (!data?.success) {
-        throw new Error(data?.error || "AI analysis generate nahi ho paya.");
+        throw new Error(data?.error || "AI analysis could not be generated.");
       }
 
       setAnalysis(data.analysis);
@@ -95,7 +95,7 @@ function AIAnalysis({ trades = [], currencyCode = "USD" }) {
       setError(
         requestError.response?.data?.error ||
           requestError.message ||
-          "AI analysis generate nahi ho paya."
+          "AI analysis could not be generated."
       );
     } finally {
       setIsLoading(false);

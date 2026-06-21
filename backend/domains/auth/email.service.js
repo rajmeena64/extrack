@@ -212,9 +212,55 @@ async function sendPasswordChangedEmail({ email, name }) {
   });
 }
 
+async function sendLoginNotificationEmail({ email, name, ipAddress, userAgent, loginTime = new Date(), method = 'password' }) {
+  const loginDate = loginTime instanceof Date ? loginTime : new Date(loginTime);
+  const formattedTime = Number.isNaN(loginDate.getTime())
+    ? new Date().toUTCString()
+    : loginDate.toUTCString();
+  const methodLabel = method === 'google' ? 'Google sign-in' : 'password sign-in';
+  const safeIpAddress = ipAddress || 'Unknown';
+  const safeUserAgent = userAgent || 'Unknown device';
+
+  await sendMail({
+    to: email,
+    subject: 'New login to your Entrack account',
+    text: [
+      `Hi ${name || 'there'}, your Entrack account was logged in using ${methodLabel}.`,
+      `Time: ${formattedTime}`,
+      `IP address: ${safeIpAddress}`,
+      `Device: ${safeUserAgent}`,
+      'If this was you, no action is needed. If this was not you, reset your password immediately.',
+    ].join('\n'),
+    html: renderEmailShell({
+      eyebrow: 'Security notification',
+      title: `Hi ${name || 'there'}, your account was logged in`,
+      preview: 'A new login was detected on your Entrack account.',
+      body: `
+        <p style="margin:0;">We detected a successful ${escapeHtml(methodLabel)} to your Entrack account.</p>
+        <table role="presentation" cellspacing="0" cellpadding="0" style="width:100%;margin-top:22px;text-align:left;border-collapse:collapse;">
+          <tr>
+            <td style="padding:10px 0;color:#6b7280;font-size:13px;border-bottom:1px solid #e5e7eb;">Time</td>
+            <td style="padding:10px 0;color:#111827;font-size:13px;font-weight:700;border-bottom:1px solid #e5e7eb;text-align:right;">${escapeHtml(formattedTime)}</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 0;color:#6b7280;font-size:13px;border-bottom:1px solid #e5e7eb;">IP address</td>
+            <td style="padding:10px 0;color:#111827;font-size:13px;font-weight:700;border-bottom:1px solid #e5e7eb;text-align:right;">${escapeHtml(safeIpAddress)}</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 0;color:#6b7280;font-size:13px;">Device</td>
+            <td style="padding:10px 0;color:#111827;font-size:13px;font-weight:700;text-align:right;word-break:break-word;">${escapeHtml(safeUserAgent)}</td>
+          </tr>
+        </table>
+      `,
+      footerNote: 'If this was you, no action is needed. If you do not recognize this login, reset your password immediately and contact support.',
+    }),
+  });
+}
+
 module.exports = {
   getFrontendUrl,
   getPasswordResetUrl,
+  sendLoginNotificationEmail,
   sendPasswordChangedEmail,
   sendPasswordResetEmail,
   sendVerificationEmail,

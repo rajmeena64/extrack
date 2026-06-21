@@ -22,6 +22,7 @@ const {
   verifyAccessToken,
 } = require('../../domains/auth/service');
 const {
+  sendLoginNotificationEmail,
   sendPasswordChangedEmail,
   sendPasswordResetEmail,
   sendVerificationEmail,
@@ -127,6 +128,30 @@ function safeUser(user) {
     authProvider: user.auth_provider || 'local',
     createdAt: user.createdAt || user.created_at || null,
   };
+}
+
+function getLoginNotificationContext(req) {
+  return {
+    ipAddress: req.ip || req.socket?.remoteAddress || null,
+    userAgent: String(req.headers['user-agent'] || '').slice(0, 512),
+    loginTime: new Date(),
+  };
+}
+
+function queueLoginNotification({ user, req, method }) {
+  const email = user?.email_original || user?.email;
+  if (!email) return;
+
+  const name = user?.name || [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.first_name || 'there';
+
+  sendLoginNotificationEmail({
+    email,
+    name,
+    method,
+    ...getLoginNotificationContext(req),
+  }).catch((error) => {
+    console.warn('auth.login_notification_failed', { userId: user?.ID || user?.id, error: error.message });
+  });
 }
 
 function isWeakPassword(password) {
@@ -606,6 +631,7 @@ router.post('/login', loginLimiter, async (req, res) => {
 
     const session = await issueSession(pool, res, user.ID, req);
     await pool.query(`UPDATE ${TABLES.users} SET last_login_at = NOW(), updated_at = NOW() WHERE id = $1`, [user.ID]);
+    queueLoginNotification({ user, req, method: 'password' });
     console.info('auth.login_success', { userId: user.ID });
     return ok(res, 'Login successful', {
       user: safeUser(user),
@@ -665,6 +691,16 @@ router.get('/google/callback', async (req, res) => {
     const userId = await upsertGoogleUser(profile);
     await issueSession(pool, res, userId, req);
     await pool.query(`UPDATE ${TABLES.users} SET last_login_at = NOW(), updated_at = NOW() WHERE id = $1`, [userId]);
+    queueLoginNotification({
+      user: {
+        ID: userId,
+        email: profile.email,
+        email_original: profile.email,
+        name: profile.name || profile.email.split('@')[0],
+      },
+      req,
+      method: 'google',
+    });
     const redirectUrl = new URL('/dashboard', getFrontendUrl());
     return res.redirect(redirectUrl.toString());
   } catch (callbackError) {

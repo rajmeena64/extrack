@@ -83,7 +83,7 @@ function ThatTrade({ trades = [] }) {
 
   // ✅ FIXED: Proper useEffect with null check and dependencies
   useEffect(() => {
-    // Agar trade nahi hai to kuch mat karo
+    // Do nothing when there is no trade.
     if (!trade) return;
 
     // Set initial values from trade object
@@ -102,7 +102,7 @@ function ThatTrade({ trades = [] }) {
       }
     }
 
-    // ✅ Sirf tab fetch karo jab unique_id ACTUALLY change hua ho
+    // Fetch only when unique_id actually changes.
     if (currentTradeIdRef.current !== trade.unique_id) {
       currentTradeIdRef.current = trade.unique_id;
       fetchTradeData();
@@ -526,13 +526,13 @@ function ThatTrade({ trades = [] }) {
 
       {/* STRATEGY MODAL */}
       {showStrategyModal && (
-        <div className="modal-overlay" onClick={() => setShowStrategyModal(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
+        <div className="trade-detail-modal-overlay" onClick={() => setShowStrategyModal(false)}>
+          <div className="trade-detail-modal-content" onClick={e => e.stopPropagation()}>
+            <div className="trade-detail-modal-header">
               <h3><LegacyIcon className="fas fa-chess-board" /> Trading Strategy</h3>
-              <button className="modal-close" onClick={() => setShowStrategyModal(false)}>×</button>
+              <button className="trade-detail-modal-close" onClick={() => setShowStrategyModal(false)}>×</button>
             </div>
-            <div className="modal-body">
+            <div className="trade-detail-modal-body">
               {/* Quick Strategies */}
               <div className="quick-strategies">
                 {quickStrategies.map((category, idx) => (
@@ -565,7 +565,7 @@ function ThatTrade({ trades = [] }) {
                 />
               </div>
 
-              <div className="modal-actions">
+              <div className="trade-detail-modal-actions">
                 <button className="cancel-btn" onClick={() => setShowStrategyModal(false)}>
                   Cancel
                 </button>
@@ -584,20 +584,20 @@ function ThatTrade({ trades = [] }) {
 
       {/* NOTES MODAL */}
       {showNoteModal && (
-        <div className="modal-overlay" onClick={() => setShowNoteModal(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
+        <div className="trade-detail-modal-overlay" onClick={() => setShowNoteModal(false)}>
+          <div className="trade-detail-modal-content" onClick={e => e.stopPropagation()}>
+            <div className="trade-detail-modal-header">
               <h3><LegacyIcon className="fas fa-sticky-note" /> Trade Notes</h3>
-              <button className="modal-close" onClick={() => setShowNoteModal(false)}>×</button>
+              <button className="trade-detail-modal-close" onClick={() => setShowNoteModal(false)}>×</button>
             </div>
-            <div className="modal-body">
+            <div className="trade-detail-modal-body">
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Add your notes here..."
                 rows={8}
               />
-              <div className="modal-actions">
+              <div className="trade-detail-modal-actions">
                 <button className="cancel-btn" onClick={() => setShowNoteModal(false)}>
                   Cancel
                 </button>
@@ -616,7 +616,7 @@ function ThatTrade({ trades = [] }) {
 
       {/* DELETE CONFIRM MODAL */}
       {showDeleteConfirm && (
-        <div className="modal-overlay" onClick={() => setShowDeleteConfirm(false)}>
+        <div className="trade-detail-modal-overlay" onClick={() => setShowDeleteConfirm(false)}>
           <div className="confirm-modal" onClick={e => e.stopPropagation()}>
             <h4>Delete Screenshot?</h4>
             <p>Are you sure you want to delete this screenshot?</p>
@@ -657,3 +657,4 @@ const Stat = ({ label, value, highlight, className }) => (
 );
 
 export default ThatTrade;
+

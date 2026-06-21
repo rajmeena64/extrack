@@ -227,7 +227,7 @@ function CSVUploadForm({ csvData, setCsvData }) {
     <>
     {isUploadingTrades ? <TradeSaveOverlay label="Uploading trades and refreshing dashboard..." /> : null}
     <div id="csv-upload-form">
-      <div className="form-card csv-upload-section">
+      <div className="add-trade-form-card csv-upload-section">
         <div className="section-title">
           <LegacyIcon className="fas fa-file-csv" />
           CSV Bulk Upload
@@ -336,3 +336,4 @@ function CSVUploadForm({ csvData, setCsvData }) {
 }
 
 export default CSVUploadForm;
+

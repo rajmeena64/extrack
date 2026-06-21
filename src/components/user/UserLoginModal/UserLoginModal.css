@@ -1,5 +1,5 @@
 /* ===== BACKDROP ===== */
-.modal-backdrop {
+.user-login-modal.auth-modal-backdrop {
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0.45);
@@ -10,7 +10,7 @@
 }
 
 /* ===== MODAL CONTAINER ===== */
-.modal-content {
+.user-login-modal .auth-modal-content {
   width: 820px;
   max-width: 95%;
   background: #ffffff;
@@ -34,7 +34,7 @@
 }
 
 /* ===== HEADER ===== */
-.modal-header {
+.user-login-modal .auth-modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -42,23 +42,23 @@
   border-bottom: 1px solid #eaeaea;
 }
 
-.logo {
+.user-login-modal .logo {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.modal-header .app-brand__wordmark {
+.user-login-modal .auth-modal-header .app-brand__wordmark {
   color: #111;
 }
 
-.header-right {
+.user-login-modal .header-right {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.close-btn {
+.user-login-modal .auth-close-btn {
   background: none;
   border: none;
   font-size: 26px;
@@ -66,24 +66,24 @@
   color: #666;
 }
 
-.close-btn:hover {
+.user-login-modal .auth-close-btn:hover {
   color: #000;
 }
 
 /* ===== BODY ===== */
-.modal-body {
+.user-login-modal .auth-modal-body {
   padding: 22px;
 }
 
 /* ===== LOGIN WRAPPER ===== */
-.login-wrapper {
+.user-login-modal .login-wrapper {
   display: flex;
   justify-content: center;
   align-items: stretch;
 }
 
 /* ===== FORM SECTION ===== */
-.form-section {
+.user-login-modal .auth-form-section {
   width: 100%;
   max-width: 480px;
   margin: 0 auto;
@@ -93,7 +93,7 @@
 }
 
 /* INNER CONTAINER */
-.form-container {
+.user-login-modal .auth-form-container {
   background: var(--bg-card);
   border-radius: 12px;
   padding: 28px;
@@ -101,29 +101,29 @@
 }
 
 /* ===== FORM HEADER ===== */
-.form-header {
+.user-login-modal .form-header {
   text-align: center;
   margin-bottom: 22px;
 }
 
-.form-header h2 {
+.user-login-modal .form-header h2 {
   margin: 0;
   font-size: 24px;
   font-weight: 700;
 }
 
-.form-header p {
+.user-login-modal .form-header p {
   margin-top: 6px;
   font-size: 14px;
   color: #666;
 }
 
 /* ===== FORM GROUP ===== */
-.form-group {
+.user-login-modal .form-group {
   margin-bottom: 16px;
 }
 
-.form-group label {
+.user-login-modal .form-group label {
   font-size: 13px;
   font-weight: 600;
   color: #444;
@@ -131,8 +131,8 @@
   margin-bottom: 6px;
 }
 
-.form-input,
-.currency-select {
+.user-login-modal .form-input,
+.user-login-modal .currency-select {
   width: 100%;
   padding: 11px 12px;
   border-radius: 10px;
@@ -141,19 +141,19 @@
   outline: none;
 }
 
-.form-input:focus,
-.currency-select:focus {
+.user-login-modal .form-input:focus,
+.user-login-modal .currency-select:focus {
   border-color: #4f7cff;
   box-shadow: 0 0 0 2px rgba(79,124,255,0.15);
 }
 
-.currency-select.custom-select {
+.user-login-modal .currency-select.custom-select {
   padding: 0;
   border: 0;
   border-radius: 0;
 }
 
-.currency-select .custom-select__trigger {
+.user-login-modal .currency-select .custom-select__trigger {
   min-height: 43px;
   padding: 11px 12px;
   border-radius: 10px;
@@ -164,17 +164,17 @@
   box-shadow: none;
 }
 
-.currency-select .custom-select__trigger:focus-visible {
+.user-login-modal .currency-select .custom-select__trigger:focus-visible {
   border-color: #4f7cff;
   box-shadow: 0 0 0 2px rgba(79,124,255,0.15);
 }
 
 /* ===== PASSWORD ===== */
-.password-wrapper {
+.user-login-modal .password-wrapper {
   position: relative;
 }
 
-.toggle-password {
+.user-login-modal .toggle-password {
   position: absolute;
   right: 10px;
   top: 50%;
@@ -186,13 +186,13 @@
 }
 
 /* ===== LOGIN OPTIONS ===== */
-.login-options {
+.user-login-modal .login-options {
   display: flex;
   gap: 10px;
   margin-bottom: 16px;
 }
 
-.login-option-btn {
+.user-login-modal .login-option-btn {
   flex: 1;
   padding: 10px;
   border-radius: 10px;
@@ -202,20 +202,20 @@
   font-weight: 600;
 }
 
-.login-option-btn.active {
+.user-login-modal .login-option-btn.active {
   background: #4f7cff;
   color: #fff;
   border-color: #4f7cff;
 }
 
 /* ===== NAME FIELDS ===== */
-.name-fields {
+.user-login-modal .name-fields {
   display: flex;
   gap: 12px;
 }
 
 /* ===== BUTTONS ===== */
-.login-btn {
+.user-login-modal .auth-submit-btn {
   width: 100%;
   margin-top: 10px;
   padding: 12px;
@@ -228,21 +228,21 @@
   cursor: pointer;
 }
 
-.login-btn:disabled {
+.user-login-modal .auth-submit-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
 /* ===== LINKS ===== */
-.switch-text,
-.forgot-link {
+.user-login-modal .switch-text,
+.user-login-modal .forgot-link {
   text-align: center;
   margin-top: 14px;
   font-size: 13px;
 }
 
-.switch-text button,
-.forgot-link button {
+.user-login-modal .switch-text button,
+.user-login-modal .forgot-link button {
   background: none;
   border: none;
   color: #4f7cff;
@@ -251,11 +251,11 @@
 }
 
 /* ===== LOGGED IN ===== */
-.logout-section {
+.user-login-modal .logout-section {
   text-align: center;
 }
 
-.account-type-badge {
+.user-login-modal .account-type-badge {
   display: inline-block;
   margin-top: 8px;
   padding: 6px 14px;
@@ -267,14 +267,14 @@
 }
 
 /* ===== ACTION BUTTONS ===== */
-.action-buttons {
+.user-login-modal .action-buttons {
   margin-top: 22px;
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.action-btn {
+.user-login-modal .action-btn {
   padding: 12px;
   border-radius: 12px;
   border: none;
@@ -282,22 +282,22 @@
   font-weight: 600;
 }
 
-.action-btn.primary {
+.user-login-modal .action-btn.primary {
   background: #4f7cff;
   color: #fff;
 }
 
-.action-btn.secondary {
+.user-login-modal .action-btn.secondary {
   background: #f1f1f1;
 }
 
-.action-btn.danger {
+.user-login-modal .action-btn.danger {
   background: #ff4d4f;
   color: #fff;
 }
 
 /* ===== FOOTER ===== */
-.modal-footer {
+.user-login-modal .auth-modal-footer {
   text-align: center;
   padding: 14px;
   font-size: 12px;
@@ -305,24 +305,24 @@
   border-top: 1px solid #eee;
 }
 
-.modal-footer a {
+.user-login-modal .auth-modal-footer a {
   color: #4f7cff;
   text-decoration: none;
 }
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 600px) {
-  .modal-content {
+.user-login-modal .auth-modal-content {
     width: 95%;
   }
 
-  .name-fields {
+.user-login-modal .name-fields {
     flex-direction: column;
   }
 }
 
 /* ===== PREMIUM AUTH REDESIGN ===== */
-.modal-backdrop {
+.user-login-modal.auth-modal-backdrop {
   background:
     radial-gradient(circle at 18% 18%, rgba(229, 255, 61, 0.08), transparent 30%),
     radial-gradient(circle at 78% 24%, rgba(91, 124, 250, 0.12), transparent 32%),
@@ -330,7 +330,7 @@
   padding: 24px;
 }
 
-.modal-content {
+.user-login-modal .auth-modal-content {
   width: min(1120px, calc(100vw - 48px));
   max-height: min(860px, calc(100vh - 48px));
   background: #f3f3f0;
@@ -341,7 +341,7 @@
   overflow: hidden;
 }
 
-.modal-header {
+.user-login-modal .auth-modal-header {
   position: absolute;
   top: 18px;
   right: 18px;
@@ -352,17 +352,17 @@
   background: transparent;
 }
 
-.modal-header .header-left,
-.modal-header .dashboard-btn,
-.modal-header .user-profile-section {
+.user-login-modal .auth-modal-header .header-left,
+.user-login-modal .auth-modal-header .dashboard-btn,
+.user-login-modal .auth-modal-header .user-profile-section {
   display: none;
 }
 
-.header-right {
+.user-login-modal .header-right {
   gap: 8px;
 }
 
-.close-btn {
+.user-login-modal .auth-close-btn {
   width: 40px;
   height: 40px;
   display: grid;
@@ -375,17 +375,17 @@
   box-shadow: 0 14px 32px rgba(0, 0, 0, 0.12);
 }
 
-.close-btn:hover {
+.user-login-modal .auth-close-btn:hover {
   background: #ffffff;
   transform: translateY(-1px);
 }
 
-.modal-body {
+.user-login-modal .auth-modal-body {
   padding: 0;
   overflow: auto;
 }
 
-.login-wrapper {
+.user-login-modal .login-wrapper {
   min-height: min(760px, calc(100vh - 50px));
   display: grid;
   grid-template-columns: minmax(340px, 0.84fr) minmax(480px, 1.16fr);
@@ -394,7 +394,7 @@
   padding: clamp(26px, 4.2vw, 54px);
 }
 
-.form-section {
+.user-login-modal .auth-form-section {
   width: 100%;
   max-width: 390px;
   margin: auto;
@@ -403,14 +403,14 @@
   border-radius: 0;
 }
 
-.form-container {
+.user-login-modal .auth-form-container {
   background: transparent;
   padding: 0;
   border-radius: 0;
   box-shadow: none;
 }
 
-.auth-brand-block {
+.user-login-modal .auth-brand-block {
   display: inline-grid;
   justify-items: center;
   gap: 8px;
@@ -421,7 +421,7 @@
   letter-spacing: -0.02em;
 }
 
-.auth-brand-mark {
+.user-login-modal .auth-brand-mark {
   width: 36px;
   height: 36px;
   display: grid;
@@ -436,12 +436,12 @@
   font-weight: 900;
 }
 
-.form-header {
+.user-login-modal .form-header {
   text-align: left;
   margin-bottom: 22px;
 }
 
-.form-header h2 {
+.user-login-modal .form-header h2 {
   color: #111111;
   font-size: clamp(28px, 3vw, 36px);
   line-height: 1;
@@ -449,14 +449,14 @@
   font-weight: 850;
 }
 
-.form-header p {
+.user-login-modal .form-header p {
   margin-top: 10px;
   color: rgba(15, 23, 42, 0.58);
   font-size: 14px;
   line-height: 1.55;
 }
 
-.auth-form-error {
+.user-login-modal .auth-form-error {
   position: relative;
   z-index: 3;
   margin: 0 0 18px;
@@ -471,14 +471,14 @@
   box-shadow: 0 12px 30px rgba(159, 18, 57, 0.10);
 }
 
-.login-options {
+.user-login-modal .login-options {
   padding: 4px;
   border-radius: 999px;
   background: #ffffff;
   box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.06);
 }
 
-.login-option-btn {
+.user-login-modal .login-option-btn {
   border: 0;
   border-radius: 999px;
   background: transparent;
@@ -487,26 +487,26 @@
   font-weight: 800;
 }
 
-.login-option-btn.active {
+.user-login-modal .login-option-btn.active {
   background: #111111;
   color: #ffffff;
   border-color: transparent;
   box-shadow: 0 10px 22px rgba(0, 0, 0, 0.16);
 }
 
-.form-group {
+.user-login-modal .form-group {
   margin-bottom: 18px;
 }
 
-.form-group label {
+.user-login-modal .form-group label {
   margin-bottom: 8px;
   color: #101010;
   font-size: 12px;
   font-weight: 850;
 }
 
-.form-input,
-.currency-select .custom-select__trigger {
+.user-login-modal .form-input,
+.user-login-modal .currency-select .custom-select__trigger {
   min-height: 48px;
   border: 0;
   border-radius: 12px;
@@ -517,39 +517,39 @@
   box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04), inset 0 0 0 1px rgba(15, 23, 42, 0.04);
 }
 
-.form-input::placeholder {
+.user-login-modal .form-input::placeholder {
   color: rgba(15, 23, 42, 0.34);
 }
 
-.form-input:disabled {
+.user-login-modal .form-input:disabled {
   color: rgba(15, 23, 42, 0.54);
   background: rgba(255, 255, 255, 0.72);
   cursor: not-allowed;
 }
 
-.form-input:focus,
-.currency-select .custom-select__trigger:focus-visible {
+.user-login-modal .form-input:focus,
+.user-login-modal .currency-select .custom-select__trigger:focus-visible {
   border-color: transparent;
   box-shadow: 0 0 0 4px rgba(229, 255, 61, 0.22), inset 0 0 0 1px rgba(15, 23, 42, 0.14);
 }
 
-.toggle-password {
+.user-login-modal .toggle-password {
   right: 13px;
   color: rgba(15, 23, 42, 0.48);
 }
 
-.forgot-link {
+.user-login-modal .forgot-link {
   text-align: right;
   margin: -6px 0 0;
 }
 
-.forgot-link button,
-.switch-text button {
+.user-login-modal .forgot-link button,
+.user-login-modal .switch-text button {
   color: #111111;
   font-weight: 850;
 }
 
-.login-btn {
+.user-login-modal .auth-submit-btn {
   min-height: 50px;
   margin-top: 14px;
   border-radius: 12px;
@@ -561,13 +561,13 @@
   transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
-.login-btn:hover:not(:disabled) {
+.user-login-modal .auth-submit-btn:hover:not(:disabled) {
   transform: translateY(-1px);
   background: #000000;
   box-shadow: 0 22px 48px rgba(0, 0, 0, 0.24);
 }
 
-.auth-divider {
+.user-login-modal .auth-divider {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -578,15 +578,15 @@
   text-transform: uppercase;
 }
 
-.auth-divider::before,
-.auth-divider::after {
+.user-login-modal .auth-divider::before,
+.user-login-modal .auth-divider::after {
   content: "";
   height: 1px;
   flex: 1;
   background: rgba(15, 23, 42, 0.10);
 }
 
-.google-auth-btn {
+.user-login-modal .google-auth-btn {
   width: 100%;
   min-height: 48px;
   margin-top: 14px;
@@ -604,13 +604,13 @@
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
-.google-auth-btn:hover {
+.user-login-modal .google-auth-btn:hover {
   transform: translateY(-1px);
   border-color: rgba(15, 23, 42, 0.18);
   box-shadow: 0 16px 34px rgba(15, 23, 42, 0.12);
 }
 
-.google-auth-mark {
+.user-login-modal .google-auth-mark {
   width: 22px;
   height: 22px;
   display: inline-grid;
@@ -618,24 +618,24 @@
   flex: 0 0 22px;
 }
 
-.google-auth-icon {
+.user-login-modal .google-auth-icon {
   width: 18px;
   height: 18px;
   display: block;
 }
 
-.switch-text {
+.user-login-modal .switch-text {
   text-align: left;
   margin-top: 16px;
   color: rgba(15, 23, 42, 0.50);
   font-size: 13px;
 }
 
-.name-fields {
+.user-login-modal .name-fields {
   gap: 12px;
 }
 
-.auth-showcase {
+.user-login-modal .auth-showcase {
   min-height: 650px;
   position: relative;
   overflow: hidden;
@@ -649,7 +649,7 @@
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08), 0 28px 80px rgba(0, 0, 0, 0.22);
 }
 
-.auth-showcase::before {
+.user-login-modal .auth-showcase::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -659,7 +659,7 @@
   pointer-events: none;
 }
 
-.auth-showcase::after {
+.user-login-modal .auth-showcase::after {
   content: "";
   position: absolute;
   right: -18%;
@@ -672,7 +672,7 @@
   pointer-events: none;
 }
 
-.auth-showcase__mark {
+.user-login-modal .auth-showcase__mark {
   position: absolute;
   top: 38px;
   left: 50%;
@@ -685,14 +685,14 @@
   pointer-events: none;
 }
 
-.auth-showcase__content {
+.user-login-modal .auth-showcase__content {
   position: relative;
   z-index: 2;
   max-width: 470px;
   margin-top: min(22vh, 150px);
 }
 
-.auth-showcase__eyebrow {
+.user-login-modal .auth-showcase__eyebrow {
   display: block;
   margin-bottom: 22px;
   color: rgba(255, 255, 255, 0.78);
@@ -700,14 +700,14 @@
   font-weight: 800;
 }
 
-.auth-showcase__content h2 {
+.user-login-modal .auth-showcase__content h2 {
   font-size: clamp(30px, 3.6vw, 44px);
   line-height: 1;
   letter-spacing: -0.055em;
   font-weight: 850;
 }
 
-.auth-showcase__content p {
+.user-login-modal .auth-showcase__content p {
   margin-top: 16px;
   max-width: 440px;
   color: rgba(255, 255, 255, 0.74);
@@ -715,11 +715,11 @@
   line-height: 1.7;
 }
 
-.auth-showcase__small {
+.user-login-modal .auth-showcase__small {
   color: rgba(255, 255, 255, 0.82) !important;
 }
 
-.auth-showcase-card {
+.user-login-modal .auth-showcase-card {
   position: absolute;
   z-index: 2;
   left: clamp(28px, 5vw, 64px);
@@ -736,7 +736,7 @@
   backdrop-filter: blur(14px);
 }
 
-.auth-showcase-card h3 {
+.user-login-modal .auth-showcase-card h3 {
   max-width: 360px;
   color: #ffffff;
   font-size: clamp(22px, 2.4vw, 30px);
@@ -745,14 +745,14 @@
   font-weight: 850;
 }
 
-.auth-showcase-card p {
+.user-login-modal .auth-showcase-card p {
   max-width: 360px;
   color: rgba(255, 255, 255, 0.78);
   font-size: 14px;
   line-height: 1.6;
 }
 
-.auth-avatar-stack {
+.user-login-modal .auth-avatar-stack {
   position: absolute;
   right: 34px;
   bottom: 34px;
@@ -760,8 +760,8 @@
   align-items: center;
 }
 
-.auth-avatar-stack span,
-.auth-avatar-stack strong {
+.user-login-modal .auth-avatar-stack span,
+.user-login-modal .auth-avatar-stack strong {
   width: 34px;
   height: 34px;
   display: grid;
@@ -775,42 +775,42 @@
   font-weight: 900;
 }
 
-.auth-avatar-stack strong {
+.user-login-modal .auth-avatar-stack strong {
   background: #111111;
   color: #ffffff;
 }
 
-.modal-footer {
+.user-login-modal .auth-modal-footer {
   display: none;
 }
 
 @media (max-width: 920px) {
-  .modal-content {
+.user-login-modal .auth-modal-content {
     width: min(680px, calc(100vw - 28px));
     max-height: calc(100vh - 28px);
   }
 
-  .login-wrapper {
+.user-login-modal .login-wrapper {
     grid-template-columns: 1fr;
     min-height: 0;
     padding: 28px;
   }
 
-  .form-section {
+.user-login-modal .auth-form-section {
     max-width: 100%;
   }
 
-  .auth-showcase {
+.user-login-modal .auth-showcase {
     min-height: 360px;
     border-radius: 24px;
     order: -1;
   }
 
-  .auth-showcase__content {
+.user-login-modal .auth-showcase__content {
     margin-top: 120px;
   }
 
-  .auth-showcase-card {
+.user-login-modal .auth-showcase-card {
     position: relative;
     left: auto;
     right: auto;
@@ -820,35 +820,385 @@
 }
 
 @media (max-width: 600px) {
-  .modal-backdrop {
+.user-login-modal.auth-modal-backdrop {
     padding: 0;
     align-items: stretch;
   }
 
-  .modal-content {
+.user-login-modal .auth-modal-content {
     width: 100%;
     max-height: 100vh;
     border-radius: 0;
   }
 
-  .login-wrapper {
+.user-login-modal .login-wrapper {
     padding: 22px;
   }
 
-  .auth-showcase {
+.user-login-modal .auth-showcase {
     min-height: 300px;
     padding: 28px;
   }
 
-  .auth-showcase__mark {
+.user-login-modal .auth-showcase__mark {
     font-size: 160px;
   }
 
-  .auth-showcase__content {
+.user-login-modal .auth-showcase__content {
     margin-top: 86px;
   }
 
-  .auth-showcase-card {
+.user-login-modal .auth-showcase-card {
     display: none;
   }
 }
+
+/* Keep the auth modal insulated from globally named form/modal styles in other routes. */
+.user-login-modal.auth-modal-backdrop {
+  background:
+    radial-gradient(circle at 18% 18%, rgba(229, 255, 61, 0.08), transparent 30%),
+    radial-gradient(circle at 78% 24%, rgba(91, 124, 250, 0.12), transparent 32%),
+    rgba(245, 245, 242, 0.92);
+  padding: 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.user-login-modal .auth-modal-content {
+  width: min(1120px, calc(100vw - 48px));
+  max-width: none;
+  max-height: min(860px, calc(100vh - 48px));
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 30px;
+  background: #f3f3f0;
+  box-shadow: 0 34px 100px rgba(0, 0, 0, 0.22);
+}
+
+.user-login-modal .auth-modal-header {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  left: auto;
+  z-index: 5;
+  padding: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 0;
+  background: transparent;
+}
+
+.user-login-modal .auth-modal-body {
+  padding: 0;
+  overflow: auto;
+}
+
+.user-login-modal .login-wrapper {
+  display: grid;
+  grid-template-columns: minmax(320px, 0.84fr) minmax(460px, 1.16fr);
+  gap: clamp(24px, 4vw, 54px);
+  align-items: stretch;
+  min-height: min(760px, calc(100vh - 50px));
+  padding: clamp(26px, 4.2vw, 54px);
+}
+
+.user-login-modal .auth-form-section,
+.user-login-modal .auth-form-container,
+.user-login-modal form,
+.user-login-modal .form-group,
+.user-login-modal .password-wrapper,
+.user-login-modal .login-options,
+.user-login-modal .auth-divider,
+.user-login-modal .google-auth-btn,
+.user-login-modal .auth-submit-btn,
+.user-login-modal .switch-text,
+.user-login-modal .forgot-link {
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.user-login-modal .auth-form-section {
+  width: 100%;
+  max-width: 390px;
+  margin: auto;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
+.user-login-modal .auth-form-container {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.user-login-modal .form-group {
+  margin-bottom: 18px;
+}
+
+.user-login-modal .form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: #101010;
+  font-size: 12px;
+  line-height: 1.2;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.user-login-modal .form-input,
+.user-login-modal .currency-select .custom-select__trigger {
+  width: 100%;
+  min-height: 48px;
+  padding: 13px 14px;
+  border: 0;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 14px;
+  line-height: 1.25;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04), inset 0 0 0 1px rgba(15, 23, 42, 0.04);
+}
+
+.user-login-modal .password-wrapper .form-input {
+  padding-right: 44px;
+}
+
+.user-login-modal .login-options {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 4px;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.06);
+}
+
+.user-login-modal .login-option-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 40px;
+  padding: 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: rgba(15, 23, 42, 0.55);
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.user-login-modal .login-option-btn.active {
+  background: #111111;
+  color: #ffffff;
+  border-color: transparent;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.16);
+}
+
+.user-login-modal .auth-submit-btn {
+  width: 100%;
+  min-height: 50px;
+  margin-top: 14px;
+  padding: 12px;
+  border: 0;
+  border-radius: 12px;
+  background: #111111;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 850;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.20);
+}
+
+.user-login-modal .google-auth-btn {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 14px;
+  padding: 0 14px;
+  border: 1px solid rgba(15, 23, 42, 0.10);
+  border-radius: 12px;
+  background: #ffffff;
+  color: #111111;
+  font-size: 14px;
+  font-weight: 850;
+}
+
+.user-login-modal .forgot-link {
+  margin: -6px 0 0;
+  text-align: right;
+}
+
+.user-login-modal .switch-text {
+  margin-top: 16px;
+  color: rgba(15, 23, 42, 0.50);
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: left;
+}
+
+.user-login-modal .forgot-link button,
+.user-login-modal .switch-text button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #111111;
+  font-weight: 850;
+}
+
+.user-login-modal .auth-showcase {
+  min-width: 0;
+}
+
+@media (max-width: 920px) {
+  .user-login-modal .auth-modal-content {
+    width: min(680px, calc(100vw - 28px));
+    max-height: calc(100vh - 28px);
+  }
+
+  .user-login-modal .login-wrapper {
+    grid-template-columns: 1fr;
+    min-height: 0;
+    padding: 28px;
+  }
+
+  .user-login-modal .auth-form-section {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+  .user-login-modal.auth-modal-backdrop {
+    padding: 0;
+    align-items: stretch;
+  }
+
+  .user-login-modal .auth-modal-content {
+    width: 100%;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .user-login-modal .login-wrapper {
+    padding: 22px;
+  }
+}
+
+/* Final namespace guard: authenticated route CSS files also define generic
+.user-login-modal .auth-modal-content/.auth-form-container names, so keep this modal self-contained. */
+.user-login-modal,
+.user-login-modal * ,
+.user-login-modal *::before,
+.user-login-modal *::after {
+  box-sizing: border-box;
+}
+
+.user-login-modal.auth-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.user-login-modal .auth-modal-content {
+  width: min(1120px, calc(100vw - 48px));
+  min-width: 0;
+  max-width: none;
+  height: auto;
+  max-height: min(860px, calc(100vh - 48px));
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  padding: 0;
+}
+
+.user-login-modal .auth-modal-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+.user-login-modal .login-wrapper {
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(320px, 0.84fr) minmax(0, 1.16fr);
+  align-items: stretch;
+}
+
+.user-login-modal .auth-form-section {
+  min-width: 0;
+  width: min(390px, 100%);
+  max-width: 390px;
+  margin: auto;
+}
+
+.user-login-modal .auth-form-container,
+.user-login-modal form,
+.user-login-modal .auth-showcase,
+.user-login-modal .auth-showcase__content,
+.user-login-modal .auth-showcase-card {
+  min-width: 0;
+}
+
+.user-login-modal .auth-showcase {
+  width: 100%;
+  max-width: 100%;
+}
+
+.user-login-modal .auth-showcase__content h2,
+.user-login-modal .auth-showcase-card h3,
+.user-login-modal .form-header h2 {
+  overflow-wrap: anywhere;
+}
+
+.user-login-modal .form-input,
+.user-login-modal .auth-submit-btn,
+.user-login-modal .google-auth-btn,
+.user-login-modal .currency-select,
+.user-login-modal .currency-select .custom-select__trigger {
+  width: 100%;
+  max-width: 100%;
+}
+
+@media (max-width: 920px) {
+  .user-login-modal .auth-modal-content {
+    width: min(680px, calc(100vw - 28px));
+    max-height: calc(100vh - 28px);
+  }
+
+  .user-login-modal .login-wrapper {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .user-login-modal.auth-modal-backdrop {
+    width: 100vw;
+    height: 100dvh;
+  }
+
+  .user-login-modal .auth-modal-content {
+    width: 100vw;
+    min-height: 100dvh;
+    max-height: 100dvh;
+  }
+}
+
+

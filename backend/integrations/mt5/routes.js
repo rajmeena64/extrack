@@ -1004,7 +1004,7 @@ router.get("/vps/accounts/health-targets", requireVpsAgent, async (req, res) => 
 router.post("/mt5/receive-trades", requireIngestSecret, (req, res) => {
     const trades = req.body;
 
-    // Agar database me save karna ho to yaha kar sakte ho
+    // Save to the database here if needed.
     // Example: saveBulkTrades(trades)
 
     res.json({

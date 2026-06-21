@@ -532,7 +532,7 @@
   height: 0;
 }
 
-.slider {
+.switch .slider {
   position: absolute;
   inset: 0;
   background: var(--border-medium);
@@ -540,7 +540,7 @@
   transition: all 0.25s ease;
 }
 
-.slider::before {
+.switch .slider::before {
   content: "";
   position: absolute;
   width: 18px;
@@ -552,11 +552,11 @@
   transition: all 0.25s ease;
 }
 
-input:checked + .slider {
+.switch input:checked + .slider {
   background: var(--success);
 }
 
-input:checked + .slider::before {
+.switch input:checked + .slider::before {
   transform: translateX(20px);
 }
 

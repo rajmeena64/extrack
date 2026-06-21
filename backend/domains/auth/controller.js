@@ -11,6 +11,7 @@ const {
     rejectUnexpectedFields,
     trimString,
 } = require('../../api/validators/common');
+const { sendLoginNotificationEmail } = require('./email.service');
 
 // Separate secrets for access and refresh tokens
 const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET;
@@ -65,6 +66,28 @@ const clearAuthCookies = (res) => {
     optionVariants.forEach((options) => {
         expireCookie(res, 'refreshToken', options);
         expireCookie(res, 'accessToken', options);
+    });
+};
+
+const queueLoginNotification = ({ user, req, method = 'password' }) => {
+    const email = user?.email || user?.email_original;
+    if (!email) return;
+
+    const name = [user?.firstName || user?.first_name, user?.lastName || user?.last_name]
+        .filter(Boolean)
+        .join(' ')
+        || user?.name
+        || 'there';
+
+    sendLoginNotificationEmail({
+        email,
+        name,
+        method,
+        ipAddress: req.ip || req.socket?.remoteAddress || null,
+        userAgent: String(req.headers['user-agent'] || '').slice(0, 512),
+        loginTime: new Date(),
+    }).catch((error) => {
+        console.warn('auth.legacy_login_notification_failed', { userId: user?.ID || user?.id, error: error.message });
     });
 };
 
@@ -170,7 +193,7 @@ const authCheck = async (req, res, next) => {
             return res.status(401).json({ 
                 success: false, 
                 error: 'Access token expired',
-                expired: true  // Frontend ko bataye refresh karo
+                expired: true  // Tell the frontend to refresh the token.
             });
         }
         
@@ -229,9 +252,10 @@ router.post('/register', async (req, res) => {
         res.cookie('refreshToken', refreshToken, COOKIE_OPTIONS);
         res.cookie('accessToken', accessToken, ACCESS_COOKIE_OPTIONS);
 
-        
-        res.json({ 
-            success: true, 
+        queueLoginNotification({ user, req, method: 'password' });
+
+        res.json({
+            success: true,
             message: 'User registered successfully!',
             refreshExpiresAt: expiresAt,
             user: {
@@ -302,8 +326,9 @@ router.post('/login', loginRateLimiter, async (req, res) => {
         res.cookie('refreshToken', refreshToken, COOKIE_OPTIONS);
         res.cookie('accessToken', accessToken, ACCESS_COOKIE_OPTIONS);
 
-
-        res.json({
+        queueLoginNotification({ user: newUser, req, method: 'password' });
+        
+        res.json({ 
             success: true,
             refreshExpiresAt: expiresAt,
             user: {

@@ -118,6 +118,7 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
       return;
     }
 
+    sessionStorage.setItem('entrack:oauthPending', 'true');
     window.location.href = `${API_URL}/api/auth/google`;
   };
 
@@ -414,11 +415,11 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
   if (!isOpen) return null;
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+    <div className="auth-modal-backdrop user-login-modal" onClick={onClose}>
+      <div className="auth-modal-content" onClick={(e) => e.stopPropagation()}>
         
         {/* HEADER */}
-        <div className="modal-header">
+        <div className="auth-modal-header">
           <div className="header-left">
             <div className="logo">
               <Logo />
@@ -441,17 +442,17 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
               </div>
             )}
             
-            <button className="close-btn" onClick={onClose}>×</button>
+            <button className="auth-close-btn" onClick={onClose}>×</button>
           </div>
         </div>
 
         {/* MAIN CONTENT */}
-        <div className="modal-body">
+        <div className="auth-modal-body">
           <div className={`login-wrapper ${activeTab === 'signup' ? 'signup-active' : ''}`}>
 
             {/* RIGHT SIDE - FORMS */}
-            <div className="form-section">
-              <div className="form-container">
+            <div className="auth-form-section">
+              <div className="auth-form-container">
                 {!currentUser && (
                   <div className="auth-brand-block">
                     <div className="auth-brand-mark">E</div>
@@ -552,7 +553,7 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
                       </button>
                     </div>
                     
-                    <button type="submit" className="login-btn" disabled={loading}>
+                    <button type="submit" className="auth-submit-btn" disabled={loading}>
                       {loading ? 'Signing In...' : 'Sign In'}
                     </button>
 
@@ -638,7 +639,7 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
                           </div>
                         )}
 
-                        <button type="submit" className="login-btn" disabled={loading}>
+                        <button type="submit" className="auth-submit-btn" disabled={loading}>
                           {loading ? 'Creating Account...' : 'Create Account'}
                         </button>
 
@@ -685,7 +686,7 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
                       />
                     </div>
                     
-                    <button type="submit" className="login-btn" disabled={loading}>
+                    <button type="submit" className="auth-submit-btn" disabled={loading}>
                       {loading ? 'Sending...' : 'Send Reset Link'}
                     </button>
                     
@@ -784,7 +785,7 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
         </div>
 
         {/* FOOTER */}
-        <div className="modal-footer">
+        <div className="auth-modal-footer">
           <p>
             © 2024 Entrack. All rights reserved. | 
             <a href="/privacy"> Privacy Policy</a> | 
@@ -861,7 +862,7 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
                   />
                 </div>
                 
-                <div className="modal-actions">
+                <div className="auth-profile-modal-actions">
                   <button className="save-btn" onClick={handleUpdateProfile}>
                     Save Changes
                   </button>
@@ -926,3 +927,4 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
 }
 
 export default UserLoginModal;
+

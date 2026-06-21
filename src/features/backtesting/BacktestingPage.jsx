@@ -749,11 +749,11 @@ function BacktestingPage() {
     const initialBalance = Number(sessionDraft.initialBalance);
 
     if (!sessionDraft.sessionName.trim()) {
-      setSessionError('Session name required hai.');
+      setSessionError('Session name is required.');
       return;
     }
     if (!sessionDraft.symbol.trim()) {
-      setSessionError('Symbol required hai.');
+      setSessionError('Symbol is required.');
       return;
     }
     if (instrumentsLoading) {
@@ -761,7 +761,7 @@ function BacktestingPage() {
       return;
     }
     if (instrumentsLoadError) {
-      setSessionError('Symbol list load nahi ho payi. Please reload and try again.');
+      setSessionError('Symbol list could not be loaded. Please reload and try again.');
       return;
     }
     if (!isAllowedInstrumentSymbol(instruments, sessionDraft.symbol)) {
@@ -769,15 +769,15 @@ function BacktestingPage() {
       return;
     }
     if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
-      setSessionError('Start aur end time valid hone chahiye.');
+      setSessionError('Start and end time must be valid.');
       return;
     }
     if (start >= end) {
-      setSessionError('End time start time ke baad hona chahiye.');
+      setSessionError('End time must be after start time.');
       return;
     }
     if (!Number.isFinite(initialBalance) || initialBalance <= 0) {
-      setSessionError('Initial balance positive number hona chahiye.');
+      setSessionError('Initial balance must be a positive number.');
       return;
     }
 
@@ -825,8 +825,8 @@ function BacktestingPage() {
       const status = error?.response?.status;
       setSessionError(
         status === 404
-          ? 'OHLCV chunk API backend par available nahi hai. Backend server restart karke phir try karein.'
-          : error?.response?.data?.error || error?.message || 'Session load nahi ho paya.'
+          ? 'The OHLCV chunk API is not available on the backend. Restart the backend server and try again.'
+          : error?.response?.data?.error || error?.message || 'Session could not be loaded.'
       );
     }
   }, [instruments, instrumentsLoadError, instrumentsLoading, sessionDraft, startSession]);
@@ -843,7 +843,7 @@ function BacktestingPage() {
       await resumeSession(session);
       setActiveView('chart');
     } catch (error) {
-      setSessionError(error?.response?.data?.error || error?.message || 'Saved session open nahi ho paya.');
+      setSessionError(error?.response?.data?.error || error?.message || 'Saved session could not be opened.');
     }
   }, [resumeSession]);
 
