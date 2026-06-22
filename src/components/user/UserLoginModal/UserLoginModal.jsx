@@ -1,5 +1,6 @@
 // src/components/user/UserLoginModal/UserLoginModal.jsx
 import React, { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import './UserLoginModal.css';
 import LegacyIcon from '../../Common/LegacyIcon';
 import Logo from '../../Common/Logo';
@@ -35,6 +36,7 @@ function GoogleIcon() {
 
 function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
   const { user: currentUser, setUser } = useAuth();
+  const queryClient = useQueryClient();
   const { confirm } = useAppDialog();
   const [activeTab, setActiveTab] = useState('login'); // 'login', 'signup', 'forgot'
   const [loginMethod, setLoginMethod] = useState('email'); // 'email' or 'phone'
@@ -118,6 +120,9 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
       return;
     }
 
+    clearClientStorage();
+    queryClient.clear();
+    setUser(null);
     sessionStorage.setItem('entrack:oauthPending', 'true');
     window.location.href = `${API_URL}/api/auth/google`;
   };
@@ -158,6 +163,10 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
       : { phone: toPhoneCredential(formData.phone), password: formData.password };
 
     try {
+      clearClientStorage();
+      queryClient.clear();
+      setUser(null);
+
       const response = await fetch(`${API_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -236,6 +245,10 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
     };
 
     try {
+      clearClientStorage();
+      queryClient.clear();
+      setUser(null);
+
       const response = await fetch(`${API_URL}/api/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -306,18 +319,21 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
     });
 
     if (shouldLogout) {
-      fetch(`${API_URL}/api/auth/logout`, {
-        method: 'POST',
-        credentials: 'include'
-      })
-        .catch(() => null)
-        .finally(() => {
-          clearClientStorage();
-          setUser(null);
-          setActiveTab('login');
-          window.dispatchEvent(new Event('auth:logout'));
-          window.alert('Logged out successfully!');
+      try {
+        await fetch(`${API_URL}/api/auth/logout`, {
+          method: 'POST',
+          credentials: 'include'
         });
+      } catch {
+        // Local cleanup still runs if the network request fails.
+      } finally {
+        clearClientStorage();
+        queryClient.clear();
+        setUser(null);
+        setActiveTab('login');
+        window.dispatchEvent(new Event('auth:logout'));
+        window.alert('Logged out successfully!');
+      }
     }
   };
 
@@ -388,6 +404,7 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
       if (data.success) {
         alert('Account deleted successfully!');
         clearClientStorage();
+        queryClient.clear();
         setUser(null);
         setActiveTab('login');
         setIsDeleteModalOpen(false);

@@ -8,21 +8,10 @@ import { markPerf, measurePerf } from '../utils/perfMarks';
 const AuthContext = createContext(null);
 const AUTH_STORAGE_KEY = 'authUser';
 
-const readStoredUser = () => {
-  try {
-    const storedUser = localStorage.getItem(AUTH_STORAGE_KEY);
-    return storedUser ? JSON.parse(storedUser) : null;
-  } catch {
-    clearClientStorage();
-    return null;
-  }
-};
-
 export function AuthProvider({ children }) {
   const queryClient = useQueryClient();
-  const initialStoredUser = useMemo(() => readStoredUser(), []);
-  const [user, setUser] = useState(initialStoredUser);
-  const [isAuthLoading, setIsAuthLoading] = useState(() => !initialStoredUser);
+  const [user, setUser] = useState(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
   const userRef = useRef(null);
 
   useEffect(() => {
@@ -36,6 +25,12 @@ export function AuthProvider({ children }) {
     localStorage.removeItem(AUTH_STORAGE_KEY);
   }, [user]);
 
+  const clearAuthState = useCallback(() => {
+    clearClientStorage();
+    queryClient.clear();
+    setUser(null);
+  }, [queryClient]);
+
   const refreshUser = useCallback(async () => {
     try {
       const { data } = await api.get('/auth/me');
@@ -45,20 +40,14 @@ export function AuthProvider({ children }) {
         setUser(user);
         return user;
       }
-    } catch (error) {
-      const status = error?.response?.status;
-      const shouldLogout =
-        status === 401 ||
-        error?.response?.data?.logout === true;
-
-      if (!shouldLogout) {
-        return userRef.current;
-      }
+    } catch {
+      clearAuthState();
+      return null;
     }
 
-    setUser(null);
+    clearAuthState();
     return null;
-  }, []);
+  }, [clearAuthState]);
 
   useEffect(() => {
     let isMounted = true;
@@ -83,6 +72,30 @@ export function AuthProvider({ children }) {
   }, [refreshUser]);
 
   useEffect(() => {
+    if (isAuthLoading) return undefined;
+
+    const verifyActiveSession = () => {
+      refreshUser().catch(() => null);
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        verifyActiveSession();
+      }
+    };
+
+    window.addEventListener('focus', verifyActiveSession);
+    window.addEventListener('pageshow', verifyActiveSession);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('focus', verifyActiveSession);
+      window.removeEventListener('pageshow', verifyActiveSession);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isAuthLoading, refreshUser]);
+
+  useEffect(() => {
     if (!user) {
       queryClient.clear();
     }
@@ -90,9 +103,7 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const handleLogout = () => {
-      clearClientStorage();
-      queryClient.clear();
-      setUser(null);
+      clearAuthState();
       setIsAuthLoading(false);
     };
 
@@ -101,7 +112,7 @@ export function AuthProvider({ children }) {
     return () => {
       window.removeEventListener('auth:logout', handleLogout);
     };
-  }, [queryClient]);
+  }, [clearAuthState]);
 
   const value = useMemo(() => ({
     user,
