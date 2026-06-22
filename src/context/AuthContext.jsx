@@ -8,10 +8,21 @@ import { markPerf, measurePerf } from '../utils/perfMarks';
 const AuthContext = createContext(null);
 const AUTH_STORAGE_KEY = 'authUser';
 
+const readStoredUser = () => {
+  try {
+    const storedUser = localStorage.getItem(AUTH_STORAGE_KEY);
+    return storedUser ? JSON.parse(storedUser) : null;
+  } catch {
+    clearClientStorage();
+    return null;
+  }
+};
+
 export function AuthProvider({ children }) {
   const queryClient = useQueryClient();
-  const [user, setUser] = useState(null);
-  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const initialStoredUser = useMemo(() => readStoredUser(), []);
+  const [user, setUser] = useState(initialStoredUser);
+  const [isAuthLoading, setIsAuthLoading] = useState(() => !initialStoredUser);
   const userRef = useRef(null);
 
   useEffect(() => {

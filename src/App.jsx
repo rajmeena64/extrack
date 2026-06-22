@@ -650,7 +650,7 @@ function App() {
     tradesQuery.isPending &&
     !Array.isArray(tradesQuery.data);
 
-  if (isAuthLoading || isOAuthReturnPending) {
+  if (isAuthLoading && isOAuthReturnPending) {
     return null;
   }
 
