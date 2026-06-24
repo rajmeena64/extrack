@@ -134,8 +134,28 @@ function TradesList({ trades = [], currencyCode = "USD" }) {
         );
       }
 
-      case "pnl":
-        return formatCurrency(t.pnl, currencyCode);
+      case "pnl": {
+        const pnlValue = Number(t.pnl || 0);
+        const pnlTone = pnlValue > 0 ? "positive" : pnlValue < 0 ? "negative" : "neutral";
+
+        return (
+          <span className={`trade-pnl trade-pnl--${pnlTone}`}>
+            {formatCurrency(t.pnl, currencyCode)}
+          </span>
+        );
+      }
+
+      case "trade_type": {
+        const tradeType = String(t.trade_type || "").trim().toLowerCase();
+        const typeTone = tradeType === "buy" ? "buy" : tradeType === "sell" ? "sell" : "neutral";
+        const typeLabel = tradeType ? tradeType.toUpperCase() : "--";
+
+        return (
+          <span className={`trade-type-badge trade-type-badge--${typeTone}`}>
+            {typeLabel}
+          </span>
+        );
+      }
 
       default:
         return t[key];

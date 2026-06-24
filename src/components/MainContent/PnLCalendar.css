@@ -62,7 +62,7 @@
 
 .calendar-settings-menu__title {
   color: var(--heading);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 800;
 }
 
@@ -73,7 +73,7 @@
   justify-content: space-between;
   gap: 10px;
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
 }
 
@@ -88,7 +88,7 @@
   padding: 4px 8px;
   background: var(--bg-card);
   color: var(--text-primary);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
 }
 
@@ -100,7 +100,7 @@
   padding: 4px 8px;
   background: var(--bg-card);
   color: var(--text-primary);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
 }
 
@@ -134,7 +134,7 @@
   border-radius: 10px;
   color: var(--text-primary);
   padding: 6px 10px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   background: transparent;
   cursor: pointer;
@@ -148,7 +148,7 @@
 }
 
 .calendar-shell__label {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--text-primary);
 }
@@ -160,7 +160,7 @@
   min-width: 58px;
   padding: 5px 8px;
   border-radius: 999px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -215,7 +215,7 @@
   min-height: 26px;
   border: 1px solid rgba(191, 206, 231, 0.55);
   border-radius: 8px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--text-primary);
   background: rgba(255, 255, 255, 0.85);
@@ -291,7 +291,7 @@
   position: absolute;
   top: 5px;
   right: 6px;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   color: #27314f;
   opacity: 0.85;
@@ -344,7 +344,7 @@
 
 .calendar-day-card__trades,
 .calendar-day-card__rate {
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.15;
   color: #5a6a91;
   font-weight: 600;
@@ -446,7 +446,7 @@
 }
 
 .calendar-week-card__label {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-secondary);
   font-weight: 500;
 }
@@ -479,7 +479,7 @@
   border-radius: 999px;
   background: var(--accent-neutral-soft);
   color: var(--text-primary);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -498,7 +498,7 @@
   display: block;
   margin-bottom: 8px;
   color: var(--text-secondary);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -509,7 +509,7 @@
   align-items: center;
   gap: 8px;
   color: var(--text-primary);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   cursor: pointer;
 }

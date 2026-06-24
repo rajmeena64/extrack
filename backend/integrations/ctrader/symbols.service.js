@@ -24,13 +24,37 @@ function cacheSymbols(symbolsData) {
     ctraderConfig.symbols.set(id, {
       id,
       name: symbol.symbolName,
+      displayName: symbol.displayName || symbol.symbolName,
+      requestSymbol: symbol.symbolName,
       normalizedName: normalizeSymbolName(symbol.symbolName),
       description: symbol.description,
+      digits: Number.isFinite(Number(symbol.digits)) ? Number(symbol.digits) : null,
+      pipPosition: Number.isFinite(Number(symbol.pipPosition)) ? Number(symbol.pipPosition) : null,
     });
 
     if (!ctraderConfig.currentSymbolId) {
       ctraderConfig.currentSymbolId = id;
     }
+  });
+}
+
+function cacheSymbolDetails(symbols = []) {
+  symbols.forEach((symbol) => {
+    const id = Number(symbol.symbolId);
+    if (!Number.isFinite(id)) return;
+
+    const existing = ctraderConfig.symbols.get(id) || {};
+    ctraderConfig.symbols.set(id, {
+      ...existing,
+      id,
+      name: existing.name || symbol.symbolName || symbol.name,
+      displayName: existing.displayName || symbol.symbolName || symbol.name,
+      requestSymbol: existing.requestSymbol || symbol.symbolName || symbol.name,
+      normalizedName: existing.normalizedName || normalizeSymbolName(symbol.symbolName || symbol.name),
+      description: existing.description || symbol.description,
+      digits: Number.isFinite(Number(symbol.digits)) ? Number(symbol.digits) : existing.digits ?? null,
+      pipPosition: Number.isFinite(Number(symbol.pipPosition)) ? Number(symbol.pipPosition) : existing.pipPosition ?? null,
+    });
   });
 }
 
@@ -76,6 +100,7 @@ function trendbarToBinanceKline(trendbar) {
 
 module.exports = {
   cacheSymbols,
+  cacheSymbolDetails,
   findExactSymbolMatch,
   normalizeSymbolName,
   resolveSymbolId,

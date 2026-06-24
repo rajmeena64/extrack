@@ -5,7 +5,9 @@ const LandingNavbar = ({ darkMode, toggleDarkMode, onSignIn, mobileMenuOpen, set
   return (
     <div className="hero-topbar">
       <div className="hero-brand">
-        <span className="hero-logo-mark" aria-hidden="true"></span>
+        <span className="hero-logo-mark" aria-hidden="true">
+          <img src={darkMode ? '/assets/applogo/entrack_dna_dark_icon.svg' : '/assets/applogo/entrack_dna_light_icon.svg'} alt="" />
+        </span>
         <span>Entrack</span>
       </div>
       

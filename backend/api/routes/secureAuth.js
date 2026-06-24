@@ -1,5 +1,6 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
+const crypto = require('crypto');
 const fetch = require('node-fetch');
 const pool = require('../../infra/db/database');
 const { logAuthTableUse, TABLES, USER_SELECT } = require('../../config/tables');
@@ -11,6 +12,7 @@ const {
   loginSchema,
   parseBody,
   resetPasswordSchema,
+  resetOtpSchema,
   signupSchema,
   tokenSchema,
 } = require('../../domains/auth/validator');
@@ -34,9 +36,10 @@ const BCRYPT_COST = Number.isFinite(configuredBcryptCost) && configuredBcryptCos
   ? configuredBcryptCost
   : 12;
 const VERIFY_TOKEN_MINUTES = Number.parseInt(process.env.EMAIL_VERIFY_TOKEN_MINUTES || '60', 10);
-const RESET_TOKEN_MINUTES = Number.parseInt(process.env.PASSWORD_RESET_TOKEN_MINUTES || '30', 10);
+const RESET_OTP_MINUTES = Number.parseInt(process.env.PASSWORD_RESET_OTP_MINUTES || '5', 10);
+const RESET_OTP_RESEND_SECONDS = Number.parseInt(process.env.PASSWORD_RESET_OTP_RESEND_SECONDS || '60', 10);
 const GENERIC_LOGIN_ERROR = 'Invalid email, phone, or password';
-const GENERIC_RESET_MESSAGE = 'If an account exists, password reset instructions have been sent';
+const GENERIC_RESET_MESSAGE = 'If an account exists, a password reset OTP has been sent';
 const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const GOOGLE_USERINFO_URL = 'https://openidconnect.googleapis.com/v1/userinfo';
@@ -158,6 +161,18 @@ function isWeakPassword(password) {
   return commonPasswords.has(String(password || '').toLowerCase());
 }
 
+function generatePasswordResetOtp() {
+  return String(crypto.randomInt(100000, 1000000));
+}
+
+function getPasswordResetCooldownSeconds(resetOtp) {
+  if (!resetOtp?.created_at) return 0;
+  const createdAtMs = new Date(resetOtp.created_at).getTime();
+  if (Number.isNaN(createdAtMs)) return 0;
+
+  return Math.max(0, RESET_OTP_RESEND_SECONDS - Math.floor((Date.now() - createdAtMs) / 1000));
+}
+
 function getPasswordHash(row) {
   return row.password_hash || row.password;
 }
@@ -194,6 +209,29 @@ async function findUserByLogin(input) {
     [phoneCandidates]
   );
   return result.rows[0] || null;
+}
+
+async function findLatestPasswordResetOtp(client, emailNormalized, { lock = false } = {}) {
+  const result = await client.query(
+    `SELECT prt.*, u.email_original, u.email, u.name, u.first_name AS "firstName"
+     FROM ${TABLES.passwordResets} prt
+     JOIN ${TABLES.users} u ON u.id = prt.user_id
+     WHERE COALESCE(u.email_normalized, lower(u.email)) = $1
+       AND prt.used_at IS NULL
+     ORDER BY prt.created_at DESC
+     LIMIT 1
+     ${lock ? 'FOR UPDATE' : ''}`,
+    [emailNormalized]
+  );
+  return result.rows[0] || null;
+}
+
+async function verifyPasswordResetOtp(client, emailNormalized, otp, options) {
+  const resetOtp = await findLatestPasswordResetOtp(client, emailNormalized, options);
+  if (!resetOtp || new Date(resetOtp.expires_at) <= new Date()) return null;
+
+  const otpOk = await bcrypt.compare(otp, resetOtp.otp_hash || '');
+  return otpOk ? resetOtp : null;
 }
 
 function normalizeUrl(value) {
@@ -780,28 +818,64 @@ router.post('/logout', async (req, res) => {
 
 router.post('/forgot-password', forgotLimiter, async (req, res) => {
   const parsed = parseBody(emailOnlySchema, req.body);
-  if (parsed.error) return ok(res, GENERIC_RESET_MESSAGE, null, 'RESET_REQUEST_ACCEPTED');
+  if (parsed.error) return ok(res, GENERIC_RESET_MESSAGE, { resendAfterSeconds: RESET_OTP_RESEND_SECONDS }, 'RESET_REQUEST_ACCEPTED');
 
   try {
     const user = await findUserByEmail(parsed.data.email);
     if (user) {
-      const rawToken = generateRawToken(32);
+      const activeOtp = await findLatestPasswordResetOtp(pool, parsed.data.email);
+      const cooldownSeconds = getPasswordResetCooldownSeconds(activeOtp);
+
+      if (cooldownSeconds > 0) {
+        console.info('auth.password_reset_resend_blocked', { email: parsed.data.email, cooldownSeconds });
+        return ok(
+          res,
+          'A password reset OTP was already sent. Please wait before requesting another one.',
+          { resendAfterSeconds: cooldownSeconds },
+          'RESET_OTP_COOLDOWN'
+        );
+      }
+
+      const rawOtp = generatePasswordResetOtp();
+      const otpHash = await bcrypt.hash(rawOtp, BCRYPT_COST);
       await pool.query(
-        `INSERT INTO ${TABLES.passwordResets} (user_id, token_hash, expires_at)
+        `UPDATE ${TABLES.passwordResets}
+         SET used_at = NOW()
+         WHERE user_id = $1
+           AND used_at IS NULL`,
+        [user.ID]
+      );
+      await pool.query(
+        `INSERT INTO ${TABLES.passwordResets} (user_id, otp_hash, expires_at)
          VALUES ($1, $2, $3)`,
-        [user.ID, hashToken(rawToken), new Date(Date.now() + RESET_TOKEN_MINUTES * 60 * 1000)]
+        [user.ID, otpHash, new Date(Date.now() + RESET_OTP_MINUTES * 60 * 1000)]
       );
       await sendPasswordResetEmail({
         email: user.email_original || user.email,
         name: user.name || user.firstName || 'there',
-        token: rawToken,
+        otp: rawOtp,
       });
     }
     console.info('auth.password_reset_requested', { email: parsed.data.email });
-    return ok(res, GENERIC_RESET_MESSAGE, null, 'RESET_REQUEST_ACCEPTED');
+    return ok(res, GENERIC_RESET_MESSAGE, { resendAfterSeconds: RESET_OTP_RESEND_SECONDS }, 'RESET_REQUEST_ACCEPTED');
   } catch (error) {
     console.error('auth.forgot_failed', { error: error.message });
-    return ok(res, GENERIC_RESET_MESSAGE, null, 'RESET_REQUEST_ACCEPTED');
+    return ok(res, GENERIC_RESET_MESSAGE, { resendAfterSeconds: RESET_OTP_RESEND_SECONDS }, 'RESET_REQUEST_ACCEPTED');
+  }
+});
+
+router.post('/verify-reset-otp', resetLimiter, async (req, res) => {
+  const parsed = parseBody(resetOtpSchema, req.body);
+  if (parsed.error) return fail(res, 400, parsed.error, 'VALIDATION_ERROR', { field: parsed.field });
+
+  try {
+    const resetOtp = await verifyPasswordResetOtp(pool, parsed.data.email, parsed.data.otp);
+    if (!resetOtp) return fail(res, 400, 'Invalid or expired reset OTP', 'INVALID_RESET_OTP');
+
+    return ok(res, 'OTP verified. You can set a new password now.', null, 'RESET_OTP_VERIFIED');
+  } catch (error) {
+    console.error('auth.reset_otp_verify_failed', { error: error.message });
+    return fail(res, 500, 'OTP verification failed', 'RESET_OTP_VERIFY_FAILED');
   }
 });
 
@@ -815,18 +889,10 @@ router.post('/reset-password', resetLimiter, async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    const tokenResult = await client.query(
-      `SELECT prt.*, u.email_original, u.email, u.name, u.first_name AS "firstName"
-       FROM ${TABLES.passwordResets} prt
-       JOIN ${TABLES.users} u ON u.id = prt.user_id
-       WHERE prt.token_hash = $1 FOR UPDATE`,
-      [hashToken(parsed.data.token)]
-    );
-    const token = tokenResult.rows[0];
-
-    if (!token || token.used_at || new Date(token.expires_at) <= new Date()) {
+    const token = await verifyPasswordResetOtp(client, parsed.data.email, parsed.data.otp, { lock: true });
+    if (!token) {
       await client.query('ROLLBACK');
-      return fail(res, 400, 'Invalid or expired reset link', 'INVALID_RESET_TOKEN');
+      return fail(res, 400, 'Invalid or expired reset OTP', 'INVALID_RESET_OTP');
     }
 
     const passwordHash = await bcrypt.hash(newPassword, BCRYPT_COST);

@@ -30,16 +30,6 @@ function getFrontendUrl() {
   return normalizeHttpUrl(process.env.FRONTEND_URL, 'FRONTEND_URL');
 }
 
-function getPasswordResetUrl(token) {
-  const baseUrl = process.env.PASSWORD_RESET_URL
-    ? normalizeHttpUrl(process.env.PASSWORD_RESET_URL, 'PASSWORD_RESET_URL')
-    : `${getFrontendUrl()}/reset-password`;
-
-  const url = new URL(baseUrl);
-  url.searchParams.set('token', token);
-  return url.toString();
-}
-
 function escapeHtml(value) {
   return String(value || '')
     .replace(/&/g, '&amp;')
@@ -174,23 +164,20 @@ async function sendVerificationEmail({ email, name, token }) {
   });
 }
 
-async function sendPasswordResetEmail({ email, name, token }) {
-  const link = getPasswordResetUrl(token);
-
+async function sendPasswordResetEmail({ email, name, otp }) {
   await sendMail({
     to: email,
     subject: 'Reset your Entrack password',
-    text: `Hi ${name}, reset your Entrack password: ${link}. This link expires in 30 minutes.`,
+    text: `Hi ${name}, use this OTP to reset your Entrack password: ${otp}. This OTP expires in 5 minutes.`,
     html: renderEmailShell({
       eyebrow: 'Password reset',
       title: `Hi ${name || 'there'}, reset your Entrack password`,
-      preview: 'Use this secure link to set a new Entrack password.',
+      preview: 'Use this OTP to set a new Entrack password.',
       body: `
-        <p style="margin:0;">We received a request to reset your password. Use this secure link to choose a new one.</p>
+        <p style="margin:0;">We received a request to reset your password. Enter this OTP in Entrack to choose a new one.</p>
+        <div style="margin:24px auto 0;padding:16px 20px;border-radius:14px;background:#ffffff;border:1px solid #d8dee8;color:#111827;font-size:30px;font-weight:800;letter-spacing:8px;text-align:center;max-width:260px;">${escapeHtml(otp)}</div>
       `,
-      buttonText: 'Reset password',
-      buttonUrl: link,
-      footerNote: 'This reset link expires in 30 minutes and can only be used once. If you did not request a password reset, you can ignore this email.',
+      footerNote: 'This reset OTP expires in 5 minutes and can only be used once. If you did not request a password reset, you can ignore this email.',
     }),
   });
 }
@@ -259,7 +246,6 @@ async function sendLoginNotificationEmail({ email, name, ipAddress, userAgent, l
 
 module.exports = {
   getFrontendUrl,
-  getPasswordResetUrl,
   sendLoginNotificationEmail,
   sendPasswordChangedEmail,
   sendPasswordResetEmail,

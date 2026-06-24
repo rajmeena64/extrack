@@ -103,7 +103,7 @@
 }
 
 .radar-overall-label {
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--text-secondary);
   text-transform: uppercase;
@@ -131,13 +131,13 @@
 }
 
 .radar-scale-num {
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--text-muted);
 }
 
 .radar-grade {
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 800;
 }
 
@@ -163,7 +163,7 @@
 }
 
 .radar-metric-label {
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--text-secondary);
   min-width: 0;
@@ -173,7 +173,7 @@
 }
 
 .radar-metric-value {
-  font-size: 9.5px;
+  font-size: 12px;
   font-weight: 800;
 }
 
@@ -313,7 +313,7 @@
   .radar-grade,
   .radar-metric-label,
   .radar-metric-value {
-    font-size: 9px;
+    font-size: 12px;
   }
 
   .radar-metrics-list {

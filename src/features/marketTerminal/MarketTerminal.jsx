@@ -1,0 +1,750 @@
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { CandlestickSeries, ColorType, CrosshairMode, createChart } from 'lightweight-charts';
+import { ChevronDown, EllipsisVertical, Grid2x2, Plus, RefreshCw, X } from '../../icons/lucideIcons';
+import MainContentWrapper from '../../components/Layout/MainContentWrapper';
+import api from '../../utils/serve';
+import './MarketTerminal.css';
+
+const INTERVALS = ['1m', '5m', '15m', '1h'];
+const DEFAULT_SYMBOL = 'EURUSD';
+const LIVE_POLL_MS = 1200;
+const LIVE_REQUEST_TIMEOUT_MS = 10000;
+const INITIAL_CANDLE_LIMIT = 1000;
+const HISTORY_CHUNK_LIMIT = 1000;
+const PAST_BUFFER_CHUNKS = 2;
+const CANDLE_CHUNK_CACHE_MS = 30 * 1000;
+const MAX_CHARTS = 8;
+const LAYOUTS = [
+  { value: '1', label: '1 chart', columns: 1, rows: 1, capacity: 1 },
+  { value: '2v', label: '2 vertical', columns: 2, rows: 1, capacity: 2 },
+  { value: '2h', label: '2 horizontal', columns: 1, rows: 2, capacity: 2 },
+  { value: '4', label: '4 grid', columns: 2, rows: 2, capacity: 4 },
+];
+
+const candleChunkCache = new Map();
+
+const createChartId = () => (
+  typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `chart-${Date.now()}-${Math.random().toString(16).slice(2)}`
+);
+
+const mergeCandles = (existingCandles = [], newCandles = []) => {
+  const byTime = new Map();
+  for (const candle of existingCandles) {
+    if (Number.isFinite(candle?.time)) byTime.set(candle.time, candle);
+  }
+  for (const candle of newCandles) {
+    if (Number.isFinite(candle?.time)) byTime.set(candle.time, candle);
+  }
+  return Array.from(byTime.values()).sort((a, b) => a.time - b.time);
+};
+
+const getSeriesPriceFormat = (quote) => {
+  const priceDigits = Number(quote?.priceDigits);
+  const minMove = Number(quote?.minMove);
+  return {
+    type: 'price',
+    precision: Number.isFinite(priceDigits) ? priceDigits : 5,
+    minMove: Number.isFinite(minMove) && minMove > 0 ? minMove : 0.00001,
+  };
+};
+
+const getRequestSymbol = (item) => String(item?.requestSymbol || item?.name || item?.symbol || item || DEFAULT_SYMBOL);
+
+const getDisplaySymbol = (item) => String(item?.displayName || item?.name || item?.normalizedName || item?.symbol || item || DEFAULT_SYMBOL);
+
+const getSymbolSubtitle = (item, symbol) => (
+  item?.description ||
+  item?.displayName ||
+  item?.assetClass ||
+  `${symbol.slice(0, 3)} / ${symbol.slice(3) || 'Market'}`
+);
+
+const classifySymbol = (symbol) => {
+  if (/^(XAU|XAG|XPT|XPD)/.test(symbol)) return 'Metals';
+  if (/^(BTC|ETH|LTC|XRP|SOL|ADA|DOGE)/.test(symbol)) return 'Crypto';
+  if (/^[A-Z]{6}$/.test(symbol)) return 'Forex';
+  return 'Stocks';
+};
+
+const getWatchlistIconClass = (section) => {
+  if (section === 'Crypto') return 'is-crypto';
+  if (section === 'Metals') return 'is-metal';
+  if (section === 'Stocks') return 'is-stock';
+  return 'is-forex';
+};
+
+const buildWatchlistSections = (symbols, activeSymbol) => {
+  const source = symbols.length ? symbols : [{ name: activeSymbol || DEFAULT_SYMBOL }];
+  const seen = new Set();
+  const grouped = {
+    Stocks: [],
+    Forex: [],
+    Crypto: [],
+    Metals: [],
+  };
+
+  for (const item of source) {
+    const symbol = getDisplaySymbol(item);
+    const requestSymbol = getRequestSymbol(item);
+    if (!symbol || seen.has(symbol)) continue;
+    seen.add(symbol);
+    const section = classifySymbol(String(symbol).replace(/[^a-z0-9]/gi, '').toUpperCase());
+    grouped[section].push({
+      symbol,
+      requestSymbol,
+      subtitle: getSymbolSubtitle(item, symbol),
+      section,
+    });
+  }
+
+  return ['Stocks', 'Forex', 'Crypto', 'Metals']
+    .map((title) => ({ title, rows: grouped[title].slice(0, 5) }))
+    .filter((section) => section.rows.length > 0);
+};
+
+function ChartPane({ chart, active, compact, fitNonce, onActivate, onQuote, onSymbols }) {
+  const chartContainerRef = useRef(null);
+  const chartApiRef = useRef(null);
+  const candleSeriesRef = useRef(null);
+  const candlesRef = useRef([]);
+  const liveAbortRef = useRef(null);
+  const loadedHistoryKeysRef = useRef(new Set());
+  const isLoadingPastRef = useRef(false);
+  const isPrefetchingPastRef = useRef(false);
+  const pastBufferRef = useRef([]);
+  const lastRangeCheckRef = useRef(0);
+  const loadPastRef = useRef(null);
+  const resetKeyRef = useRef('');
+  const hasFitInitialContentRef = useRef(false);
+  const hasUserMovedChartRef = useRef(false);
+
+  const [quote, setQuote] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [historyReady, setHistoryReady] = useState(false);
+  const [loadingPast, setLoadingPast] = useState(false);
+  const [status, setStatus] = useState('Connecting');
+  const [error, setError] = useState('');
+
+  const selectedSymbol = chart.symbol || DEFAULT_SYMBOL;
+  const interval = chart.interval || '1m';
+  const priceFormat = useMemo(() => getSeriesPriceFormat(quote), [quote]);
+
+  const applyCandles = useCallback(({ preserveRange = false, prependedCount = 0, fit = false } = {}) => {
+    const chartApi = chartApiRef.current;
+    const candleSeries = candleSeriesRef.current;
+    if (!chartApi || !candleSeries) return;
+
+    const oldRange = preserveRange ? chartApi.timeScale().getVisibleLogicalRange() : null;
+    candleSeries.setData(candlesRef.current);
+
+    if (fit || (!hasFitInitialContentRef.current && candlesRef.current.length > 8)) {
+      chartApi.timeScale().fitContent();
+      hasFitInitialContentRef.current = true;
+    }
+
+    if (oldRange && prependedCount > 0) {
+      chartApi.timeScale().setVisibleLogicalRange({
+        from: oldRange.from + prependedCount,
+        to: oldRange.to + prependedCount,
+      });
+    }
+  }, []);
+
+  const fetchCandlesChunk = useCallback(async ({ endTime, limit }) => {
+    const normalizedLimit = Number(limit || INITIAL_CANDLE_LIMIT);
+    const normalizedEndTime = Number.isFinite(Number(endTime)) ? Number(endTime) : 'latest';
+    const cacheKey = [selectedSymbol, interval, normalizedEndTime, normalizedLimit].join(':');
+    const cached = candleChunkCache.get(cacheKey);
+
+    if (cached && Date.now() - cached.createdAt < CANDLE_CHUNK_CACHE_MS) return cached.promise;
+
+    const promise = api.get('/market-chart/candles', {
+      params: {
+        symbol: selectedSymbol,
+        interval,
+        ...(normalizedEndTime !== 'latest' ? { endTime: normalizedEndTime } : {}),
+        limit: normalizedLimit,
+      },
+    }).then((response) => (
+      Array.isArray(response.data?.candles)
+        ? response.data.candles.filter((candle) => (
+          Number.isFinite(candle.time) &&
+          Number.isFinite(candle.open) &&
+          Number.isFinite(candle.high) &&
+          Number.isFinite(candle.low) &&
+          Number.isFinite(candle.close)
+        ))
+        : []
+    ));
+
+    candleChunkCache.set(cacheKey, { createdAt: Date.now(), promise });
+    promise.catch(() => candleChunkCache.delete(cacheKey));
+    return promise;
+  }, [interval, selectedSymbol]);
+
+  const getPastChunkRequest = useCallback((anchorCandle = candlesRef.current[0]) => {
+    if (!anchorCandle) return null;
+    const endTime = (Number(anchorCandle.time) * 1000) - 1;
+    return { endTime, key: `${selectedSymbol}:${interval}:past:${endTime}` };
+  }, [interval, selectedSymbol]);
+
+  const prefetchPastBuffer = useCallback(async () => {
+    const requestSessionKey = resetKeyRef.current;
+    if (isPrefetchingPastRef.current || isLoadingPastRef.current) return;
+    isPrefetchingPastRef.current = true;
+
+    try {
+      while (resetKeyRef.current === requestSessionKey && pastBufferRef.current.length < PAST_BUFFER_CHUNKS) {
+        const lastBufferedChunk = pastBufferRef.current[pastBufferRef.current.length - 1]?.candles;
+        const anchorCandle = lastBufferedChunk?.[0] || candlesRef.current[0];
+        const request = getPastChunkRequest(anchorCandle);
+
+        if (
+          !request ||
+          loadedHistoryKeysRef.current.has(request.key) ||
+          pastBufferRef.current.some((buffered) => buffered.key === request.key)
+        ) break;
+
+        const chunk = await fetchCandlesChunk({ endTime: request.endTime, limit: HISTORY_CHUNK_LIMIT });
+        if (resetKeyRef.current !== requestSessionKey || chunk.length === 0) break;
+        pastBufferRef.current = [...pastBufferRef.current, { key: request.key, candles: chunk }];
+      }
+    } catch {
+      pastBufferRef.current = [];
+    } finally {
+      isPrefetchingPastRef.current = false;
+    }
+  }, [fetchCandlesChunk, getPastChunkRequest]);
+
+  const loadPastCandles = useCallback(async () => {
+    const currentData = candlesRef.current;
+    const firstCandle = currentData[0];
+    const requestSessionKey = resetKeyRef.current;
+    let shouldPrefetchNext = false;
+    if (!firstCandle || isLoadingPastRef.current) return;
+
+    const request = getPastChunkRequest();
+    if (!request || loadedHistoryKeysRef.current.has(request.key)) return;
+
+    isLoadingPastRef.current = true;
+    const bufferedChunkIndex = pastBufferRef.current.findIndex((buffered) => buffered.key === request.key);
+    const bufferedChunk = bufferedChunkIndex >= 0 ? pastBufferRef.current[bufferedChunkIndex].candles : null;
+    if (!bufferedChunk) {
+      setLoadingPast(true);
+      setStatus('Loading older');
+    }
+
+    try {
+      const oldFirstTime = firstCandle.time;
+      const oldLength = currentData.length;
+      const chunk = bufferedChunk || await fetchCandlesChunk({ endTime: request.endTime, limit: HISTORY_CHUNK_LIMIT });
+      loadedHistoryKeysRef.current.add(request.key);
+      if (resetKeyRef.current !== requestSessionKey || chunk.length === 0) return;
+      if (bufferedChunkIndex >= 0) {
+        pastBufferRef.current = pastBufferRef.current.filter((buffered) => buffered.key !== request.key);
+      }
+
+      candlesRef.current = mergeCandles(candlesRef.current, chunk);
+      const prependedCount = candlesRef.current.filter((candle) => candle.time < oldFirstTime).length;
+      applyCandles({
+        preserveRange: true,
+        prependedCount: prependedCount || Math.max(candlesRef.current.length - oldLength, 0),
+      });
+      setStatus('Live');
+      shouldPrefetchNext = true;
+    } catch (requestError) {
+      setError(requestError.response?.data?.error || requestError.message || 'Unable to load older candles');
+      setStatus('Live');
+    } finally {
+      isLoadingPastRef.current = false;
+      setLoadingPast(false);
+      if (shouldPrefetchNext && resetKeyRef.current === requestSessionKey) prefetchPastBuffer();
+    }
+  }, [applyCandles, fetchCandlesChunk, getPastChunkRequest, prefetchPastBuffer]);
+
+  useEffect(() => {
+    loadPastRef.current = loadPastCandles;
+  }, [loadPastCandles]);
+
+  useEffect(() => {
+    if (!chartContainerRef.current) return undefined;
+
+    const chartApi = createChart(chartContainerRef.current, {
+      autoSize: true,
+      layout: {
+        background: { type: ColorType.Solid, color: '#ffffff' },
+        textColor: '#111827',
+        fontSize: 11,
+      },
+      grid: {
+        vertLines: { color: '#eef2f7' },
+        horzLines: { color: '#f3f4f6' },
+      },
+      rightPriceScale: {
+        borderColor: '#e5e7eb',
+        entireTextOnly: true,
+      },
+      timeScale: {
+        borderColor: '#e5e7eb',
+        timeVisible: true,
+        secondsVisible: false,
+        rightOffset: 12,
+        barSpacing: compact ? 6 : 9,
+      },
+      crosshair: { mode: CrosshairMode.Normal },
+    });
+
+    const candleSeries = chartApi.addSeries(CandlestickSeries, {
+      upColor: '#089981',
+      downColor: '#f23645',
+      wickUpColor: '#089981',
+      wickDownColor: '#f23645',
+      borderVisible: false,
+      priceFormat: getSeriesPriceFormat(),
+    });
+
+    chartApiRef.current = chartApi;
+    candleSeriesRef.current = candleSeries;
+
+    const handleVisibleRangeChange = (range) => {
+      if (!range || !hasUserMovedChartRef.current) return;
+      const now = performance.now();
+      if (now - lastRangeCheckRef.current < 150) return;
+      lastRangeCheckRef.current = now;
+      if (range.from < 60) loadPastRef.current?.();
+    };
+
+    const markChartMoved = () => {
+      hasUserMovedChartRef.current = true;
+    };
+
+    const container = chartContainerRef.current;
+    chartApi.timeScale().subscribeVisibleLogicalRangeChange(handleVisibleRangeChange);
+    container?.addEventListener('wheel', markChartMoved, { passive: true });
+    container?.addEventListener('pointerdown', markChartMoved);
+    container?.addEventListener('touchstart', markChartMoved, { passive: true });
+
+    return () => {
+      chartApi.timeScale().unsubscribeVisibleLogicalRangeChange(handleVisibleRangeChange);
+      container?.removeEventListener('wheel', markChartMoved);
+      container?.removeEventListener('pointerdown', markChartMoved);
+      container?.removeEventListener('touchstart', markChartMoved);
+      chartApi.remove();
+      chartApiRef.current = null;
+      candleSeriesRef.current = null;
+    };
+  }, [compact, selectedSymbol]);
+
+  useEffect(() => {
+    candleSeriesRef.current?.applyOptions({ priceFormat });
+  }, [priceFormat]);
+
+  useEffect(() => {
+    if (active && fitNonce > 0) chartApiRef.current?.timeScale().fitContent();
+  }, [active, fitNonce]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadCandles() {
+      setLoading(true);
+      setLoadingPast(false);
+      setHistoryReady(false);
+      setQuote(null);
+      setError('');
+      setStatus('Loading');
+      resetKeyRef.current = `${selectedSymbol}:${interval}`;
+      loadedHistoryKeysRef.current = new Set();
+      isLoadingPastRef.current = false;
+      isPrefetchingPastRef.current = false;
+      pastBufferRef.current = [];
+      hasFitInitialContentRef.current = false;
+      hasUserMovedChartRef.current = false;
+
+      try {
+        const candles = await fetchCandlesChunk({ limit: INITIAL_CANDLE_LIMIT });
+        if (cancelled) return;
+        candlesRef.current = candles;
+        applyCandles({ fit: true });
+        setHistoryReady(candles.length > 0);
+        setStatus(candles.length ? 'Live' : 'Waiting');
+        window.setTimeout(() => {
+          if (!cancelled && resetKeyRef.current === `${selectedSymbol}:${interval}`) prefetchPastBuffer();
+        }, 800);
+      } catch (requestError) {
+        if (!cancelled) {
+          setError(requestError.response?.data?.error || requestError.message || 'Unable to load candles');
+          setStatus('Offline');
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    loadCandles();
+    return () => {
+      cancelled = true;
+    };
+  }, [applyCandles, fetchCandlesChunk, interval, prefetchPastBuffer, selectedSymbol]);
+
+  useEffect(() => {
+    if (!historyReady) return undefined;
+
+    let stopped = false;
+    let timer = null;
+    const subscribedSymbol = selectedSymbol;
+
+    async function subscribeCurrentChart() {
+      await api.post('/market-chart/subscription', { chartId: chart.id, symbol: selectedSymbol });
+    }
+
+    const scheduleNextFetch = (delay = LIVE_POLL_MS) => {
+      if (stopped) return;
+      timer = window.setTimeout(fetchLiveMarket, delay);
+    };
+
+    async function fetchLiveMarket() {
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), LIVE_REQUEST_TIMEOUT_MS);
+      liveAbortRef.current = controller;
+
+      try {
+        const response = await api.get('/market-chart/live', {
+          params: { symbol: selectedSymbol, interval, subscribe: false },
+          signal: controller.signal,
+        });
+
+        if (stopped) return;
+        const data = response.data || {};
+        if (Array.isArray(data.symbols) && data.symbols.length > 0) onSymbols(data.symbols);
+        onQuote(selectedSymbol, data.quote || null);
+        setQuote(data.quote || null);
+        if (data.candle && candleSeriesRef.current) {
+          candlesRef.current = mergeCandles(candlesRef.current, [data.candle]);
+          candleSeriesRef.current.update(data.candle);
+        }
+        setStatus(data.quote ? 'Live' : 'Subscribed');
+      } catch (requestError) {
+        const isCancelled = requestError.name === 'CanceledError' || requestError.code === 'ERR_CANCELED';
+        if (!stopped && !isCancelled) {
+          setStatus('Offline');
+          setError(requestError.response?.data?.error || requestError.message || 'Unable to load live market');
+        }
+        if (!stopped && isCancelled) setStatus('Reconnecting');
+      } finally {
+        window.clearTimeout(timeoutId);
+        if (liveAbortRef.current === controller) liveAbortRef.current = null;
+        scheduleNextFetch();
+      }
+    }
+
+    subscribeCurrentChart()
+      .then(() => {
+        if (!stopped) fetchLiveMarket();
+      })
+      .catch((requestError) => {
+        if (!stopped) {
+          setStatus('Offline');
+          setError(requestError.response?.data?.error || requestError.message || 'Unable to subscribe chart');
+        }
+      });
+
+    return () => {
+      stopped = true;
+      if (timer) window.clearTimeout(timer);
+      liveAbortRef.current?.abort();
+      api.post('/market-chart/subscription/release', {
+        chartId: chart.id,
+        symbol: subscribedSymbol,
+      }).catch(() => null);
+    };
+  }, [chart.id, historyReady, interval, onQuote, onSymbols, selectedSymbol]);
+
+  return (
+    <section
+      aria-label={`${selectedSymbol} ${interval} chart`}
+      className={`market-pane${active ? ' is-active' : ''}`}
+      onPointerDown={onActivate}
+    >
+      <div className="market-pane__header">
+        <div className="market-pane__identity">
+          <strong>{selectedSymbol}</strong>
+          <span>{interval}</span>
+          <i className={status === 'Live' ? 'is-live' : ''} />
+          <span>{status}</span>
+        </div>
+        <div className="market-pane__quote">
+          <span>B {quote?.bidText || '-'}</span>
+          <span>A {quote?.askText || '-'}</span>
+          <span>S {quote?.spreadText || '-'}</span>
+        </div>
+      </div>
+
+      {loading && <div className="market-pane__badge">Loading {selectedSymbol}</div>}
+      {loadingPast && <div className="market-pane__badge market-pane__badge--right">Loading history</div>}
+      {error && <div className="market-pane__error">{error}</div>}
+      <div ref={chartContainerRef} className="market-pane__canvas" />
+    </section>
+  );
+}
+
+function WatchlistRow({ row, quote, active, onSelect }) {
+  return (
+    <button
+      className={`market-watchlist__row${active ? ' is-active' : ''}`}
+      onClick={() => onSelect(row.requestSymbol)}
+      type="button"
+    >
+      <span className={`market-watchlist__symbol-icon ${getWatchlistIconClass(row.section)}`}>
+        {row.symbol.slice(0, 1)}
+      </span>
+      <span className="market-watchlist__name">
+        <strong>{row.symbol}</strong>
+        <small>{row.subtitle}</small>
+      </span>
+      <span className="market-watchlist__values">
+        <span>{quote?.lastText || quote?.bidText || '-'}</span>
+        <small className="is-muted">{quote?.changeText || '-'}</small>
+        <small className="is-muted">{quote?.changePercentText || '-'}</small>
+      </span>
+    </button>
+  );
+}
+
+function WatchlistPanel({ activeSymbol, quotes, sections, onSelectSymbol }) {
+  return (
+    <aside className="market-watchlist" aria-label="Watchlist">
+      <div className="market-watchlist__header">
+        <strong>Watchlist</strong>
+        <span>
+          <button aria-label="Add symbol" type="button"><Plus size={18} aria-hidden="true" /></button>
+          <button aria-label="More options" type="button"><EllipsisVertical size={18} aria-hidden="true" /></button>
+        </span>
+      </div>
+
+      <div className="market-watchlist__body">
+        {sections.map((section) => (
+          <section className="market-watchlist__section" key={section.title}>
+            <div className="market-watchlist__section-title">
+              <ChevronDown size={14} aria-hidden="true" />
+              <span>{section.title}</span>
+            </div>
+            {section.rows.map((row) => (
+              <WatchlistRow
+                active={row.requestSymbol === activeSymbol}
+                key={row.symbol}
+                onSelect={onSelectSymbol}
+                quote={quotes[row.requestSymbol]}
+                row={row}
+              />
+            ))}
+          </section>
+        ))}
+      </div>
+
+      <button className="market-watchlist__add" type="button">
+        <Plus size={18} aria-hidden="true" />
+        <span>Add symbol</span>
+      </button>
+    </aside>
+  );
+}
+
+function MarketTerminal() {
+  const [symbols, setSymbols] = useState([]);
+  const [charts, setCharts] = useState([{ id: createChartId(), symbol: DEFAULT_SYMBOL, interval: '1m' }]);
+  const [activeChartId, setActiveChartId] = useState(charts[0].id);
+  const [layout, setLayout] = useState('1');
+  const [fitNonce, setFitNonce] = useState(0);
+  const [quotes, setQuotes] = useState({});
+
+  const activeChart = charts.find((item) => item.id === activeChartId) || charts[0];
+  const activeSymbol = activeChart?.symbol || DEFAULT_SYMBOL;
+  const selectedLayout = LAYOUTS.find((item) => item.value === layout) || LAYOUTS[0];
+  const visibleCharts = charts.slice(0, selectedLayout.capacity);
+  const compact = visibleCharts.length > 1;
+  const watchlistSections = useMemo(() => buildWatchlistSections(symbols, activeSymbol), [activeSymbol, symbols]);
+
+  const updateActiveChart = useCallback((patch) => {
+    setCharts((currentCharts) => currentCharts.map((item) => (
+      item.id === activeChartId ? { ...item, ...patch } : item
+    )));
+  }, [activeChartId]);
+
+  const handleSymbols = useCallback((nextSymbols) => {
+    setSymbols((currentSymbols) => (currentSymbols.length ? currentSymbols : nextSymbols));
+  }, []);
+
+  const handleQuote = useCallback((symbol, tick) => {
+    if (!symbol || !tick) return;
+    setQuotes((currentQuotes) => ({ ...currentQuotes, [symbol]: tick }));
+  }, []);
+
+  useEffect(() => {
+    if (watchlistSections.length === 0) return undefined;
+
+    let stopped = false;
+    let timer = null;
+    const requestSymbols = watchlistSections
+      .flatMap((section) => section.rows.map((row) => row.requestSymbol))
+      .filter(Boolean);
+
+    async function fetchWatchlistQuotes() {
+      try {
+        const response = await api.get('/market-chart/watchlist-quotes', {
+          params: { symbols: requestSymbols.join(',') },
+        });
+        if (!stopped && response.data?.quotes) {
+          setQuotes((currentQuotes) => ({ ...currentQuotes, ...response.data.quotes }));
+        }
+      } catch {
+        // Active chart polling still keeps the selected quote fresh.
+      } finally {
+        if (!stopped) timer = window.setTimeout(fetchWatchlistQuotes, 5000);
+      }
+    }
+
+    fetchWatchlistQuotes();
+    return () => {
+      stopped = true;
+      if (timer) window.clearTimeout(timer);
+    };
+  }, [watchlistSections]);
+
+  const addChart = useCallback(() => {
+    setCharts((currentCharts) => {
+      if (currentCharts.length >= MAX_CHARTS) return currentCharts;
+      const nextChart = {
+        id: createChartId(),
+        symbol: activeChart?.symbol || DEFAULT_SYMBOL,
+        interval: activeChart?.interval || '1m',
+      };
+      setActiveChartId(nextChart.id);
+      if (currentCharts.length === 1) setLayout('2v');
+      if (currentCharts.length === 3) setLayout('4');
+      return [...currentCharts, nextChart];
+    });
+  }, [activeChart]);
+
+  const closeChart = useCallback((chartId) => {
+    setCharts((currentCharts) => {
+      if (currentCharts.length === 1) return currentCharts;
+      const nextCharts = currentCharts.filter((item) => item.id !== chartId);
+      if (activeChartId === chartId) setActiveChartId(nextCharts[0].id);
+      return nextCharts;
+    });
+  }, [activeChartId]);
+
+  const workspaceStyle = {
+    '--market-grid-columns': selectedLayout.columns,
+    '--market-grid-rows': selectedLayout.rows,
+  };
+
+  return (
+    <MainContentWrapper className="market-terminal-page">
+      <div className="market-terminal">
+        <div className="market-tabs" aria-label="Open chart tabs">
+          <div className="market-tabs__list">
+            {charts.map((item, index) => (
+              <button
+                className={`market-tab${item.id === activeChartId ? ' is-active' : ''}`}
+                key={item.id}
+                onClick={() => setActiveChartId(item.id)}
+                type="button"
+              >
+                <em>{index + 1}</em>
+                <strong>{item.symbol}</strong>
+                <span>{item.interval}</span>
+                {charts.length > 1 && (
+                  <i
+                    role="button"
+                    tabIndex={0}
+                    title="Close chart"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      closeChart(item.id);
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        closeChart(item.id);
+                      }
+                    }}
+                  >
+                    <X size={12} aria-hidden="true" />
+                  </i>
+                )}
+              </button>
+            ))}
+          </div>
+          <button className="market-icon-button" onClick={addChart} title="Add chart" type="button">
+            <Plus size={16} aria-hidden="true" />
+          </button>
+        </div>
+
+        <div className="market-toolbar" aria-label="Chart controls">
+          <div className="market-toolbar__left">
+            <select
+              aria-label="Symbol"
+              onChange={(event) => updateActiveChart({ symbol: event.target.value })}
+              value={activeChart?.symbol || DEFAULT_SYMBOL}
+            >
+              {symbols.length === 0 && <option value={activeChart?.symbol || DEFAULT_SYMBOL}>{activeChart?.symbol || DEFAULT_SYMBOL}</option>}
+              {symbols.map((item) => (
+                <option key={item.id || item.name || item.normalizedName} value={item.name || item.normalizedName}>
+                  {item.name || item.normalizedName}
+                </option>
+              ))}
+            </select>
+            <select
+              aria-label="Interval"
+              onChange={(event) => updateActiveChart({ interval: event.target.value })}
+              value={activeChart?.interval || '1m'}
+            >
+              {INTERVALS.map((value) => <option key={value} value={value}>{value}</option>)}
+            </select>
+          </div>
+
+          <div className="market-toolbar__right">
+            <Grid2x2 size={16} aria-hidden="true" />
+            <select aria-label="Chart layout" onChange={(event) => setLayout(event.target.value)} value={layout}>
+              {LAYOUTS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+            </select>
+            <button className="market-icon-button" onClick={() => setFitNonce((value) => value + 1)} title="Fit active chart" type="button">
+              <RefreshCw size={16} aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+
+        <div className="market-workspace">
+          <div className="market-grid" style={workspaceStyle}>
+            {visibleCharts.map((item) => (
+              <ChartPane
+                active={item.id === activeChartId}
+                chart={item}
+                compact={compact}
+                fitNonce={fitNonce}
+                key={item.id}
+                onActivate={() => setActiveChartId(item.id)}
+                onQuote={handleQuote}
+                onSymbols={handleSymbols}
+              />
+            ))}
+          </div>
+          <WatchlistPanel
+            activeSymbol={activeSymbol}
+            onSelectSymbol={(symbol) => updateActiveChart({ symbol })}
+            quotes={quotes}
+            sections={watchlistSections}
+          />
+        </div>
+      </div>
+    </MainContentWrapper>
+  );
+}
+
+export default MarketTerminal;
+

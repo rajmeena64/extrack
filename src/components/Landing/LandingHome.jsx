@@ -166,7 +166,9 @@ function LandingHome({ onLogin, onSignUp, onStartTracking, onGetStarted, onViewD
       <main className="landing-main">
         <header className="landing-topbar">
           <a href="#" className="brand" aria-label="Entrack home">
-            <span className="brand__mark">E</span>
+            <span className="brand__mark" aria-hidden="true">
+              <img src="/assets/applogo/entrack_dna_light_icon.svg" alt="" />
+            </span>
             <span>Entrack</span>
           </a>
 
@@ -352,7 +354,7 @@ function LandingHome({ onLogin, onSignUp, onStartTracking, onGetStarted, onViewD
 
       <footer className="site-footer">
         <div>
-          <div className="brand" aria-label="Entrack footer"><span className="brand__mark">E</span><span>Entrack</span></div>
+          <div className="brand" aria-label="Entrack footer"><span className="brand__mark" aria-hidden="true"><img src="/assets/applogo/entrack_dna_light_icon.svg" alt="" /></span><span>Entrack</span></div>
           <p className="footer-copy">Trading journal, broker coverage, analytics, and replay tools built for focused trade review.</p>
           <a className="footer-support-link" href={SUPPORT_MAILTO}>{SUPPORT_EMAIL}</a>
         </div>

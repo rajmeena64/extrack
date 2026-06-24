@@ -263,14 +263,15 @@ router.post('/save-bulk-trades', authCheck, bulkTradeRateLimiter, async (req, re
             const tradeType = trade.trade_type || trade.type;
             const tradeQuantity = trade.quantity || trade.lots;
             const tradeTimestamp = trade.open_timestamp || trade.opening_time_utc || trade.timestamp;
-            const tradePNL = trade.pnl || trade.profit_usd || 0;
+            const tradePNL = trade.pnl ?? trade.profit_usd ?? trade.profit;
+            const hasTradePNL = tradePNL !== undefined && tradePNL !== null && String(tradePNL).trim() !== '';
             const screenshotsJson = normalizeScreenshots(trade.screenshots || null);
             const normalizedSymbol = normalizeStoredSymbol(trade.symbol);
             const normalizedTimestamp = timestampValue(tradeTimestamp, { required: true });
             const normalizedQuantity = parseRequiredNumber(tradeQuantity, { min: 0.0000001 });
             const normalizedEntryPrice = parseRequiredNumber(entryPrice, { min: 0.0000001 });
             const normalizedExitPrice = parseRequiredNumber(exitPrice, { min: 0.0000001 });
-            const normalizedPNL = parseRequiredNumber(tradePNL) ?? 0;
+            const normalizedPNL = hasTradePNL ? parseRequiredNumber(tradePNL) : null;
 
             if (!normalizedSymbol) {
                 results.push({ success: false, trade: 'Unknown', error: 'Missing symbol' });
@@ -294,6 +295,11 @@ router.post('/save-bulk-trades', authCheck, bulkTradeRateLimiter, async (req, re
             }
             if (normalizedExitPrice === null) {
                 results.push({ success: false, trade: trade.symbol, error: 'Invalid exit_price' });
+                errorCount++;
+                continue;
+            }
+            if (normalizedPNL === null) {
+                results.push({ success: false, trade: trade.symbol, error: 'Missing or invalid pnl' });
                 errorCount++;
                 continue;
             }

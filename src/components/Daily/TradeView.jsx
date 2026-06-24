@@ -9,6 +9,8 @@ import api from "../../utils/serve";
 import { saveUserSettings } from "../../utils/userSettings";
 import DateRangePicker from "../Common/DateRangePicker";
 import { sanitizeSignedDecimalInput } from "../../utils/fieldValidation";
+import { formatCurrency } from "../../utils/Currency";
+import { formatTradePrice } from "../../utils/tradeCalculations";
 import MainContentWrapper from "../Layout/MainContentWrapper";
 import PageHeader from "../Layout/PageHeader";
 
@@ -18,6 +20,18 @@ import { Calendar, Filter, Ratio, Table } from "../../icons/lucideIcons";
 
 
 const IconSize = 16;
+
+const renderTradeTypeBadge = (value) => {
+  const tradeType = String(value || "").trim().toLowerCase();
+  const typeTone = tradeType === "buy" ? "buy" : tradeType === "sell" ? "sell" : "neutral";
+  const typeLabel = tradeType ? tradeType.toUpperCase() : "--";
+
+  return (
+    <span className={`trade-view-type-badge trade-view-type-badge--${typeTone}`}>
+      {typeLabel}
+    </span>
+  );
+};
 
 // Skeleton Loader Components
 const SkeletonHeader = () => (
@@ -75,7 +89,7 @@ const SkeletonTable = () => (
   </div>
 );
 
-function TradeView({ trades = [] }) {
+function TradeView({ trades = [], currencyCode = "USD" }) {
   const navigate = useNavigate();
 
   /* =======================
@@ -339,6 +353,20 @@ function TradeView({ trades = [] }) {
     return [...new Set(safeTrades.map((t) => t.symbol).filter(Boolean))];
   }, [safeTrades]);
 
+  const activeFilterCount = useMemo(() => (
+    [
+      filters.symbol,
+      filters.tradeType,
+      filters.winTrades,
+      filters.lossTrades,
+      filters.minPnl,
+      filters.maxPnl,
+      filters.sortBy,
+    ].filter(Boolean).length
+  ), [filters]);
+
+  const hasActiveFilters = activeFilterCount > 0;
+
   const handleTradeClick = (trade) => {
     navigate(`/trade/${trade.unique_id || trade.id}`, { state: { tradeData: trade } });
   };
@@ -428,7 +456,7 @@ function TradeView({ trades = [] }) {
             {/* FILTERS */}
             <div className="toolbar-group" ref={filterRef}>
               <button
-                className={`toolbar-btn ${showFilters ? "toolbar-btn-active" : ""}`}
+                className={`toolbar-btn ${showFilters || hasActiveFilters ? "toolbar-btn-active" : ""}`}
                 aria-label="Filters"
                 title="Filters"
                 onClick={(e) => {
@@ -440,6 +468,7 @@ function TradeView({ trades = [] }) {
               >
                 <Filter size={IconSize} className="toolbar-svg-icon" />
                 <span className="toolbar-btn-text">Filters</span>
+                {hasActiveFilters ? <span className="toolbar-filter-count">{activeFilterCount}</span> : null}
             
               </button>
 
@@ -697,16 +726,16 @@ function TradeView({ trades = [] }) {
                       </td>
                     )}
 
-                    {visibleColumns.type && <td>{trade.trade_type || "--"}</td>}
+                    {visibleColumns.type && <td>{renderTradeTypeBadge(trade.trade_type)}</td>}
 
                     {visibleColumns.pnl && (
                       <td className={pnl >= 0 ? "trade-view__pnl--profit" : "trade-view__pnl--loss"}>
-                        {pnl >= 0 ? `+$${pnl}` : `-$${Math.abs(pnl)}`}
+                        {formatCurrency(pnl, currencyCode)}
                       </td>
                     )}
 
-                    {visibleColumns.entry && <td>{trade.price || "--"}</td>}
-                    {visibleColumns.exit && <td>{trade.exit_price || "--"}</td>}
+                    {visibleColumns.entry && <td>{formatTradePrice(trade.price)}</td>}
+                    {visibleColumns.exit && <td>{formatTradePrice(trade.exit_price)}</td>}
                     {visibleColumns.notes && <td>{trade.notes || "--"}</td>}
                     {visibleColumns.rating && <td>{trade.rating || "--"}</td>}
                     {visibleColumns.strategy && <td>{trade.strategy || "--"}</td>}

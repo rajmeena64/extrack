@@ -47,7 +47,7 @@
   border-radius: 999px;
   background: rgba(37, 99, 235, 0.12);
   color: #1e40af; /* Darker blue for better contrast */
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
 }
 
@@ -73,7 +73,7 @@
   position: absolute;
   top: 0;
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
 }
 
@@ -98,8 +98,8 @@
   grid-template-rows: repeat(7, 1fr);
   align-items: center;
   color: var(--text-secondary);
-  font-size: 11px;
-  font-weight: 500;
+  font-size: 12px;
+  font-weight: 650;
 }
 
 .progress-card__grid {

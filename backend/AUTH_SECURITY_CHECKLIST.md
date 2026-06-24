@@ -7,7 +7,7 @@
    - `pending_users.email_normalized` unique
    - `pending_users.verification_token_hash` unique
    - `refresh_tokens_token_hash_unique`
-   - `password_reset_tokens.token_hash` unique
+   - `password_reset_tokens.otp_hash` stores hashed reset OTPs
 2. Confirm old users have `email_normalized`, `email_original`, `password_hash`, and `email_verified_at` backfilled.
 
 ## Environment
@@ -38,14 +38,14 @@ Production must use platform environment variables instead of checked-in `.env` 
 11. Reusing a revoked refresh token revokes active sessions for that user.
 12. Logout revokes the current refresh token and clears cookies.
 13. Forgot password always returns the same generic success message.
-14. Reset password marks the reset token used and revokes sessions.
+14. Reset password verifies the 5-minute OTP, marks it used, and revokes sessions.
 15. Change password requires current password and revokes sessions.
 16. `/api/auth/me` returns no password hash, tokens, or secret fields.
 
 ## Security Decisions
 
 - Real accounts are not created until email verification succeeds.
-- Raw verification, reset, and refresh tokens are never stored in the database; only SHA-256 hashes are stored.
+- Raw verification tokens, reset OTPs, and refresh tokens are never stored in the database; only hashes are stored.
 - Passwords are hashed with bcrypt cost 12.
 - Refresh tokens are HttpOnly cookies and rotate on every refresh.
 - Access tokens are short-lived and also stored in HttpOnly cookies for existing route compatibility.

@@ -194,11 +194,16 @@ ON CONFLICT (id) DO UPDATE SET
 CREATE TABLE IF NOT EXISTS app_auth.password_resets (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id INTEGER NOT NULL REFERENCES app_auth.users(id) ON DELETE CASCADE,
-  token_hash TEXT NOT NULL UNIQUE,
+  token_hash TEXT UNIQUE,
+  otp_hash TEXT,
   expires_at TIMESTAMPTZ NOT NULL,
   used_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS password_resets_otp_hash_unique
+  ON app_auth.password_resets(otp_hash)
+  WHERE otp_hash IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS password_resets_expiry_idx ON app_auth.password_resets(expires_at);
 CREATE INDEX IF NOT EXISTS password_resets_user_idx ON app_auth.password_resets(user_id);

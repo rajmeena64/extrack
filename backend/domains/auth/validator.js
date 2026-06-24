@@ -36,6 +36,11 @@ const passwordSchema = z
 
 const tokenSchema = z.string().trim().min(32).max(512);
 
+const otpSchema = z
+  .string()
+  .trim()
+  .regex(/^\d{6}$/, 'Enter the 6-digit OTP');
+
 const signupSchema = z
   .object({
     name: nameSchema.optional(),
@@ -76,7 +81,8 @@ const emailOnlySchema = z.object({
 
 const resetPasswordSchema = z
   .object({
-    token: tokenSchema,
+    email: emailSchema,
+    otp: otpSchema,
     password: passwordSchema.optional(),
     newPassword: passwordSchema.optional(),
     confirmPassword: z.string().min(1),
@@ -86,6 +92,11 @@ const resetPasswordSchema = z
     message: 'Passwords do not match',
     path: ['confirmPassword'],
   });
+
+const resetOtpSchema = z.object({
+  email: emailSchema,
+  otp: otpSchema,
+}).strict();
 
 const changePasswordSchema = z
   .object({
@@ -116,6 +127,7 @@ module.exports = {
   loginSchema,
   parseBody,
   resetPasswordSchema,
+  resetOtpSchema,
   signupSchema,
   tokenSchema,
 };

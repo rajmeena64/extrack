@@ -427,13 +427,16 @@
   display: grid;
   place-items: center;
   border-radius: 12px;
-  color: #ffffff;
-  background:
-    radial-gradient(circle at 24% 16%, rgba(255, 255, 255, 0.34), transparent 34%),
-    linear-gradient(135deg, #5b7cfa, #8b5cf6);
-  box-shadow: 0 14px 34px rgba(91, 124, 250, 0.24);
-  font-size: 15px;
-  font-weight: 900;
+  background: transparent;
+  box-shadow: none;
+  overflow: hidden;
+}
+
+.user-login-modal .auth-brand-mark img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
 }
 
 .user-login-modal .form-header {
@@ -531,6 +534,32 @@
 .user-login-modal .currency-select .custom-select__trigger:focus-visible {
   border-color: transparent;
   box-shadow: 0 0 0 4px rgba(229, 255, 61, 0.22), inset 0 0 0 1px rgba(15, 23, 42, 0.14);
+}
+
+.user-login-modal .otp-digit-row {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+
+.user-login-modal .otp-digit-input {
+  width: 100%;
+  aspect-ratio: 1;
+  min-height: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.10);
+  color: #0f172a;
+  font-size: 20px;
+  font-weight: 850;
+  text-align: center;
+  outline: none;
+}
+
+.user-login-modal .otp-digit-input:focus {
+  box-shadow: 0 0 0 4px rgba(229, 255, 61, 0.22), inset 0 0 0 1px rgba(15, 23, 42, 0.18);
 }
 
 .user-login-modal .toggle-password {

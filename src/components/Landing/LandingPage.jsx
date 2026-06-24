@@ -431,7 +431,9 @@ function DocumentationPage() {
       <div className="page-bg" aria-hidden="true" />
       <header className="docs-header">
         <a href="/" className="brand" aria-label="Entrack home">
-          <span className="brand__mark">E</span>
+          <span className="brand__mark" aria-hidden="true">
+            <img src="/assets/applogo/entrack_dna_light_icon.svg" alt="" />
+          </span>
           <span>Entrack</span>
         </a>
         <nav className="docs-header-links" aria-label="Documentation navigation">
@@ -513,7 +515,9 @@ function AnalyticsGuidePage() {
       <div className="page-bg" aria-hidden="true" />
       <header className="analytics-guide-topbar">
         <a href="/" className="brand" aria-label="Entrack home">
-          <span className="brand__mark">E</span>
+          <span className="brand__mark" aria-hidden="true">
+            <img src="/assets/applogo/entrack_dna_light_icon.svg" alt="" />
+          </span>
           <span>Entrack</span>
         </a>
         <nav className="analytics-guide-toplinks" aria-label="Analytics navigation">
@@ -650,7 +654,9 @@ function LegalPage({ document }) {
       <div className="page-bg" aria-hidden="true" />
       <header className="docs-header">
         <a href="/" className="brand" aria-label="Entrack home">
-          <span className="brand__mark">E</span>
+          <span className="brand__mark" aria-hidden="true">
+            <img src="/assets/applogo/entrack_dna_light_icon.svg" alt="" />
+          </span>
           <span>Entrack</span>
         </a>
         <nav className="docs-header-links" aria-label="Legal navigation">
@@ -980,7 +986,9 @@ function BrokerDetailPage({ broker }) {
       <div className="page-bg" aria-hidden="true" />
       <header className="docs-header demo-header">
         <a href="/demo" className="brand" aria-label="Back to demo">
-          <span className="brand__mark">E</span>
+          <span className="brand__mark" aria-hidden="true">
+            <img src="/assets/applogo/entrack_dna_light_icon.svg" alt="" />
+          </span>
           <span>Broker Demo</span>
         </a>
         <nav className="docs-header-links" aria-label="Broker detail navigation">
@@ -1034,7 +1042,9 @@ function DemoDetailPage({ section }) {
       <div className="page-bg" aria-hidden="true" />
       <header className="docs-header demo-header">
         <a href="/demo" className="brand" aria-label="Back to demo">
-          <span className="brand__mark">E</span>
+          <span className="brand__mark" aria-hidden="true">
+            <img src="/assets/applogo/entrack_dna_light_icon.svg" alt="" />
+          </span>
           <span>Entrack Demo</span>
         </a>
         <nav className="docs-header-links" aria-label="Demo detail navigation">
@@ -1084,7 +1094,9 @@ function FeatureDetailPage({ section }) {
       <div className="page-bg" aria-hidden="true" />
       <header className="docs-header demo-header">
         <a href="/" className="brand" aria-label="Entrack home">
-          <span className="brand__mark">E</span>
+          <span className="brand__mark" aria-hidden="true">
+            <img src="/assets/applogo/entrack_dna_light_icon.svg" alt="" />
+          </span>
           <span>Entrack</span>
         </a>
         <nav className="docs-header-links" aria-label="Feature navigation">
@@ -1183,7 +1195,9 @@ function DemoPage() {
       <div className="page-bg" aria-hidden="true" />
       <header className="docs-header demo-header">
         <a href="/" className="brand" aria-label="Entrack home">
-          <span className="brand__mark">E</span>
+          <span className="brand__mark" aria-hidden="true">
+            <img src="/assets/applogo/entrack_dna_light_icon.svg" alt="" />
+          </span>
           <span>Entrack</span>
         </a>
         <nav className="docs-header-links" aria-label="Demo navigation">

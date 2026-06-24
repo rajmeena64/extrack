@@ -8,6 +8,14 @@ import { normalizeStoredSymbol } from '../../utils/symbols';
 import { parseTradeNumber } from '../../utils/fieldValidation';
 import TradeSaveOverlay from './TradeSaveOverlay';
 
+const normalizeCsvHeader = (value) => (
+  String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+);
+
 function CSVUploadForm({ csvData, setCsvData }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -46,7 +54,7 @@ function CSVUploadForm({ csvData, setCsvData }) {
       return;
     }
     
-    const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/\s+/g, '_'));
+    const headers = lines[0].split(',').map(normalizeCsvHeader);
     
     const columnMapping = {
       'symbol': ['symbol', 'tradingsymbol', 'instrument', 'pair'],
@@ -54,7 +62,27 @@ function CSVUploadForm({ csvData, setCsvData }) {
       'quantity': ['lots', 'quantity', 'qty', 'volume', 'size', 'position_size', 'original_position_size'],
       'price': ['opening_price', 'price', 'entry_price', 'entryprice', 'open_price', 'openprice'],
       'exit_price': ['closing_price', 'exit_price', 'exitprice', 'close_price', 'closeprice', 'closing_price'],
-      'pnl': ['profit_usd', 'pnl', 'profit', 'pl', 'net_pnl', 'profit_loss', "profit_usc"],
+      'pnl': [
+        'profit_usd',
+        'profit_usc',
+        'pnl',
+        'p_l',
+        'pl',
+        'profit',
+        'net_profit',
+        'net_pnl',
+        'gross_profit',
+        'gross_pnl',
+        'realized_pnl',
+        'realized_pl',
+        'realized_profit',
+        'closed_pnl',
+        'close_pnl',
+        'closing_pnl',
+        'profit_loss',
+        'profit_loss_usd',
+        'profit_usd',
+      ],
       'open_timestamp': ['opening_time_utc', 'open_timestamp', 'timestamp', 'date_time', 'datetime', 'time', 'trade_time', 'execution_time']
     };
 
@@ -68,7 +96,7 @@ function CSVUploadForm({ csvData, setCsvData }) {
       
       if (found) {
         headerMap[found] = standardName;
-      } else if (standardName !== 'pnl') {
+      } else {
         missingColumns.push(standardName);
       }
     });
@@ -186,6 +214,8 @@ function CSVUploadForm({ csvData, setCsvData }) {
           && trade.quantity !== null
           && trade.price !== null
           && trade.exit_price !== null
+          && trade.pnl !== null
+          && trade.pnl !== undefined
           && trade.open_timestamp
         ) {
           const tradeDate = new Date(trade.open_timestamp);

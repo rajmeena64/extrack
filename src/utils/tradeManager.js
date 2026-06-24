@@ -1,4 +1,5 @@
 import api from './serve';
+import { normalizeTradeForCalculations } from './tradeCalculations';
 
 export class TradeManager {
   constructor() {
@@ -25,7 +26,7 @@ export class TradeManager {
   async loadManualTrades(userId) {
     try {
       const { data } = await api.get(`/user-trades/${userId}`);
-      this.trades = data.trades?.map(t => ({
+      this.trades = data.trades?.map(t => normalizeTradeForCalculations({
         ID: t.ID,
         user_id: t.user_id,
         symbol: t.symbol,
@@ -53,7 +54,7 @@ export class TradeManager {
     try {
       const { data } = await api.get(`/user-api-trades/${userId}`);
 
-      this.trades = data.trades?.map(t => ({
+      this.trades = data.trades?.map(t => normalizeTradeForCalculations({
         id: t.id,
         user_id: t.user_id,
         account_id: t.account_id,
@@ -93,7 +94,7 @@ export class TradeManager {
       let allTrades = [];
 
       if (manualRes.trades) {
-        const manualTrades = manualRes.trades.map(t => ({
+        const manualTrades = manualRes.trades.map(t => normalizeTradeForCalculations({
           ID: t.ID,
           user_id: t.user_id,
           symbol: t.symbol,
@@ -115,7 +116,7 @@ export class TradeManager {
       }
 
       if (apiRes.trades) {
-        const apiTrades = apiRes.trades.map(t => ({
+        const apiTrades = apiRes.trades.map(t => normalizeTradeForCalculations({
 
           id: t.id,
           user_id: t.user_id,

@@ -1,5 +1,5 @@
 // src/components/user/UserLoginModal/UserLoginModal.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import './UserLoginModal.css';
 import LegacyIcon from '../../Common/LegacyIcon';
@@ -10,6 +10,9 @@ import { API_URL } from "../../../utils/constants";
 import { useAuth } from '../../../context/AuthContext';
 import { useAppDialog } from '../../../context/AppDialogContext';
 import { clearClientStorage } from '../../../utils/clientStorage';
+
+const FORGOT_RESET_STORAGE_KEY = 'entrack:forgotReset';
+const DEFAULT_RESET_RESEND_SECONDS = 60;
 
 function GoogleIcon() {
   return (
@@ -40,6 +43,10 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
   const { confirm } = useAppDialog();
   const [activeTab, setActiveTab] = useState('login'); // 'login', 'signup', 'forgot'
   const [loginMethod, setLoginMethod] = useState('email'); // 'email' or 'phone'
+  const [forgotStep, setForgotStep] = useState('email');
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resendCooldownUntil, setResendCooldownUntil] = useState(0);
+  const otpInputRefs = useRef([]);
   const [formData, setFormData] = useState({
     email: '',
     phone: '',
@@ -48,6 +55,9 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
     lastName: '',
     confirmPassword: '',
     forgotEmail: '',
+    forgotOtp: '',
+    resetPassword: '',
+    resetConfirmPassword: '',
     currency: 'USD',
     signupName: ''
   });
@@ -67,8 +77,56 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
   }, [currentUser, initialTab, isOpen]);
 
   useEffect(() => {
+    if (!isOpen || currentUser) return;
+
+    try {
+      const saved = JSON.parse(sessionStorage.getItem(FORGOT_RESET_STORAGE_KEY) || '{}');
+      if (!saved.email || !['otp', 'password'].includes(saved.step)) return;
+
+      setActiveTab('forgot');
+      setForgotStep(saved.step);
+      setResendCooldownUntil(Number(saved.resendCooldownUntil || 0));
+      setFormData(prev => ({
+        ...prev,
+        forgotEmail: saved.email,
+      }));
+    } catch {
+      sessionStorage.removeItem(FORGOT_RESET_STORAGE_KEY);
+    }
+  }, [currentUser, isOpen]);
+
+  useEffect(() => {
     setFormError('');
   }, [activeTab, loginMethod]);
+
+  useEffect(() => {
+    if (forgotStep !== 'otp' || !resendCooldownUntil) return undefined;
+
+    const updateCooldown = () => {
+      setResendCooldown(Math.max(0, Math.ceil((resendCooldownUntil - Date.now()) / 1000)));
+    };
+
+    updateCooldown();
+    const timerId = window.setInterval(updateCooldown, 1000);
+
+    return () => window.clearInterval(timerId);
+  }, [forgotStep, resendCooldownUntil]);
+
+  useEffect(() => {
+    if (forgotStep === 'otp') {
+      otpInputRefs.current[0]?.focus();
+    }
+  }, [forgotStep]);
+
+  useEffect(() => {
+    if (forgotStep === 'email' || !formData.forgotEmail.trim()) return;
+
+    sessionStorage.setItem(FORGOT_RESET_STORAGE_KEY, JSON.stringify({
+      email: formData.forgotEmail.trim(),
+      step: forgotStep,
+      resendCooldownUntil,
+    }));
+  }, [forgotStep, formData.forgotEmail, resendCooldownUntil]);
 
   // ESC key se close
   useEffect(() => {
@@ -98,7 +156,11 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    const nextValue = ['phone'].includes(name) ? digitsOnly(value) : value;
+    const nextValue = ['phone'].includes(name)
+      ? digitsOnly(value)
+      : name === 'forgotOtp'
+        ? String(value || '').replace(/\D/g, '').slice(0, 6)
+        : value;
     setFormData(prev => ({
       ...prev,
       [name]: nextValue
@@ -111,6 +173,68 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
     if (formError) {
       setFormError('');
     }
+  };
+
+  const clearForgotResetFields = () => {
+    setForgotStep('email');
+    setResendCooldown(0);
+    setResendCooldownUntil(0);
+    sessionStorage.removeItem(FORGOT_RESET_STORAGE_KEY);
+    setFormData(prev => ({
+      ...prev,
+      forgotOtp: '',
+      resetPassword: '',
+      resetConfirmPassword: '',
+    }));
+  };
+
+  const startResendCooldown = (seconds) => {
+    const nextSeconds = Math.max(0, Number(seconds) || DEFAULT_RESET_RESEND_SECONDS);
+    const cooldownUntil = Date.now() + nextSeconds * 1000;
+    setResendCooldown(nextSeconds);
+    setResendCooldownUntil(cooldownUntil);
+  };
+
+  const updateForgotOtp = (nextOtp) => {
+    setFormData(prev => ({
+      ...prev,
+      forgotOtp: String(nextOtp || '').replace(/\D/g, '').slice(0, 6),
+    }));
+  };
+
+  const handleOtpDigitChange = (index, value) => {
+    const digit = String(value || '').replace(/\D/g, '').slice(-1);
+    const digits = formData.forgotOtp.padEnd(6, ' ').split('');
+    digits[index] = digit || ' ';
+    updateForgotOtp(digits.join('').replace(/\s/g, ''));
+
+    if (digit && index < 5) {
+      otpInputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index, event) => {
+    if (event.key !== 'Backspace') return;
+
+    if (formData.forgotOtp[index]) {
+      const digits = formData.forgotOtp.padEnd(6, ' ').split('');
+      digits[index] = ' ';
+      updateForgotOtp(digits.join('').replace(/\s/g, ''));
+      return;
+    }
+
+    if (index > 0) {
+      otpInputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleOtpPaste = (event) => {
+    event.preventDefault();
+    const pastedOtp = event.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    updateForgotOtp(pastedOtp);
+
+    const nextIndex = Math.min(pastedOtp.length, 5);
+    otpInputRefs.current[nextIndex]?.focus();
   };
 
   // ✅ LOGIN API CALL
@@ -302,8 +426,103 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
 
       const data = await response.json();
 
-      alert(data.message || 'If an account exists, password reset instructions have been sent');
-      setActiveTab('login');
+      if (data.success) {
+        updateForgotOtp('');
+        setForgotStep('otp');
+        startResendCooldown(data.data?.resendAfterSeconds);
+        if (data.code === 'RESET_OTP_COOLDOWN') {
+          setFormError(data.message || 'Please wait before requesting another OTP.');
+        }
+      } else {
+        setFormError(data.message || 'Could not send reset OTP.');
+      }
+    } catch {
+      setFormError('Network error. Check if server is running.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyResetOtp = async (e) => {
+    e.preventDefault();
+    setFormError('');
+
+    if (!formData.forgotEmail.trim()) {
+      setForgotStep('email');
+      setFormError('Please enter your email address.');
+      return;
+    }
+
+    if (!/^\d{6}$/.test(formData.forgotOtp)) {
+      setFormError('Please enter the 6-digit OTP.');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch(`${API_URL}/api/auth/verify-reset-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: formData.forgotEmail,
+          otp: formData.forgotOtp,
+        }),
+        credentials: 'include'
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setForgotStep('password');
+      } else {
+        setFormError(data.message || 'Invalid or expired reset OTP.');
+      }
+    } catch {
+      setFormError('Network error. Check if server is running.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetPasswordSubmit = async (e) => {
+    e.preventDefault();
+    setFormError('');
+
+    if (formData.resetPassword.length < 12) {
+      setFormError('Password must be at least 12 characters long.');
+      return;
+    }
+
+    if (formData.resetPassword !== formData.resetConfirmPassword) {
+      setFormError('Passwords do not match.');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch(`${API_URL}/api/auth/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: formData.forgotEmail,
+          otp: formData.forgotOtp,
+          newPassword: formData.resetPassword,
+          confirmPassword: formData.resetConfirmPassword,
+        }),
+        credentials: 'include'
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        alert(data.message || 'Password reset successful. Please login again.');
+        clearForgotResetFields();
+        setActiveTab('login');
+      } else {
+        setFormError(data.message || 'Password reset failed.');
+      }
     } catch {
       setFormError('Network error. Check if server is running.');
     } finally {
@@ -472,7 +691,9 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
               <div className="auth-form-container">
                 {!currentUser && (
                   <div className="auth-brand-block">
-                    <div className="auth-brand-mark">E</div>
+                    <div className="auth-brand-mark" aria-hidden="true">
+                      <img src="/assets/applogo/entrack_dna_light_icon.svg" alt="" />
+                    </div>
                     <span>Entrack</span>
                   </div>
                 )}
@@ -564,7 +785,9 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
                     <div className="forgot-link">
                       <button 
                         type="button"
-                        onClick={() => setActiveTab('forgot')}
+                        onClick={() => {
+                          setActiveTab('forgot');
+                        }}
                       >
                         Forgot Password?
                       </button>
@@ -671,7 +894,10 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
                       Already have an account?{' '}
                       <button 
                         type="button"
-                        onClick={() => setActiveTab('login')}
+                        onClick={() => {
+                          clearForgotResetFields();
+                          setActiveTab('login');
+                        }}
                       >
                         Sign in
                       </button>
@@ -680,11 +906,11 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
                 )}
 
                 {/* FORGOT PASSWORD FORM */}
-                {!currentUser && activeTab === 'forgot' && (
+                {!currentUser && activeTab === 'forgot' && forgotStep === 'email' && (
                   <form id="forgotPasswordForm" onSubmit={handleForgotSubmit} autoComplete="off" noValidate>
                     <div className="form-header">
                       <h2>Reset Password</h2>
-                      <p>Enter your email to reset password</p>
+                      <p>Enter your email to receive a password reset OTP</p>
                     </div>
 
                     {formError && <div className="auth-form-error">{formError}</div>}
@@ -704,7 +930,7 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
                     </div>
                     
                     <button type="submit" className="auth-submit-btn" disabled={loading}>
-                      {loading ? 'Sending...' : 'Send Reset Link'}
+                      {loading ? 'Sending...' : 'Send Reset OTP'}
                     </button>
                     
                     <div className="switch-text">
@@ -716,6 +942,125 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
                         Sign in
                       </button>
                     </div>
+                  </form>
+                )}
+
+                {!currentUser && activeTab === 'forgot' && forgotStep === 'otp' && (
+                  <form id="verifyResetOtpForm" onSubmit={handleVerifyResetOtp} autoComplete="off" noValidate>
+                    <div className="form-header">
+                      <h2>Verify OTP</h2>
+                      <p>Enter the 6-digit OTP sent to your email</p>
+                    </div>
+
+                    {formError && <div className="auth-form-error">{formError}</div>}
+
+                    <div className="form-group">
+                      <label>Email Address</label>
+                      <input
+                        type="email"
+                        name="forgotEmail"
+                        value={formData.forgotEmail}
+                        onChange={handleInputChange}
+                        className="form-input"
+                        autoComplete="off"
+                        required
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label>OTP</label>
+                      <div className="otp-digit-row" onPaste={handleOtpPaste}>
+                        {Array.from({ length: 6 }).map((_, index) => (
+                          <input
+                            key={index}
+                            ref={(element) => {
+                              otpInputRefs.current[index] = element;
+                            }}
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            maxLength={1}
+                            value={formData.forgotOtp[index] || ''}
+                            onChange={(event) => handleOtpDigitChange(index, event.target.value)}
+                            onKeyDown={(event) => handleOtpKeyDown(index, event)}
+                            className="otp-digit-input"
+                            aria-label={`OTP digit ${index + 1}`}
+                            autoComplete={index === 0 ? 'one-time-code' : 'off'}
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    <button type="submit" className="auth-submit-btn" disabled={loading}>
+                      {loading ? 'Verifying...' : 'Verify OTP'}
+                    </button>
+
+                    <div className="switch-text">
+                      {resendCooldown > 0 ? (
+                        <span>Resend OTP in {resendCooldown}s</span>
+                      ) : (
+                        <>
+                          Didn't get it?{' '}
+                          <button type="button" onClick={handleForgotSubmit} disabled={loading}>
+                            Resend OTP
+                          </button>
+                        </>
+                      )}
+                    </div>
+
+                    <div className="switch-text">
+                      Wrong email?{' '}
+                      <button type="button" onClick={clearForgotResetFields}>
+                        Change email
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {!currentUser && activeTab === 'forgot' && forgotStep === 'password' && (
+                  <form id="resetPasswordForm" onSubmit={handleResetPasswordSubmit} autoComplete="off" noValidate>
+                    <div className="form-header">
+                      <h2>Create New Password</h2>
+                      <p>Your OTP is verified. Choose a new password.</p>
+                    </div>
+
+                    {formError && <div className="auth-form-error">{formError}</div>}
+
+                    <div className="form-group">
+                      <label>New Password</label>
+                      <input
+                        type="password"
+                        name="resetPassword"
+                        value={formData.resetPassword}
+                        onChange={handleInputChange}
+                        className="form-input"
+                        placeholder="Create a new password"
+                        minLength={12}
+                        maxLength={128}
+                        autoComplete="new-password"
+                        required
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label>Confirm Password</label>
+                      <input
+                        type="password"
+                        name="resetConfirmPassword"
+                        value={formData.resetConfirmPassword}
+                        onChange={handleInputChange}
+                        className="form-input"
+                        placeholder="Confirm new password"
+                        minLength={12}
+                        maxLength={128}
+                        autoComplete="new-password"
+                        required
+                      />
+                    </div>
+
+                    <button type="submit" className="auth-submit-btn" disabled={loading}>
+                      {loading ? 'Saving...' : 'Reset Password'}
+                    </button>
                   </form>
                 )}
 

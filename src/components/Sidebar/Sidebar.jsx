@@ -256,6 +256,17 @@ function Sidebar() {
         </Link>
 
         <Link
+          to="/chart"
+          className="nav-item"
+          onClick={() => setSidebarOpen(false)}
+          aria-label="Go to Chart"
+          title="Chart"
+        >
+          <ChartLine size={16} aria-hidden="true" />
+          <span className="nav-label">Chart</span>
+        </Link>
+
+        <Link
           to="/TradeView"
           className="nav-item"
           onClick={() => setSidebarOpen(false)}

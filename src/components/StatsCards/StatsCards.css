@@ -82,7 +82,7 @@
   border-radius: 999px;
   background: rgba(100, 116, 139, 0.1);
   color: var(--text-secondary);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -175,8 +175,8 @@
   padding-top: 10px;
   border-top: 1px solid var(--border-light);
   color: var(--text-muted);
-  font-size: 10px;
-  font-weight: 500;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .dark-mode .metric-card__bottom {

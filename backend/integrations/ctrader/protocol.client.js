@@ -126,7 +126,15 @@ function createProtocolClient({ getRoot, getSocket }) {
       try {
         const ErrorRes = root.lookupType('ProtoOAErrorRes');
         const errorData = ErrorRes.decode(decoded.payload);
-        pending.reject(new Error(errorData.description || errorData.errorCode || 'cTrader API error'));
+        const error = new Error(errorData.description || errorData.errorCode || 'cTrader API error');
+        error.status = 502;
+        error.payload = {
+          success: false,
+          error: error.message,
+          code: errorData.errorCode || null,
+          raw: errorData,
+        };
+        pending.reject(error);
       } catch (error) {
         pending.reject(error);
       }

@@ -15,6 +15,13 @@ const ctraderConfig = {
   currentSymbolId: null,
   accounts: [],
   currentAccount: null,
+  latestTicks: new Map(),
+  liveTickSubscriptions: new Set(),
+  latestDepth: new Map(),
+  depthSubscriptions: new Set(),
+  chartLiveConsumers: new Map(),
+  liveTrendbarSubscriptions: new Set(),
+  latestTrendbars: new Map(),
   isAppAuthed: false,
   isAccountAuthed: false,
 };

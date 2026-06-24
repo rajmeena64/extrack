@@ -50,16 +50,16 @@
   --title-line-height: 1.2;
   --title-weight: 650;
   --title-page-size: clamp(17px, 1.12vw, 20px);
-  --title-section-size: clamp(12px, 0.95vw, 13px);
-  --title-panel-size: 11px;
-  --title-card-size: 11px;
+  --title-section-size: clamp(13px, 0.95vw, 14px);
+  --title-panel-size: 12px;
+  --title-card-size: 12px;
   --title-page-tracking: 0.04em;
   --title-tight-tracking: 0.07em;
   --title-card-row-height: 24px;
 
   --font-body: 14px;
-  --font-label: 12px;
-  --font-caption: 11px;
+  --font-label: 13px;
+  --font-caption: 12px;
   --stat-value-size: clamp(20px, 1.65vw, 26px);
 
   --dashboard-grid-gap: 10px;
@@ -268,7 +268,9 @@ body {
   background: var(--bg-card);
   border-bottom: 1px solid var(--border-light);
   border-right: 1px solid var(--border-light);
-  pointer-events: none;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
 }
 
 .dark-mode .app-shell-header-logo {
@@ -277,8 +279,33 @@ body {
   border-right-color: #242424;
 }
 
+.app-shell-header-logo:hover,
+.app-shell-header-logo:focus-visible {
+  background: var(--bg-hover);
+}
+
+.dark-mode .app-shell-header-logo:hover,
+.dark-mode .app-shell-header-logo:focus-visible {
+  background: #101010;
+}
+
 .app-shell-header-logo__brand .app-brand__wordmark {
   display: none;
+}
+
+.app-shell-header-logo__brand .app-brand__mark {
+  width: 35px;
+  height: 35px;
+  flex-basis: 35px;
+  border-radius: 11px;
+  box-shadow: none;
+  overflow: hidden;
+}
+
+.app-shell-header-logo__brand .app-brand__image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 @media (max-width: 768px) {
