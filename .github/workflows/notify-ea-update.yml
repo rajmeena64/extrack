@@ -1,0 +1,50 @@
+name: Notify EA Update
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "EA version for manual test"
+        required: true
+        default: "test-1"
+
+  release:
+    types: [published]
+
+jobs:
+  notify-mqtt:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install MQTT client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mosquitto-clients
+
+      - name: Publish MQTT update message
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            VERSION="${{ github.event.release.tag_name }}"
+            EVENT_TYPE="ea_update"
+            RELEASE_URL="${{ github.event.release.html_url }}"
+          else
+            VERSION="${{ github.event.inputs.version }}"
+            EVENT_TYPE="ea_update_test"
+            RELEASE_URL=""
+          fi
+
+          PAYLOAD="{\"type\":\"$EVENT_TYPE\",\"ea\":\"EntrackEA\",\"version\":\"$VERSION\",\"repo\":\"${{ github.repository }}\",\"releaseUrl\":\"$RELEASE_URL\",\"asset\":\"EntrackEA.ex5\",\"restartRequired\":true}"
+
+          echo "Publishing MQTT payload:"
+          echo "$PAYLOAD"
+
+          mosquitto_pub \
+            -h "${{ secrets.MQTT_HOST }}" \
+            -p "${{ secrets.MQTT_PORT }}" \
+            --cafile /etc/ssl/certs/ca-certificates.crt \
+            -u "${{ secrets.MQTT_USERNAME }}" \
+            -P "${{ secrets.MQTT_PASSWORD }}" \
+            -t "${{ secrets.MQTT_TOPIC }}" \
+            -m "$PAYLOAD" \
+            -d
