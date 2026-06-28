@@ -11,12 +11,15 @@ import PageHeader from "../../Layout/PageHeader";
 import api from "../../../utils/serve";
 import { normalizeStoredSymbol } from "../../../utils/symbols";
 import { getTradeDisplayDate } from "../../../utils/tradeTime";
+import { getUserSafeError } from "../../../utils/safeErrors";
+import { useAuth } from "../../../context/AuthContext";
 
 function ThatTrade({ trades = [] }) {
   const { tradeId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   // States for editable fields
   const [strategy, setStrategy] = useState("");
@@ -126,7 +129,7 @@ function ThatTrade({ trades = [] }) {
       
       if (data.success) {
         setSaveMessage("✅ Strategy saved!");
-        queryClient.invalidateQueries({ queryKey: ['trades'] });
+        if (user?.ID) queryClient.invalidateQueries({ queryKey: ['trades', user.ID] });
         setShowStrategyModal(false);
         setTimeout(() => setSaveMessage(""), 3000);
       } else {
@@ -154,7 +157,7 @@ function ThatTrade({ trades = [] }) {
       
       if (data.success) {
         setSaveMessage("✅ Notes saved!");
-        queryClient.invalidateQueries({ queryKey: ['trades'] });
+        if (user?.ID) queryClient.invalidateQueries({ queryKey: ['trades', user.ID] });
         setShowNoteModal(false);
         setTimeout(() => setSaveMessage(""), 3000);
       } else {
@@ -181,7 +184,7 @@ function ThatTrade({ trades = [] }) {
       
       if (data.success) {
         setScreenshots(data.screenshots || []);
-        queryClient.invalidateQueries({ queryKey: ['trades'] });
+        if (user?.ID) queryClient.invalidateQueries({ queryKey: ['trades', user.ID] });
         setSaveMessage("✅ Screenshot uploaded!");
         setTimeout(() => setSaveMessage(""), 3000);
       } else {
@@ -217,7 +220,7 @@ function ThatTrade({ trades = [] }) {
       
       if (data.success) {
         setScreenshots(data.screenshots || []);
-        queryClient.invalidateQueries({ queryKey: ['trades'] });
+        if (user?.ID) queryClient.invalidateQueries({ queryKey: ['trades', user.ID] });
         setSaveMessage("✅ Screenshot deleted!");
         setTimeout(() => setSaveMessage(""), 3000);
       } else {
@@ -310,7 +313,7 @@ function ThatTrade({ trades = [] }) {
 
       setAiAnalysis(data.analysis);
     } catch (error) {
-      setAiError(error.response?.data?.error || error.message || "AI trade analysis failed.");
+      setAiError(getUserSafeError(error, "AI trade analysis failed."));
     } finally {
       setAiLoading(false);
     }

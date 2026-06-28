@@ -9,7 +9,10 @@ import TradesList from '@/components/myTrades/TradesList';
 import ProgressTracker from '@/components/MainContent/ProgressTracker';
 import api from '@/utils/serve';
 import { markPerf, measurePerf } from '@/utils/perfMarks';
-import { loadCachedUserSettings, loadUserSettings } from '../../utils/userSettings';
+import { loadCachedUserSettings } from '../../utils/userSettings';
+import { getUserSafeError } from '../../utils/safeErrors';
+import { useAuth } from '../../context/AuthContext';
+import { useUserSettings } from '../../hooks/useUserSettings';
 
 const ActivityChart = lazy(() => import('@/components/MainContent/ActivityChart'));
 const Radar = lazy(() => import('@/components/MainContent/Radar'));
@@ -154,26 +157,14 @@ function Dashboard({
 }) {
   const [layout, setLayout] = useState(getCachedDashboardLayout);
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const userSettingsQuery = useUserSettings();
   const [syncJobs, setSyncJobs] = useState({});
 
   const [layoutMode, setLayoutMode] = useState(getDashboardLayoutMode);
   const layoutChangeVersion = useRef(0);
 
-  const loadLayout = () => {
-    const requestVersion = layoutChangeVersion.current;
-
-    loadUserSettings().then(settings => {
-      if (requestVersion !== layoutChangeVersion.current) return;
-
-      setLayout({
-        rowOrder: settings?.dashboard?.rowOrder || DEFAULT_DASHBOARD_LAYOUT.rowOrder,
-        columnOrder: settings?.dashboard?.columnOrder || DEFAULT_DASHBOARD_LAYOUT.columnOrder
-      });
-    }).catch(() => null);
-  };
-
   useEffect(() => {
-    loadLayout();
     const handleResize = () => setLayoutMode(getDashboardLayoutMode());
     const handleLayoutChange = (event) => {
       layoutChangeVersion.current += 1;
@@ -197,6 +188,15 @@ function Dashboard({
       window.removeEventListener('dashboard-layout-change', handleLayoutChange);
     };
   }, []);
+
+  useEffect(() => {
+    if (!userSettingsQuery.data || layoutChangeVersion.current > 0) return;
+
+    setLayout({
+      rowOrder: userSettingsQuery.data?.dashboard?.rowOrder || DEFAULT_DASHBOARD_LAYOUT.rowOrder,
+      columnOrder: userSettingsQuery.data?.dashboard?.columnOrder || DEFAULT_DASHBOARD_LAYOUT.columnOrder,
+    });
+  }, [userSettingsQuery.data]);
 
   useEffect(() => {
     markPerf('dashboard-shell-visible');
@@ -244,7 +244,9 @@ function Dashboard({
 
           if (['success', 'failed'].includes(nextJob.status)) {
             queryClient.invalidateQueries({ queryKey: ['mt5-accounts'] });
-            queryClient.invalidateQueries({ queryKey: ['trades'] });
+            if (user?.ID) {
+              queryClient.invalidateQueries({ queryKey: ['trades', user.ID] });
+            }
           }
         } catch (error) {
           setSyncJobs((previous) => ({
@@ -253,7 +255,7 @@ function Dashboard({
               ...previous[accountId],
               status: 'failed',
               progressStatus: 'failed',
-              errorMessage: error.response?.data?.error || error.message || 'Unable to check sync status',
+              errorMessage: getUserSafeError(error, 'Unable to check sync status. Please try again.'),
             },
           }));
         }
@@ -261,7 +263,7 @@ function Dashboard({
     }, 2500);
 
     return () => window.clearTimeout(timer);
-  }, [queryClient, syncJobs]);
+  }, [queryClient, syncJobs, user?.ID]);
 
   const handleSyncNow = async (account) => {
     if (!account?.id) return;
@@ -301,11 +303,11 @@ function Dashboard({
           jobId: existingJob.id,
           status: existingJob.status,
           progressStatus: existingJob.progress_status || existingJob.status,
-          errorMessage: error.response?.data?.error || '',
+          errorMessage: getUserSafeError(error, 'Unable to start sync. Please try again.'),
         } : {
           status: 'failed',
           progressStatus: 'failed',
-          errorMessage: error.response?.data?.error || error.message || 'Unable to start sync',
+          errorMessage: getUserSafeError(error, 'Unable to start sync. Please try again.'),
         },
       }));
     }
@@ -407,7 +409,7 @@ function Dashboard({
       : 'minmax(220px, 0.68fr) minmax(0, 1.32fr)';
   }, [layout.columnOrder, layoutMode]);
 
-  const MainGrid = (
+  const MainGrid = useMemo(() => (
     <section 
       className="dashboard-layout dashboard-main-grid" 
       style={{
@@ -485,7 +487,7 @@ function Dashboard({
         )}
       </div>
     </section>
-  );
+  ), [currencyCode, gridAreas, gridColumns, isLoading, tradeMode, trades]);
 
   return (
     <MainContentWrapper>
@@ -516,4 +518,4 @@ function Dashboard({
   );
 }
 
-export default Dashboard;
+export default React.memo(Dashboard);

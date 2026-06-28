@@ -10,9 +10,17 @@ import { API_URL } from "../../../utils/constants";
 import { useAuth } from '../../../context/AuthContext';
 import { useAppDialog } from '../../../context/AppDialogContext';
 import { clearClientStorage } from '../../../utils/clientStorage';
+import { getUserSafeError } from '../../../utils/safeErrors';
 
 const FORGOT_RESET_STORAGE_KEY = 'entrack:forgotReset';
 const DEFAULT_RESET_RESEND_SECONDS = 60;
+
+const getFetchSafeError = (response, data, fallbackMessage) => getUserSafeError({
+  response: {
+    status: response?.status,
+    data,
+  },
+}, fallbackMessage);
 
 function GoogleIcon() {
   return (
@@ -597,10 +605,10 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
         alert('Profile updated successfully!');
         setIsEditModalOpen(false);
       } else {
-        alert('Error: ' + data.error);
+        alert(getFetchSafeError(response, data, 'Could not update profile. Please try again.'));
       }
     } catch {
-      alert('Network error');
+      alert('Something went wrong. Please try again.');
     }
   };
 
@@ -629,10 +637,10 @@ function UserLoginModal({ isOpen, onClose, initialTab = 'login' }) {
         setIsDeleteModalOpen(false);
         window.dispatchEvent(new Event('auth:logout'));
       } else {
-        alert('Error: ' + data.error);
+        alert(getFetchSafeError(response, data, 'Could not delete account. Please try again.'));
       }
     } catch {
-      alert('Network error');
+      alert('Something went wrong. Please try again.');
     }
   };
 

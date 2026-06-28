@@ -45,7 +45,7 @@ router.get('/get-mt5-accounts', authCheck, async (req, res) => {
         res.json({ success: true, accounts });
 
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: 'Something went wrong. Please try again.' });
     }
 });
 
@@ -75,7 +75,7 @@ router.post('/update-dashboard-currency', authCheck, async (req, res) => {
             accounts: result.rows
         });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: 'Something went wrong. Please try again.' });
     }
 });
 
@@ -113,7 +113,7 @@ router.post('/update-mt5-password', authCheck, async (req, res) => {
         res.json({ success: true, message: "MT5 password updated successfully" });
 
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: 'Something went wrong. Please try again.' });
     }
 });
 
@@ -158,7 +158,7 @@ router.post('/save-mt5-account', authCheck, async (req, res) => {
         res.json({ success: true, message: 'Account saved successfully' });
 
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: 'Something went wrong. Please try again.' });
     }
 });
 
@@ -204,13 +204,14 @@ router.delete('/delete-mt5-account/:id', authCheck, async (req, res) => {
 
     } catch (error) {
         await client.query('ROLLBACK');
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: 'Something went wrong. Please try again.' });
     } finally {
         client.release();
     }
 });
 
 module.exports = router;
+
 
 
 

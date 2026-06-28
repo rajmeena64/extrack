@@ -273,6 +273,12 @@ body {
   cursor: pointer;
 }
 
+.route-soft-fallback {
+  min-height: 120px;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .dark-mode .app-shell-header-logo {
   background: #070707;
   border-bottom-color: #242424;
@@ -331,6 +337,23 @@ body {
 
 .main-content:has(.dashboard-header) {
   padding-top: calc(var(--app-shell-header-height) + 14px);
+}
+
+.dashboard.app-route-chart .app-shell-header-logo,
+.dashboard.app-route-chart > .sidebar,
+.dashboard.app-route-chart > .sidebar-toggle {
+  display: none !important;
+}
+
+.dashboard.app-route-chart .main-content {
+  width: 100vw;
+  max-width: 100vw;
+  min-height: 100vh;
+  height: 100vh;
+  margin-left: 0;
+  padding: 0;
+  overflow: hidden;
+  scrollbar-gutter: auto;
 }
 
 .light-text {
@@ -501,9 +524,12 @@ body,
 
 .app-page-header__left {
   gap: 10px;
+  flex: 1 1 auto;
+  overflow: hidden;
 }
 
 .app-page-header__right {
+  flex: 0 1 auto;
   justify-content: flex-end;
   gap: 8px;
   flex-wrap: nowrap;
@@ -536,7 +562,15 @@ body,
   flex-direction: column;
   height: 100vh;
   min-height: 100vh;
+  padding-right: 0;
+  padding-left: 0;
   overflow: hidden;
+}
+
+.analytics-page .app-page-header,
+.economic-calendar-page .app-page-header {
+  margin-right: 0;
+  margin-left: 0;
 }
 
 ::-webkit-scrollbar {
@@ -604,6 +638,22 @@ body,
     margin-left: 10px;
     padding: 0 12px 12px;
   }
+
+  .app-page-header:not(.dashboard-header) {
+    min-width: 0;
+    gap: 8px;
+  }
+
+  .app-page-header:not(.dashboard-header) .app-page-header__left {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .app-page-header:not(.dashboard-header) .app-page-header__right {
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: min(58vw, 320px);
+  }
 }
 
 @media (max-width: 768px) {
@@ -641,5 +691,26 @@ body,
     max-width: 100%;
     margin-left: 12px;
     padding: 0 12px 12px;
+  }
+
+  .app-page-header:not(.dashboard-header) {
+    min-width: 0;
+    gap: 6px;
+  }
+
+  .app-page-header:not(.dashboard-header) .app-page-header__left {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .app-page-header:not(.dashboard-header) .app-page-header__right {
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: min(52vw, 220px);
+  }
+
+  .app-page-header:not(.dashboard-header) .app-page-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }

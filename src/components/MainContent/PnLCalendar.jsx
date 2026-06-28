@@ -13,9 +13,11 @@ import './PnLCalendar.css';
 import { formatCompactCurrency } from '../../utils/Currency';
 import api from '../../utils/serve';
 import { getTradeDisplayDate } from '../../utils/tradeTime';
-import { loadCachedUserSettings, loadUserSettings, saveUserSettings } from '../../utils/userSettings';
+import { loadCachedUserSettings, saveUserSettings } from '../../utils/userSettings';
 import InfoTooltip from '../Common/InfoTooltip';
 import CustomSelect from '../Common/CustomSelect';
+import { useAuth } from '../../context/AuthContext';
+import { useUserSettings } from '../../hooks/useUserSettings';
 
 const MONTH_NAMES = [
   'January',
@@ -71,6 +73,8 @@ const getFirstWeekdayOffset = (day, weekStartsOn) => (
 function PnLCalendar({ trades, currencyCode = 'USD' }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const userSettingsQuery = useUserSettings();
   const calendarShellRef = useRef(null);
   const calendarSettingsVersion = useRef(0);
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -99,19 +103,9 @@ function PnLCalendar({ trades, currencyCode = 'USD' }) {
   }, [breakevenMenu]);
 
   useEffect(() => {
-    let isCurrent = true;
-
-    loadUserSettings()
-      .then((settings) => {
-        if (!isCurrent || calendarSettingsVersion.current > 0) return;
-        setCalendarSettings(normalizeCalendarSettings(settings?.pnlCalendar));
-      })
-      .catch(() => null);
-
-    return () => {
-      isCurrent = false;
-    };
-  }, []);
+    if (!userSettingsQuery.data || calendarSettingsVersion.current > 0) return;
+    setCalendarSettings(normalizeCalendarSettings(userSettingsQuery.data?.pnlCalendar));
+  }, [userSettingsQuery.data]);
 
   useEffect(() => {
     if (!settingsOpen) return undefined;
@@ -529,22 +523,24 @@ function PnLCalendar({ trades, currencyCode = 'USD' }) {
         ? { ...previous, isBreakeven: nextValue }
         : previous
     ));
-    queryClient.setQueriesData({ queryKey: ['trades'] }, (previousTrades) => (
-      Array.isArray(previousTrades)
-        ? previousTrades.map((trade) => {
-            const tradeDate = getTradeDisplayDate(trade);
-            if (!tradeDate) return trade;
+    if (user?.ID) {
+      queryClient.setQueriesData({ queryKey: ['trades', user.ID] }, (previousTrades) => (
+        Array.isArray(previousTrades)
+          ? previousTrades.map((trade) => {
+              const tradeDate = getTradeDisplayDate(trade);
+              if (!tradeDate) return trade;
 
-            const tradeDateKey = `${tradeDate.getFullYear()}-${String(tradeDate.getMonth() + 1).padStart(2, '0')}-${String(
-              tradeDate.getDate()
-            ).padStart(2, '0')}`;
+              const tradeDateKey = `${tradeDate.getFullYear()}-${String(tradeDate.getMonth() + 1).padStart(2, '0')}-${String(
+                tradeDate.getDate()
+              ).padStart(2, '0')}`;
 
-            return tradeDateKey === dateKey
-              ? { ...trade, is_breakeven: nextValue }
-              : trade;
-          })
-        : previousTrades
-    ));
+              return tradeDateKey === dateKey
+                ? { ...trade, is_breakeven: nextValue }
+                : trade;
+            })
+          : previousTrades
+      ));
+    }
 
     try {
       const { data } = await api.patch('/trades/breakeven-day', {
@@ -554,7 +550,9 @@ function PnLCalendar({ trades, currencyCode = 'USD' }) {
       if (!data?.success) {
         throw new Error(data?.error || 'Breakeven update failed');
       }
-      await queryClient.invalidateQueries({ queryKey: ['trades'] });
+      if (user?.ID) {
+        await queryClient.invalidateQueries({ queryKey: ['trades', user.ID] });
+      }
     } catch {
       setPendingBreakevenDays((previous) => ({
         ...previous,

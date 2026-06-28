@@ -7,12 +7,12 @@ module.exports = function wsBroadcast(req, res, next) {
     const wss = req.app.get('wss');
     if (!wss) return;
 
-    // Trigger if URL contains trade/api/mt5 OR if broadcastUserIds is explicitly set
-    const shouldBroadcast = 
-      req.originalUrl.includes('trade') || 
-      req.originalUrl.includes('api') || 
-      req.originalUrl.includes('mt5') ||
-      req.broadcastUserIds;
+    const isMutatingRequest = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method);
+    const isTradeMutation =
+      req.originalUrl.includes('trade') ||
+      req.originalUrl.includes('api') ||
+      req.originalUrl.includes('mt5');
+    const shouldBroadcast = Boolean(req.broadcastUserIds) || (isMutatingRequest && isTradeMutation);
 
     if (shouldBroadcast) {
       const targetUserIds = new Set(

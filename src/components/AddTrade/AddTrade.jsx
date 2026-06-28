@@ -30,39 +30,39 @@ function AddTrade({ trades }) {
           title={activeTab === 'manual' ? 'Add Trade' : 'Trade Import'}
           onBack={() => navigate('/')}
           className="add-trade-header"
-          actions={(
-            <>
-            {activeTab === 'manual' && (
-              <div className="broker-select-card">
-                <LegacyIcon className="fas fa-network-wired broker-select-icon" />
-                <span className="broker-select-card__label">Broker</span>
-                <CustomSelect
-                  className="broker-dropdown"
-                  value={selectedBrokerId}
-                  onChange={(e) => setSelectedBrokerId(parseInt(e.target.value, 10))}
-                  options={brokers.map((broker) => ({ value: broker.id, label: broker.name }))}
-                  ariaLabel="Broker"
-                />
-              </div>
-            )}
-
-            <div className="trade-tabs">
-              <button
-                className={`tab-btn ${activeTab === 'manual' ? 'active' : ''}`}
-                onClick={() => setActiveTab('manual')}
-              >
-                <LegacyIcon className="fas fa-keyboard" /> Manually
-              </button>
-              <button
-                className={`tab-btn ${activeTab === 'api' ? 'active' : ''}`}
-                onClick={() => setActiveTab('api')}
-              >
-                <LegacyIcon className="fas fa-sync-alt" /> Exact Sync
-              </button>
+          actions={activeTab === 'manual' ? (
+            <div className="broker-select-card">
+              <LegacyIcon className="fas fa-network-wired broker-select-icon" />
+              <span className="broker-select-card__label">Broker</span>
+              <CustomSelect
+                className="broker-dropdown"
+                value={selectedBrokerId}
+                onChange={(e) => setSelectedBrokerId(parseInt(e.target.value, 10))}
+                options={brokers.map((broker) => ({ value: broker.id, label: broker.name }))}
+                ariaLabel="Broker"
+              />
             </div>
-            </>
-          )}
+          ) : null}
         />
+
+        <section className="add-trade-mode-bar" aria-label="Trade entry mode">
+          <div className="trade-tabs">
+            <button
+              type="button"
+              className={`tab-btn ${activeTab === 'manual' ? 'active' : ''}`}
+              onClick={() => setActiveTab('manual')}
+            >
+              <LegacyIcon className="fas fa-keyboard" /> Manually
+            </button>
+            <button
+              type="button"
+              className={`tab-btn ${activeTab === 'api' ? 'active' : ''}`}
+              onClick={() => setActiveTab('api')}
+            >
+              <LegacyIcon className="fas fa-sync-alt" /> Exact Sync
+            </button>
+          </div>
+        </section>
 
         <section className="add-trade-stage">
           {activeTab === 'manual' ? (

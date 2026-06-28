@@ -233,7 +233,7 @@ router.post('/save-trade', authCheck, saveTradeRateLimiter, async (req, res) => 
             screenshotCount: screenshotsJson ? JSON.parse(screenshotsJson).length : 0
         });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: 'Something went wrong. Please try again.' });
     }
 });
 
@@ -338,7 +338,7 @@ router.post('/save-bulk-trades', authCheck, bulkTradeRateLimiter, async (req, re
             results.push({ success: true, trade: normalizedSymbol });
             successCount++;
         } catch (error) {
-            results.push({ success: false, trade: trade.symbol, error: error.message });
+            results.push({ success: false, trade: trade.symbol, error: 'Something went wrong. Please try again.' });
             errorCount++;
         }
     }
@@ -491,7 +491,7 @@ async function ingestApiTrades(req, res) {
                 );
             } catch (err) {
                 errorCount++;
-                results.push({ success: false, error: err.message });
+                results.push({ success: false, error: 'Something went wrong. Please try again.' });
             }
         }
 
@@ -530,7 +530,7 @@ async function ingestApiTrades(req, res) {
 
         res.json({ success: true, errorCount, skippedCount, results });
     } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
+        res.status(500).json({ success: false, error: 'Something went wrong. Please try again.' });
     }
 }
 
@@ -549,7 +549,7 @@ router.get('/user-trades/:userid?', authCheck, async (req, res) => {
 
         res.json({ success: true, trades: result.rows });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: 'Something went wrong. Please try again.' });
     }
 });
 
@@ -562,7 +562,7 @@ router.get('/user-api-trades/:userid?', authCheck, async (req, res) => {
 
         res.json({ success: true, trades: result.rows });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: 'Something went wrong. Please try again.' });
     }
 });
 
@@ -603,7 +603,7 @@ router.patch('/trades/breakeven-day', authCheck, async (req, res) => {
             apiCount: apiResult.rowCount
         });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: 'Something went wrong. Please try again.' });
     }
 });
 
@@ -654,7 +654,7 @@ router.delete('/trades/:uniqueId', authCheck, async (req, res) => {
             symbol: deletedTrade.symbol
         });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: 'Something went wrong. Please try again.' });
     }
 });
 
@@ -683,7 +683,7 @@ router.delete('/api-trades/:id', authCheck, async (req, res) => {
             symbol: deletedTrade.symbol
         });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: 'Something went wrong. Please try again.' });
     }
 });
 
@@ -717,7 +717,7 @@ router.post('/update-trade-note', authCheck, async (req, res) => {
             symbol: updatedTrade.symbol
         });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: 'Something went wrong. Please try again.' });
     }
 });
 
@@ -759,7 +759,7 @@ router.get('/trade-with-screenshots/:tradeId', authCheck, async (req, res) => {
             }
         });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: 'Something went wrong. Please try again.' });
     }
 });
 
@@ -786,7 +786,7 @@ router.post('/save-mt5-credentials', authCheck, async (req, res) => {
             return res.status(409).json({ success: false, error: 'This MT5 account already exists' });
         }
 
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: 'Something went wrong. Please try again.' });
     }
 });
 
@@ -820,9 +820,10 @@ router.post('/test-mt5-connection', authCheck, async (req, res) => {
 
         res.json({ success: true, message: 'Connected to MT5 successfully!' });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: 'Something went wrong. Please try again.' });
     }
 });
 
 module.exports = router;
 module.exports.ensureApiTradeMetadataColumns = ensureApiTradeMetadataColumns;
+

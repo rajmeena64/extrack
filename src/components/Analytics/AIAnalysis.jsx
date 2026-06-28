@@ -4,6 +4,7 @@ import api from "../../utils/serve";
 import CustomSelect from "../Common/CustomSelect";
 import { formatCurrency } from "../../utils/Currency";
 import { getTradeDisplayTime, toTradeDateKey } from "../../utils/tradeTime";
+import { getUserSafeError } from "../../utils/safeErrors";
 
 const toDateKey = (value) => {
   const date = value instanceof Date ? value : new Date(value);
@@ -92,11 +93,7 @@ function AIAnalysis({ trades = [], currencyCode = "USD" }) {
       setAnalysis(data.analysis);
       setGrounding(data.grounding || null);
     } catch (requestError) {
-      setError(
-        requestError.response?.data?.error ||
-          requestError.message ||
-          "AI analysis could not be generated."
-      );
+      setError(getUserSafeError(requestError, "AI analysis could not be generated."));
     } finally {
       setIsLoading(false);
     }

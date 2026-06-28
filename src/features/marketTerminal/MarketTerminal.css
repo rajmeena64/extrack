@@ -23,6 +23,29 @@
   background: #f3f4f6;
 }
 
+.market-back-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 86px;
+  min-width: 86px;
+  height: 38px;
+  border: 0;
+  border-right: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #111827;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.market-back-button:hover {
+  background: #eef2ff;
+  color: #2962ff;
+}
+
 .market-tabs__list {
   display: flex;
   min-width: 0;

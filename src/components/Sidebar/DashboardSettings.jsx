@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import LegacyIcon from '../Common/LegacyIcon';
 import { useAuth } from '../../context/AuthContext';
-import { loadCachedUserSettings, loadUserSettings, saveUserSettings } from '../../utils/userSettings';
+import { loadCachedUserSettings, saveUserSettings } from '../../utils/userSettings';
+import { useUserSettings } from '../../hooks/useUserSettings';
 
 const DEFAULT_DASHBOARD_LAYOUT = {
   rowOrder: 'overview-first',
@@ -26,6 +27,7 @@ const notifyDashboardLayoutChange = (layout) => {
 
 function DashboardSettings() {
   const { isAuthenticated } = useAuth();
+  const userSettingsQuery = useUserSettings();
   const hasLocalLayoutChange = useRef(false);
   const [rowOrder, setRowOrder] = useState(() => getCachedDashboardLayout().rowOrder);
   const [columnOrder, setColumnOrder] = useState(() => getCachedDashboardLayout().columnOrder);
@@ -33,27 +35,20 @@ function DashboardSettings() {
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    let isCurrent = true;
-
-    loadUserSettings()
-      .then((settings) => {
-        const savedOrder = settings?.dashboard?.rowOrder || DEFAULT_DASHBOARD_LAYOUT.rowOrder;
-        const savedColOrder = settings?.dashboard?.columnOrder || DEFAULT_DASHBOARD_LAYOUT.columnOrder;
-        if (isCurrent && !hasLocalLayoutChange.current) {
-          setRowOrder(savedOrder);
-          setColumnOrder(savedColOrder);
-          notifyDashboardLayoutChange({
-            rowOrder: savedOrder,
-            columnOrder: savedColOrder,
-          });
-        }
-      })
-      .catch(() => null);
-
-    return () => {
-      isCurrent = false;
-    };
-  }, [isAuthenticated]);
+    const savedOrder = userSettingsQuery.data?.dashboard?.rowOrder || DEFAULT_DASHBOARD_LAYOUT.rowOrder;
+    const savedColOrder = userSettingsQuery.data?.dashboard?.columnOrder || DEFAULT_DASHBOARD_LAYOUT.columnOrder;
+    if (!hasLocalLayoutChange.current) {
+      window.queueMicrotask(() => {
+        if (hasLocalLayoutChange.current) return;
+        setRowOrder(savedOrder);
+        setColumnOrder(savedColOrder);
+        notifyDashboardLayoutChange({
+          rowOrder: savedOrder,
+          columnOrder: savedColOrder,
+        });
+      });
+    }
+  }, [isAuthenticated, userSettingsQuery.data]);
 
   const updateLayout = (updates) => {
     const nextRowOrder = updates.rowOrder !== undefined ? updates.rowOrder : rowOrder;

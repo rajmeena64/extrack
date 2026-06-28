@@ -1,21 +1,21 @@
 import React, { lazy, Suspense, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  CalendarDays,
-  ChartColumn,
-  ChartLine,
+  CalendarRange,
+  ChartCandlestick,
   ChevronDown,
   ChevronsLeft,
   ChevronsRight,
+  Gauge,
   Grid2x2,
-  Home,
+  History,
   LogOut,
-  Menu,
   Moon,
   PieChart,
   Plus,
   Settings,
   Sun,
+  Table2,
   X,
 } from '../../icons/lucideIcons';
 import { useTheme } from '../../context/ThemeContext';  // ✅ ADDED
@@ -23,8 +23,9 @@ import { useTheme } from '../../context/ThemeContext';  // ✅ ADDED
 import './Sidebar.css';
 import { API_URL } from '../../utils/constants';
 import { useAuth } from '../../context/AuthContext';
-import { loadCachedUserSettings, loadUserSettings, saveUserSettings } from '../../utils/userSettings';
+import { loadCachedUserSettings, saveUserSettings } from '../../utils/userSettings';
 import { clearClientStorage } from '../../utils/clientStorage';
+import { useUserSettings } from '../../hooks/useUserSettings';
 
 const DashboardSettings = lazy(() => import('./DashboardSettings'));
 
@@ -35,6 +36,7 @@ function Sidebar() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [hoverLocked, setHoverLocked] = useState(Boolean(cachedPreferences.sidebarHoverLocked));
   const { isAuthenticated, setUser } = useAuth();
+  const userSettingsQuery = useUserSettings();
 
   const settingsRef = useRef(null);
   const settingsToggleRef = useRef(null);
@@ -123,28 +125,19 @@ function Sidebar() {
       return;
     }
 
-    let isCurrent = true;
     hasUserChangedDarkMode.current = false;
     hasUserChangedHoverLock.current = false;
 
-    loadUserSettings()
-      .then((settings) => {
-        const savedDarkMode = settings?.preferences?.darkMode;
-        if (isCurrent && !hasUserChangedDarkMode.current && typeof savedDarkMode === 'boolean') {
-          setDarkModePreference(savedDarkMode);
-        }
+    const savedDarkMode = userSettingsQuery.data?.preferences?.darkMode;
+    if (!hasUserChangedDarkMode.current && typeof savedDarkMode === 'boolean') {
+      setDarkModePreference(savedDarkMode);
+    }
 
-        const savedHoverLocked = settings?.preferences?.sidebarHoverLocked;
-        if (isCurrent && !hasUserChangedHoverLock.current && typeof savedHoverLocked === 'boolean') {
-          setHoverLocked(savedHoverLocked);
-        }
-      })
-      .catch(() => null);
-
-    return () => {
-      isCurrent = false;
-    };
-  }, [isAuthenticated, setDarkModePreference]);
+    const savedHoverLocked = userSettingsQuery.data?.preferences?.sidebarHoverLocked;
+    if (!hasUserChangedHoverLock.current && typeof savedHoverLocked === 'boolean') {
+      setHoverLocked(savedHoverLocked);
+    }
+  }, [isAuthenticated, setDarkModePreference, userSettingsQuery.data]);
 
   const handleDarkModeChange = () => {
     const nextDarkMode = !darkMode;
@@ -192,11 +185,15 @@ function Sidebar() {
       <button
         className={`sidebar-toggle ${sidebarOpen ? 'sidebar-toggle--open' : ''}`}
         onClick={toggleSidebar}
-        aria-label={sidebarOpen ? 'Close navigation menu' : 'Open navigation menu'}
-        title={sidebarOpen ? 'Close navigation menu' : 'Open navigation menu'}
+        aria-label="Open navigation menu"
+        title="Open navigation menu"
       >
         <span className="sidebar-toggle__icon" aria-hidden="true">
-          {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
+          <span className="sidebar-menu-mark">
+            <span />
+            <span />
+            <span />
+          </span>
         </span>
       </button>
 
@@ -210,7 +207,7 @@ function Sidebar() {
           aria-label="Go to Dashboard"
           title="Dashboard"
         >
-          <Home size={16} aria-hidden="true" />  <span className="nav-label">Dashboard</span>
+          <Gauge size={16} aria-hidden="true" /> <span className="nav-label">Dashboard</span>
         </Link>
 
         <Link
@@ -240,7 +237,7 @@ function Sidebar() {
           aria-label="Go to Economic Calendar"
           title="Economic Calendar"
         >
-          <CalendarDays size={16} aria-hidden="true" />
+          <CalendarRange size={16} aria-hidden="true" />
           <span className="nav-label">Economic Calendar</span>
         </Link>
 
@@ -251,7 +248,7 @@ function Sidebar() {
           aria-label="Go to Backtesting"
           title="Backtesting"
         >
-          <ChartColumn size={16} aria-hidden="true" />
+          <History size={16} aria-hidden="true" />
           <span className="nav-label">Backtesting</span>
         </Link>
 
@@ -262,7 +259,7 @@ function Sidebar() {
           aria-label="Go to Chart"
           title="Chart"
         >
-          <ChartLine size={16} aria-hidden="true" />
+          <ChartCandlestick size={16} aria-hidden="true" />
           <span className="nav-label">Chart</span>
         </Link>
 
@@ -273,7 +270,7 @@ function Sidebar() {
           aria-label="Go to Trades"
           title="Trades"
         >
-          <ChartLine size={16} aria-hidden="true" />
+          <Table2 size={16} aria-hidden="true" />
           <span className="nav-label">Trades</span>
         </Link>
 
@@ -300,10 +297,20 @@ function Sidebar() {
               <div className="sub-nav-item settings-dark-mode-item">
                 <Moon size={16} aria-hidden="true" />
                 <span>Dark mode</span>
-                <label className="switch">
-                  <input type="checkbox" checked={darkMode} onChange={handleDarkModeChange} aria-label="Toggle dark mode" />
-                  <span className="slider round"></span>
-                </label>
+                <button
+                  type="button"
+                  className={`theme-mode-switch ${darkMode ? 'is-on' : ''}`}
+                  onClick={handleDarkModeChange}
+                  aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+                  aria-pressed={darkMode}
+                >
+                  <span className="theme-mode-switch__track" aria-hidden="true">
+                    <span className="theme-mode-switch__thumb">
+                      {darkMode ? <Moon size={11} /> : <Sun size={11} />}
+                    </span>
+                  </span>
+                  <span className="theme-mode-switch__text">{darkMode ? 'On' : 'Off'}</span>
+                </button>
               </div>
 
               <div

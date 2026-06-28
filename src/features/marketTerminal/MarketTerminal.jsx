@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CandlestickSeries, ColorType, CrosshairMode, createChart } from 'lightweight-charts';
-import { ChevronDown, EllipsisVertical, Grid2x2, Plus, RefreshCw, X } from '../../icons/lucideIcons';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, ChevronDown, EllipsisVertical, Grid2x2, Plus, RefreshCw, X } from '../../icons/lucideIcons';
 import MainContentWrapper from '../../components/Layout/MainContentWrapper';
 import api from '../../utils/serve';
+import { CHART_ERROR_MESSAGE, LIVE_FEED_ERROR_MESSAGE, getUserSafeError } from '../../utils/safeErrors';
 import './MarketTerminal.css';
 
 const INTERVALS = ['1m', '5m', '15m', '1h'];
@@ -13,6 +15,8 @@ const INITIAL_CANDLE_LIMIT = 1000;
 const HISTORY_CHUNK_LIMIT = 1000;
 const PAST_BUFFER_CHUNKS = 2;
 const CANDLE_CHUNK_CACHE_MS = 30 * 1000;
+const HISTORY_OUTLIER_DEVIATION = 0.4;
+const LIVE_OUTLIER_DEVIATION = 0.3;
 const MAX_CHARTS = 8;
 const LAYOUTS = [
   { value: '1', label: '1 chart', columns: 1, rows: 1, capacity: 1 },
@@ -22,6 +26,91 @@ const LAYOUTS = [
 ];
 
 const candleChunkCache = new Map();
+
+const isFinitePositiveNumber = (value) => {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0;
+};
+
+const normalizeCandle = (rawCandle) => {
+  const time = Math.floor(Number(rawCandle?.time));
+  const open = Number(rawCandle?.open);
+  const high = Number(rawCandle?.high);
+  const low = Number(rawCandle?.low);
+  const close = Number(rawCandle?.close);
+
+  if (
+    !Number.isFinite(time) ||
+    !isFinitePositiveNumber(open) ||
+    !isFinitePositiveNumber(high) ||
+    !isFinitePositiveNumber(low) ||
+    !isFinitePositiveNumber(close)
+  ) {
+    return null;
+  }
+
+  return {
+    time,
+    open,
+    high: Math.max(high, open, close),
+    low: Math.min(low, open, close),
+    close,
+  };
+};
+
+const isCandleNearPrice = (candle, referencePrice, maxDeviation) => {
+  const reference = Number(referencePrice);
+  if (!candle || !Number.isFinite(reference) || reference <= 0) return true;
+
+  const upperBound = reference * (1 + maxDeviation);
+  const lowerBound = reference * (1 - maxDeviation);
+  return candle.low >= lowerBound && candle.high <= upperBound;
+};
+
+const getMedianClose = (candles) => {
+  if (!candles.length) return null;
+  const closes = candles
+    .map((candle) => candle.close)
+    .filter((close) => Number.isFinite(close))
+    .sort((a, b) => a - b);
+  return closes.length ? closes[Math.floor(closes.length / 2)] : null;
+};
+
+const cleanCandleSeries = (candles = [], maxDeviation = HISTORY_OUTLIER_DEVIATION) => {
+  const normalized = candles
+    .map(normalizeCandle)
+    .filter(Boolean)
+    .sort((a, b) => a.time - b.time);
+  const medianClose = getMedianClose(normalized);
+
+  return normalized.filter((candle) => isCandleNearPrice(candle, medianClose, maxDeviation));
+};
+
+const getQuoteMidPrice = (quote) => {
+  const bid = Number(quote?.bid);
+  const ask = Number(quote?.ask);
+  if (Number.isFinite(bid) && bid > 0 && Number.isFinite(ask) && ask > 0) return (bid + ask) / 2;
+  const last = Number(quote?.last);
+  if (Number.isFinite(last) && last > 0) return last;
+  return null;
+};
+
+const getLastCandleClose = (candles = []) => (
+  candles.length ? Number(candles[candles.length - 1]?.close) : null
+);
+
+const normalizeLiveCandle = (rawCandle, existingCandles, quote) => {
+  const candle = normalizeCandle(rawCandle);
+  if (!candle) return null;
+
+  const lastClose = getLastCandleClose(existingCandles);
+  if (isCandleNearPrice(candle, lastClose, LIVE_OUTLIER_DEVIATION)) return candle;
+
+  const quotePrice = getQuoteMidPrice(quote);
+  if (!isCandleNearPrice(candle, quotePrice, LIVE_OUTLIER_DEVIATION)) return null;
+
+  return isCandleNearPrice(candle, lastClose, HISTORY_OUTLIER_DEVIATION) ? candle : null;
+};
 
 const createChartId = () => (
   typeof crypto !== 'undefined' && crypto.randomUUID
@@ -104,7 +193,7 @@ const buildWatchlistSections = (symbols, activeSymbol) => {
     .filter((section) => section.rows.length > 0);
 };
 
-function ChartPane({ chart, active, compact, fitNonce, onActivate, onQuote, onSymbols }) {
+function ChartPane({ chart, active, compact, fitNonce, pageActive, onActivate, onQuote, onSymbols }) {
   const chartContainerRef = useRef(null);
   const chartApiRef = useRef(null);
   const candleSeriesRef = useRef(null);
@@ -119,6 +208,7 @@ function ChartPane({ chart, active, compact, fitNonce, onActivate, onQuote, onSy
   const resetKeyRef = useRef('');
   const hasFitInitialContentRef = useRef(false);
   const hasUserMovedChartRef = useRef(false);
+  const wasPageActiveRef = useRef(pageActive);
 
   const [quote, setQuote] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -152,13 +242,13 @@ function ChartPane({ chart, active, compact, fitNonce, onActivate, onQuote, onSy
     }
   }, []);
 
-  const fetchCandlesChunk = useCallback(async ({ endTime, limit }) => {
+  const fetchCandlesChunk = useCallback(async ({ endTime, limit, force = false }) => {
     const normalizedLimit = Number(limit || INITIAL_CANDLE_LIMIT);
     const normalizedEndTime = Number.isFinite(Number(endTime)) ? Number(endTime) : 'latest';
     const cacheKey = [selectedSymbol, interval, normalizedEndTime, normalizedLimit].join(':');
     const cached = candleChunkCache.get(cacheKey);
 
-    if (cached && Date.now() - cached.createdAt < CANDLE_CHUNK_CACHE_MS) return cached.promise;
+    if (!force && cached && Date.now() - cached.createdAt < CANDLE_CHUNK_CACHE_MS) return cached.promise;
 
     const promise = api.get('/market-chart/candles', {
       params: {
@@ -169,13 +259,7 @@ function ChartPane({ chart, active, compact, fitNonce, onActivate, onQuote, onSy
       },
     }).then((response) => (
       Array.isArray(response.data?.candles)
-        ? response.data.candles.filter((candle) => (
-          Number.isFinite(candle.time) &&
-          Number.isFinite(candle.open) &&
-          Number.isFinite(candle.high) &&
-          Number.isFinite(candle.low) &&
-          Number.isFinite(candle.close)
-        ))
+        ? cleanCandleSeries(response.data.candles)
         : []
     ));
 
@@ -255,7 +339,7 @@ function ChartPane({ chart, active, compact, fitNonce, onActivate, onQuote, onSy
       setStatus('Live');
       shouldPrefetchNext = true;
     } catch (requestError) {
-      setError(requestError.response?.data?.error || requestError.message || 'Unable to load older candles');
+      setError(getUserSafeError(requestError, CHART_ERROR_MESSAGE));
       setStatus('Live');
     } finally {
       isLoadingPastRef.current = false;
@@ -285,6 +369,7 @@ function ChartPane({ chart, active, compact, fitNonce, onActivate, onQuote, onSy
       rightPriceScale: {
         borderColor: '#e5e7eb',
         entireTextOnly: true,
+        scaleMargins: { top: 0.12, bottom: 0.12 },
       },
       timeScale: {
         borderColor: '#e5e7eb',
@@ -346,6 +431,52 @@ function ChartPane({ chart, active, compact, fitNonce, onActivate, onQuote, onSy
   }, [active, fitNonce]);
 
   useEffect(() => {
+    if (!pageActive) return undefined;
+
+    const frameId = window.requestAnimationFrame(() => {
+      const container = chartContainerRef.current;
+      const chartApi = chartApiRef.current;
+      if (!container || !chartApi || !container.clientWidth || !container.clientHeight) return;
+      chartApi.resize(container.clientWidth, container.clientHeight);
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [compact, pageActive]);
+
+  useEffect(() => {
+    const wasActive = wasPageActiveRef.current;
+    wasPageActiveRef.current = pageActive;
+    if (!pageActive || wasActive || !historyReady || candlesRef.current.length === 0) return undefined;
+
+    let cancelled = false;
+
+    async function refreshLatestCandles() {
+      try {
+        const latestCandles = await fetchCandlesChunk({
+          limit: Math.min(INITIAL_CANDLE_LIMIT, 300),
+          force: true,
+        });
+        if (cancelled || latestCandles.length === 0) return;
+
+        candlesRef.current = mergeCandles(candlesRef.current, latestCandles);
+        applyCandles({ preserveRange: hasUserMovedChartRef.current });
+
+        if (!hasUserMovedChartRef.current) {
+          chartApiRef.current?.timeScale().scrollToRealTime();
+        }
+      } catch {
+        // Keep the cached chart visible; live polling will retry shortly.
+      }
+    }
+
+    refreshLatestCandles();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [applyCandles, fetchCandlesChunk, historyReady, pageActive]);
+
+  useEffect(() => {
     let cancelled = false;
 
     async function loadCandles() {
@@ -375,7 +506,7 @@ function ChartPane({ chart, active, compact, fitNonce, onActivate, onQuote, onSy
         }, 800);
       } catch (requestError) {
         if (!cancelled) {
-          setError(requestError.response?.data?.error || requestError.message || 'Unable to load candles');
+          setError(getUserSafeError(requestError, CHART_ERROR_MESSAGE));
           setStatus('Offline');
         }
       } finally {
@@ -390,7 +521,7 @@ function ChartPane({ chart, active, compact, fitNonce, onActivate, onQuote, onSy
   }, [applyCandles, fetchCandlesChunk, interval, prefetchPastBuffer, selectedSymbol]);
 
   useEffect(() => {
-    if (!historyReady) return undefined;
+    if (!historyReady || !pageActive) return undefined;
 
     let stopped = false;
     let timer = null;
@@ -422,15 +553,18 @@ function ChartPane({ chart, active, compact, fitNonce, onActivate, onQuote, onSy
         onQuote(selectedSymbol, data.quote || null);
         setQuote(data.quote || null);
         if (data.candle && candleSeriesRef.current) {
-          candlesRef.current = mergeCandles(candlesRef.current, [data.candle]);
-          candleSeriesRef.current.update(data.candle);
+          const liveCandle = normalizeLiveCandle(data.candle, candlesRef.current, data.quote);
+          if (liveCandle) {
+            candlesRef.current = mergeCandles(candlesRef.current, [liveCandle]);
+            candleSeriesRef.current.update(liveCandle);
+          }
         }
         setStatus(data.quote ? 'Live' : 'Subscribed');
       } catch (requestError) {
         const isCancelled = requestError.name === 'CanceledError' || requestError.code === 'ERR_CANCELED';
         if (!stopped && !isCancelled) {
           setStatus('Offline');
-          setError(requestError.response?.data?.error || requestError.message || 'Unable to load live market');
+          setError(getUserSafeError(requestError, LIVE_FEED_ERROR_MESSAGE));
         }
         if (!stopped && isCancelled) setStatus('Reconnecting');
       } finally {
@@ -447,7 +581,7 @@ function ChartPane({ chart, active, compact, fitNonce, onActivate, onQuote, onSy
       .catch((requestError) => {
         if (!stopped) {
           setStatus('Offline');
-          setError(requestError.response?.data?.error || requestError.message || 'Unable to subscribe chart');
+          setError(getUserSafeError(requestError, LIVE_FEED_ERROR_MESSAGE));
         }
       });
 
@@ -460,7 +594,7 @@ function ChartPane({ chart, active, compact, fitNonce, onActivate, onQuote, onSy
         symbol: subscribedSymbol,
       }).catch(() => null);
     };
-  }, [chart.id, historyReady, interval, onQuote, onSymbols, selectedSymbol]);
+  }, [chart.id, historyReady, interval, onQuote, onSymbols, pageActive, selectedSymbol]);
 
   return (
     <section
@@ -552,7 +686,8 @@ function WatchlistPanel({ activeSymbol, quotes, sections, onSelectSymbol }) {
   );
 }
 
-function MarketTerminal() {
+function MarketTerminal({ pageActive = true }) {
+  const navigate = useNavigate();
   const [symbols, setSymbols] = useState([]);
   const [charts, setCharts] = useState([{ id: createChartId(), symbol: DEFAULT_SYMBOL, interval: '1m' }]);
   const [activeChartId, setActiveChartId] = useState(charts[0].id);
@@ -583,7 +718,7 @@ function MarketTerminal() {
   }, []);
 
   useEffect(() => {
-    if (watchlistSections.length === 0) return undefined;
+    if (!pageActive || watchlistSections.length === 0) return undefined;
 
     let stopped = false;
     let timer = null;
@@ -611,7 +746,7 @@ function MarketTerminal() {
       stopped = true;
       if (timer) window.clearTimeout(timer);
     };
-  }, [watchlistSections]);
+  }, [pageActive, watchlistSections]);
 
   const addChart = useCallback(() => {
     setCharts((currentCharts) => {
@@ -637,6 +772,15 @@ function MarketTerminal() {
     });
   }, [activeChartId]);
 
+  const goBack = useCallback(() => {
+    if (window.history.length > 1) {
+      navigate(-1);
+      return;
+    }
+
+    navigate('/dashboard');
+  }, [navigate]);
+
   const workspaceStyle = {
     '--market-grid-columns': selectedLayout.columns,
     '--market-grid-rows': selectedLayout.rows,
@@ -646,6 +790,10 @@ function MarketTerminal() {
     <MainContentWrapper className="market-terminal-page">
       <div className="market-terminal">
         <div className="market-tabs" aria-label="Open chart tabs">
+          <button className="market-back-button" onClick={goBack} title="Back" type="button" aria-label="Back">
+            <ArrowLeft size={16} aria-hidden="true" />
+            <span>Back</span>
+          </button>
           <div className="market-tabs__list">
             {charts.map((item, index) => (
               <button
@@ -728,6 +876,7 @@ function MarketTerminal() {
                 compact={compact}
                 fitNonce={fitNonce}
                 key={item.id}
+                pageActive={pageActive}
                 onActivate={() => setActiveChartId(item.id)}
                 onQuote={handleQuote}
                 onSymbols={handleSymbols}

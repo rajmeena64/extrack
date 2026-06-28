@@ -38,7 +38,7 @@ const SYMBOL_PLACEHOLDERS = {
 };
 
 const CATEGORY_OPTIONS = [
-  { value: '', label: 'Select Category' },
+  { value: '', label: 'Category' },
   { value: 'stocks', label: 'Stocks' },
   { value: 'crypto', label: 'Crypto' },
   { value: 'forex', label: 'Forex' },
@@ -46,7 +46,7 @@ const CATEGORY_OPTIONS = [
 ];
 
 const TRADE_TYPE_OPTIONS = [
-  { value: '', label: 'Select' },
+  { value: '', label: 'Trade Type' },
   { value: 'buy', label: 'Buy' },
   { value: 'sell', label: 'Sell' },
 ];
@@ -163,6 +163,7 @@ function ManualEntryForm() {
   const [screenshotFile, setScreenshotFile] = useState(null);
   const [showSymbolSuggestions, setShowSymbolSuggestions] = useState(false);
   const [showSymbolCategoryHint, setShowSymbolCategoryHint] = useState(false);
+  const [shakeCategory, setShakeCategory] = useState(false);
   const [saveError, setSaveError] = useState('');
   const screenshotInputRef = useRef(null);
   const symbolBlurTimeoutRef = useRef(null);
@@ -185,6 +186,7 @@ function ManualEntryForm() {
     const { id, value } = e.target;
     
     if (id === 'category') {
+      setShakeCategory(false);
       setFormData(prev => ({
         ...prev,
         category: value,
@@ -219,6 +221,12 @@ function ManualEntryForm() {
         [id]: value
       }));
     }
+  };
+
+  const promptForCategory = () => {
+    setShowSymbolCategoryHint(true);
+    setShakeCategory(false);
+    window.requestAnimationFrame(() => setShakeCategory(true));
   };
 
   const handleImageUpload = (e) => {
@@ -273,9 +281,11 @@ function ManualEntryForm() {
   });
 
   const updateTradeCaches = (updater) => {
-    queryClient.getQueryCache().findAll({ queryKey: ['trades'] }).forEach((query) => {
+    if (!user?.ID) return;
+
+    queryClient.getQueryCache().findAll({ queryKey: ['trades', user.ID] }).forEach((query) => {
       const [, queryUserId, mode] = query.queryKey;
-      if (mode === 'api' || (queryUserId && user?.ID && queryUserId !== user.ID)) return;
+      if (mode === 'api' || queryUserId !== user.ID) return;
 
       queryClient.setQueryData(query.queryKey, (oldTrades) => {
         if (!Array.isArray(oldTrades)) return oldTrades;
@@ -334,11 +344,11 @@ function ManualEntryForm() {
     },
     onMutate: async ({ tradeData, screenshot }) => {
       setSaveError('');
-      await queryClient.cancelQueries({ queryKey: ['trades'] });
+      await queryClient.cancelQueries({ queryKey: ['trades', user.ID] });
 
       const previousTradeQueries = queryClient
         .getQueryCache()
-        .findAll({ queryKey: ['trades'] })
+        .findAll({ queryKey: ['trades', user.ID] })
         .map((query) => ({
           queryKey: query.queryKey,
           data: queryClient.getQueryData(query.queryKey),
@@ -386,7 +396,7 @@ function ManualEntryForm() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({
-        queryKey: ['trades'],
+        queryKey: ['trades', user?.ID],
         refetchType: 'active',
       });
     },
@@ -452,22 +462,22 @@ function ManualEntryForm() {
     <>
     {saveError ? <div className="trade-save-error-toast" role="alert">{saveError}</div> : null}
     {isSavingTrade ? <TradeSaveOverlay label="Saving trade and refreshing dashboard..." /> : null}
-    <div className="add-trade-form-card horizontal-entry-form" aria-busy={isSavingTrade}>
+    <div className="horizontal-entry-form" aria-busy={isSavingTrade}>
       {/* Top-left Category */}
-      <div className="form-group category-top">
+      <div className={`form-group category-top ${shakeCategory ? 'category-top--needs-attention' : ''}`}>
         <label htmlFor="category">Category</label>
         <CustomSelect
           id="category"
           value={formData.category}
           onChange={handleInputChange}
           options={CATEGORY_OPTIONS}
-          placeholder="Select Category"
+          placeholder="Category"
         />
       </div>
 
       {/* Horizontal row of other fields */}
       <div className="form-fields-horizontal">
-        <div className="form-group symbol-field">
+        <div className={`form-group symbol-field ${showSymbolCategoryHint && !isSymbolEnabled ? 'symbol-field--blocked' : ''}`}>
           <label htmlFor="symbol" className="required">Symbol</label>
           <div className="symbol-input-shell">
             {formData.symbol ? (
@@ -482,12 +492,12 @@ function ManualEntryForm() {
               onChange={handleInputChange}
               onClick={() => {
                 if (!isSymbolEnabled) {
-                  setShowSymbolCategoryHint(true);
+                  promptForCategory();
                 }
               }}
               onFocus={() => {
                 if (!isSymbolEnabled) {
-                  setShowSymbolCategoryHint(true);
+                  promptForCategory();
                   return;
                 }
 
@@ -501,9 +511,10 @@ function ManualEntryForm() {
                 symbolBlurTimeoutRef.current = setTimeout(() => {
                   setShowSymbolSuggestions(false);
                   setShowSymbolCategoryHint(false);
+                  setShakeCategory(false);
                 }, 120);
               }}
-              placeholder={isSymbolEnabled ? SYMBOL_PLACEHOLDERS[formData.category] : "Click to choose symbol"}
+              placeholder={isSymbolEnabled ? `Symbol (${SYMBOL_PLACEHOLDERS[formData.category]})` : "Symbol"}
               autoComplete="off"
               readOnly={!isSymbolEnabled}
               aria-disabled={!isSymbolEnabled}
@@ -540,7 +551,7 @@ function ManualEntryForm() {
             value={formData.tradeType}
             onChange={handleInputChange}
             options={TRADE_TYPE_OPTIONS}
-            placeholder="Select"
+            placeholder="Trade Type"
           />
         </div>
 
@@ -565,27 +576,27 @@ function ManualEntryForm() {
 
         <div className="form-group">
           <label htmlFor="quantity" className="required">Qty</label>
-          <input type="text" inputMode="decimal" id="quantity" value={formData.quantity} onChange={handleInputChange}/>
+          <input type="text" inputMode="decimal" id="quantity" value={formData.quantity} onChange={handleInputChange} placeholder="Qty"/>
         </div>
 
         <div className="form-group">
           <label htmlFor="entryPrice" className="required">Entry</label>
-          <input type="text" inputMode="decimal" id="entryPrice" value={formData.entryPrice} onChange={handleInputChange}/>
+          <input type="text" inputMode="decimal" id="entryPrice" value={formData.entryPrice} onChange={handleInputChange} placeholder="Entry"/>
         </div>
 
         <div className="form-group">
           <label htmlFor="exitPrice" className="required">Exit</label>
-          <input type="text" inputMode="decimal" id="exitPrice" value={formData.exitPrice} onChange={handleInputChange}/>
+          <input type="text" inputMode="decimal" id="exitPrice" value={formData.exitPrice} onChange={handleInputChange} placeholder="Exit"/>
         </div>
 
         <div className="form-group">
           <label htmlFor="manualPNL" className="required">P&L</label>
-          <input type="text" inputMode="decimal" id="manualPNL" value={formData.manualPNL} onChange={handleInputChange}/>
+          <input type="text" inputMode="decimal" id="manualPNL" value={formData.manualPNL} onChange={handleInputChange} placeholder="P&L"/>
         </div>
 
         <div className="form-group">
           <label htmlFor="strategy">Strategy</label>
-          <input type="text" id="strategy" value={formData.strategy} onChange={handleInputChange}/>
+          <input type="text" id="strategy" value={formData.strategy} onChange={handleInputChange} placeholder="Strategy"/>
         </div>
       </div>
 
@@ -626,9 +637,6 @@ function ManualEntryForm() {
 
       {/* Submit Buttons */}
       <div className="btn-group-horizontal">
-        <button className="btn btn-secondary" onClick={() => navigate('/')} disabled={isSavingTrade}>
-          <LegacyIcon className="fas fa-times" /> Cancel
-        </button>
         <button
           className="btn btn-primary"
           onClick={submitManualTrade}

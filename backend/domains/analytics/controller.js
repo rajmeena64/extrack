@@ -66,7 +66,7 @@ router.get('/trades-by-date/:userid?', authCheck, async (req, res) => {
     } catch (error) {
         res.json({ 
             success: false, 
-            error: error.message 
+            error: 'Something went wrong. Please try again.' 
         });
     }
 });
@@ -152,7 +152,7 @@ router.get('/trades-by-date-range/:userid?', authCheck, async (req, res) => {
     } catch (error) {
         res.json({ 
             success: false, 
-            error: error.message 
+            error: 'Something went wrong. Please try again.' 
         });
     }
 });
@@ -221,11 +221,12 @@ router.get('/trade-summary/:userid?', authCheck, async (req, res) => {
         });
 
     } catch (error) {
-        res.json({ success: false, error: error.message });
+        res.json({ success: false, error: 'Something went wrong. Please try again.' });
     }
 });
 
 module.exports = router;
+
 
 
 

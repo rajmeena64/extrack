@@ -775,6 +775,22 @@ background-color: transparent;
     gap: 8px;
   }
 
+  .trade-calendar-template--range,
+  .calendar-template-header--range .calendar-template-header__controls {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .trade-calendar-pane {
+    padding: 0;
+  }
+
+  .trade-calendar-pane + .trade-calendar-pane {
+    padding: 10px 0 0;
+    border-top: 1px solid var(--border-light);
+    border-left: 0;
+  }
+
   .trade-rdp .rdp-month {
     padding: 10px 10px 9px;
   }

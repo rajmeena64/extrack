@@ -22,7 +22,7 @@ const adminOnly = [authCheck, requireCtraderAdmin];
 function sendRouteError(res, error) {
   return res.status(error.status || 500).json(error.payload || {
     success: false,
-    error: error.message,
+    error: 'Something went wrong. Please try again.',
   });
 }
 
@@ -161,7 +161,7 @@ function registerCtraderRoutes(app, service) {
         accountId: ctraderConfig.accountId,
       });
     } catch (err) {
-      return res.status(500).json({ success: false, error: err.message });
+      return res.status(500).json({ success: false, error: 'Something went wrong. Please try again.' });
     }
   });
 
@@ -299,7 +299,7 @@ function registerCtraderRoutes(app, service) {
     } catch (err) {
       return res.status(err.status || 500).json({
         success: false,
-        error: err.message,
+        error: 'Something went wrong. Please try again.',
       });
     }
   });
@@ -365,7 +365,7 @@ function registerCtraderRoutes(app, service) {
       return res.json({ success: true, ...result });
     } catch (error) {
       return res.status(error.status || 500).json(error.payload || {
-        error: error.message,
+        error: 'Something went wrong. Please try again.',
       });
     }
   });
@@ -392,7 +392,7 @@ function registerCtraderRoutes(app, service) {
       return res.json({ success: true, ...result });
     } catch (error) {
       return res.status(error.status || 500).json(error.payload || {
-        error: error.message,
+        error: 'Something went wrong. Please try again.',
       });
     }
   });
@@ -488,3 +488,4 @@ function registerCtraderRoutes(app, service) {
 module.exports = {
   registerCtraderRoutes,
 };
+

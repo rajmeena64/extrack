@@ -3,6 +3,7 @@ const router = express.Router();
 const pool = require('../../infra/db/database');
 const { authCheck } = require('../../domains/auth/controller');
 const { TABLES } = require('../../config/tables');
+const { logInternalError, publicError } = require('../../core/errors/safeErrors');
 
 const SETTINGS_BLOB_KEY = 'x9$eA.7';
 const OBFUSCATION_PREFIX = 'v1.';
@@ -121,7 +122,8 @@ router.get('/settings', authCheck, async (req, res) => {
       settings: decodeSettingsFromStorage(result.rows[0].settings),
     });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    logInternalError(req, err, 'settings.load_failed');
+    publicError(res, { status: 500, code: 'INTERNAL_ERROR', req });
   }
 });
 
@@ -171,7 +173,8 @@ const saveSettings = async (req, res) => {
       settings: decodeSettingsFromStorage(result.rows[0].settings),
     });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    logInternalError(req, err, 'settings.save_failed');
+    publicError(res, { status: 500, code: 'INTERNAL_ERROR', req });
   }
 };
 

@@ -1,6 +1,29 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { SUPPORT_EMAIL, SUPPORT_MAILTO } from '../../config/supportContact';
 
+function InstagramGlyph(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <rect width="16" height="16" x="4" y="4" rx="5" />
+      <circle cx="12" cy="12" r="3.25" />
+      <path d="M16.8 7.2h.01" />
+    </svg>
+  );
+}
+
+const socialLinks = [
+  {
+    label: 'Instagram',
+    href: 'https://www.instagram.com/entrack',
+    Icon: InstagramGlyph,
+  },
+  {
+    label: 'X',
+    href: 'https://x.com/entrack',
+    mark: 'X',
+  },
+];
+
 const featureCards = [
   {
     tag: 'Journal',
@@ -357,6 +380,25 @@ function LandingHome({ onLogin, onSignUp, onStartTracking, onGetStarted, onViewD
           <div className="brand" aria-label="Entrack footer"><span className="brand__mark" aria-hidden="true"><img src="/assets/applogo/entrack_dna_light_icon.svg" alt="" /></span><span>Entrack</span></div>
           <p className="footer-copy">Trading journal, broker coverage, analytics, and replay tools built for focused trade review.</p>
           <a className="footer-support-link" href={SUPPORT_MAILTO}>{SUPPORT_EMAIL}</a>
+          <div className="footer-social-links" aria-label="Social links">
+            {socialLinks.map(({ label, href, Icon, mark }) => (
+              <a
+                className="footer-social-link"
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`Open Entrack on ${label}`}
+                title={label}
+                key={label}
+              >
+                {Icon ? (
+                  <Icon className="footer-social-svg" aria-hidden="true" />
+                ) : (
+                  <span className="footer-social-mark" aria-hidden="true">{mark}</span>
+                )}
+              </a>
+            ))}
+          </div>
         </div>
 
         <div className="site-footer-links">

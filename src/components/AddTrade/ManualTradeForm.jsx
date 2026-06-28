@@ -1,37 +1,27 @@
 import React, { useState } from 'react';
 import ManualEntryForm from './ManualEntryForm';
 import CSVUploadForm from './CSVUploadForm';
-import LegacyIcon from '../Common/LegacyIcon';
+import CustomSelect from '../Common/CustomSelect';
 
 function ManualTradeForm({ API_URL, csvData, setCsvData,trades }) {
   const [uploadType, setUploadType] = useState('single');
 
-  const showSingleEntry = () => {
-    setUploadType('single');
-  };
-
-  const showCSVUpload = () => {
-    setUploadType('csv');
-  };
-
   return (
     <div className="add-trade-form-container manual-section" style={{display: 'block'}}>
-      {/* Upload Options */}
-      <div className="upload-options">
-        <div 
-          className={`upload-option-btn ${uploadType === 'single' ? 'active' : ''}`} 
-          id="singleEntryBtn"
-          onClick={showSingleEntry}
-        >
-          <LegacyIcon className="fas fa-plus-circle" /> Single Entry
-        </div>
-        <div 
-          className={`upload-option-btn ${uploadType === 'csv' ? 'active' : ''}`} 
-          id="csvUploadBtn"
-          onClick={showCSVUpload}
-        >
-          <LegacyIcon className="fas fa-file-csv" /> CSV Bulk Upload
-        </div>
+      <div className="entry-type-control">
+        <span className="entry-type-control__label">Entry Type</span>
+        <CustomSelect
+          id="entryTypeSelect"
+          name="entryType"
+          className="entry-type-select"
+          value={uploadType}
+          onChange={(event) => setUploadType(event.target.value)}
+          options={[
+            { value: 'single', label: 'Single Entry' },
+            { value: 'csv', label: 'CSV Bulk Upload' },
+          ]}
+          ariaLabel="Entry Type"
+        />
       </div>
 
       {uploadType === 'single' ? (

@@ -12,6 +12,7 @@ const {
     trimString,
 } = require('../../api/validators/common');
 const { sendLoginNotificationEmail } = require('./email.service');
+const { logInternalError, publicError, sanitizeError } = require('../../core/errors/safeErrors');
 
 // Separate secrets for access and refresh tokens
 const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET;
@@ -87,7 +88,7 @@ const queueLoginNotification = ({ user, req, method = 'password' }) => {
         userAgent: String(req.headers['user-agent'] || '').slice(0, 512),
         loginTime: new Date(),
     }).catch((error) => {
-        console.warn('auth.legacy_login_notification_failed', { userId: user?.ID || user?.id, error: error.message });
+        console.warn('auth.legacy_login_notification_failed', { userId: user?.ID || user?.id, error: sanitizeError(error) });
     });
 };
 
@@ -151,57 +152,102 @@ const generateTokens = async (userId) => {
 };
 
 // AUTH CHECK MIDDLEWARE
-const authCheck = async (req, res, next) => {
-    try {
-        const authHeader = req.headers.authorization;
-        const bearerToken = authHeader && authHeader.startsWith('Bearer ')
-            ? authHeader.split(' ')[1]
-            : null;
-        const token = req.cookies?.accessToken || bearerToken;
+const AUTH_USER_CACHE_TTL_MS = Number(process.env.AUTH_USER_CACHE_TTL_MS || 30000);
+const activeUserCache = new Map();
+const activeUserInFlight = new Map();
 
-        if (!token) {
-            return res.status(401).json({ 
-                success: false, 
-                error: 'Access token required',
-                logout: true 
-            });
-        }
-        
-        // Verify access token
-        const decoded = jwt.verify(token, JWT_ACCESS_SECRET);
-        
+async function ensureActiveUser(userId) {
+    const key = String(userId);
+    const cached = activeUserCache.get(key);
+
+    if (cached && Date.now() < cached.expiresAt) {
+        return true;
+    }
+
+    activeUserCache.delete(key);
+
+    // If another request is already checking this user, wait for that same DB query.
+    if (activeUserInFlight.has(key)) {
+        return activeUserInFlight.get(key);
+    }
+
+    const checkPromise = (async () => {
         const userResult = await pool.query(
             `SELECT id AS "ID" FROM ${TABLES.users} WHERE id = $1 AND is_deleted = false`,
-            [decoded.userId]
+            [userId]
         );
 
         if (userResult.rows.length === 0) {
-            return res.status(401).json({ 
-                success: false, 
-                error: 'Account deleted or not found',
-                logout: true 
-            });
+            activeUserCache.delete(key);
+            return false;
         }
 
-        req.userId = decoded.userId;
-        next();
+        activeUserCache.set(key, {
+            expiresAt: Date.now() + AUTH_USER_CACHE_TTL_MS,
+        });
 
+        return true;
+    })();
+
+    activeUserInFlight.set(key, checkPromise);
+
+    try {
+        return await checkPromise;
+    } finally {
+        activeUserInFlight.delete(key);
+    }
+}
+
+
+
+        const authCheck = async (req, res, next) => {
+            try {
+                const authHeader = req.headers.authorization;
+                const bearerToken = authHeader && authHeader.startsWith('Bearer ')
+                    ? authHeader.split(' ')[1]
+                    : null;
+                const token = req.cookies?.accessToken || bearerToken;
+
+                if (!token) {
+                    return publicError(res, { status: 401, code: 'AUTH_REQUIRED', req });
+                }
+        
+       // Verify access token
+            const decoded = jwt.verify(token, JWT_ACCESS_SECRET);
+
+            const userId = decoded.userId;
+
+            if (!userId) {
+                return publicError(res, { status: 401, code: 'AUTH_REQUIRED', req });
+            }
+
+            const isActiveUser = await ensureActiveUser(userId);
+
+            if (!isActiveUser) {
+                return publicError(res, { status: 401, code: 'AUTH_REQUIRED', req });
+            }
+
+            req.userId = userId;
+            req.user = {
+                id: userId,
+                userId,
+            };
+
+            return next();
     } catch (error) {
         
         // Special flag for expired access tokens
         if (error.name === 'TokenExpiredError') {
-            return res.status(401).json({ 
-                success: false, 
-                error: 'Access token expired',
-                expired: true  // Tell the frontend to refresh the token.
+            return res.status(401).json({
+                success: false,
+                code: 'SESSION_EXPIRED',
+                message: 'Session expired. Please sign in again.',
+                error: 'Session expired. Please sign in again.',
+                expired: true
             });
         }
         
-        return res.status(401).json({ 
-            success: false, 
-            error: 'Invalid token',
-            logout: true 
-        });
+        return publicError(res, { status: 401, code: 'AUTH_REQUIRED', req });
     }
 };
 
@@ -252,7 +298,7 @@ router.post('/register', async (req, res) => {
         res.cookie('refreshToken', refreshToken, COOKIE_OPTIONS);
         res.cookie('accessToken', accessToken, ACCESS_COOKIE_OPTIONS);
 
-        queueLoginNotification({ user, req, method: 'password' });
+        queueLoginNotification({ user: newUser, req, method: 'password' });
 
         res.json({
             success: true,
@@ -270,9 +316,12 @@ router.post('/register', async (req, res) => {
 
     } catch (error) {
         const isDuplicate = error.code === '23505';
-        res.status(isDuplicate ? 409 : 500).json({
-            success: false,
-            error: isDuplicate ? 'Account already exists' : 'Registration failed',
+        if (!isDuplicate) logInternalError(req, error, 'auth.legacy_register_failed');
+        return publicError(res, {
+            status: isDuplicate ? 409 : 500,
+            code: isDuplicate ? 'VALIDATION_FAILED' : 'INTERNAL_ERROR',
+            message: isDuplicate ? 'Please check the details and try again.' : undefined,
+            req,
         });
     }
 });
@@ -305,7 +354,7 @@ router.post('/login', loginRateLimiter, async (req, res) => {
         if (result.rows.length === 0) {
             return res.status(401).json({ 
                 success: false, 
-                error: "Invalid email, phone, or password" 
+                error: "Invalid credentials." 
             });
         }
 
@@ -315,7 +364,7 @@ router.post('/login', loginRateLimiter, async (req, res) => {
         if (!passwordMatch) {
             return res.status(401).json({ 
                 success: false, 
-                error: "Invalid email, phone, or password" 
+                error: "Invalid credentials." 
             });
         }
 
@@ -326,7 +375,7 @@ router.post('/login', loginRateLimiter, async (req, res) => {
         res.cookie('refreshToken', refreshToken, COOKIE_OPTIONS);
         res.cookie('accessToken', accessToken, ACCESS_COOKIE_OPTIONS);
 
-        queueLoginNotification({ user: newUser, req, method: 'password' });
+        queueLoginNotification({ user, req, method: 'password' });
         
         res.json({ 
             success: true,
@@ -343,7 +392,8 @@ router.post('/login', loginRateLimiter, async (req, res) => {
         });
 
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        logInternalError(req, error, 'auth.legacy_login_failed');
+        return publicError(res, { status: 500, code: 'INTERNAL_ERROR', req });
     }
 });
 
@@ -355,7 +405,7 @@ router.post('/refresh-token', refreshRateLimiter, async (req, res) => {
         if (!refreshToken) {
             return res.status(401).json({ 
                 success: false, 
-                error: 'Refresh token required',
+                error: 'Session expired. Please sign in again.',
                 logout: true 
             });
         }
@@ -377,7 +427,7 @@ router.post('/refresh-token', refreshRateLimiter, async (req, res) => {
             await pool.query(`DELETE FROM ${TABLES.refreshTokens} WHERE user_id = $1`, [decoded.userId]);
             return res.status(401).json({ 
                 success: false, 
-                error: 'Invalid or expired refresh token',
+                error: 'Session expired. Please sign in again.',
                 logout: true 
             });
         }
@@ -419,7 +469,7 @@ router.post('/refresh-token', refreshRateLimiter, async (req, res) => {
         
         return res.status(401).json({ 
             success: false, 
-            error: 'Refresh token expired',
+            error: 'Session expired. Please sign in again.',
             logout: true 
         });
     }
@@ -594,7 +644,8 @@ router.post('/update-profile', authCheck, async (req, res) => {
         });
 
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        logInternalError(req, error, 'auth.legacy_profile_update_failed');
+        return publicError(res, { status: 500, code: 'INTERNAL_ERROR', req });
     }
 });
 
@@ -632,7 +683,8 @@ router.get('/user-profile', authCheck, async (req, res) => {
         });
 
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        logInternalError(req, error, 'auth.legacy_profile_load_failed');
+        return publicError(res, { status: 500, code: 'INTERNAL_ERROR', req });
     }
 });
 
@@ -690,7 +742,8 @@ router.post('/update-currency', authCheck, async (req, res) => {
         });
 
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        logInternalError(req, error, 'auth.legacy_currency_update_failed');
+        return publicError(res, { status: 500, code: 'INTERNAL_ERROR', req });
     }
 });
 
@@ -726,7 +779,7 @@ router.delete('/delete-account', authCheck, async (req, res) => {
         if (!passwordMatch) {
             return res.status(401).json({ 
                 success: false, 
-                error: "Invalid password" 
+                error: "Invalid credentials." 
             });
         }
 
@@ -751,7 +804,8 @@ router.delete('/delete-account', authCheck, async (req, res) => {
         });
 
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        logInternalError(req, error, 'auth.legacy_delete_account_failed');
+        return publicError(res, { status: 500, code: 'INTERNAL_ERROR', req });
     }
 });
 
@@ -796,7 +850,8 @@ router.post('/admin/restore-user/:userId', authCheck, async (req, res) => {
             message: 'User account restored' 
         });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logInternalError(req, error, 'auth.legacy_admin_restore_failed');
+        return publicError(res, { status: 500, code: 'INTERNAL_ERROR', req });
     }
 });
 

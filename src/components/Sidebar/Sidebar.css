@@ -105,16 +105,19 @@
   top: 16px;
   left: 16px;
   z-index: 1100;
-  background: var(--bg-card);
-  color: var(--text-primary);
-  border: none;
-  font-size: 22px;
-  padding: 8px 12px;
-  cursor: pointer;
-  border-radius: 8px;
-  box-shadow: var(--shadow-md);
-  transition: all 0.2s ease;
+  width: 42px;
+  height: 42px;
   display: none; /* Hidden by default */
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--bg-card) 92%, var(--surface-subtle) 8%);
+  color: var(--text-primary);
+  border: 1px solid var(--border-light);
+  padding: 0;
+  cursor: pointer;
+  border-radius: 12px;
+  box-shadow: 0 14px 30px -24px rgba(15, 23, 42, 0.42);
+  transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
   box-sizing: border-box;
 }
 
@@ -122,14 +125,44 @@
   pointer-events: none;
 }
 
+.sidebar-menu-mark {
+  display: inline-flex;
+  width: 20px;
+  height: 15px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.sidebar-menu-mark span {
+  display: block;
+  height: 2.5px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.sidebar-menu-mark span:nth-child(1) {
+  width: 7px;
+}
+
+.sidebar-menu-mark span:nth-child(2) {
+  width: 13px;
+}
+
+.sidebar-menu-mark span:nth-child(3) {
+  width: 20px;
+}
+
 .sidebar-toggle--open {
   pointer-events: auto;
 }
 
 .sidebar-toggle:hover {
-  background: var(--primary);
-  color: white;
-  transform: scale(1.05);
+  background: var(--accent-ink);
+  border-color: var(--accent-ink);
+  color: var(--bg-secondary);
+  transform: translateY(-1px);
+  box-shadow: 0 18px 32px -24px rgba(17, 23, 20, 0.58);
 }
 
 /* Show toggle on tablet (769px to 1023px) */
@@ -139,15 +172,12 @@
     top: 8px;
     left: calc(var(--app-shell-sidebar-width) + 6px);
     z-index: 10004;
-    width: 46px;
-    min-width: 46px;
+    width: 42px;
+    min-width: 42px;
     height: 38px;
     align-items: center;
     justify-content: center;
     padding: 0;
-    border: 1px solid var(--border-light);
-    box-shadow: none;
-    font-size: 0;
   }
 
   .sidebar-toggle--open {
@@ -168,7 +198,7 @@
 /* Show toggle on mobile and small tablets (768px and below) */
 @media (max-width: 768px) {
   .sidebar-toggle {
-    display: block;
+    display: inline-flex;
   }
 
   .sidebar-toggle--open {
@@ -390,6 +420,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
   padding: 10px 12px;
   color: var(--text-secondary);
   font-size: 12px;
@@ -415,6 +446,113 @@
   text-align: center;
 }
 
+.sub-nav-item svg {
+  flex: 0 0 16px;
+}
+
+.sub-nav-item > span,
+.sub-nav-item > label:not(.switch) {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sub-nav-item > .switch {
+  align-self: center;
+  margin-left: auto;
+  flex: 0 0 44px;
+  width: 44px;
+  min-width: 44px;
+  max-width: 44px;
+  height: 24px;
+  min-height: 24px;
+  max-height: 24px;
+}
+
+.theme-mode-switch {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 7px;
+  margin-left: auto;
+  padding: 3px 5px 3px 4px;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.theme-mode-switch__track {
+  position: relative;
+  width: 38px;
+  height: 22px;
+  border-radius: 999px;
+  background: #cbd5e1;
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.22);
+}
+
+.theme-mode-switch__thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #64748b;
+  box-shadow: 0 2px 5px rgba(15, 23, 42, 0.28);
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.theme-mode-switch.is-on {
+  border-color: rgba(37, 99, 235, 0.35);
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.theme-mode-switch.is-on .theme-mode-switch__track {
+  background: #2563eb;
+}
+
+.theme-mode-switch.is-on .theme-mode-switch__thumb {
+  color: #2563eb;
+  transform: translateX(16px);
+}
+
+.theme-mode-switch:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--primary) 72%, transparent);
+  outline-offset: 2px;
+}
+
+.dark-mode .theme-mode-switch {
+  border-color: #334155;
+  background: #0f172a;
+  color: #bfdbfe;
+}
+
+.dark-mode .theme-mode-switch__track {
+  background: #475569;
+}
+
+.dark-mode .theme-mode-switch.is-on {
+  border-color: rgba(147, 197, 253, 0.55);
+  background: rgba(96, 165, 250, 0.12);
+  color: #bfdbfe;
+}
+
+.dark-mode .theme-mode-switch.is-on .theme-mode-switch__track {
+  background: #60a5fa;
+}
+
 .sidebar-settings-group {
   position: relative;
 }
@@ -437,9 +575,16 @@
 ===================================================== */
 .switch {
   position: relative;
+  display: inline-block;
+  flex: 0 0 44px;
   width: 44px;
+  min-width: 44px;
+  max-width: 44px;
   height: 24px;
+  min-height: 24px;
+  max-height: 24px;
   flex-shrink: 0;
+  overflow: hidden;
 }
 
 .switch input {
@@ -451,9 +596,11 @@
 .switch .slider {
   position: absolute;
   inset: 0;
-  background: var(--border-medium);
+  background: #cbd5e1;
+  border: 1px solid #94a3b8;
   border-radius: 24px;
-  transition: all 0.25s ease;
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.16);
+  transition: background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
 .switch .slider::before {
@@ -461,19 +608,37 @@
   position: absolute;
   width: 18px;
   height: 18px;
-  left: 3px;
-  bottom: 3px;
+  left: 2px;
+  bottom: 2px;
   background: #fff;
   border-radius: 50%;
-  transition: all 0.25s ease;
+  box-shadow: 0 2px 5px rgba(15, 23, 42, 0.28);
+  transition: transform 0.25s ease;
 }
 
 .switch input:checked + .slider {
-  background: var(--success);
+  background: #2563eb;
+  border-color: #1d4ed8;
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.12), 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
 .switch input:checked + .slider::before {
   transform: translateX(20px);
+}
+
+.switch input:focus-visible + .slider {
+  outline: 2px solid color-mix(in srgb, var(--primary) 76%, transparent);
+  outline-offset: 2px;
+}
+
+.dark-mode .switch .slider {
+  background: #334155;
+  border-color: #64748b;
+}
+
+.dark-mode .switch input:checked + .slider {
+  background: #60a5fa;
+  border-color: #93c5fd;
 }
 
 /* =====================================================
@@ -685,6 +850,22 @@
   }
 }
 
+@media (max-width: 768px) {
+  .sidebar-toggle.sidebar-toggle--open {
+    display: none !important;
+  }
+
+  .sidebar.open .sub-menu {
+    width: 100%;
+  }
+
+  .sidebar.open .sub-nav-item {
+    min-width: 0;
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
 @media (max-width: 1023px) {
   .sidebar-collapse-toggle {
     display: none;
@@ -698,29 +879,34 @@
 @media (max-width: 480px) {
   .dashboard > .sidebar:not(.open) {
     justify-content: center !important;
-    gap: 8px !important;
+    gap: clamp(4px, 1.7vw, 8px) !important;
     overflow: visible !important;
   }
 
   .dashboard > .sidebar:not(.open) .nav-item {
     order: 10;
+    display: none;
   }
 
   .dashboard > .sidebar:not(.open) .nav-item[title="Dashboard"] {
     order: 1;
+    display: flex;
   }
 
   .dashboard > .sidebar:not(.open) .nav-item[title="Analytics"] {
     order: 2;
+    display: flex;
   }
 
   .dashboard > .sidebar:not(.open) .add-trade-btn {
     order: 3;
-    flex: 0 0 58px !important;
-    width: 58px !important;
-    min-width: 58px !important;
-    height: 58px !important;
-    margin: -18px 2px 0 !important;
+    display: flex;
+    flex: 1.18 1 0 !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: 58px !important;
+    height: clamp(50px, 15vw, 58px) !important;
+    margin: calc(-1 * clamp(12px, 4vw, 18px)) 0 0 !important;
     padding: 0 !important;
     justify-content: center !important;
     border-radius: 20px !important;
@@ -737,9 +923,11 @@
 
   .dashboard > .sidebar:not(.open) .nav-item[title="Economic Calendar"] {
     order: 4;
+    display: flex;
   }
 
   .dashboard > .sidebar:not(.open) .nav-item[title="Trades"] {
     order: 5;
+    display: flex;
   }
 }

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../utils/serve';
 import CustomSelect from '../Common/CustomSelect';
+import { getUserSafeError } from '../../utils/safeErrors';
 import './ProfileOnboardingPage.css';
 
 const currencies = [
@@ -74,7 +75,7 @@ function ProfileOnboardingPage() {
       setUser(updatedUser);
       navigate('/dashboard', { replace: true });
     } catch (saveError) {
-      setError(saveError?.response?.data?.message || saveError.message || 'Could not save profile.');
+      setError(getUserSafeError(saveError, 'Could not save profile. Please try again.'));
     } finally {
       setLoading(false);
     }

@@ -129,7 +129,7 @@ router.post("/mt5/connect", authCheck, async (req, res) => {
         await client.query('ROLLBACK');
         res.status(500).json({
             success: false,
-            error: error.message,
+            error: 'Something went wrong. Please try again.',
         });
     } finally {
         client.release();
@@ -161,7 +161,7 @@ router.get("/mt5/connect/:request_id/status", authCheck, async (req, res) => {
     } catch (error) {
         res.status(500).json({
             success: false,
-            error: error.message,
+            error: 'Something went wrong. Please try again.',
         });
     }
 });
@@ -252,7 +252,7 @@ router.post("/mt5/accounts/:accountId/sync", authCheck, async (req, res) => {
 
         res.status(500).json({
             success: false,
-            error: error.message,
+            error: 'Something went wrong. Please try again.',
         });
     } finally {
         client.release();
@@ -293,7 +293,7 @@ router.get("/mt5/sync-jobs/:jobId/status", authCheck, async (req, res) => {
     } catch (error) {
         res.status(500).json({
             success: false,
-            error: error.message,
+            error: 'Something went wrong. Please try again.',
         });
     }
 });
@@ -416,7 +416,7 @@ router.post("/vps/jobs/claim", requireVpsAgent, async (req, res) => {
         await client.query('ROLLBACK');
         res.status(500).json({
             success: false,
-            error: error.message,
+            error: 'Something went wrong. Please try again.',
         });
     } finally {
         client.release();
@@ -461,7 +461,7 @@ router.post("/vps/jobs/:job_id/status", requireVpsAgent, async (req, res) => {
     } catch (error) {
         res.status(500).json({
             success: false,
-            error: error.message,
+            error: 'Something went wrong. Please try again.',
         });
     }
 });
@@ -610,7 +610,7 @@ router.post("/vps/jobs/:job_id/complete", requireVpsAgent, async (req, res) => {
         await client.query('ROLLBACK');
         res.status(500).json({
             success: false,
-            error: error.message,
+            error: 'Something went wrong. Please try again.',
         });
     } finally {
         client.release();
@@ -660,7 +660,7 @@ router.post("/vps/jobs/:job_id/fail", requireVpsAgent, async (req, res) => {
         await client.query('ROLLBACK');
         res.status(500).json({
             success: false,
-            error: error.message,
+            error: 'Something went wrong. Please try again.',
         });
     } finally {
         client.release();
@@ -795,7 +795,7 @@ router.post("/vps/sync-jobs/claim", requireVpsAgent, async (req, res) => {
         await client.query('ROLLBACK');
         res.status(500).json({
             success: false,
-            error: error.message,
+            error: 'Something went wrong. Please try again.',
         });
     } finally {
         client.release();
@@ -834,7 +834,7 @@ router.post("/vps/sync-jobs/:job_id/status", requireVpsAgent, async (req, res) =
     } catch (error) {
         res.status(500).json({
             success: false,
-            error: error.message,
+            error: 'Something went wrong. Please try again.',
         });
     }
 });
@@ -882,7 +882,7 @@ router.post("/vps/sync-jobs/:job_id/complete", requireVpsAgent, async (req, res)
         await client.query('ROLLBACK');
         res.status(500).json({
             success: false,
-            error: error.message,
+            error: 'Something went wrong. Please try again.',
         });
     } finally {
         client.release();
@@ -932,7 +932,7 @@ router.post("/vps/sync-jobs/:job_id/fail", requireVpsAgent, async (req, res) => 
         await client.query('ROLLBACK');
         res.status(500).json({
             success: false,
-            error: error.message,
+            error: 'Something went wrong. Please try again.',
         });
     } finally {
         client.release();
@@ -971,7 +971,7 @@ router.post("/vps/accounts/:account_id/health", requireVpsAgent, async (req, res
     } catch (error) {
         res.status(500).json({
             success: false,
-            error: error.message,
+            error: 'Something went wrong. Please try again.',
         });
     }
 });
@@ -993,7 +993,7 @@ router.get("/vps/accounts/health-targets", requireVpsAgent, async (req, res) => 
     } catch (error) {
         res.status(500).json({
             success: false,
-            error: error.message,
+            error: 'Something went wrong. Please try again.',
         });
     }
 });
@@ -1015,4 +1015,5 @@ router.post("/mt5/receive-trades", requireIngestSecret, (req, res) => {
 });
 
 module.exports = router;
+
 

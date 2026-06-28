@@ -8,19 +8,21 @@
 /* ===== TABS ===== */
 .analytics-tabs {
   display: flex;
-  gap: 10px;
+  gap: clamp(6px, 1.8vw, 10px);
   align-items: center;
   flex-wrap: nowrap;
   min-width: 0;
 }
 
 .analytics-tab {
+  flex: 0 1 auto;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 6px;
   height: 34px;
   white-space: nowrap;
-  padding: 7px 14px;
+  padding: 7px clamp(10px, 2.8vw, 14px);
   font-size: 13px;
 
   border-radius: 8px;
@@ -31,6 +33,16 @@
 
   cursor: pointer;
   transition: all 0.2s ease;
+}
+
+.analytics-tab svg {
+  flex: 0 0 auto;
+}
+
+.analytics-tab span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* HOVER */
@@ -51,7 +63,7 @@
 /* ===== CONTENT ===== */
 .analytics-content {
   flex: 1; /* Take remaining space */
-  padding: var(--dashboard-grid-gap) 14px 14px;
+  padding: var(--dashboard-grid-gap) 0 0;
   min-height: 0; /* Important for flex children to scroll properly */
   overflow: hidden; /* Prevent double scrollbars, children should handle scroll */
 
@@ -61,8 +73,14 @@
 }
 
 .economic-calendar-page .analytics-content {
-  padding: var(--dashboard-grid-gap) 10px 10px;
-  gap: var(--dashboard-grid-gap);
+  padding: 8px 0 0;
+  gap: 0;
+}
+
+.economic-calendar-provider-panel {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
 }
 
 /* ===== CALENDAR PANEL ===== */
@@ -72,7 +90,7 @@
   flex: 1; /* Take full height of parent in flex container */
   min-height: 0; /* Important for iframe containment */
 
-  border-radius: 12px;
+  border-radius: 0;
   overflow: hidden;
 
   border: 1px solid var(--border-light);
@@ -278,6 +296,7 @@
   width: 100%;
   background: var(--bg-primary);
   min-height: 0; /* Important for flex children */
+  border-top: 1px solid var(--border-light);
 }
 
 /* HEADER */
@@ -326,6 +345,13 @@
   overflow: hidden;
 }
 
+.heatmap-body--forex {
+  background: #2a2e39;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+
 /* IFRAME FIX */
 .heatmap-body iframe {
   width: 100%;
@@ -333,6 +359,17 @@
   border: none;
   display: block;
 }
+
+.heatmap-body--forex iframe {
+  min-width: 520px;
+}
+
+@media (max-width: 380px) {
+  .heatmap-body--forex iframe {
+    min-width: 500px;
+  }
+}
+
 
 /* ===== AI ANALYSIS ===== */
 .ai-analysis {
@@ -530,8 +567,28 @@
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
+  .analytics-page,
+  .economic-calendar-page {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .economic-calendar-page .analytics-content {
+    width: 100%;
+    margin-inline: 0;
+    margin-top: -10px;
+    padding: 0 !important;
+    gap: 0;
+  }
+
+  .economic-calendar-page .analytics-panel {
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+
   .analytics-tabs {
     width: auto;
+    max-width: 100%;
     overflow-x: auto;
     scrollbar-width: none;
   }
@@ -542,6 +599,16 @@
   
   .analytics-content {
     padding: 10px 0 0;
+  }
+
+  .analytics-page .analytics-content {
+    width: 100%;
+    margin-inline: 0;
+  }
+
+  .analytics-tab {
+    height: 34px;
+    padding-inline: 10px;
   }
 
   .ai-analysis-toolbar,
@@ -556,5 +623,43 @@
 
   .ai-analysis-generate {
     justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .analytics-page .analytics-content {
+    width: 100%;
+    margin-inline: 0;
+  }
+
+  .economic-calendar-page .analytics-content {
+    width: 100%;
+    margin-inline: 0;
+    margin-top: -12px;
+  }
+}
+
+@media (max-width: 380px) {
+  .analytics-tabs {
+    gap: 6px;
+  }
+
+  .analytics-tab {
+    width: 34px;
+    min-width: 34px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .analytics-tab span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 }

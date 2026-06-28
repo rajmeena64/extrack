@@ -312,7 +312,7 @@ router.get("/klines", marketDataRateLimiter, async (req, res) => {
       interval,
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Something went wrong. Please try again.' });
   }
 });
 
@@ -344,7 +344,7 @@ router.get("/symbols", marketDataRateLimiter, async (req, res) => {
       symbols,
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Something went wrong. Please try again.' });
   }
 });
 
@@ -377,8 +377,9 @@ router.get("/validate/:symbol", marketDataRateLimiter, async (req, res) => {
         : "Invalid symbol for USD-M Futures. Try BTCUSDT, ETHUSDT, etc.",
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Something went wrong. Please try again.' });
   }
 });
 
 module.exports = router;
+

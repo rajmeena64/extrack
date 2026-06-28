@@ -5,6 +5,7 @@ import { CrosshairMode } from "lightweight-charts";
 import "./chart.css";
 import {API_URL} from "../../../utils/constants";
 import { normalizeStoredSymbol } from "../../../utils/symbols";
+import { CHART_ERROR_MESSAGE, getUserSafeError } from "../../../utils/safeErrors";
 
 const TF_MAP = { "1m": "1m", "5m": "5m", "15m": "15m", "1h": "1h" };
 const INTERVAL_MS = { "1m": 60*1000, "5m": 5*60*1000, "15m": 15*60*1000, "1h": 60*60*1000 };
@@ -201,8 +202,9 @@ function Chart({ darkMode, symbol = "BTCUSDT", category = "", tradeDate, tradeTi
         const data = await res.json();
 
         if (!res.ok) {
-          const message = data?.msg || data?.error || data?.details || `Chart API error (${res.status})`;
-          throw new Error(message);
+          const fetchError = new Error("Chart request failed");
+          fetchError.response = { status: res.status, data };
+          throw fetchError;
         }
 
         if (!Array.isArray(data) || data.length === 0) {
@@ -222,7 +224,7 @@ function Chart({ darkMode, symbol = "BTCUSDT", category = "", tradeDate, tradeTi
         const candles = await fetchCandles(cleanedSymbol, TF_MAP[tf], totalCandles);
 
         if (candles.length === 0) {
-          setError(`No chart data found for ${cleanedSymbol}.`);
+          setError(CHART_ERROR_MESSAGE);
           candleSeriesRef.current.setData([]);
           return;
         }
@@ -300,7 +302,7 @@ function Chart({ darkMode, symbol = "BTCUSDT", category = "", tradeDate, tradeTi
         }
 
       } catch(err) {
-        setError(`Error: ${err.message}`);
+        setError(getUserSafeError(err, CHART_ERROR_MESSAGE));
       } finally {
         setLoading(false);
       }

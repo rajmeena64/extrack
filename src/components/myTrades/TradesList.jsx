@@ -6,8 +6,9 @@ import { EllipsisVertical } from "../../icons/lucideIcons";
 import { formatCurrency } from "../../utils/Currency";
 import { getTradeDisplayDate, getTradeDisplayTime } from "../../utils/tradeTime";
 import { useAuth } from "../../context/AuthContext";
-import { loadCachedUserSettings, loadUserSettings, saveUserSettings } from "../../utils/userSettings";
+import { loadCachedUserSettings, saveUserSettings } from "../../utils/userSettings";
 import InfoTooltip from "../Common/InfoTooltip";
+import { useUserSettings } from "../../hooks/useUserSettings";
 
 const FIELDS = [
   { key: "symbol", label: "Symbol" },
@@ -24,6 +25,7 @@ const DEFAULT_VISIBLE_FIELDS = ["symbol", "trade_time", "pnl"];
 function TradesList({ trades = [], currencyCode = "USD" }) {
   const navigate = useNavigate(); // <-- added
   const { isAuthenticated } = useAuth();
+  const userSettingsQuery = useUserSettings();
 
   const [activeTab, setActiveTab] = useState("closed"); // "open" or "closed"
   const [showSettings, setShowSettings] = useState(false);
@@ -55,22 +57,12 @@ function TradesList({ trades = [], currencyCode = "USD" }) {
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    let isCurrent = true;
-
-    loadUserSettings()
-      .then((settings) => {
-        const savedFields = settings?.dashboardTrades?.visibleFields;
-        if (isCurrent && Array.isArray(savedFields) && savedFields.length > 0) {
-          const normalizedFields = savedFields.map((field) => (field === "timestamp" ? "trade_time" : field));
-          setVisibleFields(normalizedFields);
-        }
-      })
-      .catch(() => null);
-
-    return () => {
-      isCurrent = false;
-    };
-  }, [isAuthenticated]);
+    const savedFields = userSettingsQuery.data?.dashboardTrades?.visibleFields;
+    if (Array.isArray(savedFields) && savedFields.length > 0) {
+      const normalizedFields = savedFields.map((field) => (field === "timestamp" ? "trade_time" : field));
+      window.queueMicrotask(() => setVisibleFields(normalizedFields));
+    }
+  }, [isAuthenticated, userSettingsQuery.data]);
 
   // =======================
   // Filter trades by tab

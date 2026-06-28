@@ -1,8 +1,9 @@
-import React, { useState, useMemo } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useTheme } from "@/context/ThemeContext";  
  
 function Heatmap() {
   const [active, setActive] = useState("stocks");
+  const bodyRef = useRef(null);
   const { darkMode } = useTheme(); // ✅ ADDED
   const theme = darkMode ? "dark" : "light";
 
@@ -11,7 +12,7 @@ function Heatmap() {
   const srcMap = useMemo(
     () => ({
       stocks: `https://www.tradingview.com/embed-widget/stock-heatmap/?locale=en&colorTheme=${theme}`,
-      forex: `https://www.tradingview.com/embed-widget/forex-heat-map/?locale=en&colorTheme=${theme}`,
+      forex: `https://www.tradingview.com/embed-widget/forex-heat-map/?locale=en&colorTheme=${theme}&isTransparent=false&backgroundColor=${theme === "dark" ? "2a2e39" : "ffffff"}`,
       crypto: `https://www.tradingview.com/embed-widget/crypto-coins-heatmap/?locale=en&colorTheme=${theme}`,
          
     }),
@@ -19,6 +20,12 @@ function Heatmap() {
 
 
   );
+
+  useEffect(() => {
+    if (bodyRef.current) {
+      bodyRef.current.scrollLeft = 0;
+    }
+  }, [active, theme]);
 
   return (
     <div className="heatmap-container">
@@ -48,9 +55,10 @@ function Heatmap() {
       </div>
 
       {/* BODY */}
-      <div className="heatmap-body">
+      <div className={`heatmap-body heatmap-body--${active}`} ref={bodyRef}>
         <iframe
           key={`${active}-${theme}`} // 🔥 reload on tab OR theme change
+          className={`heatmap-iframe heatmap-iframe--${active}`}
           title="Heatmap"
           src={srcMap[active]}
           frameBorder="0"

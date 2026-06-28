@@ -4,6 +4,7 @@ import {
   CalendarRange,
   ChevronDown,
   CircleDollarSign,
+  Filter,
   Plus,
   RefreshCw,
   Rocket,
@@ -42,11 +43,13 @@ function Header({
   const [filterOpen, setFilterOpen] = useState(false);
   const [currencyOpen, setCurrencyOpen] = useState(false);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const filterRef = useRef(null);
   const currencyRef = useRef(null);
   const datePickerRef = useRef(null);
+  const mobileFiltersRef = useRef(null);
   const navigate = useNavigate();
 
   const { user: currentUser } = useAuth();
@@ -66,7 +69,7 @@ function Header({
   const compactTradeLabel = tradeMode === 'manual' ? 'Manual' : tradeMode === 'api' ? 'Sync' : 'Trades';
   const selectedCurrency = getCurrencyMeta(currencyCode);
   const defaultCurrency = getCurrencyMeta(defaultCurrencyCode);
-  const hasPopupOpen = filterOpen || datePickerOpen || currencyOpen;
+  const hasPopupOpen = filterOpen || datePickerOpen || currencyOpen || mobileFiltersOpen;
   const hasActiveDateRange = Boolean(dateRange?.from && dateRange?.to);
 
   const latestTradeDate = useMemo(() => {
@@ -136,23 +139,29 @@ function Header({
       if (currencyOpen && currencyRef.current && !currencyRef.current.contains(event.target)) {
         setCurrencyOpen(false);
       }
+      if (mobileFiltersOpen && mobileFiltersRef.current && !mobileFiltersRef.current.contains(event.target)) {
+        setMobileFiltersOpen(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [currencyOpen, datePickerOpen, filterOpen]);
+  }, [currencyOpen, datePickerOpen, filterOpen, mobileFiltersOpen]);
 
   useEffect(() => {
     const handleEsc = (event) => {
-      if (event.key === 'Escape') setProfileOpen(false);
+      if (event.key === 'Escape') {
+        setProfileOpen(false);
+        setMobileFiltersOpen(false);
+      }
     };
 
-    if (profileOpen) {
+    if (profileOpen || mobileFiltersOpen) {
       document.addEventListener('keydown', handleEsc);
     }
 
     return () => document.removeEventListener('keydown', handleEsc);
-  }, [profileOpen]);
+  }, [mobileFiltersOpen, profileOpen]);
 
   useEffect(() => {
     document.body.classList.toggle('dashboard-popup-open', hasPopupOpen);
@@ -171,6 +180,7 @@ function Header({
             setFilterOpen(false);
             setDatePickerOpen(false);
             setCurrencyOpen(false);
+            setMobileFiltersOpen(false);
           }}
         />
       )}
@@ -182,6 +192,91 @@ function Header({
         actions={(
           <div className="dashboard-toolbar">
           <div className="dashboard-toolbar__controls">
+            {isMobile && (
+              <div
+                className={`mobile-filters-wrapper ${mobileFiltersOpen ? 'toolbar-control--active' : ''}`}
+                ref={mobileFiltersRef}
+              >
+                <button
+                  className={`toolbar-chip mobile-filters-trigger ${mobileFiltersOpen ? 'toolbar-chip--active' : ''}`}
+                  type="button"
+                  aria-label="Dashboard filters"
+                  aria-expanded={mobileFiltersOpen}
+                  onClick={() => {
+                    setMobileFiltersOpen((prev) => !prev);
+                    setDatePickerOpen(false);
+                    setFilterOpen(false);
+                    setCurrencyOpen(false);
+                  }}
+                >
+                  <Filter size={15} aria-hidden="true" />
+                  <span className="toolbar-chip__text">Filters</span>
+                  <ChevronDown size={15} aria-hidden="true" />
+                </button>
+
+                {mobileFiltersOpen && (
+                  <div className="mobile-filters-menu">
+                    <section className="mobile-filters-section">
+                      <div className="mobile-filters-section__title">
+                        <CalendarRange size={14} aria-hidden="true" />
+                        <span>Time</span>
+                      </div>
+                      <Suspense fallback={null}>
+                        <DateRangePicker
+                          value={dateRange}
+                          onChange={(range) => {
+                            setDateRange?.({
+                              from: range?.from,
+                              to: range?.to,
+                            });
+                          }}
+                        />
+                      </Suspense>
+                    </section>
+
+                    <section className="mobile-filters-section">
+                      <div className="mobile-filters-section__title">
+                        <RefreshCw size={14} aria-hidden="true" />
+                        <span>Trade mode</span>
+                      </div>
+                      <div className="mobile-filter-options">
+                        {modes.map((mode) => (
+                          <button
+                            key={mode.value}
+                            className={`mobile-filter-option ${tradeMode === mode.value ? 'active' : ''}`}
+                            type="button"
+                            onClick={() => setTradeMode(mode.value)}
+                          >
+                            {mode.label}
+                          </button>
+                        ))}
+                      </div>
+                    </section>
+
+                    <section className="mobile-filters-section">
+                      <div className="mobile-filters-section__title">
+                        <CircleDollarSign size={14} aria-hidden="true" />
+                        <span>Currency</span>
+                      </div>
+                      <div className="mobile-filter-options mobile-filter-options--currency">
+                        {DASHBOARD_CURRENCIES.map((currency) => (
+                          <button
+                            key={currency.code}
+                            className={`mobile-filter-option ${selectedCurrency.code === currency.code ? 'active' : ''}`}
+                            type="button"
+                            onClick={() => onCurrencyChange?.(currency.code)}
+                          >
+                            <img src={currency.flag} alt="" aria-hidden="true" />
+                            <span>{currency.code}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </section>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div
               className={`toolbar-date-range ${
                 filterOpen || currencyOpen ? 'toolbar-control--dimmed' : ''

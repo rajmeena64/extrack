@@ -3,6 +3,7 @@ import LegacyIcon from '../Common/LegacyIcon';
 import api from '../../utils/serve';
 import { useAuth } from '../../context/AuthContext';
 import { sanitizeDecimalInput } from '../../utils/fieldValidation';
+import { getUserSafeError } from '../../utils/safeErrors';
 
 const POLL_INTERVAL_MS = 2500;
 const FINAL_STATUSES = new Set(['connected', 'failed']);
@@ -67,7 +68,7 @@ function ApiImportForm() {
       setAccounts(nextAccounts);
       setShowConnectForm(nextAccounts.length === 0);
     } catch (error) {
-      setAccountsError(error.response?.data?.error || error.message || 'Unable to load connected accounts');
+      setAccountsError(getUserSafeError(error, 'Unable to load connected accounts. Please try again.'));
     } finally {
       setIsAccountsLoading(false);
     }
@@ -104,7 +105,7 @@ function ApiImportForm() {
       }
     } catch (error) {
       setStatus('failed');
-      setErrorMessage(error.response?.data?.error || error.message || 'Unable to check MT5 connection');
+      setErrorMessage(getUserSafeError(error, 'Connection issue. Please retry.'));
     }
   };
 
@@ -167,7 +168,7 @@ function ApiImportForm() {
       pollTimerRef.current = window.setTimeout(() => pollStatus(data.request_id), POLL_INTERVAL_MS);
     } catch (error) {
       setStatus('failed');
-      setErrorMessage(error.response?.data?.error || error.message || 'Unable to connect MT5');
+      setErrorMessage(getUserSafeError(error, 'Connection issue. Please retry.'));
     }
   };
 

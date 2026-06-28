@@ -13,6 +13,7 @@ const {
   getLatestBinanceBacktestCandle,
 } = require('../../domains/market-data/BinanceBacktesting.service');
 const { getInstrumentBySymbol } = require('../../instruments/instrumentRegistry');
+const { logInternalError, publicError } = require('../../core/errors/safeErrors');
 
 const router = express.Router();
 
@@ -52,10 +53,11 @@ router.get('/', async (req, res) => {
       data,
     });
   } catch (err) {
-    console.error('ohlcv.range_failed', { error: err.message });
-    return res.status(400).json({
-      success: false,
-      error: err.message,
+    logInternalError(req, err, 'ohlcv.range_failed', { symbol, timeframe });
+    return publicError(res, {
+      status: 503,
+      code: 'MARKET_DATA_UNAVAILABLE',
+      req,
     });
   }
 });
@@ -115,10 +117,11 @@ router.get('/chunk', async (req, res) => {
       data,
     });
   } catch (err) {
-    console.error('ohlcv.chunk_failed', { error: err.message });
-    return res.status(400).json({
-      success: false,
-      error: err.message,
+    logInternalError(req, err, 'ohlcv.chunk_failed', { symbol, timeframe, direction });
+    return publicError(res, {
+      status: 503,
+      code: 'CHART_DATA_UNAVAILABLE',
+      req,
     });
   }
 });
@@ -155,10 +158,11 @@ router.get('/latest', async (req, res) => {
       data: candle,
     });
   } catch (err) {
-    console.error('ohlcv.latest_failed', { error: err.message });
-    return res.status(400).json({
-      success: false,
-      error: err.message,
+    logInternalError(req, err, 'ohlcv.latest_failed', { symbol });
+    return publicError(res, {
+      status: 503,
+      code: 'LIVE_FEED_UNAVAILABLE',
+      req,
     });
   }
 });

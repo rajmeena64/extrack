@@ -11,7 +11,8 @@ import { useAuth } from './context/AuthContext';
 import api from './utils/serve';
 import { convertCurrency, normalizeCurrencyCode } from './utils/Currency';
 import { getTradeDisplayDate } from './utils/tradeTime';
-import { loadCachedUserSettings, loadUserSettings, saveUserSettings } from './utils/userSettings';
+import { loadCachedUserSettings, saveUserSettings } from './utils/userSettings';
+import { useUserSettings } from './hooks/useUserSettings';
 import { markPerf, measurePerf } from './utils/perfMarks';
 import VerifyEmailPage from './components/Auth/VerifyEmailPage';
 import ResetPasswordPage from './components/Auth/ResetPasswordPage';
@@ -46,7 +47,7 @@ const endOfLocalDay = (date) => {
   return nextDate;
 };
 
-const RouteFallback = () => null;
+const RouteFallback = () => <div className="route-soft-fallback" aria-hidden="true" />;
 
 const LEGACY_LOCAL_STORAGE_KEYS = [
   'darkMode',
@@ -161,6 +162,12 @@ function CachedMainRoutes({
   const location = useLocation();
   const activeRouteKey = getCachedRouteKey(location.pathname);
   const [visitedRoutes, setVisitedRoutes] = useState(() => new Set([activeRouteKey || 'dashboard']));
+  const visibleRoutes = useMemo(() => {
+    if (!activeRouteKey || visitedRoutes.has(activeRouteKey)) return visitedRoutes;
+    const nextRoutes = new Set(visitedRoutes);
+    nextRoutes.add(activeRouteKey);
+    return nextRoutes;
+  }, [activeRouteKey, visitedRoutes]);
 
   useEffect(() => {
     if (!activeRouteKey) return;
@@ -175,7 +182,7 @@ function CachedMainRoutes({
   }, [activeRouteKey]);
 
   const renderCachedPane = (routeKey, element) => {
-    if (!visitedRoutes.has(routeKey)) return null;
+    if (!visibleRoutes.has(routeKey)) return null;
 
     const isActive = activeRouteKey === routeKey;
 
@@ -217,7 +224,7 @@ function CachedMainRoutes({
 
       {renderCachedPane('economic-calendar', <EconomicCalendar />)}
       {renderCachedPane('backtesting', <BacktestingPage />)}
-      {renderCachedPane('chart', <MarketTerminal />)}
+      {renderCachedPane('chart', <MarketTerminal pageActive={activeRouteKey === 'chart'} />)}
       {renderCachedPane('profile', <Profile />)}
 
       {renderCachedPane('day-review', (
@@ -307,9 +314,7 @@ function AuthenticatedApp({
 
 function App() {
   const { user, isAuthLoading } = useAuth();
-  const isOAuthReturnPending = useMemo(() => (
-    typeof window !== 'undefined' && sessionStorage.getItem('entrack:oauthPending') === 'true'
-  ), []);
+  const userSettingsQuery = useUserSettings();
   const cachedSettings = useMemo(() => loadCachedUserSettings(), []);
   const cachedDashboardSettings = cachedSettings?.dashboard || {};
   const [tradeMode, setTradeMode] = useState(
@@ -347,26 +352,19 @@ function App() {
     if (!user?.ID || typeof window === 'undefined') return undefined;
 
     const preloadRoutes = () => {
-      // Priority routes only
       import('./components/AddTrade/AddTrade');
-      
-      // Secondary routes delayed further
+
       window.setTimeout(() => {
         import('./components/DayReview/DayReview');
         import('./components/Analytics/Analytics');
+        import('./components/EconomicCalendar/EconomicCalendar');
       }, 5000);
     };
 
-    const idleId = 'requestIdleCallback' in window
-      ? window.requestIdleCallback(preloadRoutes, { timeout: 6000 })
-      : window.setTimeout(preloadRoutes, 4000);
+    const preloadTimer = window.setTimeout(preloadRoutes, 600);
 
     return () => {
-      if ('cancelIdleCallback' in window) {
-        window.cancelIdleCallback(idleId);
-      } else {
-        window.clearTimeout(idleId);
-      }
+      window.clearTimeout(preloadTimer);
     };
   }, [user?.ID]);
 
@@ -380,40 +378,26 @@ function App() {
   }, [user?.ID]);
 
   useEffect(() => {
-    if (isAuthLoading || !user?.ID) return;
+    if (isAuthLoading || !user?.ID || !userSettingsQuery.data) return;
 
-    let isCurrent = true;
+    const settings = userSettingsQuery.data;
+    const savedTradeMode = settings?.dashboard?.tradeMode;
+    if (['all', 'manual', 'api'].includes(savedTradeMode)) {
+      setTradeMode(savedTradeMode);
+    }
 
-    loadUserSettings()
-      .then((settings) => {
-        if (!isCurrent) return;
+    if (settings?.dashboard?.dateRange && typeof settings.dashboard.dateRange === 'object') {
+      setDashboardDateRange(settings.dashboard.dateRange);
+    }
 
-        const savedTradeMode = settings?.dashboard?.tradeMode;
-        if (['all', 'manual', 'api'].includes(savedTradeMode)) {
-          setTradeMode(savedTradeMode);
-        }
+    if (settings?.dashboard?.currency) {
+      setDashboardCurrency(normalizeCurrencyCode(settings.dashboard.currency));
+    }
 
-        if (settings?.dashboard?.dateRange && typeof settings.dashboard.dateRange === 'object') {
-          setDashboardDateRange(settings.dashboard.dateRange);
-        }
-
-        if (settings?.dashboard?.currency) {
-          setDashboardCurrency(normalizeCurrencyCode(settings.dashboard.currency));
-        }
-      })
-      .catch(() => null)
-      .finally(() => {
-        if (isCurrent) {
-          hasHydratedUserSettings.current = true;
-          markPerf('settings-ready');
-          measurePerf('settings-from-start', 'app-start', 'settings-ready');
-        }
-      });
-
-    return () => {
-      isCurrent = false;
-    };
-  }, [isAuthLoading, user?.ID]);
+    hasHydratedUserSettings.current = true;
+    markPerf('settings-ready');
+    measurePerf('settings-from-start', 'app-start', 'settings-ready');
+  }, [isAuthLoading, user?.ID, userSettingsQuery.data]);
 
   const tradesQuery = useQuery({
     queryKey: ['trades', user?.ID, tradeMode],
@@ -422,8 +406,10 @@ function App() {
     initialData: () => (
       user?.ID ? deriveCachedTradesForMode(queryClient, user.ID, tradeMode) : undefined
     ),
-    staleTime: 0,
-    refetchOnWindowFocus: true,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 
   const mt5AccountsQuery = useQuery({
@@ -495,11 +481,7 @@ function App() {
             updatingTrades.current = true;
 
             try {
-              await queryClient.invalidateQueries({ queryKey: ['trades'] });
-              await queryClient.refetchQueries({
-                queryKey: ['trades'],
-                type: 'active',
-              });
+              await queryClient.invalidateQueries({ queryKey: ['trades', user.ID] });
             } catch {
               // Query invalidation is best-effort.
             } finally {
@@ -653,7 +635,7 @@ function App() {
     tradesQuery.isPending &&
     !Array.isArray(tradesQuery.data);
 
-  if (isAuthLoading && isOAuthReturnPending) {
+  if (isAuthLoading) {
     return null;
   }
 

@@ -460,6 +460,12 @@
     max-height: none;
   }
 
+  .dashboard-grid-card--progress,
+  .dashboard-grid-card--progress .radar-card {
+    height: auto;
+    min-height: clamp(288px, 86vw, 330px);
+  }
+
   .chart-card,
   .chart-cardx,
   .radar-card,
@@ -504,6 +510,12 @@
 @media (max-width: 480px) {
   .dashboard-main-grid {
     gap: 12px;
+  }
+
+  .dashboard-grid-card--progress,
+  .dashboard-grid-card--progress .radar-card {
+    height: auto;
+    min-height: clamp(286px, 88vw, 318px);
   }
 
   .left-charts {

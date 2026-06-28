@@ -5,9 +5,10 @@ import LegacyIcon from "../Common/LegacyIcon";
 import EconomicCalendarWidget from "./EconomicCalendarWidget";
 import "../Analytics/Analytics.css";
 import { useAuth } from "../../context/AuthContext";
-import { loadCachedUserSettings, loadUserSettings, saveUserSettings } from "../../utils/userSettings";
+import { loadCachedUserSettings, saveUserSettings } from "../../utils/userSettings";
 import MainContentWrapper from "../Layout/MainContentWrapper";
 import PageHeader from "../Layout/PageHeader";
+import { useUserSettings } from "../../hooks/useUserSettings";
 
 const CALENDAR_OPTIONS = [
   { value: "tradingview", label: "TradingView" },
@@ -28,6 +29,7 @@ const getCachedProvider = () => {
 
 function EconomicCalendar() {
   const { isAuthenticated } = useAuth();
+  const userSettingsQuery = useUserSettings();
   const navigate = useNavigate();
   const [provider, setProvider] = useState(getCachedProvider);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -54,22 +56,13 @@ function EconomicCalendar() {
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    let isCurrent = true;
-
-    loadUserSettings()
-      .then((settings) => {
-        const savedProvider = settings?.economicCalendar?.provider;
-
-        if (isCurrent && providerChangeVersion.current === 0 && isValidProvider(savedProvider)) {
-          setProvider(savedProvider);
-        }
-      })
-      .catch(() => null);
-
-    return () => {
-      isCurrent = false;
-    };
-  }, [isAuthenticated]);
+    const savedProvider = userSettingsQuery.data?.economicCalendar?.provider;
+    if (providerChangeVersion.current === 0 && isValidProvider(savedProvider)) {
+      window.queueMicrotask(() => {
+        if (providerChangeVersion.current === 0) setProvider(savedProvider);
+      });
+    }
+  }, [isAuthenticated, userSettingsQuery.data]);
 
   const handleProviderChange = (nextProvider) => {
     providerChangeVersion.current += 1;
@@ -120,10 +113,16 @@ function EconomicCalendar() {
         />
 
         <div className="analytics-content">
-          <div style={{ display: provider === "metatrader" ? "block" : "none", height: "100%" }}>
+          <div
+            className="economic-calendar-provider-panel"
+            style={{ display: provider === "metatrader" ? "block" : "none" }}
+          >
             <EconomicCalendarWidget />
           </div>
-          <div style={{ display: provider === "tradingview" ? "block" : "none", height: "100%" }}>
+          <div
+            className="economic-calendar-provider-panel"
+            style={{ display: provider === "tradingview" ? "block" : "none" }}
+          >
             <NEWS />
           </div>
         </div>

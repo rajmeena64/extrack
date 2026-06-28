@@ -79,3 +79,10 @@
   border-color: #242424;
   box-shadow: 0 18px 42px -22px rgba(0, 0, 0, 0.9);
 }
+
+@media (max-width: 768px) {
+  .metric-card .info-tooltip__bubble,
+  .radar-card .info-tooltip__bubble {
+    display: none;
+  }
+}

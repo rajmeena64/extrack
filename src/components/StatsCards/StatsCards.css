@@ -198,6 +198,7 @@
     min-height: 0;
     padding: 10px;
     border-radius: 18px;
+    overflow: hidden;
   }
 
   .metric-card--featured {
@@ -308,6 +309,9 @@
   .metric-card:not(.metric-card--featured) .metric-card__label {
     font-size: 12px;
     line-height: 1.1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .metric-card:not(.metric-card--featured) .metric-card__badge {
@@ -347,6 +351,14 @@
     flex-direction: column;
     gap: 2px;
     font-size: 10px;
+    min-width: 0;
+  }
+
+  .metric-card:not(.metric-card--featured) .metric-card__bottom span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .metric-card:not(.metric-card--featured) .metric-card__label-full,
@@ -368,7 +380,7 @@
 
 @media (max-width: 480px) {
   .stats-grid-layout {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
     margin-top: 2px;
   }
@@ -393,8 +405,32 @@
   }
 
   .metric-card:not(.metric-card--featured) {
-    min-height: 112px;
-    padding: 9px 8px 8px;
+    min-height: 106px;
+    padding: 10px 9px 8px;
+  }
+
+  .metric-card:not(.metric-card--featured) .metric-card__label {
+    font-size: 11px;
+  }
+
+  .metric-card:not(.metric-card--featured) .metric-card__badge {
+    font-size: 9px;
+    padding: 2px 4px;
+  }
+
+  .metric-card:not(.metric-card--featured) .metric-card__value {
+    font-size: clamp(15px, 4.4vw, 18px);
+  }
+
+  .metric-card:not(.metric-card--featured) .metric-card__bottom {
+    font-size: 9px;
+    line-height: 1.2;
+  }
+}
+
+@media (max-width: 360px) {
+  .metric-card:not(.metric-card--featured) {
+    padding-inline: 8px;
   }
 
   .metric-card:not(.metric-card--featured) .metric-card__label {
@@ -402,16 +438,10 @@
   }
 
   .metric-card:not(.metric-card--featured) .metric-card__badge {
-    font-size: 8px;
-    padding: 2px 4px;
+    max-width: 100%;
   }
 
   .metric-card:not(.metric-card--featured) .metric-card__value {
-    font-size: clamp(13px, 3.9vw, 16px);
-  }
-
-  .metric-card:not(.metric-card--featured) .metric-card__bottom {
-    font-size: 9px;
-    line-height: 1.2;
+    font-size: clamp(14px, 4.2vw, 16px);
   }
 }

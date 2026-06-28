@@ -77,7 +77,7 @@ router.get('/get-trade/:unique_id', authCheck, async (req, res) => {
     } catch (error) {
         return res.json({
             success: false,
-            error: error.message
+            error: 'Something went wrong. Please try again.'
         });
     }
 });
@@ -188,7 +188,7 @@ router.post('/update-trade', authCheck, async (req, res) => {
     } catch (error) {
         res.json({
             success: false,
-            error: error.message
+            error: 'Something went wrong. Please try again.'
         });
     }
 });
@@ -312,7 +312,7 @@ router.post('/upload-screenshot', authCheck, screenshotRateLimiter, upload.singl
         
         res.json({ 
             success: false, 
-            error: error.message 
+            error: 'Something went wrong. Please try again.' 
         });
     }
 });
@@ -419,9 +419,10 @@ router.delete('/delete-screenshot', authCheck, screenshotRateLimiter, async (req
     } catch (error) {
         res.json({ 
             success: false, 
-            error: error.message 
+            error: 'Something went wrong. Please try again.' 
         });
     }
 });
 
 module.exports = router;
+

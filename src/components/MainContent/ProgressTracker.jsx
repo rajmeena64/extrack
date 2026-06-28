@@ -102,50 +102,56 @@ function ProgressTracker({ trades }) {
           </div>
         ) : (
           <>
-            <div className="progress-card__months">
-              {monthMarkers.map((marker) => (
-                <span
-                  key={`${marker.label}-${marker.column}`}
-                  className="progress-card__month"
-                  style={{ left: `${(marker.column / Math.max(columns, 1)) * 100}%` }}
-                >
-                  {marker.label}
-                </span>
-              ))}
-            </div>
-
             <div className="progress-card__grid-wrap">
               <div className="progress-card__labels">
+                <span aria-hidden="true" />
                 {WEEKDAY_LABELS.map((label) => (
                   <span key={label}>{label}</span>
                 ))}
               </div>
 
-              <div
-                className="progress-card__grid"
-                style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
-              >
-                {heatmap.map((row, rowIndex) =>
-                  row.map((value, columnIndex) => {
-                    const levelClass =
-                      value >= 3
-                        ? 'level-4'
-                        : value >= 2
-                          ? 'level-3'
-                          : value >= 1
-                            ? 'level-2'
-                            : value > 0
-                              ? 'level-1'
-                              : 'level-0';
+              <div className="progress-card__viewport">
+                <div className="progress-card__track" style={{ '--progress-columns': columns }}>
+                  <div className="progress-card__months">
+                    {monthMarkers.map((marker) => (
+                      <span
+                        key={`${marker.label}-${marker.column}`}
+                        className="progress-card__month"
+                        style={{ left: `${(marker.column / Math.max(columns, 1)) * 100}%` }}
+                      >
+                        {marker.label}
+                      </span>
+                    ))}
+                  </div>
+                  <div
+                    className="progress-card__grid"
+                    style={{
+                      gridTemplateColumns: `repeat(${columns}, minmax(var(--progress-cell-size, 0px), 1fr))`,
+                    }}
+                  >
+                    {heatmap.map((row, rowIndex) =>
+                      row.map((value, columnIndex) => {
+                        const levelClass =
+                          value >= 3
+                            ? 'level-4'
+                            : value >= 2
+                              ? 'level-3'
+                              : value >= 1
+                                ? 'level-2'
+                                : value > 0
+                                  ? 'level-1'
+                                  : 'level-0';
 
-                    return (
-                      <div
-                        key={`${rowIndex}-${columnIndex}`}
-                        className={`progress-card__cell ${levelClass}`}
-                      />
-                    );
-                  })
-                )}
+                        return (
+                          <div
+                            key={`${rowIndex}-${columnIndex}`}
+                            className={`progress-card__cell ${levelClass}`}
+                          />
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </>

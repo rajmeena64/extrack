@@ -41,7 +41,7 @@ function CSVUploadForm({ csvData, setCsvData }) {
       try {
         parseCSVData(e.target.result);
       } catch (error) {
-        alert('Error reading CSV file: ' + error.message);
+        alert('CSV file could not be read. Please try another file.');
       }
     };
     reader.readAsText(file);
@@ -236,11 +236,7 @@ function CSVUploadForm({ csvData, setCsvData }) {
       const { data: result } = await api.post('/save-bulk-trades', { trades });
       
       if (result.success) {
-        await queryClient.invalidateQueries({ queryKey: ['trades'] });
-        await queryClient.refetchQueries({
-          queryKey: ['trades'],
-          type: 'active',
-        });
+        await queryClient.invalidateQueries({ queryKey: ['trades', user.ID] });
         alert(`✅ Successfully uploaded ${trades.length} trades!`);
         navigate('/dashboard');
       } else {
@@ -249,7 +245,7 @@ function CSVUploadForm({ csvData, setCsvData }) {
       
     } catch (error) {
       setIsUploadingTrades(false);
-      alert('❌ CSV Upload failed: ' + error.message);
+      alert('CSV upload failed. Please check the file and try again.');
     }
   };
 

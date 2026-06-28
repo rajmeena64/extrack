@@ -22,7 +22,7 @@ export function AuthProvider({ children }) {
   const queryClient = useQueryClient();
   const initialStoredUser = useMemo(() => readStoredUser(), []);
   const [user, setUser] = useState(initialStoredUser);
-  const [isAuthLoading, setIsAuthLoading] = useState(() => !initialStoredUser);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
   const userRef = useRef(null);
 
   useEffect(() => {
@@ -129,7 +129,7 @@ export function AuthProvider({ children }) {
     user,
     setUser,
     refreshUser,
-    isAuthenticated: Boolean(user),
+    isAuthenticated: !isAuthLoading && Boolean(user),
     isAuthLoading,
   }), [user, refreshUser, isAuthLoading]);
 

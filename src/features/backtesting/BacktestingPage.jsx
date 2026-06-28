@@ -23,6 +23,7 @@ import Radar from '../../components/MainContent/Radar';
 import StatsCards from '../../components/StatsCards/StatsCards';
 import BacktestBottomPanel from './components/BacktestBottomPanel';
 import BacktestChart from './components/BacktestChart';
+import { getUserSafeError } from '../../utils/safeErrors';
 import BacktestOrderPanel from './components/BacktestOrderPanel';
 import BacktestStatsBar from './components/BacktestStatsBar';
 import { useBacktestSession } from './hooks/useBacktestSession';
@@ -822,12 +823,7 @@ function BacktestingPage() {
         });
       }
     } catch (error) {
-      const status = error?.response?.status;
-      setSessionError(
-        status === 404
-          ? 'The OHLCV chunk API is not available on the backend. Restart the backend server and try again.'
-          : error?.response?.data?.error || error?.message || 'Session could not be loaded.'
-      );
+      setSessionError(getUserSafeError(error, 'Session could not be loaded.'));
     }
   }, [instruments, instrumentsLoadError, instrumentsLoading, sessionDraft, startSession]);
 
@@ -843,7 +839,7 @@ function BacktestingPage() {
       await resumeSession(session);
       setActiveView('chart');
     } catch (error) {
-      setSessionError(error?.response?.data?.error || error?.message || 'Saved session could not be opened.');
+      setSessionError(getUserSafeError(error, 'Saved session could not be opened.'));
     }
   }, [resumeSession]);
 

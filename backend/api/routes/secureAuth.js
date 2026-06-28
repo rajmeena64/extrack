@@ -29,6 +29,7 @@ const {
   sendPasswordResetEmail,
   sendVerificationEmail,
 } = require('../../domains/auth/email.service');
+const { sanitizeError } = require('../../core/errors/safeErrors');
 
 const router = express.Router();
 const configuredBcryptCost = Number.parseInt(process.env.BCRYPT_COST || '12', 10);
@@ -38,8 +39,27 @@ const BCRYPT_COST = Number.isFinite(configuredBcryptCost) && configuredBcryptCos
 const VERIFY_TOKEN_MINUTES = Number.parseInt(process.env.EMAIL_VERIFY_TOKEN_MINUTES || '60', 10);
 const RESET_OTP_MINUTES = Number.parseInt(process.env.PASSWORD_RESET_OTP_MINUTES || '5', 10);
 const RESET_OTP_RESEND_SECONDS = Number.parseInt(process.env.PASSWORD_RESET_OTP_RESEND_SECONDS || '60', 10);
-const GENERIC_LOGIN_ERROR = 'Invalid email, phone, or password';
-const GENERIC_RESET_MESSAGE = 'If an account exists, a password reset OTP has been sent';
+const GENERIC_LOGIN_ERROR = 'Invalid credentials.';
+const GENERIC_RESET_MESSAGE = "If this account exists, we'll send reset instructions.";
+
+const ME_USER_SELECT = `
+  id AS "ID",
+  first_name AS "firstName",
+  last_name AS "lastName",
+  email,
+  email_original,
+  phone,
+  mobile_normalized,
+  account_type AS "accountType",
+  preferred_currency,
+  name,
+  email_verified_at,
+  profile_picture,
+  auth_provider,
+  created_at AS "createdAt",
+  created_at
+`;
+
 const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const GOOGLE_USERINFO_URL = 'https://openidconnect.googleapis.com/v1/userinfo';
@@ -153,7 +173,7 @@ function queueLoginNotification({ user, req, method }) {
     method,
     ...getLoginNotificationContext(req),
   }).catch((error) => {
-    console.warn('auth.login_notification_failed', { userId: user?.ID || user?.id, error: error.message });
+    console.warn('auth.login_notification_failed', { userId: user?.ID || user?.id, error: sanitizeError(error) });
   });
 }
 
@@ -433,13 +453,18 @@ function authRequired(req, res, next) {
       ? String(req.headers.authorization).slice(7)
       : null;
     const token = req.cookies?.accessToken || bearer;
-    if (!token) return fail(res, 401, 'Authentication required', 'AUTH_REQUIRED');
+    if (!token) return fail(res, 401, 'Please sign in to continue.', 'AUTH_REQUIRED');
     const decoded = verifyAccessToken(token);
     req.userId = decoded.userId || decoded.sub;
     return next();
   } catch (error) {
     const code = error.name === 'TokenExpiredError' ? 'ACCESS_TOKEN_EXPIRED' : 'INVALID_ACCESS_TOKEN';
-    return fail(res, 401, 'Authentication required', code);
+    return fail(
+      res,
+      401,
+      error.name === 'TokenExpiredError' ? 'Session expired. Please sign in again.' : 'Please sign in to continue.',
+      code === 'ACCESS_TOKEN_EXPIRED' ? 'SESSION_EXPIRED' : 'AUTH_REQUIRED'
+    );
   }
 }
 
@@ -482,7 +507,7 @@ router.post('/signup', signupLimiter, async (req, res) => {
 
     if (existingUser.rows.length > 0) {
       await client.query('ROLLBACK');
-      return fail(res, 409, 'This account is already registered. Please login.', 'ACCOUNT_REGISTERED');
+      return fail(res, 409, 'Please check the details and try again.', 'VALIDATION_FAILED');
     }
 
     if (!emailNormalized) {
@@ -525,12 +550,12 @@ router.post('/signup', signupLimiter, async (req, res) => {
     return ok(res, 'Verification link sent to your email', null, 'VERIFICATION_SENT');
   } catch (error) {
     await client.query('ROLLBACK').catch(() => null);
-    console.error('auth.signup_failed', { error: error.message });
+    console.error('auth.signup_failed', { error: sanitizeError(error) });
     if (/email service|frontend_url/i.test(error.message)) {
       return fail(res, 503, 'Email verification service is not configured', 'EMAIL_NOT_CONFIGURED');
     }
     if (/email_verifications|relation .* does not exist/i.test(error.message)) {
-      return fail(res, 500, 'Auth database migration has not been applied', 'AUTH_MIGRATION_REQUIRED');
+      return fail(res, 503, 'Service is temporarily unavailable. Please try again.', 'SERVICE_UNAVAILABLE');
     }
     return fail(res, 500, 'Signup failed', 'SIGNUP_FAILED');
   } finally {
@@ -570,7 +595,7 @@ router.get('/verify-email', async (req, res) => {
     if (existingUser.rows.length > 0) {
       await client.query(`DELETE FROM ${TABLES.emailVerifications} WHERE id = $1`, [pending.id]);
       await client.query('COMMIT');
-      return fail(res, 409, 'This email is already registered. Please login.', 'EMAIL_REGISTERED');
+      return fail(res, 409, 'Please check the details and try again.', 'VALIDATION_FAILED');
     }
 
     const { firstName, lastName } = splitName(pending.name);
@@ -601,10 +626,7 @@ router.get('/verify-email', async (req, res) => {
     return ok(res, 'Email verified. Your account is ready.', { user: safeUser(insertResult.rows[0]) }, 'EMAIL_VERIFIED');
   } catch (error) {
     await client.query('ROLLBACK').catch(() => null);
-    console.error('auth.verify_failed', { error: error.message });
-    if (process.env.NODE_ENV !== 'production') {
-      return fail(res, 500, `Email verification failed: ${error.message}`, 'VERIFY_FAILED');
-    }
+    console.error('auth.verify_failed', { error: sanitizeError(error) });
     return fail(res, 500, 'Email verification failed', 'VERIFY_FAILED');
   } finally {
     client.release();
@@ -636,7 +658,7 @@ router.post('/resend-verification', resendLimiter, async (req, res) => {
 
     return ok(res, 'If verification is pending, a new email has been sent', null, 'RESEND_ACCEPTED');
   } catch (error) {
-    console.error('auth.resend_failed', { error: error.message });
+    console.error('auth.resend_failed', { error: sanitizeError(error) });
     return fail(res, 500, 'Could not resend verification email', 'RESEND_FAILED');
   }
 });
@@ -677,8 +699,8 @@ router.post('/login', loginLimiter, async (req, res) => {
       refreshExpiresAt: session.expiresAt,
     }, 'LOGIN_SUCCESS');
   } catch (error) {
-    console.error('auth.login_error', { error: error.message });
-    return fail(res, 500, 'Login failed', 'LOGIN_FAILED');
+    console.error('auth.login_error', { error: sanitizeError(error) });
+    return fail(res, 500, 'Something went wrong. Please try again.', 'INTERNAL_ERROR');
   }
 });
 
@@ -698,7 +720,7 @@ router.get('/google', async (req, res) => {
     res.cookie('googleOAuthState', state, getOAuthCookieOptions(10 * 60 * 1000));
     return res.redirect(authUrl.toString());
   } catch (error) {
-    console.error('auth.google_start_failed', { error: error.message });
+    console.error('auth.google_start_failed', { error: sanitizeError(error) });
     return redirectOAuthError(res, 'google_not_configured');
   }
 });
@@ -755,7 +777,7 @@ router.get('/google/callback', async (req, res) => {
 
 router.post('/refresh-token', refreshLimiter, async (req, res) => {
   const refreshToken = req.cookies?.refreshToken;
-  if (!refreshToken) return fail(res, 401, 'Refresh token required', 'REFRESH_REQUIRED');
+  if (!refreshToken) return fail(res, 401, 'Session expired. Please sign in again.', 'SESSION_EXPIRED');
 
   const tokenHash = hashToken(refreshToken);
   const client = await pool.connect();
@@ -773,7 +795,7 @@ router.post('/refresh-token', refreshLimiter, async (req, res) => {
     if (!stored || new Date(stored.expires_at) <= new Date()) {
       await client.query('ROLLBACK');
       clearAuthCookies(res);
-      return fail(res, 401, 'Invalid or expired refresh token', 'INVALID_REFRESH_TOKEN');
+      return fail(res, 401, 'Session expired. Please sign in again.', 'SESSION_EXPIRED');
     }
 
     if (stored.revoked_at) {
@@ -781,7 +803,7 @@ router.post('/refresh-token', refreshLimiter, async (req, res) => {
       await client.query('COMMIT');
       clearAuthCookies(res);
       console.warn('auth.refresh_reuse_detected', { userId: stored.user_id });
-      return fail(res, 401, 'Invalid refresh token', 'REFRESH_REUSE_DETECTED');
+      return fail(res, 401, 'Session expired. Please sign in again.', 'SESSION_EXPIRED');
     }
 
     await client.query(`UPDATE ${TABLES.refreshTokens} SET revoked_at = NOW() WHERE token_hash = $1 OR token = $1`, [tokenHash]);
@@ -794,7 +816,7 @@ router.post('/refresh-token', refreshLimiter, async (req, res) => {
     }, 'TOKEN_REFRESHED');
   } catch (error) {
     await client.query('ROLLBACK').catch(() => null);
-    console.error('auth.refresh_failed', { error: error.message });
+    console.error('auth.refresh_failed', { error: sanitizeError(error) });
     clearAuthCookies(res);
     return fail(res, 401, 'Refresh failed', 'REFRESH_FAILED');
   } finally {
@@ -859,7 +881,7 @@ router.post('/forgot-password', forgotLimiter, async (req, res) => {
     console.info('auth.password_reset_requested', { email: parsed.data.email });
     return ok(res, GENERIC_RESET_MESSAGE, { resendAfterSeconds: RESET_OTP_RESEND_SECONDS }, 'RESET_REQUEST_ACCEPTED');
   } catch (error) {
-    console.error('auth.forgot_failed', { error: error.message });
+    console.error('auth.forgot_failed', { error: sanitizeError(error) });
     return ok(res, GENERIC_RESET_MESSAGE, { resendAfterSeconds: RESET_OTP_RESEND_SECONDS }, 'RESET_REQUEST_ACCEPTED');
   }
 });
@@ -874,7 +896,7 @@ router.post('/verify-reset-otp', resetLimiter, async (req, res) => {
 
     return ok(res, 'OTP verified. You can set a new password now.', null, 'RESET_OTP_VERIFIED');
   } catch (error) {
-    console.error('auth.reset_otp_verify_failed', { error: error.message });
+    console.error('auth.reset_otp_verify_failed', { error: sanitizeError(error) });
     return fail(res, 500, 'OTP verification failed', 'RESET_OTP_VERIFY_FAILED');
   }
 });
@@ -920,7 +942,7 @@ router.post('/reset-password', resetLimiter, async (req, res) => {
     return ok(res, 'Password reset successful. Please login again.', null, 'PASSWORD_RESET');
   } catch (error) {
     await client.query('ROLLBACK').catch(() => null);
-    console.error('auth.reset_failed', { error: error.message });
+    console.error('auth.reset_failed', { error: sanitizeError(error) });
     return fail(res, 500, 'Password reset failed', 'RESET_FAILED');
   } finally {
     client.release();
@@ -953,7 +975,7 @@ router.post('/change-password', authRequired, async (req, res) => {
     console.info('auth.password_changed', { userId: req.userId });
     return ok(res, 'Password changed. Please login again.', null, 'PASSWORD_CHANGED');
   } catch (error) {
-    console.error('auth.change_password_failed', { error: error.message });
+    console.error('auth.change_password_failed', { error: sanitizeError(error) });
     return fail(res, 500, 'Password change failed', 'CHANGE_PASSWORD_FAILED');
   }
 });
@@ -961,7 +983,7 @@ router.post('/change-password', authRequired, async (req, res) => {
 router.get('/me', authRequired, async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT ${USER_SELECT} FROM ${TABLES.users}
+      `SELECT ${ME_USER_SELECT} FROM ${TABLES.users}
        WHERE id = $1
          AND COALESCE(status, CASE WHEN is_deleted THEN 'deleted' ELSE 'active' END) = 'active'`,
       [req.userId]
@@ -1021,7 +1043,7 @@ router.post('/profile', authRequired, async (req, res) => {
     if (result.rows.length === 0) return fail(res, 404, 'User not found', 'USER_NOT_FOUND');
     return ok(res, 'Profile updated', { user: safeUser(result.rows[0]) }, 'PROFILE_UPDATED');
   } catch (error) {
-    console.error('auth.profile_update_failed', { error: error.message });
+    console.error('auth.profile_update_failed', { error: sanitizeError(error) });
     return fail(res, 500, 'Could not update profile', 'PROFILE_UPDATE_FAILED');
   }
 });
