@@ -1,4 +1,5 @@
 import React, { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { legalDocuments } from './legalDocuments';
 import LandingHome from './LandingHome';
 import './LandingPage.css';
@@ -1141,6 +1142,7 @@ function FeatureDetailPage({ section }) {
 }
 
 function DemoPage() {
+  const navigate = useNavigate();
   const detailSection = getDemoSectionFromPath();
   const brokerSection = getBrokerSectionFromPath();
   const [activeDemoIndex, setActiveDemoIndex] = useState(0);
@@ -1258,7 +1260,7 @@ function DemoPage() {
                   hoverCardRefs.current[index] = element;
                 }}
                 onClick={() => {
-                  window.location.href = `/demo/${section.slug}`;
+                  navigate(`/demo/${section.slug}`);
                 }}
                 onMouseEnter={() => {
                   goToDemo(index);
@@ -1326,7 +1328,7 @@ function DemoPage() {
                   key={broker.name}
                   style={{ '--offset': offset, '--abs-offset': absoluteOffset }}
                   onClick={() => {
-                    window.location.href = `/demo/brokers/${broker.slug}`;
+                    navigate(`/demo/brokers/${broker.slug}`);
                   }}
                   onMouseEnter={() => goToBroker(index)}
                   onFocus={() => goToBroker(index)}
@@ -1352,9 +1354,11 @@ function DemoPage() {
 }
 
 function LandingPage() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginModalTab, setLoginModalTab] = useState('login');
-  const normalizedPath = window.location.pathname.replace(/\/+$/, '') || '/';
+  const normalizedPath = location.pathname.replace(/\/+$/, '') || '/';
   const isDocumentationPage = normalizedPath.startsWith('/documentation');
   const isAnalyticsGuidePage = normalizedPath === '/analytics' || normalizedPath.startsWith('/analytics/');
   const legalDocument = normalizedPath === '/privacy' ? legalDocuments.privacy : normalizedPath === '/terms' ? legalDocuments.terms : null;
@@ -1367,11 +1371,27 @@ function LandingPage() {
   };
 
   const handleViewDemo = () => {
-    window.location.href = '/demo';
+    navigate('/demo');
   };
 
+  const handleInternalNavigation = useCallback((event) => {
+    const anchor = event.target.closest?.('a[href]');
+    if (!anchor || event.defaultPrevented || event.button !== 0) return;
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    if (anchor.target && anchor.target !== '_self') return;
+
+    const href = anchor.getAttribute('href');
+    if (!href?.startsWith('/')) return;
+
+    const destination = new URL(anchor.href, window.location.origin);
+    if (destination.origin !== window.location.origin) return;
+
+    event.preventDefault();
+    navigate(`${destination.pathname}${destination.search}${destination.hash}`);
+  }, [navigate]);
+
   return (
-    <>
+    <div className="landing-route-boundary" onClick={handleInternalNavigation}>
       {featureSection ? (
         <FeatureDetailPage section={featureSection} />
       ) : isAnalyticsGuidePage ? (
@@ -1400,7 +1420,7 @@ function LandingPage() {
           </Suspense>
         </>
       )}
-    </>
+    </div>
   );
 }
 

@@ -279,6 +279,11 @@ body {
   pointer-events: none;
 }
 
+.app-bootstrap-screen {
+  min-height: 100vh;
+  background: #070707;
+}
+
 .dark-mode .app-shell-header-logo {
   background: #070707;
   border-bottom-color: #242424;

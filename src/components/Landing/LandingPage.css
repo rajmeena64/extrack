@@ -6,3 +6,7 @@
 @import "./landing-css/landing-legal.css";
 @import "./landing-css/landing-animations.css";
 @import "./landing-css/landing-responsive.css";
+
+.landing-route-boundary {
+  display: contents;
+}

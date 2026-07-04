@@ -49,6 +49,24 @@ const endOfLocalDay = (date) => {
 
 const RouteFallback = () => <div className="route-soft-fallback" aria-hidden="true" />;
 
+const isPublicLandingRoute = (pathname) => {
+  const path = normalizeRoutePath(pathname);
+
+  return (
+    path === '/' ||
+    path === '/privacy' ||
+    path === '/terms' ||
+    path === '/analytics' ||
+    path.startsWith('/analytics/') ||
+    path === '/demo' ||
+    path.startsWith('/demo/') ||
+    path === '/features' ||
+    path.startsWith('/features/') ||
+    path === '/documentation' ||
+    path.startsWith('/documentation/')
+  );
+};
+
 const LEGACY_LOCAL_STORAGE_KEYS = [
   'darkMode',
   'entrack:darkMode',
@@ -636,7 +654,20 @@ function App() {
     !Array.isArray(tradesQuery.data);
 
   if (isAuthLoading) {
-    return null;
+    const currentPath = typeof window === 'undefined' ? '/' : window.location.pathname;
+
+    // Marketing pages do not need to wait for the production auth API.
+    if (!user && isPublicLandingRoute(currentPath)) {
+      return (
+        <BrowserRouter>
+          <ThemeProvider>
+            <LandingPage />
+          </ThemeProvider>
+        </BrowserRouter>
+      );
+    }
+
+    return <div className="app-bootstrap-screen" aria-label="Loading Entrack" />;
   }
 
   return (
