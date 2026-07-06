@@ -210,9 +210,14 @@ const server = http.createServer(app);
    WEBSOCKET SERVER
 ======================= */
 const wss = new WebSocket.Server({ noServer: true });
+const {
+  attachMarketStreamRelay,
+  stopMarketStreamRelay,
+} = require('./integrations/ctrader/market-stream.relay');
 
 // make wss available in all routes
 app.set('wss', wss);
+attachMarketStreamRelay(wss);
 
 wss.on('connection', (ws, req, userId) => {
   ws.userId = userId;
@@ -278,6 +283,9 @@ setInterval(() => {
     ws.ping();
   });
 }, 30000).unref();
+
+process.once('SIGTERM', stopMarketStreamRelay);
+process.once('SIGINT', stopMarketStreamRelay);
 
 /* =======================
    START SERVER

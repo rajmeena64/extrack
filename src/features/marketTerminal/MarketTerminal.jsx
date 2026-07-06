@@ -4,20 +4,24 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ChevronDown, EllipsisVertical, Grid2x2, Plus, RefreshCw, X } from '../../icons/lucideIcons';
 import MainContentWrapper from '../../components/Layout/MainContentWrapper';
 import api from '../../utils/serve';
-import { CHART_ERROR_MESSAGE, LIVE_FEED_ERROR_MESSAGE, getUserSafeError } from '../../utils/safeErrors';
+import { CHART_ERROR_MESSAGE, getUserSafeError } from '../../utils/safeErrors';
+import { subscribeMarketStream } from './marketStream';
 import './MarketTerminal.css';
 
 const INTERVALS = ['1m', '5m', '15m', '1h'];
 const DEFAULT_SYMBOL = 'EURUSD';
-const LIVE_POLL_MS = 1200;
-const LIVE_REQUEST_TIMEOUT_MS = 10000;
 const INITIAL_CANDLE_LIMIT = 1000;
 const HISTORY_CHUNK_LIMIT = 1000;
 const PAST_BUFFER_CHUNKS = 2;
 const CANDLE_CHUNK_CACHE_MS = 30 * 1000;
 const HISTORY_OUTLIER_DEVIATION = 0.4;
-const LIVE_OUTLIER_DEVIATION = 0.3;
 const MAX_CHARTS = 8;
+const INTERVAL_SECONDS = {
+  '1m': 60,
+  '5m': 5 * 60,
+  '15m': 15 * 60,
+  '1h': 60 * 60,
+};
 const LAYOUTS = [
   { value: '1', label: '1 chart', columns: 1, rows: 1, capacity: 1 },
   { value: '2v', label: '2 vertical', columns: 2, rows: 1, capacity: 2 },
@@ -86,30 +90,61 @@ const cleanCandleSeries = (candles = [], maxDeviation = HISTORY_OUTLIER_DEVIATIO
   return normalized.filter((candle) => isCandleNearPrice(candle, medianClose, maxDeviation));
 };
 
-const getQuoteMidPrice = (quote) => {
-  const bid = Number(quote?.bid);
-  const ask = Number(quote?.ask);
-  if (Number.isFinite(bid) && bid > 0 && Number.isFinite(ask) && ask > 0) return (bid + ask) / 2;
-  const last = Number(quote?.last);
-  if (Number.isFinite(last) && last > 0) return last;
-  return null;
+const normalizeStreamQuote = (tick) => {
+  const bid = Number(tick?.bid);
+  const ask = Number(tick?.ask);
+  const validBid = Number.isFinite(bid) && bid > 0 ? bid : null;
+  const validAsk = Number.isFinite(ask) && ask > 0 ? ask : null;
+  const last = validBid !== null && validAsk !== null
+    ? (validBid + validAsk) / 2
+    : validBid ?? validAsk;
+  const priceDigits = Number.isFinite(Number(tick?.priceDigits)) ? Number(tick.priceDigits) : 5;
+  const format = (value) => (
+    value !== null && value !== undefined && Number.isFinite(Number(value))
+      ? Number(value).toFixed(priceDigits)
+      : null
+  );
+  const spread = validBid !== null && validAsk !== null ? validAsk - validBid : null;
+
+  return {
+    ...tick,
+    bid: validBid,
+    ask: validAsk,
+    bidText: format(validBid),
+    askText: format(validAsk),
+    spread,
+    spreadText: format(spread),
+    last,
+    lastText: format(last),
+    changeText: '-',
+    changePercentText: '-',
+    priceDigits,
+    minMove: 10 ** -priceDigits,
+  };
 };
 
-const getLastCandleClose = (candles = []) => (
-  candles.length ? Number(candles[candles.length - 1]?.close) : null
-);
+const buildStreamCandle = (tick, interval, existingCandles) => {
+  const quote = normalizeStreamQuote(tick);
+  const price = Number(quote.last);
+  if (!Number.isFinite(price) || price <= 0) return null;
 
-const normalizeLiveCandle = (rawCandle, existingCandles, quote) => {
-  const candle = normalizeCandle(rawCandle);
-  if (!candle) return null;
+  const timestamp = Number(tick?.serverTime || tick?.timestamp || Date.now() / 1000);
+  const seconds = timestamp > 1e12 ? Math.floor(timestamp / 1000) : Math.floor(timestamp);
+  const bucketSize = INTERVAL_SECONDS[interval] || INTERVAL_SECONDS['1m'];
+  const time = Math.floor(seconds / bucketSize) * bucketSize;
+  const previous = existingCandles[existingCandles.length - 1];
 
-  const lastClose = getLastCandleClose(existingCandles);
-  if (isCandleNearPrice(candle, lastClose, LIVE_OUTLIER_DEVIATION)) return candle;
+  if (previous && Number(previous.time) === time) {
+    return {
+      time,
+      open: previous.open,
+      high: Math.max(Number(previous.high), price),
+      low: Math.min(Number(previous.low), price),
+      close: price,
+    };
+  }
 
-  const quotePrice = getQuoteMidPrice(quote);
-  if (!isCandleNearPrice(candle, quotePrice, LIVE_OUTLIER_DEVIATION)) return null;
-
-  return isCandleNearPrice(candle, lastClose, HISTORY_OUTLIER_DEVIATION) ? candle : null;
+  return { time, open: price, high: price, low: price, close: price };
 };
 
 const createChartId = () => (
@@ -140,6 +175,8 @@ const getSeriesPriceFormat = (quote) => {
 };
 
 const getRequestSymbol = (item) => String(item?.requestSymbol || item?.name || item?.symbol || item || DEFAULT_SYMBOL);
+
+const normalizeStreamSymbol = (value) => String(value || '').replace(/[^a-z0-9]/gi, '').toUpperCase();
 
 const getDisplaySymbol = (item) => String(item?.displayName || item?.name || item?.normalizedName || item?.symbol || item || DEFAULT_SYMBOL);
 
@@ -193,12 +230,11 @@ const buildWatchlistSections = (symbols, activeSymbol) => {
     .filter((section) => section.rows.length > 0);
 };
 
-function ChartPane({ chart, active, compact, fitNonce, pageActive, onActivate, onQuote, onSymbols }) {
+function ChartPane({ chart, active, compact, fitNonce, pageActive, onActivate, onQuote }) {
   const chartContainerRef = useRef(null);
   const chartApiRef = useRef(null);
   const candleSeriesRef = useRef(null);
   const candlesRef = useRef([]);
-  const liveAbortRef = useRef(null);
   const loadedHistoryKeysRef = useRef(new Set());
   const isLoadingPastRef = useRef(false);
   const isPrefetchingPastRef = useRef(false);
@@ -523,78 +559,29 @@ function ChartPane({ chart, active, compact, fitNonce, pageActive, onActivate, o
   useEffect(() => {
     if (!historyReady || !pageActive) return undefined;
 
-    let stopped = false;
-    let timer = null;
-    const subscribedSymbol = selectedSymbol;
+    return subscribeMarketStream({
+      symbols: [selectedSymbol],
+      onTick: (tick) => {
+        const nextQuote = normalizeStreamQuote(tick);
+        const liveCandle = buildStreamCandle(tick, interval, candlesRef.current);
+        onQuote(selectedSymbol, nextQuote);
+        setQuote(nextQuote);
 
-    async function subscribeCurrentChart() {
-      await api.post('/market-chart/subscription', { chartId: chart.id, symbol: selectedSymbol });
-    }
-
-    const scheduleNextFetch = (delay = LIVE_POLL_MS) => {
-      if (stopped) return;
-      timer = window.setTimeout(fetchLiveMarket, delay);
-    };
-
-    async function fetchLiveMarket() {
-      const controller = new AbortController();
-      const timeoutId = window.setTimeout(() => controller.abort(), LIVE_REQUEST_TIMEOUT_MS);
-      liveAbortRef.current = controller;
-
-      try {
-        const response = await api.get('/market-chart/live', {
-          params: { symbol: selectedSymbol, interval, subscribe: false },
-          signal: controller.signal,
-        });
-
-        if (stopped) return;
-        const data = response.data || {};
-        if (Array.isArray(data.symbols) && data.symbols.length > 0) onSymbols(data.symbols);
-        onQuote(selectedSymbol, data.quote || null);
-        setQuote(data.quote || null);
-        if (data.candle && candleSeriesRef.current) {
-          const liveCandle = normalizeLiveCandle(data.candle, candlesRef.current, data.quote);
-          if (liveCandle) {
-            candlesRef.current = mergeCandles(candlesRef.current, [liveCandle]);
-            candleSeriesRef.current.update(liveCandle);
-          }
+        if (liveCandle && candleSeriesRef.current) {
+          candlesRef.current = mergeCandles(candlesRef.current, [liveCandle]);
+          candleSeriesRef.current.update(liveCandle);
         }
-        setStatus(data.quote ? 'Live' : 'Subscribed');
-      } catch (requestError) {
-        const isCancelled = requestError.name === 'CanceledError' || requestError.code === 'ERR_CANCELED';
-        if (!stopped && !isCancelled) {
-          setStatus('Offline');
-          setError(getUserSafeError(requestError, LIVE_FEED_ERROR_MESSAGE));
-        }
-        if (!stopped && isCancelled) setStatus('Reconnecting');
-      } finally {
-        window.clearTimeout(timeoutId);
-        if (liveAbortRef.current === controller) liveAbortRef.current = null;
-        scheduleNextFetch();
-      }
-    }
 
-    subscribeCurrentChart()
-      .then(() => {
-        if (!stopped) fetchLiveMarket();
-      })
-      .catch((requestError) => {
-        if (!stopped) {
-          setStatus('Offline');
-          setError(getUserSafeError(requestError, LIVE_FEED_ERROR_MESSAGE));
-        }
-      });
-
-    return () => {
-      stopped = true;
-      if (timer) window.clearTimeout(timer);
-      liveAbortRef.current?.abort();
-      api.post('/market-chart/subscription/release', {
-        chartId: chart.id,
-        symbol: subscribedSymbol,
-      }).catch(() => null);
-    };
-  }, [chart.id, historyReady, interval, onQuote, onSymbols, pageActive, selectedSymbol]);
+        setError('');
+        setStatus('Live');
+      },
+      onStatus: (streamStatus) => {
+        if (streamStatus === 'connected') setStatus('Subscribed');
+        if (streamStatus === 'connecting') setStatus('Connecting');
+        if (streamStatus === 'reconnecting') setStatus('Reconnecting');
+      },
+    });
+  }, [historyReady, interval, onQuote, pageActive, selectedSymbol]);
 
   return (
     <section
@@ -718,34 +705,45 @@ function MarketTerminal({ pageActive = true }) {
   }, []);
 
   useEffect(() => {
+    if (!pageActive || symbols.length > 0) return undefined;
+    let cancelled = false;
+
+    api.get('/market-chart/live', {
+      params: {
+        symbol: activeSymbol,
+        interval: activeChart?.interval || '1m',
+        subscribe: false,
+      },
+    }).then((response) => {
+      if (cancelled) return;
+      if (Array.isArray(response.data?.symbols)) handleSymbols(response.data.symbols);
+      if (response.data?.quote) handleQuote(activeSymbol, response.data.quote);
+    }).catch(() => null);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeChart?.interval, activeSymbol, handleQuote, handleSymbols, pageActive, symbols.length]);
+
+  useEffect(() => {
     if (!pageActive || watchlistSections.length === 0) return undefined;
 
-    let stopped = false;
-    let timer = null;
     const requestSymbols = watchlistSections
       .flatMap((section) => section.rows.map((row) => row.requestSymbol))
       .filter(Boolean);
+    const requestKeyBySymbol = new Map(
+      requestSymbols.map((symbol) => [normalizeStreamSymbol(symbol), symbol])
+    );
 
-    async function fetchWatchlistQuotes() {
-      try {
-        const response = await api.get('/market-chart/watchlist-quotes', {
-          params: { symbols: requestSymbols.join(',') },
-        });
-        if (!stopped && response.data?.quotes) {
-          setQuotes((currentQuotes) => ({ ...currentQuotes, ...response.data.quotes }));
-        }
-      } catch {
-        // Active chart polling still keeps the selected quote fresh.
-      } finally {
-        if (!stopped) timer = window.setTimeout(fetchWatchlistQuotes, 5000);
-      }
-    }
-
-    fetchWatchlistQuotes();
-    return () => {
-      stopped = true;
-      if (timer) window.clearTimeout(timer);
-    };
+    return subscribeMarketStream({
+      symbols: requestSymbols,
+      onTick: (tick) => {
+        const requestSymbol = requestKeyBySymbol.get(normalizeStreamSymbol(tick?.symbolName));
+        if (!requestSymbol) return;
+        const nextQuote = normalizeStreamQuote(tick);
+        setQuotes((currentQuotes) => ({ ...currentQuotes, [requestSymbol]: nextQuote }));
+      },
+    });
   }, [pageActive, watchlistSections]);
 
   const addChart = useCallback(() => {
@@ -879,7 +877,6 @@ function MarketTerminal({ pageActive = true }) {
                 pageActive={pageActive}
                 onActivate={() => setActiveChartId(item.id)}
                 onQuote={handleQuote}
-                onSymbols={handleSymbols}
               />
             ))}
           </div>

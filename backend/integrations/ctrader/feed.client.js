@@ -26,6 +26,10 @@ function getConfig() {
   };
 }
 
+function getFeedBaseUrl() {
+  return getConfig().baseURL;
+}
+
 function buildRequestPath(path, params) {
   if (!params || Object.keys(params).length === 0) return path;
   const query = new URLSearchParams();
@@ -83,6 +87,8 @@ function getFeedSymbols() {
 }
 
 module.exports = {
+  createSignedHeaders,
+  getFeedBaseUrl,
   getFeedSymbols,
   getMarketData,
   getQuote,

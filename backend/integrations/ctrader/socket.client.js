@@ -435,9 +435,20 @@ async function getLiveMarketSnapshot({ symbol, interval = '1m' }) {
   const symbols = await getFeedSymbolsCached();
   const normalized = normalizeFeedSymbol(symbol || symbols[0]?.name);
   const match = symbols.find((item) => normalizeFeedSymbol(item.normalizedName || item.name) === normalized) || null;
-  const feedResponse = match ? await feedClient.getQuote(match.name) : null;
+  // Read the feed service's tick-aggregated candle instead of rebuilding OHLC
+  // from one sampled quote. This preserves every tick received between browser
+  // polls, including the true high and low for the active candle.
+  const feedResponse = match
+    ? await feedClient.getMarketData(match.name, {
+      interval,
+      limitTicks: 1,
+      limitCandles: 1,
+    })
+    : null;
   const tick = feedResponse?.quote || null;
-  const candle = buildCurrentCandle({ tick, interval, previousCandle: null });
+  const candle = Array.isArray(feedResponse?.candles) && feedResponse.candles.length
+    ? feedResponse.candles[feedResponse.candles.length - 1]
+    : buildCurrentCandle({ tick, interval, previousCandle: null });
   const quote = buildQuote(tick);
 
   return {

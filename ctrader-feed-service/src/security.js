@@ -31,47 +31,65 @@ function cleanupNonces(now) {
   lastNonceCleanup = now;
 }
 
-async function requireBackendSignature(req, res, next) {
-  const clientId = String(req.get('x-feed-client-id') || '');
-  const timestampText = String(req.get('x-feed-timestamp') || '');
-  const nonce = String(req.get('x-feed-nonce') || '');
-  const signature = String(req.get('x-feed-signature') || '');
-  const timestamp = Number(timestampText);
+async function authenticateBackendSignature({
+  clientId,
+  timestampText,
+  nonce,
+  signature,
+  method = 'GET',
+  requestPath,
+}) {
+  const normalizedClientId = String(clientId || '');
+  const normalizedTimestamp = String(timestampText || '');
+  const normalizedNonce = String(nonce || '');
+  const normalizedSignature = String(signature || '');
+  const timestamp = Number(normalizedTimestamp);
   const now = Date.now();
 
   if (
-    !allowedClientIds.has(clientId)
-    || !/^\d{13}$/.test(timestampText)
+    !allowedClientIds.has(normalizedClientId)
+    || !/^\d{13}$/.test(normalizedTimestamp)
     || !Number.isFinite(timestamp)
     || Math.abs(now - timestamp) > SIGNATURE_MAX_AGE_MS
-    || !/^[a-f0-9]{32,64}$/i.test(nonce)
-    || !/^[a-f0-9]{64}$/i.test(signature)
+    || !/^[a-f0-9]{32,64}$/i.test(normalizedNonce)
+    || !/^[a-f0-9]{64}$/i.test(normalizedSignature)
+    || typeof requestPath !== 'string'
   ) {
-    return res.status(401).json({ success: false, error: 'Unauthorized' });
+    return false;
   }
 
   const payload = [
-    timestampText,
-    nonce,
-    clientId,
-    req.method.toUpperCase(),
-    req.originalUrl,
+    normalizedTimestamp,
+    normalizedNonce,
+    normalizedClientId,
+    String(method).toUpperCase(),
+    requestPath,
     EMPTY_BODY_SHA256,
   ].join('\n');
 
+  if (!(await verifyFeedSignature(normalizedSignature, payload))) return false;
+
+  cleanupNonces(now);
+  const nonceKey = `${normalizedClientId}:${normalizedNonce}`;
+  if (usedNonces.has(nonceKey)) return false;
+  usedNonces.set(nonceKey, timestamp);
+  return true;
+}
+
+async function requireBackendSignature(req, res, next) {
   try {
-    if (!(await verifyFeedSignature(signature, payload))) {
-      return res.status(401).json({ success: false, error: 'Unauthorized' });
-    }
+    const authenticated = await authenticateBackendSignature({
+      clientId: req.get('x-feed-client-id'),
+      timestampText: req.get('x-feed-timestamp'),
+      nonce: req.get('x-feed-nonce'),
+      signature: req.get('x-feed-signature'),
+      method: req.method,
+      requestPath: req.originalUrl,
+    });
 
-    cleanupNonces(now);
-    const nonceKey = `${clientId}:${nonce}`;
-    if (usedNonces.has(nonceKey)) {
-      return res.status(401).json({ success: false, error: 'Unauthorized' });
-    }
-    usedNonces.set(nonceKey, timestamp);
-
-    return next();
+    return authenticated
+      ? next()
+      : res.status(401).json({ success: false, error: 'Unauthorized' });
   } catch (error) {
     return res.status(503).json({ success: false, error: 'Feed authentication unavailable' });
   }
@@ -86,6 +104,7 @@ function requireSecureTransport(req, res, next) {
 }
 
 module.exports = {
+  authenticateBackendSignature,
   requireBackendSignature,
   requireSecureTransport,
 };

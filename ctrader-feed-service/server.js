@@ -3,6 +3,7 @@ require('dotenv').config();
 const express = require('express');
 const helmet = require('helmet');
 const { rateLimit } = require('express-rate-limit');
+const WebSocket = require('ws');
 const {
   cleanup,
   ensureCtraderReady,
@@ -13,7 +14,11 @@ const {
 const { connectionState, ctraderConfig, tokenState } = require('./src/ctrader/state');
 const { getData, getQuoteSnapshot, getStatus, pruneAll, recordTick, seedCandles } = require('./src/feed-cache.service');
 const { getFeedKeyStatus, loadOrRotateKey } = require('./src/security/feed-key.service');
-const { requireBackendSignature, requireSecureTransport } = require('./src/security');
+const {
+  authenticateBackendSignature,
+  requireBackendSignature,
+  requireSecureTransport,
+} = require('./src/security');
 
 const app = express();
 app.disable('x-powered-by');
@@ -64,9 +69,31 @@ let reconcileInFlight = null;
 let reconcileTimer = null;
 let pruneTimer = null;
 let keyRotationTimer = null;
+let streamHeartbeatTimer = null;
 let targetSymbolCount = 0;
 
-global.__ctraderFeedOnTick = recordTick;
+const feedWss = new WebSocket.Server({ noServer: true, maxPayload: 1024 });
+
+function handleFeedTick(tick) {
+  recordTick(tick);
+  if (feedWss.clients.size === 0) return;
+
+  const payload = JSON.stringify({ type: 'MARKET_TICK', tick });
+  for (const client of feedWss.clients) {
+    if (client.readyState === WebSocket.OPEN && client.bufferedAmount < 1024 * 1024) {
+      client.send(payload);
+    }
+  }
+}
+
+global.__ctraderFeedOnTick = handleFeedTick;
+
+feedWss.on('connection', (ws) => {
+  ws.isAlive = true;
+  ws.on('pong', () => {
+    ws.isAlive = true;
+  });
+});
 
 function connected() {
   return Boolean(
@@ -360,6 +387,9 @@ function shutdown() {
   if (reconcileTimer) clearInterval(reconcileTimer);
   if (pruneTimer) clearInterval(pruneTimer);
   if (keyRotationTimer) clearInterval(keyRotationTimer);
+  if (streamHeartbeatTimer) clearInterval(streamHeartbeatTimer);
+  for (const client of feedWss.clients) client.terminate();
+  feedWss.close();
   cleanup();
 }
 
@@ -393,6 +423,55 @@ const httpServer = app.listen(PORT, HOST, async () => {
       console.warn('feed.api_key.refresh_failed', { error: error.message });
     });
   }, boundedNumber(process.env.FEED_KEY_CHECK_INTERVAL_MS, 300000, 30000, 3600000));
+
+  streamHeartbeatTimer = setInterval(() => {
+    for (const client of feedWss.clients) {
+      if (!client.isAlive) {
+        client.terminate();
+        continue;
+      }
+      client.isAlive = false;
+      client.ping();
+    }
+  }, 30000);
+});
+
+httpServer.on('upgrade', async (req, socket, head) => {
+  const requestUrl = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
+  if (requestUrl.pathname !== '/internal/stream' || feedWss.clients.size >= 20) {
+    socket.destroy();
+    return;
+  }
+
+  const secureRequired = process.env.FEED_REQUIRE_HTTPS === undefined
+    ? true
+    : String(process.env.FEED_REQUIRE_HTTPS) === 'true';
+  const forwardedProtocol = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim();
+  if (secureRequired && !req.socket.encrypted && forwardedProtocol !== 'https') {
+    socket.destroy();
+    return;
+  }
+
+  try {
+    const authenticated = await authenticateBackendSignature({
+      clientId: req.headers['x-feed-client-id'],
+      timestampText: req.headers['x-feed-timestamp'],
+      nonce: req.headers['x-feed-nonce'],
+      signature: req.headers['x-feed-signature'],
+      method: 'GET',
+      requestPath: req.url,
+    });
+    if (!authenticated) {
+      socket.destroy();
+      return;
+    }
+
+    feedWss.handleUpgrade(req, socket, head, (ws) => {
+      feedWss.emit('connection', ws, req);
+    });
+  } catch {
+    socket.destroy();
+  }
 });
 
 httpServer.requestTimeout = boundedNumber(process.env.FEED_REQUEST_TIMEOUT_MS, 10000, 1000, 60000);
