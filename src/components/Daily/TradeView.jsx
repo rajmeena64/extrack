@@ -16,10 +16,19 @@ import PageHeader from "../Layout/PageHeader";
 
 
 
-import { Calendar, Filter, Ratio, Table } from "../../icons/lucideIcons";
+import {
+  AddColumnIcon,
+  CalendarIcon,
+  FilterIcon,
+} from "../../icons/interfaceIcons";
 
 
 const IconSize = 16;
+const ToolbarIcon = ({ tone = "default", children, className = "" }) => (
+  <span className={`toolbar-icon-badge toolbar-icon-badge--${tone} ${className}`.trim()} aria-hidden="true">
+    {children}
+  </span>
+);
 
 const renderTradeTypeBadge = (value) => {
   const tradeType = String(value || "").trim().toLowerCase();
@@ -49,7 +58,6 @@ const SkeletonHeader = () => (
       <div className="trade-header-right">
         <div className="skeleton-button" style={{ width: '100px', height: '38px' }}></div>
         <div className="skeleton-button" style={{ width: '140px', height: '38px' }}></div>
-        <div className="skeleton-button" style={{ width: '130px', height: '38px' }}></div>
         <div className="skeleton-button" style={{ width: '100px', height: '38px' }}></div>
       </div>
     </div>
@@ -102,7 +110,6 @@ function TradeView({ trades = [], currencyCode = "USD" }) {
   const [showFilters, setShowFilters] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [selectedAccount, setSelectedAccount] = useState("All Accounts");
 
   const filterRef = useRef(null);
   const settingsRef = useRef(null);
@@ -208,9 +215,6 @@ function TradeView({ trades = [], currencyCode = "USD" }) {
             });
           }
 
-          if (tradeViewSettings.selectedAccount) {
-            setSelectedAccount(tradeViewSettings.selectedAccount);
-          }
         }
       } catch {
         // Defaults remain active if saved settings cannot be loaded.
@@ -235,7 +239,6 @@ function TradeView({ trades = [], currencyCode = "USD" }) {
         currentMonth,
         currentYear,
         dateRange,
-        selectedAccount,
       },
     };
 
@@ -258,13 +261,12 @@ function TradeView({ trades = [], currencyCode = "USD" }) {
           currentMonth,
           currentYear,
           dateRange,
-          selectedAccount,
         },
       }).catch(() => null);
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [currentMonth, currentYear, dateRange, filters, selectedAccount, settingsLoaded, visibleColumns]);
+  }, [currentMonth, currentYear, dateRange, filters, settingsLoaded, visibleColumns]);
 
   const monthNames = [
     "January", "February", "March", "April", "May", "June",
@@ -466,7 +468,9 @@ function TradeView({ trades = [], currencyCode = "USD" }) {
                   setShowDatePicker(false);
                 }}
               >
-                <Filter size={IconSize} className="toolbar-svg-icon" />
+                <ToolbarIcon tone="filters">
+                  <FilterIcon size={IconSize} className="toolbar-svg-icon" />
+                </ToolbarIcon>
                 <span className="toolbar-btn-text">Filters</span>
                 {hasActiveFilters ? <span className="toolbar-filter-count">{activeFilterCount}</span> : null}
             
@@ -592,7 +596,9 @@ function TradeView({ trades = [], currencyCode = "USD" }) {
                 }}
               >
                 <div className="toolbar-inline">
-                  <Calendar size={IconSize} className="toolbar-svg-icon" />
+                  <ToolbarIcon tone="date">
+                    <CalendarIcon size={IconSize} className="toolbar-svg-icon" />
+                  </ToolbarIcon>
                   <span className="toolbar-btn-text">{formatDateLabel()}</span>
                 </div>
                
@@ -614,23 +620,6 @@ function TradeView({ trades = [], currencyCode = "USD" }) {
               )}
             </div>
 
-            {/* ACCOUNT */}
-            <div className="toolbar-group toolbar-group-account">
-              <Ratio size={IconSize} className="toolbar-svg-icon toolbar-select-icon" aria-hidden="true" />
-              <CustomSelect
-                className="toolbar-select"
-                value={selectedAccount}
-                aria-label="Account filter"
-                onChange={(e) => setSelectedAccount(e.target.value)}
-                options={[
-                  { value: 'All Accounts', label: 'All Accounts' },
-                  { value: 'Live Account', label: 'Live Account' },
-                  { value: 'Demo Account', label: 'Demo Account' },
-                  { value: 'Funded Account', label: 'Funded Account' },
-                ]}
-              />
-            </div>
-
             {/* COLUMNS */}
             <div className="toolbar-group" ref={settingsRef}>
               <button
@@ -646,7 +635,9 @@ function TradeView({ trades = [], currencyCode = "USD" }) {
                   setShowDatePicker(false);
                 }}
               >
-                <Table size={IconSize} className="toolbar-svg-icon" />
+                <ToolbarIcon tone="columns">
+                  <AddColumnIcon size={IconSize} className="toolbar-svg-icon" />
+                </ToolbarIcon>
                 <span className="toolbar-btn-text">Columns</span>
           
               </button>

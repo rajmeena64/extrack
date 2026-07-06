@@ -1,4 +1,5 @@
 const WebSocket = require('ws');
+const feedClient = require('./feed.client');
 const { normalizeStoredSymbol } = require('../../shared/utils/symbols');
 const {
   CTRADER_INTERVALS,
@@ -17,11 +18,8 @@ const {
 } = require('./symbols.service');
 const {
   buildCurrentCandle,
-  buildDepth,
   buildQuote,
-  buildWatchlistQuotes,
   getClosedHistoryEndTime,
-  getLatestTrendbarCandle,
   getSymbolName,
   normalizeCandles,
   normalizeDepthEvent,
@@ -38,6 +36,22 @@ const protocol = createProtocolClient({
   getRoot: () => connectionState.root,
   getSocket: () => connectionState.ws,
 });
+
+let feedSymbolsCache = { symbols: [], expiresAt: 0 };
+
+function normalizeFeedSymbol(value) {
+  return String(value || '').replace(/[^a-z0-9]/gi, '').toUpperCase();
+}
+
+async function getFeedSymbolsCached() {
+  if (feedSymbolsCache.symbols.length && Date.now() < feedSymbolsCache.expiresAt) {
+    return feedSymbolsCache.symbols;
+  }
+  const response = await feedClient.getFeedSymbols();
+  const symbols = Array.isArray(response.symbols) ? response.symbols : [];
+  feedSymbolsCache = { symbols, expiresAt: Date.now() + 5 * 60 * 1000 };
+  return symbols;
+}
 
 async function loadProtos() {
   connectionState.root = await loadProtobufRoot();
@@ -417,25 +431,13 @@ async function fetchCtraderKlines({ symbol, interval = '1m', startTime, endTime,
   };
 }
 
-async function getLiveMarketSnapshot({ symbol, interval = '1m', subscribe = true }) {
-  await ensureCtraderReady();
-  const symbols = await getSymbols();
-  const symbolId = symbol ? await ensureSymbolId(symbol) : Number(symbols[0]?.id);
-  const match = ctraderConfig.symbols.get(symbolId) || symbols[0] || null;
-
-  if (match && subscribe) {
-    if (!ctraderConfig.liveTickSubscriptions.has(String(match.id))) {
-      await subscribeLiveTicks(match.name);
-    }
-    if (!ctraderConfig.depthSubscriptions.has(String(match.id))) {
-      await subscribeDepth(match.name);
-    }
-  }
-
-  const tick = match ? ctraderConfig.latestTicks.get(match.id) : null;
-  const depth = match ? buildDepth(ctraderConfig.latestDepth.get(match.id)) : null;
-  const previousCandle = match ? getLatestTrendbarCandle(match.id, interval) : null;
-  const candle = buildCurrentCandle({ tick, interval, previousCandle });
+async function getLiveMarketSnapshot({ symbol, interval = '1m' }) {
+  const symbols = await getFeedSymbolsCached();
+  const normalized = normalizeFeedSymbol(symbol || symbols[0]?.name);
+  const match = symbols.find((item) => normalizeFeedSymbol(item.normalizedName || item.name) === normalized) || null;
+  const feedResponse = match ? await feedClient.getQuote(match.name) : null;
+  const tick = feedResponse?.quote || null;
+  const candle = buildCurrentCandle({ tick, interval, previousCandle: null });
   const quote = buildQuote(tick);
 
   return {
@@ -444,26 +446,37 @@ async function getLiveMarketSnapshot({ symbol, interval = '1m', subscribe = true
     quote,
     tick: quote,
     candle,
-    depth,
+    depth: null,
     subscribed: Boolean(match),
+    source: 'ctrader-feed-service',
+    feedConnected: feedResponse?.connected === true,
     serverTime: Math.floor(Date.now() / 1000),
   };
 }
 
 async function getWatchlistQuotes(symbolValues = []) {
-  await ensureCtraderReady();
-  const allSymbols = await getSymbols();
+  const allSymbols = await getFeedSymbolsCached();
   const requestedSymbols = symbolValues.length
     ? symbolValues
-      .map((value) => resolveSymbolId(value))
-      .filter(Boolean)
-      .map((symbolId) => ctraderConfig.symbols.get(Number(symbolId)))
+      .map((value) => {
+        const normalized = normalizeFeedSymbol(value);
+        return allSymbols.find((symbol) => normalizeFeedSymbol(symbol.normalizedName || symbol.name) === normalized);
+      })
       .filter(Boolean)
     : allSymbols.slice(0, 20);
 
+  const feedResponse = await feedClient.getQuotes(requestedSymbols.map((symbol) => symbol.name));
+  const quotes = requestedSymbols.reduce((result, symbol) => {
+    const key = symbol.requestSymbol || symbol.name || symbol.normalizedName || String(symbol.id);
+    result[key] = buildQuote(feedResponse.quotes?.[symbol.name]) || null;
+    return result;
+  }, {});
+
   return {
-    quotes: buildWatchlistQuotes(requestedSymbols),
+    quotes,
     symbols: requestedSymbols,
+    source: 'ctrader-feed-service',
+    feedConnected: feedResponse.connected === true,
   };
 }
 

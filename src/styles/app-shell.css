@@ -5,7 +5,7 @@
   --bg-secondary: #ffffff;
   --bg-card: #ffffff;
   --bg-gradient: linear-gradient(135deg, #2563eb 0%, #0f172a 100%);
-  --bg-hover: rgba(37, 99, 235, 0.08);
+  --bg-hover: rgba(15, 23, 42, 0.08);
 
   --text-primary: #0f172a;
   --text-secondary: #475569;
@@ -24,10 +24,11 @@
   --purple-light: rgba(37, 99, 235, 0.1);
   --purple-hover: rgba(37, 99, 235, 0.16);
 
-  --button-bg: #2563eb;
+  --button-bg: var(--accent-ink);
+  --button-text: #ffffff;
   --value-bg: #1d4ed8;
 
-  --profit-color: #15803d; /* Darker green for contrast */
+  --profit-color: #2563eb;
   --loss-color: #b91c1c;   /* Darker red for contrast */
   --pnl-negative: #b91c1c;
 
@@ -88,6 +89,7 @@
 }
 
 .dark-mode {
+  --bg-hover: rgba(255, 255, 255, 0.08);
   --bg-primary: #000000;
   --bg-secondary: #050505;
   --bg-card: #070707;
@@ -110,7 +112,8 @@
   --purple-light: rgba(96, 165, 250, 0.12);
   --purple-hover: rgba(96, 165, 250, 0.2);
 
-  --button-bg: #2563eb;
+  --button-bg: var(--accent-ink);
+  --button-text: #050505;
   --value-bg: #3b82f6;
 
   --dashboard-card-border: var(--dashboard-card-border-width) solid #1f1f1f;
@@ -130,6 +133,7 @@
   --accent-danger: #f87171;
   --accent-danger-soft: rgba(248, 113, 113, 0.14);
   --accent-neutral-soft: rgba(129, 140, 248, 0.16);
+  --profit-color: #60a5fa;
 }
 
 * {
@@ -293,6 +297,11 @@ body {
 .app-shell-header-logo:hover,
 .app-shell-header-logo:focus-visible {
   background: var(--bg-hover);
+}
+
+.dashboard:has(.dashboard-popup-overlay, .popup-overlay) > .sidebar,
+.dashboard:has(.dashboard-popup-overlay, .popup-overlay) > .app-shell-header-logo {
+  z-index: 10010;
 }
 
 .dark-mode .app-shell-header-logo:hover,

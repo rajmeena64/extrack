@@ -302,7 +302,7 @@
 
 .nav-item:hover {
   background: var(--bg-hover);
-  color: var(--primary);
+  color: var(--accent-ink);
   transform: translateX(4px);
 }
 
@@ -437,7 +437,7 @@
 
 .sub-nav-item:hover {
   background: var(--bg-hover);
-  color: var(--primary);
+  color: var(--accent-ink);
 }
 
 .sub-nav-item i {
@@ -748,10 +748,11 @@
    ACTIVE LINK STATE
 ===================================================== */
 .nav-item.active {
-  background: var(--primary);
-  color: white;
-  box-shadow: 0 14px 28px -20px rgba(37, 99, 235, 0.6);
-}                      
+  background: var(--bg-hover);
+  color: var(--accent-ink);
+  box-shadow: inset 3px 0 0 var(--accent-ink);
+  font-weight: 700;
+}
 
 .sidebar-theme-toggle {
   width: auto;
@@ -768,7 +769,7 @@
 .sidebar-theme-toggle:hover,
 .sidebar-collapse-toggle:hover {
   background: var(--bg-hover);
-  color: var(--primary);
+  color: var(--accent-ink);
 }
 
 .sidebar-collapse-toggle {

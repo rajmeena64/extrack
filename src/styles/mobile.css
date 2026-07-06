@@ -660,7 +660,7 @@
 
 @media (min-width: 481px) and (max-width: 768px) {
   .main-content:has(.dashboard-header) {
-    padding-top: 118px;
+    padding-top: 74px;
   }
 
   .app-shell-header-logo {
@@ -688,7 +688,7 @@
     position: fixed;
     top: 0;
     left: 60px;
-    right: 116px;
+    right: 176px;
     height: 56px;
     align-items: center;
     min-width: 0;
@@ -789,13 +789,14 @@
 
   .dashboard-header__daily-row {
     position: fixed;
-    top: 56px;
-    left: 12px;
-    right: 12px;
-    z-index: 8001;
-    display: grid !important;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 8px;
+    top: 8px;
+    right: 60px;
+    left: auto;
+    z-index: 8003;
+    display: flex !important;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0;
     margin: 0;
     padding: 0;
     background: transparent;
@@ -808,10 +809,14 @@
   }
 
   .dashboard-header__daily-row .start-day-btn {
-    grid-column: 4;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: max-content !important;
+    padding: 0 10px !important;
+    flex: 0 0 auto;
     pointer-events: auto;
-    color: #ffffff;
-    background: var(--primary);
+    color: var(--button-text);
+    background: var(--button-bg);
     box-shadow: none;
   }
 
@@ -937,7 +942,12 @@
 
 @media (max-width: 768px) {
   .dashboard-header .dashboard-toolbar {
-    display: block !important;
+    position: static !important;
+    inset: auto !important;
+    width: auto !important;
+    min-width: auto !important;
+    margin-left: auto;
+    display: flex !important;
     pointer-events: auto !important;
   }
 
@@ -953,9 +963,22 @@
   }
 
   .dashboard-header .dashboard-toolbar__controls {
-    display: grid !important;
-    grid-template-columns: minmax(0, 1fr) !important;
+    width: auto !important;
+    min-width: auto !important;
+    display: flex !important;
+    grid-template-columns: none !important;
+    justify-content: flex-end !important;
+    align-items: center !important;
     gap: 8px;
+    pointer-events: auto !important;
+  }
+
+  .dashboard-header .mobile-dashboard-actions {
+    position: static !important;
+    top: auto !important;
+    right: auto !important;
+    transform: none !important;
+    opacity: 1 !important;
     pointer-events: auto !important;
   }
 

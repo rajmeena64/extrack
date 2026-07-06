@@ -16,8 +16,8 @@
 
 .info-tooltip:hover,
 .info-tooltip:focus-visible {
-  border-color: var(--primary);
-  background: color-mix(in srgb, var(--accent-info-soft) 72%, var(--primary) 12%);
+  border-color: color-mix(in srgb, var(--accent-ink) 28%, var(--border-light));
+  background: var(--bg-hover);
 }
 
 .info-tooltip__bubble {

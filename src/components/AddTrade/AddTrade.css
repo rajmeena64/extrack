@@ -1102,7 +1102,7 @@
 }
 
 .preview-table td.profit {
-  color: var(--accent-success-strong);
+  color: var(--profit-color);
   font-weight: 800;
 }
 

@@ -151,7 +151,7 @@
 .stat-value.highlight[data-value="BUY"],
 .stat-value.highlight[data-value="LONG"] {
   background: rgba(16, 185, 129, 0.1);
-  color: var(--profit-color);
+  color: var(--accent-success-strong);
   border: 1px solid rgba(16, 185, 129, 0.2);
 }
 

@@ -345,7 +345,7 @@ function BacktestChart({
             {activePosition.takeProfit ? <span>TP {formatPrice(activePosition.takeProfit)}</span> : null}
             {activePosition.stopLoss ? <span>SL {formatPrice(activePosition.stopLoss)}</span> : null}
             <strong>{activePosition.quantity}</strong>
-            <em className={(activePosition.unrealizedPnL || 0) >= 0 ? 'is-positive' : 'is-negative'}>
+            <em className={(activePosition.unrealizedPnL || 0) >= 0 ? 'is-profit' : 'is-negative'}>
               {formatPrice(activePosition.unrealizedPnL || 0)}
             </em>
             <button type="button" onClick={() => onClosePosition?.(activePosition.id)} aria-label="Close position">

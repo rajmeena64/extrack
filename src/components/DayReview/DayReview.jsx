@@ -209,7 +209,7 @@ function DayReview({ trades = [], currencyCode = 'USD' }) {
         : 'No trades were recorded for this day.';
     }
 
-    const tone = stats.pnl > 0 ? 'green day' : stats.pnl < 0 ? 'red day' : 'flat day';
+    const tone = stats.pnl > 0 ? 'profitable day' : stats.pnl < 0 ? 'red day' : 'flat day';
     const accuracy =
       stats.winRate >= 60
         ? 'accuracy was strong'

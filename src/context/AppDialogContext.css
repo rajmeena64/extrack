@@ -26,7 +26,7 @@
 }
 
 .app-alert--success {
-  border-left-color: var(--profit-color);
+  border-left-color: var(--accent-success-strong);
 }
 
 .app-alert--error {
@@ -41,7 +41,7 @@
   width: 10px;
   height: 10px;
   border-radius: 999px;
-  background: var(--profit-color);
+  background: var(--accent-success-strong);
 }
 
 .app-alert--error .app-alert__icon {

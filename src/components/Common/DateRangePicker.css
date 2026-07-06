@@ -77,8 +77,8 @@ background-color: transparent;
 }
 
 .trade-date-picker__reset:hover {
-  color: var(--primary);
-  border-color: rgba(37, 99, 235, 0.32);
+  color: var(--accent-ink);
+  border-color: color-mix(in srgb, var(--accent-ink) 34%, var(--border-light));
 }
 
 .dark-mode .trade-rdp {
@@ -116,7 +116,7 @@ background-color: transparent;
 
 .calendar-template-header__nav:hover {
   border-color: var(--border-medium);
-  color: var(--primary);
+  color: var(--accent-ink);
   background: #f8fafc;
 }
 
@@ -179,7 +179,7 @@ background-color: transparent;
 
 .calendar-month-controls__nav:hover {
   border-color: var(--border-medium);
-  color: var(--primary);
+  color: var(--accent-ink);
   background: #f8fafc;
 }
 
@@ -241,7 +241,7 @@ background-color: transparent;
 .calendar-template-header__month-button[aria-expanded="true"],
 .calendar-template-header__year:hover,
 .calendar-template-header__year[aria-expanded="true"] {
-  border-color: color-mix(in srgb, var(--primary) 38%, var(--border-light));
+  border-color: color-mix(in srgb, var(--accent-ink) 38%, var(--border-light));
   outline: none;
 }
 
@@ -294,8 +294,8 @@ background-color: transparent;
 
 .calendar-template-header__month-menu button:hover,
 .calendar-template-header__month-menu button.is-active {
-  background: color-mix(in srgb, var(--primary) 10%, var(--bg-card));
-  color: var(--primary);
+  background: var(--bg-hover);
+  color: var(--accent-ink);
 }
 
 .calendar-template-header__year-menu {
@@ -355,8 +355,8 @@ background-color: transparent;
 .calendar-template-header__year-menu-nav button:hover,
 .calendar-template-header__year-grid button:hover,
 .calendar-template-header__year-grid button.is-active {
-  background: color-mix(in srgb, var(--primary) 10%, var(--bg-card));
-  color: var(--primary);
+  background: var(--bg-hover);
+  color: var(--accent-ink);
 }
 
 .calendar-template-header__next {
@@ -593,8 +593,8 @@ background-color: transparent;
 
 .trade-rdp .rdp-day_button:hover,
 .trade-rdp .rdp-button_reset:hover {
-  background: rgba(37, 99, 235, 0.1);
-  color: #0f172a;
+  background: var(--bg-hover);
+  color: var(--accent-ink);
 }
 
 /* outside days */
@@ -606,8 +606,8 @@ background-color: transparent;
 /* today */
 .trade-rdp .rdp-day_today .rdp-day_button,
 .trade-rdp .rdp-today .rdp-day_button {
-  border-color: rgba(37, 99, 235, 0.35);
-  color: #0f172a;
+  border-color: color-mix(in srgb, var(--accent-ink) 38%, var(--border-light));
+  color: var(--accent-ink);
 }
 
 /* selected day / range ends */
@@ -615,9 +615,9 @@ background-color: transparent;
 .trade-rdp .rdp-selected .rdp-day_button,
 .trade-rdp .rdp-range_start .rdp-day_button,
 .trade-rdp .rdp-range_end .rdp-day_button {
-  background: #dbeafe;
-  border-color: #93c5fd;
-  color: #0f172a;
+  background: var(--bg-hover);
+  border-color: color-mix(in srgb, var(--accent-ink) 38%, var(--border-light));
+  color: var(--accent-ink);
   box-shadow: var(--shadow-sm);
 }
 
@@ -664,22 +664,22 @@ background-color: transparent;
 
 .dark-mode .trade-rdp .rdp-day_button:hover,
 .dark-mode .trade-rdp .rdp-button_reset:hover {
-  background: rgba(96, 165, 250, 0.16);
-  color: #ffffff;
+  background: var(--bg-hover);
+  color: var(--accent-ink);
 }
 
 .dark-mode .trade-rdp .rdp-day_selected .rdp-day_button,
 .dark-mode .trade-rdp .rdp-selected .rdp-day_button,
 .dark-mode .trade-rdp .rdp-range_start .rdp-day_button,
 .dark-mode .trade-rdp .rdp-range_end .rdp-day_button {
-  background: #1e3a8a;
-  border-color: #3b82f6;
-  color: #ffffff;
+  background: var(--bg-hover);
+  border-color: color-mix(in srgb, var(--accent-ink) 38%, var(--border-light));
+  color: var(--accent-ink);
 }
 
 .dark-mode .trade-rdp .rdp-range_middle,
 .dark-mode .trade-rdp .rdp-day_range_middle {
-  background: rgba(37, 99, 235, 0.22);
+  background: var(--bg-hover);
   border-radius: 999px;
 }
 
@@ -690,12 +690,12 @@ background-color: transparent;
 }
 
 .dark-mode .trade-rdp .rdp-range_start {
-  background: linear-gradient(to right, transparent 0, rgba(37, 99, 235, 0.22) 100%);
+  background: linear-gradient(to right, transparent 0, var(--bg-hover) 100%);
   border-radius: 999px;
 }
 
 .dark-mode .trade-rdp .rdp-range_end {
-  background: linear-gradient(to left, transparent 0, rgba(37, 99, 235, 0.22) 100%);
+  background: linear-gradient(to left, transparent 0, var(--bg-hover) 100%);
   border-radius: 999px;
 }
 
@@ -715,7 +715,7 @@ background-color: transparent;
 /* .trade-rdp .rdp-day_button:focus-visible,
 .trade-rdp .rdp-button_previous:focus-visible,
 .trade-rdp .rdp-button_next:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--primary) 35%, transparent); 
+  outline: 2px solid color-mix(in srgb, var(--accent-ink) 35%, transparent); 
    outline-offset: 2px;
 } */
 

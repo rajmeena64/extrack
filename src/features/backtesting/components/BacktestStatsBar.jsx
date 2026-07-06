@@ -11,8 +11,8 @@ function BacktestStatsBar({ stats }) {
   return (
     <section className="backtest-stats-bar" aria-label="Account summary">
       <div><span>Current balance</span><strong>{currency.format(stats.currentBalance)}</strong></div>
-      <div><span>Realized P&L</span><strong className={stats.realizedPnL >= 0 ? 'is-positive' : 'is-negative'}>{currency.format(stats.realizedPnL)}</strong></div>
-      <div><span>Unrealized P&L</span><strong className={stats.unrealizedPnL >= 0 ? 'is-positive' : 'is-negative'}>{currency.format(stats.unrealizedPnL)}</strong></div>
+      <div><span>Realized P&L</span><strong className={stats.realizedPnL >= 0 ? 'is-profit' : 'is-negative'}>{currency.format(stats.realizedPnL)}</strong></div>
+      <div><span>Unrealized P&L</span><strong className={stats.unrealizedPnL >= 0 ? 'is-profit' : 'is-negative'}>{currency.format(stats.unrealizedPnL)}</strong></div>
       <div><span>Win rate</span><strong>{stats.winRate.toFixed(1)}%</strong></div>
       <div><span>Profit factor</span><strong>{formatProfitFactor(stats.profitFactor)}</strong></div>
       <div><span>Total trades</span><strong>{stats.totalTrades}</strong></div>

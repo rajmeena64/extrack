@@ -57,7 +57,7 @@
 
 .day-review-stat--positive {
   background:
-    linear-gradient(135deg, rgba(22, 163, 74, 0.11), transparent 64%),
+    linear-gradient(135deg, color-mix(in srgb, var(--profit-color) 11%, transparent), transparent 64%),
     var(--bg-card);
 }
 

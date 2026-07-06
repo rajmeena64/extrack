@@ -1,12 +1,11 @@
 import React, { lazy, Suspense, useState, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import {
   CalendarRange,
   ChartCandlestick,
   ChevronDown,
   ChevronsLeft,
   ChevronsRight,
-  Gauge,
   Grid2x2,
   History,
   LogOut,
@@ -15,9 +14,9 @@ import {
   Plus,
   Settings,
   Sun,
-  Table2,
   X,
 } from '../../icons/lucideIcons';
+import { HomeIcon, TradesIcon } from '../../icons/interfaceIcons';
 import { useTheme } from '../../context/ThemeContext';  // ✅ ADDED
 
 import './Sidebar.css';
@@ -200,79 +199,80 @@ function Sidebar() {
       {/* 🔹 SIDEBAR */}
       <div className={`sidebar ${sidebarOpen || settingsOpen ? 'open' : ''} ${settingsOpen ? 'settings-open' : ''} ${hoverLocked ? 'sidebar-hover-locked' : ''}`}>
         {/* NAV LINKS */}
-        <Link
+        <NavLink
           to="/dashboard"
-          className="nav-item"
+          end
+          className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
           onClick={() => setSidebarOpen(false)}
           aria-label="Go to Dashboard"
           title="Dashboard"
         >
-          <Gauge size={16} aria-hidden="true" /> <span className="nav-label">Dashboard</span>
-        </Link>
+          <HomeIcon size={16} aria-hidden="true" /> <span className="nav-label">Dashboard</span>
+        </NavLink>
 
-        <Link
+        <NavLink
           to="/add-trade"
-          className="nav-item add-trade-btn"
+          className={({ isActive }) => `nav-item add-trade-btn${isActive ? ' active' : ''}`}
           onClick={() => setSidebarOpen(false)}
           aria-label="Go to Add Trade"
           title="Add Trade"
         >
           <Plus size={16} aria-hidden="true" /> <span className="nav-label">Add trade</span>
-        </Link>
+        </NavLink>
 
-        <Link
+        <NavLink
           to="/analytics"
-          className="nav-item"
+          className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
           onClick={() => setSidebarOpen(false)}
           aria-label="Go to Analytics"
           title="Analytics"
         >
           <PieChart size={16} aria-hidden="true" /> <span className="nav-label">Analytics</span>
-        </Link>
+        </NavLink>
 
-        <Link
+        <NavLink
           to="/economic-calendar"
-          className="nav-item"
+          className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
           onClick={() => setSidebarOpen(false)}
           aria-label="Go to Economic Calendar"
           title="Economic Calendar"
         >
           <CalendarRange size={16} aria-hidden="true" />
           <span className="nav-label">Economic Calendar</span>
-        </Link>
+        </NavLink>
 
-        <Link
+        <NavLink
           to="/backtesting"
-          className="nav-item"
+          className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
           onClick={() => setSidebarOpen(false)}
           aria-label="Go to Backtesting"
           title="Backtesting"
         >
           <History size={16} aria-hidden="true" />
           <span className="nav-label">Backtesting</span>
-        </Link>
+        </NavLink>
 
-        <Link
+        <NavLink
           to="/chart"
-          className="nav-item"
+          className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
           onClick={() => setSidebarOpen(false)}
           aria-label="Go to Chart"
           title="Chart"
         >
           <ChartCandlestick size={16} aria-hidden="true" />
           <span className="nav-label">Chart</span>
-        </Link>
+        </NavLink>
 
-        <Link
+        <NavLink
           to="/TradeView"
-          className="nav-item"
+          className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
           onClick={() => setSidebarOpen(false)}
           aria-label="Go to Trades"
           title="Trades"
         >
-          <Table2 size={16} aria-hidden="true" />
+          <TradesIcon size={16} aria-hidden="true" />
           <span className="nav-label">Trades</span>
-        </Link>
+        </NavLink>
 
         {/* SETTINGS */}
         <div className="sidebar-settings-group">

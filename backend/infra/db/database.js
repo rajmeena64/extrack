@@ -1,3 +1,4 @@
+const fs = require('fs');
 const path = require("path");
 const { Pool } = require("pg");
 
@@ -14,9 +15,18 @@ const DB_POOL_MAX = Number(process.env.DB_POOL_MAX || 5);
 const DB_IDLE_TIMEOUT_MS = Number(process.env.DB_IDLE_TIMEOUT_MS || 600000);
 const DB_CONNECTION_TIMEOUT_MS = Number(process.env.DB_CONNECTION_TIMEOUT_MS || 10000);
 
+let sslCa;
+if (process.env.DB_SSL_CA_BASE64) {
+  sslCa = Buffer.from(process.env.DB_SSL_CA_BASE64, 'base64').toString('utf8');
+} else if (process.env.DB_SSL_CA) {
+  sslCa = process.env.DB_SSL_CA.includes('BEGIN CERTIFICATE')
+    ? process.env.DB_SSL_CA.replace(/\\n/g, '\n')
+    : fs.readFileSync(process.env.DB_SSL_CA, 'utf8');
+}
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: sslEnabled ? { rejectUnauthorized } : false,
+  ssl: sslEnabled ? { rejectUnauthorized, ...(sslCa ? { ca: sslCa } : {}) } : false,
 
   max: DB_POOL_MAX,
   idleTimeoutMillis: DB_IDLE_TIMEOUT_MS,

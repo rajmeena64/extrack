@@ -103,11 +103,11 @@
 }
 
 .activity-card__legend-item--win {
-  background: var(--accent-success-soft);
+  background: color-mix(in srgb, var(--profit-color) 12%, transparent);
 }
 
 .activity-card__legend-item--win i {
-  background: linear-gradient(180deg, var(--accent-success), var(--accent-success-strong));
+  background: var(--profit-color);
 }
 
 .activity-card__legend-item--loss {

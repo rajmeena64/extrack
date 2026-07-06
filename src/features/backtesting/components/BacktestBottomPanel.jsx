@@ -87,7 +87,7 @@ function BacktestBottomPanel({
                     <td>{position.entryPrice}</td>
                     <td>{position.stopLoss || '-'}</td>
                     <td>{position.takeProfit || '-'}</td>
-                    <td className={position.unrealizedPnL >= 0 ? 'is-positive' : 'is-negative'}>{currency.format(position.unrealizedPnL || 0)}</td>
+                    <td className={position.unrealizedPnL >= 0 ? 'is-profit' : 'is-negative'}>{currency.format(position.unrealizedPnL || 0)}</td>
                     <td><button type="button" onClick={() => onClosePosition(position.id)}>Close</button></td>
                   </tr>
                 ))}
@@ -108,7 +108,7 @@ function BacktestBottomPanel({
                     <td>{trade.quantity}</td>
                     <td>{trade.entryPrice}</td>
                     <td>{trade.exitPrice}</td>
-                    <td className={trade.pnl >= 0 ? 'is-positive' : 'is-negative'}>{currency.format(trade.pnl)}</td>
+                    <td className={trade.pnl >= 0 ? 'is-profit' : 'is-negative'}>{currency.format(trade.pnl)}</td>
                     <td>{trade.rMultiple}</td>
                     <td>{trade.closeReason}</td>
                     <td><button type="button" onClick={() => onJournalTrade(trade)}>Journal</button></td>

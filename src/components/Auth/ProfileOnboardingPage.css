@@ -101,10 +101,16 @@
   padding: 0;
 }
 
-.profile-onboarding__form input:focus,
-.profile-onboarding__select .custom-select__trigger:focus-visible {
+.profile-onboarding__form input:focus {
   outline: none;
   box-shadow: 0 0 0 4px rgba(229, 255, 61, 0.28), inset 0 0 0 1px rgba(15, 23, 42, 0.16);
+}
+
+.profile-onboarding__select .custom-select__trigger:focus-visible,
+.profile-onboarding__select .custom-select__trigger:hover {
+  outline: none;
+  border-color: color-mix(in srgb, var(--accent-success-strong) 76%, var(--primary-dark) 24%);
+  box-shadow: 0 0 0 4px rgba(88, 212, 126, 0.14), inset 0 0 0 1px rgba(15, 23, 42, 0.16);
 }
 
 .profile-onboarding__form button {

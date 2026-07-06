@@ -1,5 +1,6 @@
 const { authCheck } = require('../../domains/auth/controller');
 const { createRateLimiter } = require('../../core/rateLimiter/index');
+const feedClient = require('./feed.client');
 const { connectionState, ctraderConfig, tokenState } = require('./state');
 const { requireCtraderAdmin } = require('./admin.middleware');
 
@@ -32,6 +33,24 @@ function asyncRoute(handler) {
       await handler(req, res);
     } catch (error) {
       sendRouteError(res, error);
+    }
+  };
+}
+
+function sendMarketFeedError(res, error) {
+  const timeout = ['ECONNABORTED', 'ETIMEDOUT', 'ERR_CANCELED'].includes(error?.code);
+  return res.status(timeout ? 504 : 503).json({
+    success: false,
+    error: timeout ? 'Request timeout, please try again' : 'Market data temporarily unavailable',
+  });
+}
+
+function marketFeedRoute(handler) {
+  return async (req, res) => {
+    try {
+      await handler(req, res);
+    } catch (error) {
+      sendMarketFeedError(res, error);
     }
   };
 }
@@ -75,14 +94,7 @@ async function releaseChartConsumer(service, chartId, symbolId = null) {
       symbolName: symbol?.name || null,
     });
 
-    if (consumers.size === 0) {
-      ctraderConfig.chartLiveConsumers.delete(subscribedSymbolId);
-
-      if (symbol?.name) {
-        await service.unsubscribeLiveTicks(symbol.name);
-        await service.unsubscribeDepth(symbol.name);
-      }
-    }
+    if (consumers.size === 0) ctraderConfig.chartLiveConsumers.delete(subscribedSymbolId);
   }
 
   return released;
@@ -95,8 +107,8 @@ async function subscribeChartConsumer(service, chartId, symbolName) {
     throw error;
   }
 
-  await service.ensureCtraderReady();
-  const symbols = await service.getSymbols();
+  const feedResponse = await feedClient.getFeedSymbols();
+  const symbols = Array.isArray(feedResponse.symbols) ? feedResponse.symbols : [];
   const match = findPublicSymbol(symbols, symbolName);
 
   if (!match) {
@@ -109,17 +121,13 @@ async function subscribeChartConsumer(service, chartId, symbolName) {
 
   const key = String(match.id);
   const consumers = ctraderConfig.chartLiveConsumers.get(key) || new Set();
-  const shouldSubscribe = consumers.size === 0;
   consumers.add(chartId);
   ctraderConfig.chartLiveConsumers.set(key, consumers);
 
-  if (shouldSubscribe) {
-    await service.subscribeLiveTicks(match.name);
-    await service.subscribeDepth(match.name);
-  }
-
   return {
     symbol: match,
+    source: 'ctrader-feed-service',
+    preSubscribed: true,
     subscriptions: getChartSubscriptionSnapshot(),
   };
 }
@@ -182,6 +190,25 @@ function registerCtraderRoutes(app, service) {
     });
   });
 
+  app.get('/api/admin/feed-status', ...adminOnly, async (req, res) => {
+    try {
+      const result = await feedClient.getQuote('EURUSD');
+      return res.json({
+        success: true,
+        feedReachable: true,
+        signedAuthOk: true,
+        quoteOk: Boolean(result?.quote),
+      });
+    } catch (error) {
+      return res.status(503).json({
+        success: false,
+        feedReachable: Boolean(error?.response),
+        signedAuthOk: false,
+        quoteOk: false,
+      });
+    }
+  });
+
   app.get('/api/ctrader-cache', ...adminOnly, (req, res) => {
     res.json({
       success: true,
@@ -196,12 +223,14 @@ function registerCtraderRoutes(app, service) {
     });
   });
 
-  app.get('/api/ctrader-latest-tick', ...adminOnly, asyncRoute(async (req, res) => {
-    await service.ensureCtraderReady();
-    const symbols = await service.getSymbols();
-    const match = findPublicSymbol(symbols, req.query.symbol);
-    const tick = match ? ctraderConfig.latestTicks.get(match.id) : null;
-    res.json({ success: true, tick: tick || null });
+  app.get('/api/ctrader-latest-tick', ...adminOnly, marketFeedRoute(async (req, res) => {
+    const feedResponse = await feedClient.getQuote(req.query.symbol);
+    res.json({
+      success: true,
+      tick: feedResponse.quote || null,
+      source: 'ctrader-feed-service',
+      feedConnected: feedResponse.connected === true,
+    });
   }));
 
   app.get('/api/ctrader-latest-depth', ...adminOnly, asyncRoute(async (req, res) => {
@@ -212,7 +241,7 @@ function registerCtraderRoutes(app, service) {
     res.json({ success: true, depth: depth || null });
   }));
 
-  app.get('/api/ctrader-live-market', ...adminOnly, asyncRoute(async (req, res) => {
+  app.get('/api/ctrader-live-market', ...adminOnly, marketFeedRoute(async (req, res) => {
     res.json({
       success: true,
       ...(await service.getLiveMarketSnapshot({
@@ -223,7 +252,7 @@ function registerCtraderRoutes(app, service) {
     });
   }));
 
-  app.get('/api/market-chart/live', ...adminOnly, asyncRoute(async (req, res) => {
+  app.get('/api/market-chart/live', ...adminOnly, marketFeedRoute(async (req, res) => {
     res.json({
       success: true,
       ...(await service.getLiveMarketSnapshot({
@@ -304,7 +333,7 @@ function registerCtraderRoutes(app, service) {
     }
   });
 
-  app.get('/api/ctrader-watchlist-quotes', ...adminOnly, ctraderDataRateLimiter, asyncRoute(async (req, res) => {
+  app.get('/api/ctrader-watchlist-quotes', ...adminOnly, ctraderDataRateLimiter, marketFeedRoute(async (req, res) => {
     const symbols = String(req.query.symbols || '')
       .split(',')
       .map((symbol) => symbol.trim())
@@ -312,7 +341,7 @@ function registerCtraderRoutes(app, service) {
     res.json({ success: true, ...(await service.getWatchlistQuotes(symbols)) });
   }));
 
-  app.get('/api/market-chart/watchlist-quotes', ...adminOnly, ctraderDataRateLimiter, asyncRoute(async (req, res) => {
+  app.get('/api/market-chart/watchlist-quotes', ...adminOnly, ctraderDataRateLimiter, marketFeedRoute(async (req, res) => {
     const symbols = String(req.query.symbols || '')
       .split(',')
       .map((symbol) => symbol.trim())
@@ -409,11 +438,23 @@ function registerCtraderRoutes(app, service) {
   }));
 
   app.post('/api/ctrader-live-ticks/subscribe', ...adminOnly, asyncRoute(async (req, res) => {
-    res.json({ success: true, ...(await service.subscribeLiveTicks(req.body?.symbol)) });
+    res.json({
+      success: true,
+      symbol: req.body?.symbol || null,
+      subscribed: true,
+      preSubscribed: true,
+      source: 'ctrader-feed-service',
+    });
   }));
 
   app.post('/api/ctrader-live-ticks/unsubscribe', ...adminOnly, asyncRoute(async (req, res) => {
-    res.json({ success: true, ...(await service.unsubscribeLiveTicks(req.body?.symbol)) });
+    res.json({
+      success: true,
+      symbol: req.body?.symbol || null,
+      subscribed: true,
+      ignored: true,
+      source: 'ctrader-feed-service',
+    });
   }));
 
   app.post('/api/ctrader-live-trendbar/subscribe', ...adminOnly, asyncRoute(async (req, res) => {

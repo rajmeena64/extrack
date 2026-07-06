@@ -55,7 +55,7 @@ function ActivityChart({ trades, currencyCode = 'USD' }) {
     const ctx = chartRef.current.getContext('2d');
     const theme = getComputedStyle(document.body);
     const isDarkMode = Boolean(darkMode);
-    const profitColor = theme.getPropertyValue('--profit-color').trim() || '#16a34a';
+    const profitColor = theme.getPropertyValue('--profit-color').trim() || '#2563eb';
     const lossColor = theme.getPropertyValue('--loss-color').trim() || '#dc2626';
     const textPrimary = isDarkMode ? '#f8fafc' : '#0f172a';
     const textSecondary = isDarkMode ? '#f8fafc' : '#0f172a';
@@ -76,7 +76,7 @@ function ActivityChart({ trades, currencyCode = 'USD' }) {
             },
             hoverBackgroundColor: (context) => {
               const value = context.raw || 0;
-              return value >= 0 ? '#15803d' : '#b91c1c';
+              return value >= 0 ? (isDarkMode ? '#60a5fa' : '#1d4ed8') : '#b91c1c';
             },
             borderRadius: 4,
             borderSkipped: false,

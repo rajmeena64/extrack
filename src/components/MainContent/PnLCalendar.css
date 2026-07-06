@@ -40,8 +40,8 @@
 
 .calendar-shell__icon.is-active,
 .calendar-shell__icon:hover {
-  background: var(--accent-info-soft);
-  color: var(--primary);
+  background: var(--bg-hover);
+  color: var(--accent-ink);
 }
 
 .calendar-settings-menu {
@@ -111,7 +111,7 @@
 .calendar-settings-menu__option input {
   width: 14px;
   height: 14px;
-  accent-color: var(--primary);
+  accent-color: var(--accent-ink);
 }
 
 .calendar-shell__nav-group {
@@ -142,9 +142,9 @@
 }
 
 .calendar-shell__range:hover {
-  background: var(--accent-info-soft);
-  border-color: var(--primary);
-  color: var(--primary);
+  background: var(--bg-hover);
+  border-color: color-mix(in srgb, var(--accent-ink) 28%, var(--border-light));
+  color: var(--accent-ink);
 }
 
 .calendar-shell__label {

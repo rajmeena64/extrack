@@ -76,10 +76,10 @@
 }
 
 .tabs button.active {
-  color: var(--primary);
-  font-weight: 600;
-  background: #ffffff;
-  box-shadow: var(--shadow-sm);
+  color: var(--accent-ink);
+  font-weight: 700;
+  background: var(--bg-hover);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent-ink) 12%, transparent);
 }
 
 .tabs button.active::after {
@@ -136,7 +136,8 @@
 }
 
 .settings-dropdown label:hover {
-  color: var(--primary);
+  color: var(--accent-ink);
+  background: var(--bg-hover);
 }
 
 .settings-dropdown label.disabled {
@@ -148,7 +149,7 @@
   width: 12px;
   height: 12px;
   cursor: pointer;
-  accent-color: var(--primary);
+  accent-color: var(--accent-ink);
 }
 
 .settings-dropdown label.disabled input[type="checkbox"] {
@@ -283,7 +284,7 @@
 }
 
 .trade-pnl--positive {
-  color: var(--accent-success-strong);
+  color: var(--profit-color);
 }
 
 .trade-pnl--negative {
@@ -356,7 +357,7 @@
 }
 
 .dark-mode .trade-pnl--positive {
-  color: #86efac;
+  color: var(--profit-color);
 }
 
 .dark-mode .trade-pnl--negative {

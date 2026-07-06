@@ -527,7 +527,7 @@ function SavedSessionCard({ session, isActive, onOpen, onRename, onDelete }) {
         </div>
 
         <div className="backtest-session-metrics">
-          <SessionMetric label="P&L" value={currency.format(pnl)} tone={pnl >= 0 ? 'is-positive' : 'is-negative'} />
+          <SessionMetric label="P&L" value={currency.format(pnl)} tone={pnl >= 0 ? 'is-profit' : 'is-negative'} />
           <SessionMetric label="Balance" value={currency.format(balance)} />
           <SessionMetric label="Win rate" value={`${winRate.toFixed(1)}%`} />
         </div>
@@ -655,7 +655,7 @@ function BacktestSessionDashboard({ session, onBack, onContinue }) {
           </div>
           <div>
             <span>Realized P&L</span>
-            <strong className={realizedPnL >= 0 ? 'is-positive' : 'is-negative'}>
+            <strong className={realizedPnL >= 0 ? 'is-profit' : 'is-negative'}>
               {currency.format(realizedPnL)}
             </strong>
           </div>

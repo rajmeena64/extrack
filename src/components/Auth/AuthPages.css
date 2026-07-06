@@ -64,8 +64,8 @@
 
 .auth-panel button {
   border: 0;
-  background: var(--primary);
-  color: #ffffff;
+  background: var(--button-bg);
+  color: var(--button-text);
   cursor: pointer;
 }
 

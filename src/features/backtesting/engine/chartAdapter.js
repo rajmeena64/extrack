@@ -22,7 +22,7 @@ const markerForTrade = (trade) => {
   return {
     time: trade.exitTime || trade.entryTime,
     position: isSell ? 'belowBar' : 'aboveBar',
-    color: isStop ? '#ef4444' : isTarget ? '#22c55e' : '#3b82f6',
+    color: isStop ? '#ef4444' : isTarget ? '#2563eb' : '#3b82f6',
     shape: isSell ? 'arrowUp' : 'arrowDown',
     text: isStop ? 'SL hit' : isTarget ? 'TP hit' : 'Exit',
   };
@@ -190,7 +190,7 @@ export function drawStopLossLine(instance, price) {
 }
 
 export function drawTargetLine(instance, price) {
-  setPriceLine(instance, 'target', price, 'Target', getThemeColor('--accent-success', '#22c55e'));
+  setPriceLine(instance, 'target', price, 'Target', getThemeColor('--profit-color', '#2563eb'));
 }
 
 export function drawRiskRewardBox(instance, { entryPrice, stopLoss, takeProfit }) {

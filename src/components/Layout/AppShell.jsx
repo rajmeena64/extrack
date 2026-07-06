@@ -13,7 +13,7 @@ function AppShell({ children }) {
   return (
     <div className={`dashboard ${routeClass}`}>
       <Link className="app-shell-header-logo" to="/dashboard" aria-label="Go to dashboard" title="Dashboard">
-        <Logo className="app-shell-header-logo__brand" invertTheme />
+        <Logo className="app-shell-header-logo__brand" />
       </Link>
       <Sidebar />
       {children}

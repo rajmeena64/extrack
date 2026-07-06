@@ -53,9 +53,9 @@
 
 /* ACTIVE TAB */
 .analytics-tab.active {
-  background: var(--button-bg);
-  color: white;
-  border-color: transparent;
+  background: var(--bg-hover);
+  color: var(--accent-ink);
+  border-color: color-mix(in srgb, var(--accent-ink) 18%, transparent);
 
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
 }
@@ -126,7 +126,7 @@
 
 .economic-calendar-settings__button:hover {
   background: var(--bg-hover);
-  color: var(--primary);
+  color: var(--accent-ink);
   transform: translateY(-1px);
 }
 
@@ -173,7 +173,7 @@
 .economic-calendar-settings__option:hover,
 .economic-calendar-settings__option.active {
   background: var(--bg-hover);
-  color: var(--primary);
+  color: var(--accent-ink);
 }
 
 .economic-calendar-settings__option strong {
@@ -332,9 +332,9 @@
 
 /* ACTIVE */
 .heatmap-tab.active {
-  background: var(--button-bg);
-  color: white;
-  border-color: transparent;
+  background: var(--bg-hover);
+  color: var(--accent-ink);
+  border-color: color-mix(in srgb, var(--accent-ink) 18%, transparent);
 }
 
 /* ===== BODY ===== */
@@ -427,7 +427,7 @@
   border: 0;
   border-radius: 8px;
   background: var(--button-bg);
-  color: #fff;
+  color: var(--button-text);
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;

@@ -87,7 +87,7 @@
 }
 
 .metric-card__badge--positive {
-  background: rgba(22, 163, 74, 0.1);
+  background: color-mix(in srgb, var(--profit-color) 10%, transparent);
   color: var(--profit-color);
 }
 
@@ -102,8 +102,8 @@
 }
 
 .dark-mode .metric-card__badge--positive {
-  background: rgba(113, 224, 152, 0.14);
-  color: #9df0bb;
+  background: color-mix(in srgb, var(--profit-color) 14%, transparent);
+  color: var(--profit-color);
 }
 
 .dark-mode .metric-card__badge--negative {
@@ -147,7 +147,7 @@
 }
 
 .metric-card--positive .metric-card__icon {
-  background: rgba(22, 163, 74, 0.1);
+  background: color-mix(in srgb, var(--profit-color) 10%, transparent);
   color: var(--profit-color);
 }
 
@@ -157,8 +157,8 @@
 }
 
 .dark-mode .metric-card--positive .metric-card__icon {
-  background: rgba(113, 224, 152, 0.16);
-  color: #9df0bb;
+  background: color-mix(in srgb, var(--profit-color) 16%, transparent);
+  color: var(--profit-color);
 }
 
 .dark-mode .metric-card--negative .metric-card__icon {

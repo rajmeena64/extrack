@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import "./profile.css";
+import { getGoogleProfilePicture } from "../../utils/userAvatar";
 
 export default function Profile({ user, onClose }) {
   const profileRef = useRef(null);
@@ -17,6 +18,11 @@ export default function Profile({ user, onClose }) {
   }, [onClose]);
 
   if (!user) return null;
+
+  const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+    [user.firstName, user.lastName].filter(Boolean).join(" ") || "User"
+  )}&background=3b5cff&color=fff`;
+  const profilePicture = getGoogleProfilePicture(user);
 
   return (
     <div ref={profileRef} className="account-page">
@@ -43,8 +49,14 @@ export default function Profile({ user, onClose }) {
         <div className="box profile-top">
           <div className="profile-left">
             <img
-              src={`https://ui-avatars.com/api/?name=${user.firstName}+${user.lastName}&background=3b5cff&color=fff`}
-              alt="avatar"
+              src={profilePicture || defaultAvatar}
+              alt={`${[user.firstName, user.lastName].filter(Boolean).join(" ") || "User"} profile`}
+              referrerPolicy="no-referrer"
+              onError={(event) => {
+                if (event.currentTarget.dataset.fallbackApplied) return;
+                event.currentTarget.dataset.fallbackApplied = "true";
+                event.currentTarget.src = defaultAvatar;
+              }}
             />
             <div>
               <h3>{user.firstName} {user.lastName}</h3>

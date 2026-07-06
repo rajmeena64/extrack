@@ -88,7 +88,11 @@
 .custom-select__option.is-selected {
   outline: none;
   background: rgba(88, 212, 126, 0.1);
-  color: var(--heading);
+  color: var(--heading, var(--text-primary));
+}
+
+.custom-select__option.is-selected {
+  font-weight: 800;
 }
 
 .custom-select__option:disabled {
