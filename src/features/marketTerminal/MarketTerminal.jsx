@@ -230,7 +230,7 @@ const buildWatchlistSections = (symbols, activeSymbol) => {
     .filter((section) => section.rows.length > 0);
 };
 
-function ChartPane({ chart, active, compact, fitNonce, pageActive, onActivate, onQuote }) {
+function ChartPane({ chart, active, compact, fitNonce, pageActive, initialQuote, onActivate, onQuote }) {
   const chartContainerRef = useRef(null);
   const chartApiRef = useRef(null);
   const candleSeriesRef = useRef(null);
@@ -256,6 +256,14 @@ function ChartPane({ chart, active, compact, fitNonce, pageActive, onActivate, o
   const selectedSymbol = chart.symbol || DEFAULT_SYMBOL;
   const interval = chart.interval || '1m';
   const priceFormat = useMemo(() => getSeriesPriceFormat(quote), [quote]);
+
+  useEffect(() => {
+    if (!initialQuote) return;
+    const normalized = normalizeStreamQuote(initialQuote);
+    if (Number.isFinite(Number(normalized.last)) && Number(normalized.last) > 0) {
+      setQuote(normalized);
+    }
+  }, [initialQuote]);
 
   const applyCandles = useCallback(({ preserveRange = false, prependedCount = 0, fit = false } = {}) => {
     const chartApi = chartApiRef.current;
@@ -563,6 +571,7 @@ function ChartPane({ chart, active, compact, fitNonce, pageActive, onActivate, o
       symbols: [selectedSymbol],
       onTick: (tick) => {
         const nextQuote = normalizeStreamQuote(tick);
+        if (!Number.isFinite(Number(nextQuote.last)) || Number(nextQuote.last) <= 0) return;
         const liveCandle = buildStreamCandle(tick, interval, candlesRef.current);
         onQuote(selectedSymbol, nextQuote);
         setQuote(nextQuote);
@@ -878,6 +887,7 @@ function MarketTerminal({ pageActive = true }) {
                 chart={item}
                 compact={compact}
                 fitNonce={fitNonce}
+                initialQuote={quotes[item.symbol || DEFAULT_SYMBOL]}
                 key={item.id}
                 pageActive={pageActive}
                 onActivate={() => setActiveChartId(item.id)}
