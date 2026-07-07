@@ -161,6 +161,7 @@ const apiRoutes = require('./api/routes/Api');
 const binanceRoutes = require('./api/routes/binance');
 const ohlcvRoute = require("./api/routes/ohlcv.route");
 const instrumentRoutes = require('./instruments/instrumentRoutes');
+const { refreshInstrumentCache } = require('./instruments/instrumentRegistry');
 
 const { registerCtraderRoutes, ensureCtraderTokenStore } = require('./api/routes/ctrader');
 
@@ -306,6 +307,12 @@ async function startServer() {
     if (typeof settingsRoutes.ensureUserSettingsTable === 'function') {
       await settingsRoutes.ensureUserSettingsTable();
     }
+
+    refreshInstrumentCache({ force: true }).catch((error) => {
+      console.warn('startup.instrument_cache_warm_failed', {
+        error: sanitizeError(error),
+      });
+    });
   } catch (error) {
     console.error('startup.ensure_failed', { error: sanitizeError(error) });
     process.exit(1);

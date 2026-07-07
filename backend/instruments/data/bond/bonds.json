@@ -1,6 +1,0 @@
-[
-  { "symbol": "US10Y", "name": "US 10 Year Treasury Yield", "type": "bond", "category": "bonds" },
-  { "symbol": "US02Y", "name": "US 2 Year Treasury Yield", "type": "bond", "category": "bonds" },
-  { "symbol": "DE10Y", "name": "Germany 10 Year Bund Yield", "type": "bond", "category": "bonds" },
-  { "symbol": "IN10Y", "name": "India 10 Year Government Bond Yield", "type": "bond", "category": "bonds" }
-]

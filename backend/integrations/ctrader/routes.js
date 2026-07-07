@@ -1,6 +1,7 @@
 const { authCheck } = require('../../domains/auth/controller');
 const { createRateLimiter } = require('../../core/rateLimiter/index');
 const feedClient = require('./feed.client');
+const { getInstrumentBySymbol } = require('../../instruments/instrumentRegistry');
 const { connectionState, ctraderConfig, tokenState } = require('./state');
 const { requireCtraderAdmin } = require('./admin.middleware');
 
@@ -38,6 +39,13 @@ function asyncRoute(handler) {
 }
 
 function sendMarketFeedError(res, error) {
+  if (error?.status && error.status < 500) {
+    return res.status(error.status).json(error.payload || {
+      success: false,
+      error: 'Invalid request',
+    });
+  }
+
   const timeout = ['ECONNABORTED', 'ETIMEDOUT', 'ERR_CANCELED'].includes(error?.code);
   return res.status(timeout ? 504 : 503).json({
     success: false,
@@ -53,6 +61,30 @@ function marketFeedRoute(handler) {
       sendMarketFeedError(res, error);
     }
   };
+}
+
+async function requireAllowedInstrument(symbol) {
+  const instrument = await getInstrumentBySymbol(symbol);
+  if (!instrument) {
+    const error = new Error('Invalid or unsupported symbol');
+    error.status = 400;
+    error.payload = { success: false, error: 'Invalid or unsupported symbol' };
+    throw error;
+  }
+  return instrument;
+}
+
+async function requireAllowedSymbolList(symbols = []) {
+  const unique = Array.from(new Set(symbols.map((symbol) => String(symbol || '').trim()).filter(Boolean)));
+  if (unique.length > 250) {
+    const error = new Error('Too many symbols');
+    error.status = 400;
+    error.payload = { success: false, error: 'Maximum 250 symbols per request' };
+    throw error;
+  }
+
+  const instruments = await Promise.all(unique.map((symbol) => requireAllowedInstrument(symbol)));
+  return instruments.map((instrument) => instrument.requestSymbol || instrument.symbol);
 }
 
 function publicDepth(depth) {
@@ -224,7 +256,8 @@ function registerCtraderRoutes(app, service) {
   });
 
   app.get('/api/ctrader-latest-tick', ...adminOnly, marketFeedRoute(async (req, res) => {
-    const feedResponse = await feedClient.getQuote(req.query.symbol);
+    const instrument = await requireAllowedInstrument(req.query.symbol);
+    const feedResponse = await feedClient.getQuote(instrument.requestSymbol || instrument.symbol);
     res.json({
       success: true,
       tick: feedResponse.quote || null,
@@ -242,10 +275,11 @@ function registerCtraderRoutes(app, service) {
   }));
 
   app.get('/api/ctrader-live-market', ...adminOnly, marketFeedRoute(async (req, res) => {
+    const instrument = await requireAllowedInstrument(req.query.symbol);
     res.json({
       success: true,
       ...(await service.getLiveMarketSnapshot({
-        symbol: req.query.symbol,
+        symbol: instrument.requestSymbol || instrument.symbol,
         interval: req.query.interval || '1m',
         subscribe: req.query.subscribe !== 'false',
       })),
@@ -253,10 +287,11 @@ function registerCtraderRoutes(app, service) {
   }));
 
   app.get('/api/market-chart/live', ...adminOnly, marketFeedRoute(async (req, res) => {
+    const instrument = await requireAllowedInstrument(req.query.symbol);
     res.json({
       success: true,
       ...(await service.getLiveMarketSnapshot({
-        symbol: req.query.symbol,
+        symbol: instrument.requestSymbol || instrument.symbol,
         interval: req.query.interval || '1m',
         subscribe: req.query.subscribe !== 'false',
       })),
@@ -338,7 +373,7 @@ function registerCtraderRoutes(app, service) {
       .split(',')
       .map((symbol) => symbol.trim())
       .filter(Boolean);
-    res.json({ success: true, ...(await service.getWatchlistQuotes(symbols)) });
+    res.json({ success: true, ...(await service.getWatchlistQuotes(await requireAllowedSymbolList(symbols))) });
   }));
 
   app.get('/api/market-chart/watchlist-quotes', ...adminOnly, ctraderDataRateLimiter, marketFeedRoute(async (req, res) => {
@@ -346,7 +381,7 @@ function registerCtraderRoutes(app, service) {
       .split(',')
       .map((symbol) => symbol.trim())
       .filter(Boolean);
-    res.json({ success: true, ...(await service.getWatchlistQuotes(symbols)) });
+    res.json({ success: true, ...(await service.getWatchlistQuotes(await requireAllowedSymbolList(symbols))) });
   }));
 
   app.get('/api/ctrader-symbol/:symbolId', ...adminOnly, ctraderDataRateLimiter, asyncRoute(async (req, res) => {
@@ -382,9 +417,10 @@ function registerCtraderRoutes(app, service) {
           required: ['symbol', 'interval'],
         });
       }
+      const instrument = await requireAllowedInstrument(symbol);
 
       const result = await service.fetchCtraderKlines({
-        symbol,
+        symbol: instrument.requestSymbol || instrument.symbol,
         interval,
         startTime,
         endTime,
@@ -409,9 +445,10 @@ function registerCtraderRoutes(app, service) {
           required: ['symbol', 'interval'],
         });
       }
+      const instrument = await requireAllowedInstrument(symbol);
 
       const result = await service.fetchCtraderKlines({
-        symbol,
+        symbol: instrument.requestSymbol || instrument.symbol,
         interval,
         startTime,
         endTime,

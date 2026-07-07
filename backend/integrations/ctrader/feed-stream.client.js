@@ -11,6 +11,19 @@ let reconnectAttempt = 0;
 let forceKeyRefresh = false;
 let stopped = true;
 let tickHandler = null;
+let requestedSymbols = [];
+
+function normalizeSymbol(value) {
+  return String(value || '').replace(/[^a-z0-9]/gi, '').toUpperCase();
+}
+
+function sendSubscription() {
+  if (!socket || socket.readyState !== WebSocket.OPEN) return;
+  socket.send(JSON.stringify({
+    type: 'MARKET_SUBSCRIBE',
+    symbols: requestedSymbols,
+  }));
+}
 
 function getStreamUrl() {
   const url = new URL(getFeedBaseUrl());
@@ -46,6 +59,7 @@ async function connect() {
   ws.on('open', () => {
     reconnectAttempt = 0;
     console.info('market.feed_stream.connected');
+    sendSubscription();
   });
 
   ws.on('message', (buffer) => {
@@ -95,7 +109,13 @@ function stopFeedStream() {
   socket = null;
 }
 
+function updateFeedStreamSymbols(symbols = []) {
+  requestedSymbols = Array.from(new Set(symbols.map(normalizeSymbol).filter(Boolean))).slice(0, 500);
+  sendSubscription();
+}
+
 module.exports = {
   startFeedStream,
   stopFeedStream,
+  updateFeedStreamSymbols,
 };

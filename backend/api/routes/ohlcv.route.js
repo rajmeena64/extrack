@@ -28,15 +28,15 @@ router.get('/', async (req, res) => {
     });
   }
 
-  const instrument = getInstrumentBySymbol(symbol);
-  if (!instrument) {
-    return res.status(400).json({
-      success: false,
-      error: 'Invalid or unsupported symbol',
-    });
-  }
-
   try {
+    const instrument = await getInstrumentBySymbol(symbol);
+    if (!instrument) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid or unsupported symbol',
+      });
+    }
+
     const useBinanceFeed = instrument.category === 'crypto';
     const data = useBinanceFeed
       ? await getBinanceBacktestRange(instrument.symbol, start, end, timeframe)
@@ -79,15 +79,15 @@ router.get('/chunk', async (req, res) => {
     });
   }
 
-  const instrument = getInstrumentBySymbol(symbol);
-  if (!instrument) {
-    return res.status(400).json({
-      success: false,
-      error: 'Invalid or unsupported symbol',
-    });
-  }
-
   try {
+    const instrument = await getInstrumentBySymbol(symbol);
+    if (!instrument) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid or unsupported symbol',
+      });
+    }
+
     const useBinanceFeed = instrument.category === 'crypto';
     const data = useBinanceFeed
       ? await getBinanceBacktestChunk({
@@ -137,15 +137,15 @@ router.get('/latest', async (req, res) => {
     });
   }
 
-  const instrument = getInstrumentBySymbol(symbol);
-  if (!instrument) {
-    return res.status(400).json({
-      success: false,
-      error: 'Invalid or unsupported symbol',
-    });
-  }
-
   try {
+    const instrument = await getInstrumentBySymbol(symbol);
+    if (!instrument) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid or unsupported symbol',
+      });
+    }
+
     const useBinanceFeed = instrument.category === 'crypto';
     const candle = useBinanceFeed
       ? await getLatestBinanceBacktestCandle(instrument.symbol)

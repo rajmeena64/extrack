@@ -118,15 +118,23 @@ let bootstrapComplete = false;
 let readyLogged = false;
 let lastPendingLogAt = 0;
 
-const feedWss = new WebSocket.Server({ noServer: true, maxPayload: 1024 });
+const feedWss = new WebSocket.Server({ noServer: true, maxPayload: 16 * 1024 });
 
 function handleFeedTick(tick) {
   recordTick(tick);
   if (feedWss.clients.size === 0) return;
 
+  const symbol = String(tick?.symbolName || '').replace(/[^a-z0-9]/gi, '').toUpperCase();
   const payload = JSON.stringify({ type: 'MARKET_TICK', tick });
   for (const client of feedWss.clients) {
-    if (client.readyState === WebSocket.OPEN && client.bufferedAmount < 1024 * 1024) {
+    if (
+      client.readyState === WebSocket.OPEN
+      && client.bufferedAmount < 1024 * 1024
+      && (
+        client.streamSymbols === null
+        || (symbol && client.streamSymbols.has(symbol))
+      )
+    ) {
       client.send(payload);
     }
   }
@@ -136,6 +144,24 @@ global.__ctraderFeedOnTick = handleFeedTick;
 
 feedWss.on('connection', (ws) => {
   ws.isAlive = true;
+  ws.streamSymbols = null;
+  ws.on('message', (buffer) => {
+    if (buffer.length > 4096) return;
+    try {
+      const message = JSON.parse(buffer.toString('utf8'));
+      if (message.type === 'MARKET_SUBSCRIBE') {
+        const symbols = Array.isArray(message.symbols) ? message.symbols : [];
+        ws.streamSymbols = new Set(
+          symbols
+            .map((symbol) => String(symbol || '').replace(/[^a-z0-9]/gi, '').toUpperCase())
+            .filter(Boolean)
+            .slice(0, 500)
+        );
+      }
+    } catch {
+      // Ignore malformed subscription frames.
+    }
+  });
   ws.on('pong', () => {
     ws.isAlive = true;
   });

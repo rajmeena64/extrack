@@ -25,7 +25,7 @@ router.get("/forex-ohlc", marketDataRateLimiter, async (req, res) => {
       });
     }
 
-    const instrument = getInstrumentBySymbol(symbol);
+    const instrument = await getInstrumentBySymbol(symbol);
     if (!instrument) {
       return res.status(400).json({
         success: false,

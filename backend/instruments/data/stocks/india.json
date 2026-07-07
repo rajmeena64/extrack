@@ -1,7 +1,0 @@
-[
-  { "symbol": "RELIANCE", "name": "Reliance Industries", "type": "stock", "category": "india" },
-  { "symbol": "TCS", "name": "Tata Consultancy Services", "type": "stock", "category": "india" },
-  { "symbol": "INFY", "name": "Infosys", "type": "stock", "category": "india" },
-  { "symbol": "HDFCBANK", "name": "HDFC Bank", "type": "stock", "category": "india" },
-  { "symbol": "ICICIBANK", "name": "ICICI Bank", "type": "stock", "category": "india" }
-]

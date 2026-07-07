@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from "react";
-import binanceFutures from "../../../backend/instruments/data/crypto/binance_futures.json";
 
 /* =======================
    HELPERS
@@ -22,19 +21,6 @@ const fixedSymbolIcons = {
   NAS100: "/assets/commodities/usd.svg",
 };
 
-const BINANCE_FUTURES_BY_SYMBOL = binanceFutures.reduce((acc, instrument) => {
-  const key = getCapitalLetters(instrument.symbol);
-
-  if (key && instrument.baseAsset && instrument.quoteAsset) {
-    acc[key] = {
-      base: getCapitalLetters(instrument.baseAsset),
-      quote: getCapitalLetters(instrument.quoteAsset),
-    };
-  }
-
-  return acc;
-}, {});
-
 /* =======================
    SIZE MAP
 ======================= */
@@ -48,6 +34,7 @@ const SIZE_MAP = {
    STABLECOINS
 ======================= */
 const STABLES = ["USDT", "USDC"];
+const QUOTE_ASSETS = ["USDT", "USDC", "USD", "EUR", "GBP", "JPY", "AUD", "NZD", "CAD", "CHF"];
 
 const getIconLookupCodes = (asset) => {
   const normalized = getCapitalLetters(asset);
@@ -67,22 +54,18 @@ const getAssetIconPaths = (asset) =>
   });
 
 const getPairParts = (capitalOnly) => {
-  if (BINANCE_FUTURES_BY_SYMBOL[capitalOnly]) {
-    return BINANCE_FUTURES_BY_SYMBOL[capitalOnly];
-  }
-
-  for (const stable of STABLES) {
-    if (capitalOnly.length > stable.length && capitalOnly.endsWith(stable)) {
+  for (const quoteAsset of QUOTE_ASSETS) {
+    if (capitalOnly.length > quoteAsset.length && capitalOnly.endsWith(quoteAsset)) {
       return {
-        base: capitalOnly.slice(0, -stable.length),
-        quote: stable,
+        base: capitalOnly.slice(0, -quoteAsset.length),
+        quote: quoteAsset,
       };
     }
 
-    if (capitalOnly.length > stable.length && capitalOnly.startsWith(stable)) {
+    if (STABLES.includes(quoteAsset) && capitalOnly.length > quoteAsset.length && capitalOnly.startsWith(quoteAsset)) {
       return {
-        base: stable,
-        quote: capitalOnly.slice(stable.length),
+        base: quoteAsset,
+        quote: capitalOnly.slice(quoteAsset.length),
       };
     }
   }

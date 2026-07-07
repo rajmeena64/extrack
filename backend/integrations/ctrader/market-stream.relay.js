@@ -1,7 +1,14 @@
 const WebSocket = require('ws');
-const { startFeedStream, stopFeedStream } = require('./feed-stream.client');
+const {
+  startFeedStream,
+  stopFeedStream,
+  updateFeedStreamSymbols,
+} = require('./feed-stream.client');
 
-const MAX_SYMBOLS_PER_CLIENT = 50;
+const MAX_SYMBOLS_PER_CLIENT = Math.min(
+  Math.max(Number(process.env.MARKET_STREAM_MAX_SYMBOLS_PER_CLIENT) || 250, 1),
+  500
+);
 const MAX_BUFFERED_BYTES = 1024 * 1024;
 
 function normalizeSymbol(value) {
@@ -13,6 +20,21 @@ function readSymbols(value) {
   return Array.from(new Set(value.map(normalizeSymbol).filter(Boolean))).slice(0, MAX_SYMBOLS_PER_CLIENT);
 }
 
+function getRequestedSymbols(wss) {
+  const symbols = new Set();
+  for (const client of wss.clients) {
+    if (client.readyState !== WebSocket.OPEN) continue;
+    for (const symbol of client.marketSymbols || []) {
+      symbols.add(symbol);
+    }
+  }
+  return Array.from(symbols);
+}
+
+function syncFeedStreamSymbols(wss) {
+  updateFeedStreamSymbols(getRequestedSymbols(wss));
+}
+
 function attachMarketStreamRelay(wss) {
   wss.on('connection', (ws) => {
     ws.marketSymbols = new Set();
@@ -22,13 +44,16 @@ function attachMarketStreamRelay(wss) {
         const message = JSON.parse(buffer.toString('utf8'));
         if (message.type === 'MARKET_SUBSCRIBE') {
           ws.marketSymbols = new Set(readSymbols(message.symbols));
+          syncFeedStreamSymbols(wss);
         } else if (message.type === 'MARKET_UNSUBSCRIBE') {
           for (const symbol of readSymbols(message.symbols)) ws.marketSymbols.delete(symbol);
+          syncFeedStreamSymbols(wss);
         }
       } catch {
         // Ignore malformed client messages.
       }
     });
+    ws.on('close', () => syncFeedStreamSymbols(wss));
   });
 
   startFeedStream((tick) => {

@@ -1,73 +1,24 @@
-const fs = require('fs');
-const path = require('path');
+const feedClient = require('../integrations/ctrader/feed.client');
+const { normalizeStoredSymbol } = require('../shared/utils/symbols');
 
-const DATA_DIR = path.join(__dirname, 'data');
+const CACHE_TTL_MS = Math.min(
+  Math.max(Number(process.env.INSTRUMENT_CACHE_TTL_MS) || 5 * 60 * 1000, 30 * 1000),
+  60 * 60 * 1000
+);
 
-function listJsonFiles(directory) {
-  if (!fs.existsSync(directory)) return [];
+const registry = {
+  instruments: Object.freeze([]),
+  bySymbol: new Map(),
+  byRequestSymbol: new Map(),
+  expiresAt: 0,
+  lastRefreshAt: 0,
+  lastError: null,
+};
 
-  return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    const entryPath = path.join(directory, entry.name);
-
-    if (entry.isDirectory()) {
-      return listJsonFiles(entryPath);
-    }
-
-    return entry.isFile() && entry.name.endsWith('.json') ? [entryPath] : [];
-  });
-}
-
-function normalizeInstrument(rawInstrument, filePath) {
-  const symbol = String(rawInstrument?.symbol || '').trim().toUpperCase();
-  const name = String(rawInstrument?.name || '').trim();
-  const type = String(rawInstrument?.type || '').trim().toLowerCase();
-  const category = String(rawInstrument?.category || '').trim().toLowerCase();
-
-  if (!symbol || !name || !type || !category) {
-    throw new Error(`Invalid instrument in ${filePath}`);
-  }
-
-  return {
-    symbol,
-    name,
-    type,
-    category,
-  };
-}
-
-function loadInstruments() {
-  const instruments = [];
-  const bySymbol = new Map();
-
-  for (const filePath of listJsonFiles(DATA_DIR)) {
-    const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-
-    if (!Array.isArray(parsed)) {
-      throw new Error(`Instrument file must contain an array: ${filePath}`);
-    }
-
-    for (const rawInstrument of parsed) {
-      const instrument = normalizeInstrument(rawInstrument, filePath);
-
-      if (bySymbol.has(instrument.symbol)) {
-        throw new Error(`Duplicate instrument symbol: ${instrument.symbol}`);
-      }
-
-      bySymbol.set(instrument.symbol, instrument);
-      instruments.push(instrument);
-    }
-  }
-
-  return {
-    instruments: Object.freeze(instruments),
-    bySymbol,
-  };
-}
-
-const registry = loadInstruments();
+let refreshPromise = null;
 
 function normalizeSymbol(symbol) {
-  return String(symbol || '').trim().toUpperCase();
+  return normalizeStoredSymbol(symbol);
 }
 
 function normalizeType(type) {
@@ -76,40 +27,171 @@ function normalizeType(type) {
     commodities: 'commodity',
     stocks: 'stock',
     indices: 'index',
+    metal: 'commodity',
+    metals: 'commodity',
   };
 
   return aliases[normalizedType] || normalizedType;
 }
 
-function getAllInstruments() {
-  return registry.instruments;
+function classifyInstrument(symbol, source = {}) {
+  const cleanSymbol = normalizeSymbol(symbol);
+  const haystack = `${cleanSymbol} ${source.description || ''} ${source.category || ''} ${source.assetClassName || ''}`.toLowerCase();
+
+  if (/(crypto|coin|token|digital|bitcoin|ethereum)/.test(haystack)) {
+    return { type: 'crypto', category: 'crypto' };
+  }
+
+  if (/^(BTC|ETH|LTC|DOGE|ADA|SOL|XRP|BNB|DOT|AVAX|TRX|LINK|MATIC)/.test(cleanSymbol)) {
+    return { type: 'crypto', category: 'crypto' };
+  }
+
+  if (/^(XAU|XAG|XPT|XPD)/.test(cleanSymbol) || /(gold|silver|palladium|platinum|metal)/.test(haystack)) {
+    return { type: 'commodity', category: 'metals' };
+  }
+
+  if (/(oil|brent|wti|gas|energy)/.test(haystack)) {
+    return { type: 'commodity', category: 'energy' };
+  }
+
+  if (/(index|indices|nasdaq|dow|spx|us500|ustec|dax|ftse)/.test(haystack)) {
+    return { type: 'index', category: 'index' };
+  }
+
+  if (/^[A-Z]{6}$/.test(cleanSymbol)) {
+    return { type: 'forex', category: 'forex' };
+  }
+
+  return { type: 'stock', category: 'stocks' };
 }
 
-function getInstrumentsByType(type) {
+function normalizeInstrument(rawInstrument) {
+  const requestSymbol = String(rawInstrument?.name || rawInstrument?.symbol || rawInstrument?.normalizedName || '').trim();
+  const symbol = normalizeSymbol(rawInstrument?.normalizedName || requestSymbol);
+  if (!symbol || !requestSymbol) return null;
+
+  const classification = classifyInstrument(symbol, rawInstrument);
+  const name = String(
+    rawInstrument?.description ||
+    rawInstrument?.displayName ||
+    rawInstrument?.symbolName ||
+    requestSymbol
+  ).trim();
+
+  return {
+    id: rawInstrument?.id ?? symbol,
+    symbol,
+    requestSymbol,
+    name,
+    type: classification.type,
+    category: classification.category,
+    broker: rawInstrument?.broker || 'ctrader',
+    source: 'ctrader-feed-service',
+    digits: Number.isFinite(Number(rawInstrument?.digits)) ? Number(rawInstrument.digits) : undefined,
+    subscribed: rawInstrument?.subscribed === true,
+    hasQuote: rawInstrument?.hasQuote === true,
+  };
+}
+
+function setRegistry(instruments) {
+  const bySymbol = new Map();
+  const byRequestSymbol = new Map();
+  const unique = [];
+
+  for (const instrument of instruments) {
+    if (!instrument?.symbol || bySymbol.has(instrument.symbol)) continue;
+    bySymbol.set(instrument.symbol, instrument);
+    byRequestSymbol.set(normalizeSymbol(instrument.requestSymbol), instrument);
+    unique.push(instrument);
+  }
+
+  registry.instruments = Object.freeze(unique);
+  registry.bySymbol = bySymbol;
+  registry.byRequestSymbol = byRequestSymbol;
+  registry.expiresAt = Date.now() + CACHE_TTL_MS;
+  registry.lastRefreshAt = Date.now();
+  registry.lastError = null;
+}
+
+async function refreshInstrumentCache({ force = false } = {}) {
+  if (!force && registry.instruments.length && Date.now() < registry.expiresAt) {
+    return registry.instruments;
+  }
+
+  if (refreshPromise) return refreshPromise;
+
+  refreshPromise = (async () => {
+    try {
+      const response = await feedClient.getFeedSymbols();
+      const symbols = Array.isArray(response?.symbols) ? response.symbols : [];
+      const instruments = symbols.map(normalizeInstrument).filter(Boolean);
+
+      if (!instruments.length) {
+        const error = new Error('Feed returned no instruments');
+        error.status = 503;
+        throw error;
+      }
+
+      setRegistry(instruments);
+      return registry.instruments;
+    } catch (error) {
+      registry.lastError = error;
+      if (registry.instruments.length) return registry.instruments;
+      throw error;
+    } finally {
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
+}
+
+async function getAllInstruments() {
+  return refreshInstrumentCache();
+}
+
+async function getInstrumentsByType(type) {
   const normalizedType = normalizeType(type);
   if (!normalizedType) return [];
+  const instruments = await refreshInstrumentCache();
 
-  return registry.instruments.filter((instrument) => instrument.type === normalizedType);
+  return instruments.filter((instrument) => instrument.type === normalizedType || instrument.category === normalizedType);
 }
 
-function searchInstruments(query) {
+async function searchInstruments(query) {
   const normalizedQuery = String(query || '').trim().toLowerCase();
-  if (!normalizedQuery) return registry.instruments;
+  const instruments = await refreshInstrumentCache();
+  if (!normalizedQuery) return instruments;
 
-  return registry.instruments.filter((instrument) => (
+  return instruments.filter((instrument) => (
     instrument.symbol.toLowerCase().includes(normalizedQuery) ||
+    instrument.requestSymbol.toLowerCase().includes(normalizedQuery) ||
     instrument.name.toLowerCase().includes(normalizedQuery) ||
     instrument.type.toLowerCase().includes(normalizedQuery) ||
     instrument.category.toLowerCase().includes(normalizedQuery)
   ));
 }
 
-function getInstrumentBySymbol(symbol) {
-  return registry.bySymbol.get(normalizeSymbol(symbol)) || null;
+async function getInstrumentBySymbol(symbol) {
+  await refreshInstrumentCache();
+  const normalized = normalizeSymbol(symbol);
+
+  return registry.bySymbol.get(normalized) || registry.byRequestSymbol.get(normalized) || null;
 }
 
-function isAllowedSymbol(symbol) {
-  return Boolean(getInstrumentBySymbol(symbol));
+async function isAllowedSymbol(symbol) {
+  return Boolean(await getInstrumentBySymbol(symbol));
+}
+
+function getInstrumentCacheStatus() {
+  return {
+    count: registry.instruments.length,
+    expiresAt: registry.expiresAt,
+    lastRefreshAt: registry.lastRefreshAt,
+    healthy: registry.instruments.length > 0 && !registry.lastError,
+    stale: registry.instruments.length > 0 && Date.now() >= registry.expiresAt,
+    lastError: registry.lastError ? 'Instrument cache refresh failed' : null,
+  };
 }
 
 module.exports = {
@@ -117,5 +199,7 @@ module.exports = {
   getInstrumentsByType,
   searchInstruments,
   getInstrumentBySymbol,
+  getInstrumentCacheStatus,
   isAllowedSymbol,
+  refreshInstrumentCache,
 };
