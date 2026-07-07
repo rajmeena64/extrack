@@ -28,9 +28,33 @@ function getSymbolDigits(symbolId) {
   return Number.isFinite(digits) && digits >= 0 ? Math.min(digits, MAX_PRICE_DIGITS) : null;
 }
 
+function countDecimalDigits(value) {
+  const price = Number(value);
+  if (!Number.isFinite(price)) return 0;
+
+  const text = String(value);
+  if (text && !/e/i.test(text)) {
+    return Math.min((text.split('.')[1] || '').replace(/0+$/, '').length, MAX_PRICE_DIGITS);
+  }
+
+  const fixed = price.toFixed(MAX_PRICE_DIGITS).replace(/0+$/, '').replace(/\.$/, '');
+  return Math.min((fixed.split('.')[1] || '').length, MAX_PRICE_DIGITS);
+}
+
+function inferPriceDigits(symbolId, ...values) {
+  const configured = getSymbolDigits(symbolId);
+  const inferred = Math.max(0, ...values.map(countDecimalDigits));
+  if (configured === null) return inferred || null;
+  return Math.min(Math.max(configured, inferred), MAX_PRICE_DIGITS);
+}
+
+function getMinMoveForDigits(digits) {
+  return digits === null ? null : Number((10 ** -digits).toFixed(digits));
+}
+
 function getMinMove(symbolId) {
   const digits = getSymbolDigits(symbolId);
-  return digits === null ? null : Number((10 ** -digits).toFixed(digits));
+  return getMinMoveForDigits(digits);
 }
 
 function scaledPriceToNumber(value) {
@@ -39,10 +63,10 @@ function scaledPriceToNumber(value) {
   return Number.isFinite(price) ? price : null;
 }
 
-function formatPrice(value, symbolId) {
+function formatPrice(value, symbolId, forcedDigits = undefined) {
   const price = Number(value);
   if (!Number.isFinite(price)) return null;
-  const digits = getSymbolDigits(symbolId);
+  const digits = forcedDigits ?? inferPriceDigits(symbolId, price);
   return digits === null ? String(price) : price.toFixed(digits);
 }
 
@@ -50,10 +74,10 @@ function scaledPriceToText(value, symbolId) {
   return formatPrice(scaledPriceToNumber(value), symbolId);
 }
 
-function roundPrice(value, symbolId) {
+function roundPrice(value, symbolId, forcedDigits = undefined) {
   const price = Number(value);
   if (!Number.isFinite(price)) return null;
-  const digits = getSymbolDigits(symbolId);
+  const digits = forcedDigits ?? inferPriceDigits(symbolId, price);
   return digits === null ? price : Number(price.toFixed(digits));
 }
 
@@ -85,26 +109,29 @@ function getQuotePrice(tick) {
 function buildQuote(tick) {
   if (!tick) return null;
   const symbolId = Number(tick.symbolId);
-  const bid = Number.isFinite(Number(tick.bid)) ? Number(tick.bid) : null;
-  const ask = Number.isFinite(Number(tick.ask)) ? Number(tick.ask) : null;
-  const spread = bid !== null && ask !== null ? roundPrice(ask - bid, symbolId) : null;
-  const priceDigits = getSymbolDigits(symbolId);
+  const bidValue = Number(tick.bid);
+  const askValue = Number(tick.ask);
+  const bid = Number.isFinite(bidValue) && bidValue > 0 ? bidValue : null;
+  const ask = Number.isFinite(askValue) && askValue > 0 ? askValue : null;
+  const lastPrice = getQuotePrice(tick);
+  const priceDigits = inferPriceDigits(symbolId, bid, ask, lastPrice);
+  const spread = bid !== null && ask !== null ? roundPrice(ask - bid, symbolId, priceDigits) : null;
 
   return {
     symbolId,
     symbolName: tick.symbolName || getSymbolName(symbolId),
     bid,
     ask,
-    bidText: formatPrice(bid, symbolId),
-    askText: formatPrice(ask, symbolId),
+    bidText: formatPrice(bid, symbolId, priceDigits),
+    askText: formatPrice(ask, symbolId, priceDigits),
     spread,
-    spreadText: spread === null ? null : formatPrice(spread, symbolId),
-    last: roundPrice(getQuotePrice(tick), symbolId),
-    lastText: formatPrice(getQuotePrice(tick), symbolId),
+    spreadText: spread === null ? null : formatPrice(spread, symbolId, priceDigits),
+    last: roundPrice(lastPrice, symbolId, priceDigits),
+    lastText: formatPrice(lastPrice, symbolId, priceDigits),
     changeText: '-',
     changePercentText: '-',
     priceDigits,
-    minMove: getMinMove(symbolId),
+    minMove: getMinMoveForDigits(priceDigits),
     serverTime: getServerTimeSeconds(tick.timestamp),
     receivedAt: tick.receivedAt || null,
   };
@@ -114,15 +141,16 @@ function normalizeSpotEvent(event, toPlain) {
   const symbolId = Number(event.symbolId);
   const bid = scaledPriceToNumber(event.bid);
   const ask = scaledPriceToNumber(event.ask);
+  const priceDigits = inferPriceDigits(symbolId, bid, ask);
   const normalized = {
     symbolId,
     symbolName: getSymbolName(symbolId),
     bid,
     ask,
-    bidText: formatPrice(bid, symbolId),
-    askText: formatPrice(ask, symbolId),
-    priceDigits: getSymbolDigits(symbolId),
-    minMove: getMinMove(symbolId),
+    bidText: formatPrice(bid, symbolId, priceDigits),
+    askText: formatPrice(ask, symbolId, priceDigits),
+    priceDigits,
+    minMove: getMinMoveForDigits(priceDigits),
     timestamp: event.timestamp !== undefined ? Number(event.timestamp) : null,
     serverTime: getServerTimeSeconds(event.timestamp),
     receivedAt: new Date().toISOString(),

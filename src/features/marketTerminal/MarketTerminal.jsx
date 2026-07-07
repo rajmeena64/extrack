@@ -249,11 +249,52 @@ const classifySymbol = (symbol) => {
   return 'Stocks';
 };
 
+const WATCHLIST_SECTION_ORDER = ['Forex', 'Metals', 'Crypto', 'Stocks'];
+const WATCHLIST_PRIORITY = new Map([
+  DEFAULT_SYMBOL,
+  'GBPUSD',
+  'USDJPY',
+  'AUDUSD',
+  'USDCAD',
+  'USDCHF',
+  'NZDUSD',
+  'EURJPY',
+  'GBPJPY',
+  'XAUUSD',
+  'XAGUSD',
+  'BTCUSD',
+  'ETHUSD',
+].map((symbol, index) => [symbol, index]));
+
+const getWatchlistSortScore = (row, activeSymbol) => {
+  const normalizedSymbol = normalizeStreamSymbol(row.requestSymbol || row.symbol);
+  if (normalizedSymbol === normalizeStreamSymbol(activeSymbol)) return -3;
+  if (row.hasLiveQuote) return -2;
+  return 0;
+};
+
+const sortWatchlistRows = (rows, activeSymbol) => [...rows].sort((left, right) => {
+  const scoreDiff = getWatchlistSortScore(left, activeSymbol) - getWatchlistSortScore(right, activeSymbol);
+  if (scoreDiff !== 0) return scoreDiff;
+
+  const leftRank = WATCHLIST_PRIORITY.get(normalizeStreamSymbol(left.requestSymbol || left.symbol)) ?? 999;
+  const rightRank = WATCHLIST_PRIORITY.get(normalizeStreamSymbol(right.requestSymbol || right.symbol)) ?? 999;
+  if (leftRank !== rightRank) return leftRank - rightRank;
+
+  return left.symbol.localeCompare(right.symbol);
+});
+
 const getWatchlistIconClass = (section) => {
   if (section === 'Crypto') return 'is-crypto';
   if (section === 'Metals') return 'is-metal';
   if (section === 'Stocks') return 'is-stock';
   return 'is-forex';
+};
+
+const hasUsableQuote = (quote) => {
+  const bid = Number(quote?.bid);
+  const ask = Number(quote?.ask);
+  return (Number.isFinite(bid) && bid > 0) || (Number.isFinite(ask) && ask > 0);
 };
 
 const buildWatchlistSections = (symbols, activeSymbol) => {
@@ -269,19 +310,21 @@ const buildWatchlistSections = (symbols, activeSymbol) => {
   for (const item of source) {
     const symbol = getDisplaySymbol(item);
     const requestSymbol = getRequestSymbol(item);
-    if (!symbol || seen.has(symbol)) continue;
-    seen.add(symbol);
+    const normalizedSymbol = normalizeStreamSymbol(requestSymbol || symbol);
+    if (!symbol || !normalizedSymbol || seen.has(normalizedSymbol)) continue;
+    seen.add(normalizedSymbol);
     const section = classifySymbol(String(symbol).replace(/[^a-z0-9]/gi, '').toUpperCase());
     grouped[section].push({
       symbol,
       requestSymbol,
       subtitle: getSymbolSubtitle(item, symbol),
       section,
+      hasLiveQuote: item?.hasQuote !== false,
     });
   }
 
-  return ['Stocks', 'Forex', 'Crypto', 'Metals']
-    .map((title) => ({ title, rows: grouped[title].slice(0, 48) }))
+  return WATCHLIST_SECTION_ORDER
+    .map((title) => ({ title, rows: sortWatchlistRows(grouped[title], activeSymbol).slice(0, 48) }))
     .filter((section) => section.rows.length > 0);
 };
 
@@ -774,14 +817,23 @@ function WatchlistPanel({ activeSymbol, quotes, sections, onSelectSymbol }) {
     sections
       .map((section) => ({
         ...section,
-        rows: section.rows.filter((row) => (
-          !normalizedQuery ||
-          row.symbol.toUpperCase().includes(normalizedQuery) ||
-          row.subtitle.toUpperCase().includes(normalizedQuery)
-        )),
+        rows: section.rows.filter((row) => {
+          const matchesQuery = (
+            !normalizedQuery ||
+            row.symbol.toUpperCase().includes(normalizedQuery) ||
+            row.subtitle.toUpperCase().includes(normalizedQuery)
+          );
+          if (!matchesQuery) return false;
+          if (normalizedQuery) return true;
+          const currentQuote = quotes[row.requestSymbol];
+          if (currentQuote !== undefined && !hasUsableQuote(currentQuote)) {
+            return normalizeStreamSymbol(row.requestSymbol) === normalizeStreamSymbol(activeSymbol);
+          }
+          return row.hasLiveQuote || normalizeStreamSymbol(row.requestSymbol) === normalizeStreamSymbol(activeSymbol);
+        }),
       }))
       .filter((section) => section.rows.length > 0)
-  ), [normalizedQuery, sections]);
+  ), [activeSymbol, normalizedQuery, quotes, sections]);
 
   return (
     <aside className="market-watchlist" aria-label="Instruments">
@@ -1060,7 +1112,7 @@ function MarketTerminal({ pageActive = true }) {
       const nextQuotes = {};
       for (const [key, value] of Object.entries(response.data.quotes)) {
         const requestSymbol = requestKeyBySymbol.get(normalizeStreamSymbol(key)) || key;
-        nextQuotes[requestSymbol] = value;
+        nextQuotes[requestSymbol] = value ? normalizeStreamQuote(value) : null;
       }
       setQuotes((currentQuotes) => ({ ...currentQuotes, ...nextQuotes }));
     }).catch(() => null);
