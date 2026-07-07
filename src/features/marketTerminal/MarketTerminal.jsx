@@ -62,6 +62,26 @@ const normalizeCandle = (rawCandle) => {
   };
 };
 
+const countDecimalDigits = (value) => {
+  const text = String(value ?? '');
+  if (!text || text.includes('e') || text.includes('E')) return 0;
+  const decimalPart = text.split('.')[1] || '';
+  return decimalPart.replace(/0+$/, '').length;
+};
+
+const inferPriceDigits = (tick, bid, ask) => {
+  const configured = Number(tick?.priceDigits);
+  const inferred = Math.min(Math.max(
+    countDecimalDigits(tick?.bid ?? bid),
+    countDecimalDigits(tick?.ask ?? ask)
+  ), 8);
+
+  if (Number.isFinite(configured) && configured > 0) return Math.min(configured, 8);
+  if (inferred > 0) return inferred;
+  if (Number.isFinite(configured) && configured === 0) return 0;
+  return 5;
+};
+
 const isCandleNearPrice = (candle, referencePrice, maxDeviation) => {
   const reference = Number(referencePrice);
   if (!candle || !Number.isFinite(reference) || reference <= 0) return true;
@@ -98,7 +118,7 @@ const normalizeStreamQuote = (tick) => {
   const last = validBid !== null && validAsk !== null
     ? (validBid + validAsk) / 2
     : validBid ?? validAsk;
-  const priceDigits = Number.isFinite(Number(tick?.priceDigits)) ? Number(tick.priceDigits) : 5;
+  const priceDigits = inferPriceDigits(tick, validBid, validAsk);
   const format = (value) => (
     value !== null && value !== undefined && Number.isFinite(Number(value))
       ? Number(value).toFixed(priceDigits)
