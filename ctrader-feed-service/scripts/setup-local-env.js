@@ -40,6 +40,7 @@ const serviceEnv = [
   'FEED_KEY_GRACE_MS=600000',
   'FEED_KEY_REFRESH_MS=60000',
   'FEED_ALLOWED_CLIENT_IDS=newapp-backend',
+  'FEED_ALLOWED_ORIGINS=https://entrack.in,https://www.entrack.in,https://api.entrack.in,https://extrack-backend-9xk0.onrender.com,http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173',
   'FEED_SIGNATURE_MAX_AGE_MS=30000',
   'FEED_MAX_NONCES=20000',
   'FEED_REQUIRE_HTTPS=false',
@@ -66,6 +67,7 @@ nextBackendEnv = upsertEnv(nextBackendEnv, 'MARKET_FEED_URL', 'http://127.0.0.1:
 nextBackendEnv = upsertEnv(nextBackendEnv, 'MARKET_FEED_TIMEOUT_MS', '5000');
 nextBackendEnv = upsertEnv(nextBackendEnv, 'FEED_KEY_CACHE_MS', '60000');
 nextBackendEnv = upsertEnv(nextBackendEnv, 'FEED_CLIENT_ID', 'newapp-backend');
+nextBackendEnv = upsertEnv(nextBackendEnv, 'ALLOW_INSECURE_MARKET_FEED_HTTP', 'true');
 nextBackendEnv = removeEnv(nextBackendEnv, 'FEED_INTERNAL_API_KEY');
 fs.writeFileSync(backendEnvPath, nextBackendEnv, 'utf8');
 

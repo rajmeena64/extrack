@@ -37,6 +37,48 @@ const internalRateLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+const DEFAULT_ALLOWED_ORIGINS = [
+  'https://entrack.in',
+  'https://www.entrack.in',
+  'https://api.entrack.in',
+  'https://extrack-backend-9xk0.onrender.com',
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5173',
+];
+const ALLOWED_ORIGINS = new Set(
+  String(process.env.FEED_ALLOWED_ORIGINS || DEFAULT_ALLOWED_ORIGINS.join(','))
+    .split(',')
+    .map((origin) => origin.trim().replace(/\/+$/, ''))
+    .filter(Boolean)
+);
+
+function isAllowedOrigin(origin) {
+  if (!origin) return true;
+  return ALLOWED_ORIGINS.has(String(origin).trim().replace(/\/+$/, ''));
+}
+
+app.use('/internal', (req, res, next) => {
+  const origin = String(req.headers.origin || '').trim().replace(/\/+$/, '');
+  if (origin) {
+    if (!isAllowedOrigin(origin)) {
+      return res.status(403).json({ success: false, error: 'Origin not allowed' });
+    }
+    res.set('Access-Control-Allow-Origin', origin);
+    res.set('Vary', 'Origin');
+    res.set('Access-Control-Allow-Methods', 'GET,OPTIONS');
+    res.set(
+      'Access-Control-Allow-Headers',
+      'content-type,x-feed-client-id,x-feed-timestamp,x-feed-nonce,x-feed-signature'
+    );
+    res.set('Access-Control-Max-Age', '600');
+  }
+
+  if (req.method === 'OPTIONS') return res.status(204).end();
+  return next();
+});
+
 app.use('/internal', requireSecureTransport);
 app.use('/internal', (req, res, next) => {
   res.set('Cache-Control', 'no-store, private');
@@ -476,7 +518,7 @@ const httpServer = app.listen(PORT, HOST, async () => {
 
 httpServer.on('upgrade', async (req, socket, head) => {
   const requestUrl = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
-  if (requestUrl.pathname !== '/internal/stream' || feedWss.clients.size >= 20) {
+  if (requestUrl.pathname !== '/internal/stream' || feedWss.clients.size >= 20 || !isAllowedOrigin(req.headers.origin)) {
     socket.destroy();
     return;
   }
