@@ -568,8 +568,13 @@ function ChartPane({ chart, active, compact, fitNonce, pageActive, onActivate, o
         setQuote(nextQuote);
 
         if (liveCandle && candleSeriesRef.current) {
+          const latestTime = Number(candlesRef.current[candlesRef.current.length - 1]?.time);
           candlesRef.current = mergeCandles(candlesRef.current, [liveCandle]);
-          candleSeriesRef.current.update(liveCandle);
+          if (Number.isFinite(latestTime) && Number(liveCandle.time) < latestTime) {
+            candleSeriesRef.current.setData(candlesRef.current);
+          } else {
+            candleSeriesRef.current.update(liveCandle);
+          }
         }
 
         setError('');

@@ -6,9 +6,11 @@ const { rateLimit } = require('express-rate-limit');
 const WebSocket = require('ws');
 const {
   cleanup,
+  connectSocket,
   ensureCtraderReady,
   fetchCtraderKlines,
   getSymbols,
+  loadProtos,
   subscribeLiveTickIds,
 } = require('./src/ctrader/socket.client');
 const { connectionState, ctraderConfig, tokenState } = require('./src/ctrader/state');
@@ -22,10 +24,9 @@ const {
 
 const app = express();
 app.disable('x-powered-by');
-if (process.env.FEED_TRUST_PROXY) {
-  const numericTrustProxy = Number(process.env.FEED_TRUST_PROXY);
-  app.set('trust proxy', Number.isFinite(numericTrustProxy) ? numericTrustProxy : process.env.FEED_TRUST_PROXY);
-}
+const trustProxy = process.env.FEED_TRUST_PROXY || 'loopback';
+const numericTrustProxy = Number(trustProxy);
+app.set('trust proxy', Number.isFinite(numericTrustProxy) ? numericTrustProxy : trustProxy);
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.json({ limit: '100kb' }));
 
@@ -71,6 +72,9 @@ let pruneTimer = null;
 let keyRotationTimer = null;
 let streamHeartbeatTimer = null;
 let targetSymbolCount = 0;
+let bootstrapComplete = false;
+let readyLogged = false;
+let lastPendingLogAt = 0;
 
 const feedWss = new WebSocket.Server({ noServer: true, maxPayload: 1024 });
 
@@ -231,13 +235,51 @@ async function startFeed() {
 
   await loadOrRotateKey({ force: true });
 
-  // Important: ensureCtraderReady() loads DB tokens, loads protobuf root, then opens the socket.
+  // Important: load protobuf root before connectSocket().
   // If connectSocket() runs first, the socket can open before root exists,
   // sendAppAuth() silently fails, and the service times out with
   // "cTrader connection is not ready".
-  await ensureCtraderReady();
+  await loadProtos();
+  await connectSocket();
+}
 
-  await reconcileSubscriptions({ bootstrap: true });
+function isCtraderNotReadyError(error) {
+  return /cTrader connection is not ready/i.test(error?.message || '');
+}
+
+function getConnectionSnapshot() {
+  return {
+    ws: connectionState.ws ? connectionState.ws.readyState : 'none',
+    appAuthed: ctraderConfig.isAppAuthed,
+    accountAuthed: ctraderConfig.isAccountAuthed,
+    accountId: ctraderConfig.accountId || null,
+    isDemo: ctraderConfig.isDemo,
+    tokenError: tokenState.lastRefreshError || null,
+    connectError: connectionState.lastConnectError || null,
+    apiError: connectionState.lastApiError || null,
+  };
+}
+
+async function runReconcile() {
+  try {
+    await reconcileSubscriptions({ bootstrap: !bootstrapComplete });
+    bootstrapComplete = true;
+    if (!readyLogged) {
+      readyLogged = true;
+      console.log('ctrader-feed-service ready');
+    }
+  } catch (error) {
+    if (isCtraderNotReadyError(error)) {
+      const now = Date.now();
+      if (now - lastPendingLogAt > 60000) {
+        lastPendingLogAt = now;
+        console.info('feed.waiting_for_ctrader', getConnectionSnapshot());
+      }
+      return;
+    }
+
+    console.warn('feed.reconcile.failed', { error: error.message });
+  }
 }
 
 app.get('/health', (req, res) => {
@@ -407,16 +449,12 @@ const httpServer = app.listen(PORT, HOST, async () => {
   console.log(`ctrader-feed-service listening on http://${HOST}:${PORT}`);
   try {
     await startFeed();
-    console.log('ctrader-feed-service ready');
+    runReconcile();
   } catch (error) {
     console.error('ctrader-feed-service failed to start feed', error.message);
   }
 
-  reconcileTimer = setInterval(() => {
-    reconcileSubscriptions().catch((error) => {
-      console.warn('feed.reconcile.failed', { error: error.message });
-    });
-  }, RECONCILE_INTERVAL_MS);
+  reconcileTimer = setInterval(runReconcile, RECONCILE_INTERVAL_MS);
   pruneTimer = setInterval(pruneAll, 60000);
   keyRotationTimer = setInterval(() => {
     loadOrRotateKey({ force: true }).catch((error) => {
