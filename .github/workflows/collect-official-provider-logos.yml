@@ -1,4 +1,4 @@
-name: Collect official provider logos
+name: Collect official provider SVG logos
 
 on:
   pull_request:
@@ -43,27 +43,28 @@ jobs:
           python-version: '3.12'
           cache: pip
           cache-dependency-path: .github/logo-crawler/requirements.txt
-      - name: Install crawler dependencies
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r .github/logo-crawler/requirements.txt
+          playwright install --with-deps chromium
       - name: Restore provider CSV
         run: |
           base64 -d .github/logo-crawler/providers_330.csv.gz.b64 | gzip -d > .github/logo-crawler/providers_330.csv
-      - name: Collect official website logos
+      - name: Extract official DOM SVG logos
         run: |
-          python .github/logo-crawler/collect_official_logos.py \
+          python .github/logo-crawler/collect_dom_svg_logos.py \
             --input .github/logo-crawler/providers_330.csv \
-            --output official_logo_output \
+            --output official_svg_output \
             --start ${{ matrix.start }} \
             --end ${{ matrix.end }} \
-            --workers 8
-      - name: Upload logo package shard
+            --workers 4
+      - name: Upload SVG package shard
         uses: actions/upload-artifact@v4
         with:
-          name: official-provider-logos-part-${{ matrix.part }}
+          name: official-provider-svg-part-${{ matrix.part }}
           path: |
-            official_logo_output/**
-            official_logo_output.zip
+            official_svg_output/**
+            official_svg_output.zip
           if-no-files-found: error
           retention-days: 7
