@@ -47,6 +47,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r .github/logo-crawler/requirements.txt
+      - name: Restore provider CSV
+        run: |
+          base64 -d .github/logo-crawler/providers_330.csv.gz.b64 | gzip -d > .github/logo-crawler/providers_330.csv
       - name: Collect official website logos
         run: |
           python .github/logo-crawler/collect_official_logos.py \
