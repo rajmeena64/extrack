@@ -426,6 +426,40 @@ app.get('/internal/data/:symbol', async (req, res) => {
   }
 });
 
+app.get('/internal/klines', async (req, res) => {
+  const symbol = String(req.query.symbol || req.query.symbolName || '').trim();
+  const interval = String(req.query.interval || '1m');
+  const startTime = req.query.startTime ? Number(req.query.startTime) : undefined;
+  const endTime = req.query.endTime ? Number(req.query.endTime) : undefined;
+  const limit = req.query.limit ? Number(req.query.limit) : 1000;
+
+  try {
+    if (!symbol || !validSymbol(symbol)) {
+      return res.status(400).json({ success: false, error: 'Invalid symbol' });
+    }
+
+    const result = await fetchCtraderKlines({
+      symbol,
+      interval,
+      startTime,
+      endTime,
+      limit,
+    });
+
+    return res.json({
+      success: true,
+      ...result,
+      connected: connected(),
+      serverTime: Math.floor(Date.now() / 1000),
+    });
+  } catch (error) {
+    return res.status(error.status || 500).json({
+      success: false,
+      error: error.message || 'Market klines unavailable',
+    });
+  }
+});
+
 app.get('/internal/quote/:symbol', async (req, res) => {
   const symbol = String(req.params.symbol || '').trim();
 

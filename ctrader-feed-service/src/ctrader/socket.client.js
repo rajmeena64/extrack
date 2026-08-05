@@ -405,28 +405,66 @@ async function fetchCtraderKlines({ symbol, interval = '1m', startTime, endTime,
 
   const normalizedLimit = Math.min(Math.max(Number.parseInt(limit, 10) || 1000, 1), 1000);
   const numericStartTime = startTime ? Number(startTime) : undefined;
-  const numericEndTime = endTime ? Number(endTime) : getClosedHistoryEndTime(interval);
-  const requestCount = Number.isFinite(numericStartTime)
-    ? Math.max(
-      normalizedLimit,
-      Math.ceil((numericEndTime - numericStartTime) / 60000) + 5
-    )
+  const intervalMs = {
+    '1m': 60 * 1000,
+    '3m': 3 * 60 * 1000,
+    '5m': 5 * 60 * 1000,
+    '15m': 15 * 60 * 1000,
+    '30m': 30 * 60 * 1000,
+    '1h': 60 * 60 * 1000,
+    '4h': 4 * 60 * 60 * 1000,
+    '1d': 24 * 60 * 60 * 1000,
+    '1w': 7 * 24 * 60 * 60 * 1000,
+    '1M': 31 * 24 * 60 * 60 * 1000,
+  }[interval] || 60 * 1000;
+  const hasExplicitEndTime = endTime !== undefined && endTime !== null && endTime !== '';
+  const numericEndTime = hasExplicitEndTime ? Number(endTime) : undefined;
+  const requestEndTime = Number.isFinite(numericEndTime)
+    ? numericEndTime
+    : (Number.isFinite(numericStartTime) ? getClosedHistoryEndTime(interval) : undefined);
+  const requestedRangeCount = Number.isFinite(numericStartTime) && Number.isFinite(requestEndTime)
+    ? Math.ceil((requestEndTime - numericStartTime) / intervalMs) + 5
     : normalizedLimit;
-  const trendData = await requestTrendbars(
-    symbolId,
-    period,
-    Math.min(requestCount, 1000),
-    Number.isFinite(numericStartTime) ? numericStartTime : undefined,
-    Number.isFinite(numericEndTime) ? numericEndTime : undefined
-  );
+  const targetCount = Math.min(Math.max(requestedRangeCount, normalizedLimit), 5000);
+  const rawTrendbars = [];
+  let cursorEndTime = requestEndTime;
 
-  const candles = (trendData?.trendbar || trendData?.trendbars || [])
+  while (rawTrendbars.length < targetCount) {
+    const chunkLimit = Math.min(1000, targetCount - rawTrendbars.length);
+    const trendData = await requestTrendbars(
+      symbolId,
+      period,
+      chunkLimit,
+      undefined,
+      Number.isFinite(cursorEndTime) ? cursorEndTime : undefined
+    );
+    const chunk = trendData?.trendbar || trendData?.trendbars || [];
+
+    if (!chunk.length) break;
+
+    rawTrendbars.push(...chunk);
+
+    const oldestMinute = Math.min(
+      ...chunk
+        .map((trendbar) => Number(trendbar.utcTimestampInMinutes))
+        .filter(Number.isFinite)
+    );
+
+    if (!Number.isFinite(oldestMinute)) break;
+
+    const oldestOpenTime = oldestMinute * 60 * 1000;
+    if (Number.isFinite(numericStartTime) && oldestOpenTime <= numericStartTime) break;
+
+    cursorEndTime = oldestOpenTime - 1;
+  }
+
+  const candles = rawTrendbars
     .map((trendbar) => trendbarToCandle(trendbar, symbolId))
     .filter((kline) => {
       const openTime = Number(kline.time) * 1000;
       if (!Number.isFinite(openTime)) return false;
       if (Number.isFinite(numericStartTime) && openTime < numericStartTime) return false;
-      if (Number.isFinite(numericEndTime) && openTime > numericEndTime) return false;
+      if (Number.isFinite(requestEndTime) && openTime > requestEndTime) return false;
       return true;
     })
     .sort((a, b) => Number(a.time) - Number(b.time));
