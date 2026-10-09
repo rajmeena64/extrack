@@ -17,6 +17,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@emnapi/core": "^1.11.3",
+    "@emnapi/runtime": "^1.11.3",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@floating-ui/dom": "^1.8.0",
