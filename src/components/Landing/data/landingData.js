@@ -1,0 +1,131 @@
+export const featureCards = [
+  {
+    tag: 'Simulator',
+    title: 'Market Replay',
+    text: 'Simulate historical market days, test order execution, and control playback speed before risking capital.',
+    href: '/features/replay',
+    link: 'Try Replay →',
+    bg: 'none',
+  },
+  {
+    tag: 'Journal',
+    title: 'Track Every Trade',
+    text: 'Log entry, exit, screenshots, notes, risk, mistakes, setup quality and the lesson behind every position.',
+    href: '/features/journal',
+    link: 'Explore →',
+    bg: "url('/assets/landing/trades-list.png')",
+  },
+  {
+    tag: 'Analytics',
+    title: 'Find Your Edge',
+    text: 'Break down win rate, RR, symbols, weekdays, sessions and repeated behavior that quietly hurts performance.',
+    href: '/analytics',
+    link: 'Analyze →',
+    bg: "url('/assets/landing/stats-cards.png')",
+  },
+  {
+    tag: 'Brokers',
+    title: 'Multi-Broker Sync',
+    text: 'Keep Exness, IC Markets, Binance, Bybit, Zerodha, Angel One and popular brokers in one clean terminal.',
+    href: '/features/brokers',
+    link: 'View brokers →',
+    bg: 'none',
+  },
+];
+
+export const statCards = [
+  {
+    label: 'Trading Account',
+    metric: '+$4850',
+    text: 'Live balance, equity and account health stay visible inside the same workspace.',
+    bg: 'radial-gradient(circle at 18% 12%, rgba(101,99,240,.18), transparent 34%), radial-gradient(circle at 92% 12%, rgba(231,61,138,.12), transparent 26%), linear-gradient(135deg, #0e0e16, #07070b 58%, #030305)',
+  },
+  {
+    label: 'Market Replay',
+    metric: '68%',
+    text: 'Test setups and simulate historical market days with precision execution.',
+    bg: 'radial-gradient(circle at 18% 12%, rgba(231,61,138,.18), transparent 30%), radial-gradient(circle at 92% 12%, rgba(101,99,240,.12), transparent 26%), linear-gradient(135deg, #0e0e16, #07070b 58%, #030305)',
+  },
+  {
+    label: 'Risk Discipline',
+    metric: '1:3.2',
+    text: 'Track average RR and keep risk rules defined before, during and after trades.',
+    bg: 'radial-gradient(circle at 18% 12%, rgba(34,197,94,.14), transparent 32%), radial-gradient(circle at 92% 12%, rgba(101,99,240,.10), transparent 26%), linear-gradient(135deg, #0e0e16, #07070b 58%, #030305)',
+  },
+];
+
+export const modules = [
+  {
+    eyebrow: 'Journal',
+    title: 'Trade Journal',
+    text: 'Track every setup, screenshot, mistake and lesson in one clean trading workspace built for serious review.',
+    bg: 'none',
+  },
+  {
+    eyebrow: 'Analytics',
+    title: 'Performance Analytics',
+    text: 'See win rate, risk reward, daily PnL, mistakes and patterns without digging through messy spreadsheets.',
+    bg: "url('/assets/landing/radar-score.png')",
+  },
+  {
+    eyebrow: 'Replay',
+    title: 'Backtest Replay',
+    text: 'Replay candles, place virtual trades, test strategy rules and build confidence before risking real capital.',
+    bg: 'none',
+  },
+  {
+    eyebrow: 'Brokers',
+    title: 'Broker Directory',
+    text: 'Organize broker names, market type and trading source cleanly with journal and analytics context.',
+    bg: 'none',
+  },
+  {
+    eyebrow: 'Risk',
+    title: 'Risk Control',
+    text: 'Keep risk visible with daily limits, position sizing, drawdown checks and rule-based trading stats.',
+    bg: 'none',
+  },
+];
+
+export const brokerTracks = [
+  [
+    { x: '6%', y: '8%', r: '-2deg', name: 'Exness', type: 'forex broker', image: '/assets/broker/exness%20image.svg' },
+    { x: '27%', y: '5%', r: '2deg', mark: 'IC', name: 'IC Markets', type: 'forex broker' },
+    { x: '48%', y: '10%', r: '-1deg', mark: 'PP', name: 'Pepperstone', type: 'cfd broker' },
+    { x: '70%', y: '7%', r: '3deg', mark: 'FP', name: 'FP Markets', type: 'cfd broker' },
+    { x: '88%', y: '13%', r: '-2deg', name: 'XM', type: 'forex broker', image: '/assets/broker/xm.svg' },
+    { x: '13%', y: '31%', r: '2deg', mark: 'OC', name: 'Octa', type: 'forex broker' },
+    { x: '35%', y: '36%', r: '-3deg', mark: 'HF', name: 'HFM', type: 'cfd broker' },
+    { x: '57%', y: '30%', r: '2deg', mark: 'OA', name: 'OANDA', type: 'forex broker' },
+    { x: '79%', y: '35%', r: '-2deg', mark: 'FC', name: 'FOREX.com', type: 'forex broker' },
+    { x: '8%', y: '58%', r: '-2deg', mark: 'TK', name: 'Tickmill', type: 'forex broker' },
+    { x: '28%', y: '63%', r: '2deg', mark: 'AV', name: 'AvaTrade', type: 'cfd broker' },
+    { x: '50%', y: '58%', r: '-2deg', mark: '8C', name: 'Eightcap', type: 'cfd broker' },
+    { x: '72%', y: '62%', r: '2deg', mark: 'FX', name: 'FXTM', type: 'forex broker' },
+    { x: '89%', y: '57%', r: '-1deg', name: 'Vantage', type: 'cfd broker', image: '/assets/broker/vantage.svg' },
+    { x: '18%', y: '83%', r: '-2deg', mark: 'BN', name: 'Binance', type: 'crypto exchange' },
+    { x: '47%', y: '87%', r: '2deg', mark: 'BY', name: 'Bybit', type: 'crypto exchange' },
+    { x: '64%', y: '82%', r: '-2deg', mark: 'OK', name: 'OKX', type: 'crypto exchange' },
+    { x: '84%', y: '86%', r: '2deg', mark: 'IB', name: 'Interactive Brokers', type: 'global broker' },
+  ],
+  [
+    { x: '10%', y: '5%', r: '2deg', mark: 'DN', name: 'Dhan', type: 'india broker' },
+    { x: '34%', y: '8%', r: '-2deg', mark: 'ZR', name: 'Zerodha', type: 'india broker' },
+    { x: '60%', y: '4%', r: '2deg', mark: 'UP', name: 'Upstox', type: 'india broker' },
+    { x: '82%', y: '9%', r: '-2deg', mark: 'AG', name: 'Angel One', type: 'india broker' },
+    { x: '5%', y: '29%', r: '-2deg', mark: 'DR', name: 'Deriv', type: 'cfd broker' },
+    { x: '28%', y: '34%', r: '2deg', mark: 'FB', name: 'FBS', type: 'forex broker' },
+    { x: '48%', y: '28%', r: '-3deg', mark: 'RO', name: 'RoboForex', type: 'forex broker' },
+    { x: '69%', y: '32%', r: '2deg', mark: 'TM', name: 'TMGM', type: 'cfd broker' },
+    { x: '90%', y: '27%', r: '-2deg', mark: 'SK', name: 'Skilling', type: 'cfd broker' },
+    { x: '14%', y: '56%', r: '2deg', mark: 'ET', name: 'eToro', type: 'multi asset' },
+    { x: '37%', y: '60%', r: '-2deg', mark: 'SAX', name: 'Saxo', type: 'global broker' },
+    { x: '59%', y: '55%', r: '2deg', mark: 'CM', name: 'CMC Markets', type: 'cfd broker' },
+    { x: '80%', y: '61%', r: '-2deg', mark: 'IG', name: 'IG', type: 'global broker' },
+    { x: '9%', y: '84%', r: '-2deg', mark: 'QS', name: 'Questrade', type: 'global broker' },
+    { x: '31%', y: '89%', r: '2deg', mark: 'WB', name: 'Webull', type: 'stock broker' },
+    { x: '54%', y: '83%', r: '-2deg', mark: 'RH', name: 'Robinhood', type: 'stock broker' },
+    { x: '72%', y: '88%', r: '2deg', mark: 'MO', name: 'moomoo', type: 'stock broker' },
+    { x: '92%', y: '82%', r: '-2deg', mark: 'TT', name: 'TradeStation', type: 'stock broker' },
+  ],
+];

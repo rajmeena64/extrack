@@ -14,7 +14,19 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     }
   },
-
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      'react-router-dom',
+      '@tanstack/react-query',
+      'axios',
+      '@sentry/react',
+      'lucide-react',
+      'date-fns',
+      'lightweight-charts',
+    ],
+  },
   server: {
     port: 3000,
     strictPort: true

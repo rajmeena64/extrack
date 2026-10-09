@@ -121,10 +121,10 @@ export const dateFromEpoch = (value) => {
   return Number.isNaN(date.getTime()) ? null : date;
 };
 
-export const getTradeOpenDate = (trade) => dateFromEpoch(trade?.entryAt || trade?.entry_timestamp);
+export const getTradeOpenDate = (trade) => dateFromEpoch(trade?.entryAt);
 
 export const getTradeCloseDate = (trade) => (
-  dateFromEpoch(trade?.exitAt || trade?.exit_timestamp)
+  dateFromEpoch(trade?.exitAt)
 );
 
 export const getTradeDisplayDate = (trade) => (

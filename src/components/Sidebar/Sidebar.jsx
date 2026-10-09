@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   HomeLine,
   BarChartSquare02,
@@ -10,6 +10,7 @@ import {
 import {
   CalendarIcon,
   ChartCandlestick,
+  ChartLine,
   ChevronsLeft,
   ChevronsRight,
   History,
@@ -18,7 +19,7 @@ import {
   Sun,
   TradesIcon,
 } from '@/icons';
-import { Dropdown, Tooltip } from '@/components/Common/base';
+import { Dropdown, Tooltip } from '@/components/ui';
 import { Button as AriaButton } from 'react-aria-components';
 import Logo from '../Common/Logo/Logo';
 import { useTheme } from '../../context/ThemeContext';
@@ -38,7 +39,6 @@ const getInitialSidebarExpanded = () => {
       return cached;
     }
   } catch {
-    // LocalStorage access exception fallback
   }
   return true;
 };
@@ -51,6 +51,7 @@ function Sidebar() {
 
   const { isAuthenticated } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const { darkMode, setDarkModePreference } = useTheme();
 
   const isSlimDesktop = isDesktop && !sidebarExpanded;
@@ -73,7 +74,6 @@ function Sidebar() {
       try {
         localStorage.setItem(SIDEBAR_EXPANDED_STORAGE_KEY, String(next));
       } catch {
-        // Safe ignore
       }
       if (isAuthenticated) {
         saveUserSettings({ preferences: { sidebarExpanded: next } }).catch(() => null);
@@ -82,7 +82,6 @@ function Sidebar() {
     });
   }, [isAuthenticated]);
 
-  // Sync mode classes with document body
   useEffect(() => {
     document.body.classList.toggle('sidebar-expanded', sidebarExpanded);
     document.body.classList.toggle('sidebar-compact', !sidebarExpanded);
@@ -91,7 +90,6 @@ function Sidebar() {
     };
   }, [sidebarExpanded]);
 
-  // Sync mobile drawer state with body class
   useEffect(() => {
     document.body.classList.toggle('dashboard-sidebar-open', sidebarOpen);
     return () => {
@@ -99,7 +97,6 @@ function Sidebar() {
     };
   }, [sidebarOpen]);
 
-  // Global toggle events for mobile header button & ESC key
   useEffect(() => {
     const handleToggle = () => setSidebarOpen((prev) => !prev);
     const handleOpen = () => setSidebarOpen(true);
@@ -136,6 +133,7 @@ function Sidebar() {
   const navItems = useMemo(
     () => [
       { label: 'Dashboard', href: '/dashboard', icon: HomeLine },
+      { label: 'Analytics', href: '/analytics', icon: ChartLine },
       { label: 'Add trade', href: '/add-trade', icon: Plus },
       { divider: true },
       {
@@ -213,6 +211,7 @@ function Sidebar() {
                       to={child.href}
                       className={childItemClass(isChildActiveItem)}
                       onClick={() => setSidebarOpen(false)}
+                      title={child.label}
                     >
                       <span className="w-5 h-5 min-w-5 flex items-center justify-center shrink-0">
                         <ChildIcon className="shrink-0" size={16} aria-hidden={true} />
@@ -287,15 +286,16 @@ function Sidebar() {
       return (
         <div key={item.href} className="flex justify-center w-full my-0.5">
           <Tooltip title={item.label} placement="right" delay={120}>
-            <NavLink
-              to={item.href}
-              end={item.href === '/' || item.href === '/dashboard'}
+            <AriaButton
               className={slimItemClass(isExactActive)}
-              onClick={() => setSidebarOpen(false)}
+              onPress={() => {
+                navigate(item.href);
+                setSidebarOpen(false);
+              }}
               aria-label={item.label}
             >
               <Icon className="shrink-0" size={20} aria-hidden={true} />
-            </NavLink>
+            </AriaButton>
           </Tooltip>
         </div>
       );
@@ -342,7 +342,6 @@ function Sidebar() {
         }`}
         aria-label="Sidebar Navigation"
       >
-        {/* Top Logo Section */}
         <div className="flex items-center justify-center h-11 px-1 mb-1.5 shrink-0 overflow-hidden">
           <NavLink
             to="/dashboard"
@@ -356,26 +355,22 @@ function Sidebar() {
           </NavLink>
         </div>
 
-        {/* Navigation Items */}
         <nav className="flex flex-col flex-1 justify-between overflow-hidden" aria-label="Main Navigation">
           <div className="flex flex-col gap-0.5 overflow-y-auto overflow-x-hidden scrollbar-hide py-1">
             {navItems.map(renderItem)}
           </div>
 
-          {/* Footer Actions */}
           <div className="flex flex-col gap-0.5 mt-auto pt-1 border-t border-[var(--border-light)] dark:border-[#222]">
-            {/* Dark / Light Mode Toggle */}
             {isSlimDesktop ? (
               <div className="flex justify-center w-full my-0.5">
                 <Tooltip title={darkMode ? 'Light mode' : 'Dark mode'} placement="right" delay={120}>
-                  <button
-                    type="button"
+                  <AriaButton
                     className={slimItemClass(false)}
-                    onClick={handleDarkModeChange}
+                    onPress={handleDarkModeChange}
                     aria-label={darkMode ? 'Light mode' : 'Dark mode'}
                   >
                     {darkMode ? <Sun size={20} aria-hidden={true} /> : <Moon01 size={20} aria-hidden={true} />}
-                  </button>
+                  </AriaButton>
                 </Tooltip>
               </div>
             ) : (
@@ -394,19 +389,17 @@ function Sidebar() {
               </button>
             )}
 
-            {/* Collapse / Expand Toggle (Desktop Only) */}
             {isDesktop && (
               isSlimDesktop ? (
                 <div className="flex justify-center w-full my-0.5">
                   <Tooltip title="Expand sidebar" placement="right" delay={120}>
-                    <button
-                      type="button"
+                    <AriaButton
                       className={slimItemClass(false)}
-                      onClick={handleSidebarModeToggle}
+                      onPress={handleSidebarModeToggle}
                       aria-label="Expand sidebar"
                     >
                       <ChevronsRight size={20} aria-hidden={true} />
-                    </button>
+                    </AriaButton>
                   </Tooltip>
                 </div>
               ) : (

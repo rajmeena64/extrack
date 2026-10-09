@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '../utils/common/serve';
 
@@ -22,27 +22,47 @@ export function isAllowedInstrumentSymbol(instruments, symbol) {
   return Array.isArray(instruments) && instruments.some((item) => item.symbol === normalized);
 }
 
-export function useInstruments(search = '', filters = {}) {
-  const debouncedSearch = useDebouncedValue(search);
-  const category = filters.category || undefined;
-  const productType = filters.productType || undefined;
-  const productTypes = Array.isArray(filters.productTypes) ? filters.productTypes.join(',') : undefined;
-  const limit = Number(filters.limit) || 50;
+export function useAllInstruments() {
   return useQuery({
-    queryKey: ['instruments', category || 'all', productType || productTypes || 'all', debouncedSearch, limit],
+    queryKey: ['instruments-catalog'],
     queryFn: async () => {
-      if (Array.isArray(filters.productTypes) && filters.productTypes.length > 0) {
-        const perTypeLimit = Math.max(Math.floor(limit / filters.productTypes.length), 50);
-        const responses = await Promise.all(filters.productTypes.map((type) => api.get('/instruments', {
-          params: { category, productType: type, search: debouncedSearch || undefined, limit: perTypeLimit },
-        })));
-        return responses.flatMap(({ data }) => Array.isArray(data?.instruments) ? data.instruments : []);
-      }
-      const { data } = await api.get('/instruments', { params: { category, productType, productTypes, search: debouncedSearch || undefined, limit } });
+      const { data } = await api.get('/instruments');
       return Array.isArray(data?.instruments) ? data.instruments : [];
     },
-    staleTime: 10 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
-    placeholderData: (previous) => previous,
+    staleTime: Infinity,
+    gcTime: Infinity,
   });
+}
+
+export function useInstruments(search = '', filters = {}) {
+  const debouncedSearch = useDebouncedValue(search);
+  const query = useAllInstruments();
+  const all = query.data || [];
+
+  const filtered = useMemo(() => {
+    let res = all;
+    if (filters.category) {
+      const c = String(filters.category).toLowerCase();
+      if (c === 'crypto') res = res.filter((i) => i.assetClass === 'crypto' || i.category === 'crypto');
+      else if (c === 'forex_cfd') res = res.filter((i) => ['forex', 'cfd'].includes(i.category) || ['forex', 'forex_cfd', 'metal', 'energy'].includes(i.assetClass));
+      else if (c === 'future' || c === 'futures') res = res.filter((i) => i.category === 'future' || i.productType === 'future' || i.productType === 'futures');
+      else res = res.filter((i) => i.category?.toLowerCase() === c || i.assetClass?.toLowerCase() === c);
+    }
+    if (filters.productType) {
+      const pt = String(filters.productType).toLowerCase();
+      res = res.filter((i) => i.productType?.toLowerCase() === pt || i.category?.toLowerCase() === pt);
+    }
+    if (Array.isArray(filters.productTypes) && filters.productTypes.length > 0) {
+      const pts = filters.productTypes.map((p) => String(p).toLowerCase());
+      res = res.filter((i) => pts.includes(i.productType?.toLowerCase()) || pts.includes(i.category?.toLowerCase()));
+    }
+    if (debouncedSearch) {
+      const q = debouncedSearch.toLowerCase();
+      res = res.filter((i) => i.symbol?.toLowerCase().includes(q) || i.name?.toLowerCase().includes(q) || i.displayName?.toLowerCase().includes(q));
+    }
+    const limit = Number(filters.limit) || (filters.category || debouncedSearch ? 50 : 2000);
+    return res.slice(0, limit);
+  }, [all, debouncedSearch, filters.category, filters.productType, filters.productTypes, filters.limit, search]);
+
+  return { ...query, data: filtered };
 }

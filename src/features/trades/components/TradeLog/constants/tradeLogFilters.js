@@ -1,0 +1,42 @@
+export const ROWS_PER_PAGE_OPTIONS = [10, 25, 50, 100];
+
+export const MONTH_NAMES = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+export const DEFAULT_FILTERS = {
+  symbol: "",
+  tradeType: "",
+  category: "",
+  productType: "",
+  source: "",
+  platform: "",
+  account: "",
+  broker: "",
+  strategy: "",
+  rating: "",
+  breakeven: "",
+  winTrades: false,
+  lossTrades: false,
+  hasStopLoss: false,
+  hasTakeProfit: false,
+  hasNotes: false,
+  hasMistakes: false,
+  minPnl: "",
+  maxPnl: "",
+  minQuantity: "",
+  maxQuantity: "",
+  sortBy: "",
+  order: "desc",
+};

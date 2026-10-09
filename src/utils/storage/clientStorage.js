@@ -21,7 +21,6 @@ function clearCookies() {
       });
     });
   } catch {
-    // HttpOnly cookies are cleared by the backend logout endpoint.
   }
 }
 
@@ -34,7 +33,6 @@ function clearWebCaches() {
       .then((cacheNames) => Promise.all(cacheNames.map((cacheName) => window.caches.delete(cacheName))))
       .catch(() => null);
   } catch {
-    // Cache API may be unavailable or blocked.
   }
 }
 
@@ -44,13 +42,11 @@ export function clearClientStorage() {
   try {
     localStorage.clear();
   } catch {
-    // Ignore storage cleanup failures.
   }
 
   try {
     sessionStorage.clear();
   } catch {
-    // Ignore storage cleanup failures.
   }
 
   clearWebCaches();

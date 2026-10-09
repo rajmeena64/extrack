@@ -1,8 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { ArrowLeft, ChevronDown, Clock, LogOut01, Moon01, Settings01, User01 } from "@untitledui/icons";
-import { CalendarIcon, CurrencyIcon, FilterIcon } from "@/icons";
 import { Avatar } from "./Avatar/avatar";
-import { ToggleBase } from "@/components/Common/base";
+import { ToggleBase } from "@/components/ui";
 import { useTheme } from "@/context/ThemeContext";
 import { TIME_ZONE_OPTIONS } from "@/utils/trading/tradeTime";
 import { cx } from "@/utils/cx";
@@ -80,7 +79,6 @@ export const DropdownAccountCardXS = ({
 
     return (
         <div ref={containerRef} className="relative inline-block text-left">
-            {/* Trigger Button */}
             <button
                 type="button"
                 onClick={() => {
@@ -105,15 +103,12 @@ export const DropdownAccountCardXS = ({
                 )}
             </button>
 
-            {/* Popover Menu Card */}
             {isOpen && (
                 <div
                     className="absolute right-0 top-full mt-2 w-60 max-h-[80vh] overflow-y-auto rounded-xl bg-[var(--bg-card)] border border-[var(--border-light)] shadow-2xl p-1.5 z-[10050] animate-in fade-in slide-in-from-top-1 duration-150"
                 >
-                    {/* Main Menu View */}
                     {activeView === "main" && (
                         <div className="flex flex-col gap-0.5">
-                            {/* Active Account Info */}
                             <div className="px-3 pt-2 pb-1">
                                 <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Active Account</span>
                                 <div className="flex items-center gap-2 mt-1">
@@ -127,7 +122,6 @@ export const DropdownAccountCardXS = ({
 
                             <div className="my-1 h-px w-full bg-[var(--border-light)]" />
 
-                            {/* My Profile */}
                             <button
                                 type="button"
                                 onClick={() => { onOpenProfile?.(); setIsOpen(false); }}
@@ -138,7 +132,6 @@ export const DropdownAccountCardXS = ({
                                 <span className="text-xs text-slate-400">⌘S</span>
                             </button>
 
-                            {/* Settings */}
                             <button
                                 type="button"
                                 onClick={() => { onOpenSettings?.(); setIsOpen(false); setActiveView("main"); }}
@@ -148,7 +141,6 @@ export const DropdownAccountCardXS = ({
                                 <span className="flex-1">Settings</span>
                             </button>
 
-                            {/* Quick Actions for Mobile */}
                             {isMobile && (
                                 <>
                                     <div className="my-1 h-px w-full bg-[var(--border-light)]" />
@@ -193,7 +185,6 @@ export const DropdownAccountCardXS = ({
 
                             <div className="my-1 h-px w-full bg-[var(--border-light)]" />
 
-                            {/* Dark Mode */}
                             <button
                                 type="button"
                                 onClick={handleDarkModeToggle}
@@ -208,7 +199,6 @@ export const DropdownAccountCardXS = ({
 
                             <div className="my-1 h-px w-full bg-[var(--border-light)]" />
 
-                            {/* Sign Out */}
                             <button
                                 type="button"
                                 onClick={() => { onSignOut?.(); setIsOpen(false); }}
@@ -220,9 +210,6 @@ export const DropdownAccountCardXS = ({
                         </div>
                     )}
 
-
-
-                    {/* Timezone View */}
                     {activeView === "timezone" && (
                         <div className="flex flex-col gap-0.5">
                             <button
@@ -258,7 +245,6 @@ export const DropdownAccountCardXS = ({
                         </div>
                     )}
 
-                    {/* Trade Mode View */}
                     {activeView === "tradeMode" && tradeModeOptions && (
                         <div className="flex flex-col gap-0.5">
                             <button
@@ -294,7 +280,6 @@ export const DropdownAccountCardXS = ({
                         </div>
                     )}
 
-                    {/* Currency View */}
                     {activeView === "currency" && currencyOptions && (
                         <div className="flex flex-col gap-0.5">
                             <button
@@ -333,7 +318,7 @@ export const DropdownAccountCardXS = ({
                                         )}
                                         <div className="flex flex-col min-w-0">
                                             <span className="text-sm font-semibold truncate leading-tight">{curr.code}</span>
-                                            <span className="text-[11px] text-slate-400 truncate leading-tight">{curr.label || curr.shortLabel}</span>
+                                            <span className="text-[11px] text-slate-400 truncate leading-tight">{curr.label}</span>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-1.5 shrink-0">

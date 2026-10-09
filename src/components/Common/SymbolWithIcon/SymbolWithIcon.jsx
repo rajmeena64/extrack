@@ -1,8 +1,5 @@
 import React, { useMemo, useState } from "react";
 
-/* =======================
-   HELPERS
-======================= */
 const getCapitalLetters = (str) =>
   String(str || "")
     .toUpperCase()
@@ -11,9 +8,6 @@ const getCapitalLetters = (str) =>
 
 const getFallbackLetters = (symbol) => getCapitalLetters(symbol).slice(0, 2) || "?";
 
-/* =======================
-   FIXED SYMBOL ICONS
-======================= */
 const fixedSymbolIcons = {
   XAUUSD: "/assets/commodities/xauusd.svg",
   XAGUSD: "/assets/commodities/xagusd.svg",
@@ -23,9 +17,6 @@ const fixedSymbolIcons = {
   NAS100: "/assets/commodities/usd.svg",
 };
 
-/* =======================
-   SIZE MAP
-======================= */
 const SIZE_MAP = {
   sm: 14,
   md: 18,
@@ -38,9 +29,6 @@ const LABEL_SIZE_MAP = {
   lg: 12,
 };
 
-/* =======================
-   STABLECOINS
-======================= */
 const STABLES = ["USDT", "USDC"];
 const QUOTE_ASSETS = ["USDT", "USDC", "USD", "EUR", "GBP", "JPY", "AUD", "NZD", "CAD", "CHF"];
 
@@ -212,9 +200,6 @@ function AssetIcon({ asset, iconSize }) {
   );
 }
 
-/* =======================
-   COMPONENT
-======================= */
 function SymbolWithIcon({ symbol, size = "md", showLabel = true, preferAssetIcon = false }) {
   const iconSize = SIZE_MAP[size] || 18;
   const labelSize = LABEL_SIZE_MAP[size] || 10;
@@ -240,9 +225,6 @@ function SymbolWithIcon({ symbol, size = "md", showLabel = true, preferAssetIcon
     );
   }
 
-  /* =======================
-     CASE 1 : FIXED ICON
-  ======================= */
   if (fixedSymbolIcons[capitalOnly]) {
     return (
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -262,9 +244,6 @@ function SymbolWithIcon({ symbol, size = "md", showLabel = true, preferAssetIcon
     );
   }
 
-  /* =======================
-     CASE 2 : DATA-DRIVEN PAIR
-  ======================= */
   const pairParts = getPairParts(capitalOnly);
 
   if (pairParts) {
@@ -284,9 +263,6 @@ function SymbolWithIcon({ symbol, size = "md", showLabel = true, preferAssetIcon
     );
   }
 
-  /* =======================
-     FALLBACK
-  ======================= */
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
       <SymbolFallbackIcon symbol={capitalOnly || uiSymbol} iconSize={iconSize} />

@@ -24,3 +24,5 @@ const resolveWsUrl = (apiUrl) => {
 
 export const API_URL = resolveApiUrl();
 export const WS_URL = resolveWsUrl(API_URL);
+export const SUPPORT_EMAIL = 'support@entrack.in';
+export const SUPPORT_MAILTO = `mailto:${SUPPORT_EMAIL}`;

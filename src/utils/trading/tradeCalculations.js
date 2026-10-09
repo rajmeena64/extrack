@@ -1,8 +1,9 @@
 export function normalizeTradePnlSign(trade) {
-  const pnl = Number(trade?.netPnl ?? trade?.grossPnl);
+  const pnl = Number(trade?.pnl);
   const entry = Number(trade?.entryPrice);
   const exit = Number(trade?.exitPrice);
-  const side = String(trade?.side || "").trim().toLowerCase();
+  const isShort = trade?.tradeType === "short";
+  const isLong = trade?.tradeType === "long";
 
   if (
     !Number.isFinite(pnl)
@@ -11,12 +12,12 @@ export function normalizeTradePnlSign(trade) {
     || !Number.isFinite(exit)
     || entry <= 0
     || exit <= 0
-    || (side !== "buy" && side !== "sell")
+    || (!isShort && !isLong)
   ) {
     return Number.isFinite(pnl) ? pnl : 0;
   }
 
-  const expectedMove = side === "sell" ? entry - exit : exit - entry;
+  const expectedMove = isShort ? entry - exit : exit - entry;
   if (expectedMove === 0) return pnl;
 
   const expectedSign = Math.sign(expectedMove);
@@ -25,13 +26,10 @@ export function normalizeTradePnlSign(trade) {
 
 export function normalizeTradeForCalculations(trade) {
   if (!trade || typeof trade !== "object") return trade;
-
-  const originalPnl = trade.netPnl ?? trade.grossPnl;
-
   return {
     ...trade,
     pnl: normalizeTradePnlSign(trade),
-    source_pnl: originalPnl,
+    source_pnl: trade.netPnl ?? null,
   };
 }
 

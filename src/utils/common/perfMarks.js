@@ -27,6 +27,5 @@ export function measurePerf(name, startMark, endMark = name) {
       console.info(`[perf] ${name}`, `${Math.round(latest.duration)}ms`);
     }
   } catch {
-    // Dev-only diagnostics should never affect the app.
   }
 }

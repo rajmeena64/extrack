@@ -63,7 +63,6 @@ export function decodeStorageValue(value) {
       const json = new TextDecoder().decode(xorBytes(bytes, salt));
       return JSON.parse(json);
     } catch {
-      // Try the next salt for settings saved before the rename.
     }
   }
 

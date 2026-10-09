@@ -2,11 +2,8 @@ import axios from "axios";
 import { API_URL } from "./constants";
 import { clearClientStorage } from "../storage/clientStorage";
 
-// =====================
-// Axios Instance
-// =====================
 const api = axios.create({
-  baseURL: `${API_URL}/api`,
+  baseURL: `${API_URL}/api/v1`,
   withCredentials: true,
 });
 
@@ -45,18 +42,6 @@ if (import.meta.env.DEV) {
   );
 }
 
-api.interceptors.request.use((config) => {
-  const accessToken = localStorage.getItem("accessToken");
-  if (accessToken && !config.headers?.Authorization) {
-    config.headers = config.headers || {};
-    config.headers.Authorization = `Bearer ${accessToken}`;
-  }
-  return config;
-});
-
-// =====================
-// Refresh control
-// =====================
 let isRefreshing = false;
 let refreshSubscribers = [];
 let isForceLoggingOut = false;
@@ -65,8 +50,8 @@ const subscribeTokenRefresh = (cb) => {
   refreshSubscribers.push(cb);
 };
 
-const onRefreshed = () => {
-  refreshSubscribers.forEach((cb) => cb());
+const onRefreshed = (err) => {
+  refreshSubscribers.forEach((cb) => cb(err));
   refreshSubscribers = [];
 };
 
@@ -74,9 +59,6 @@ const notifyLogout = () => {
   window.dispatchEvent(new Event("auth:logout"));
 };
 
-// =====================
-// FULL FORCE LOGOUT FUNCTION
-// =====================
 const forceLogout = async () => {
   if (isForceLoggingOut) {
     notifyLogout();
@@ -88,7 +70,6 @@ const forceLogout = async () => {
   try {
     await api.post("/auth/logout");
   } catch {
-    // Ignore logout cleanup failures and continue clearing local auth state.
   } finally {
     clearClientStorage();
     notifyLogout();
@@ -96,9 +77,31 @@ const forceLogout = async () => {
   }
 };
 
-// =====================
-// RESPONSE INTERCEPTOR
-// =====================
+const refreshAuthToken = async () => {
+  if (isRefreshing) {
+    return new Promise((resolve, reject) => {
+      subscribeTokenRefresh((err) => (err ? reject(err) : resolve()));
+    });
+  }
+
+  isRefreshing = true;
+
+  try {
+    await axios.post(
+      `${API_URL}/api/v1/auth/refresh-token`,
+      {},
+      { withCredentials: true }
+    );
+    onRefreshed(null);
+  } catch (refreshError) {
+    onRefreshed(refreshError);
+    await forceLogout();
+    throw refreshError;
+  } finally {
+    isRefreshing = false;
+  }
+};
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -119,39 +122,13 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // If access token is missing/expired/invalid, try the refresh token once.
     if (isUnauthorized && !originalRequest?._retry) {
       originalRequest._retry = true;
-
-      if (isRefreshing) {
-        return new Promise((resolve) => {
-          subscribeTokenRefresh(() => {
-            resolve(api(originalRequest));
-          });
-        });
-      }
-
-      isRefreshing = true;
-
       try {
-        const refreshResponse = await axios.post(
-          `${API_URL}/api/auth/refresh-token`,
-          {},
-          { withCredentials: true }
-        );
-        const refreshedToken = refreshResponse.data?.data?.accessToken;
-        if (refreshedToken) {
-          localStorage.setItem("accessToken", refreshedToken);
-        }
-
-        onRefreshed();
-
+        await refreshAuthToken();
         return api(originalRequest);
       } catch (refreshError) {
-        await forceLogout();
         return Promise.reject(refreshError);
-      } finally {
-        isRefreshing = false;
       }
     }
 

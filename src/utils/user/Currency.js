@@ -2,95 +2,58 @@ export const DASHBOARD_CURRENCIES = [
   { code: 'USD', label: 'US Dollar', shortLabel: 'Dollar', symbol: '$', flag: '/assets/flags/4x3/usd.svg' },
   { code: 'USC', label: 'US Cent', shortLabel: 'USC', symbol: '¢', flag: '/assets/flags/4x3/usd.svg' },
   { code: 'INR', label: 'Indian Rupee', shortLabel: 'INR', symbol: '₹', flag: '/assets/flags/4x3/inr.svg' },
-  { code: 'CNY', label: 'Chinese Yuan', shortLabel: 'Yuan', symbol: '¥', flag: '/assets/flags/4x3/cny.svg' },
   { code: 'EUR', label: 'Euro', shortLabel: 'Euro', symbol: '€', flag: '/assets/flags/4x3/eur.svg' },
+  { code: 'GBP', label: 'British Pound', shortLabel: 'Pound', symbol: '£', flag: '/assets/flags/4x3/gbp.svg' },
+  { code: 'JPY', label: 'Japanese Yen', shortLabel: 'Yen', symbol: '¥', flag: '/assets/flags/4x3/jpy.svg' },
+  { code: 'AUD', label: 'Australian Dollar', shortLabel: 'AUD', symbol: 'A$', flag: '/assets/flags/4x3/aud.svg' },
+  { code: 'CAD', label: 'Canadian Dollar', shortLabel: 'CAD', symbol: 'C$', flag: '/assets/flags/4x3/cad.svg' },
+  { code: 'CHF', label: 'Swiss Franc', shortLabel: 'CHF', symbol: 'Fr', flag: '/assets/flags/4x3/chf.svg' },
+  { code: 'AED', label: 'UAE Dirham', shortLabel: 'AED', symbol: 'AED', flag: '/assets/flags/4x3/aed.svg' },
+  { code: 'SGD', label: 'Singapore Dollar', shortLabel: 'SGD', symbol: 'S$', flag: '/assets/flags/4x3/sgd.svg' },
 ];
 
-const USD_VALUE = {
-  USD: 1,
-  USC: 0.01,
-  INR: 1 / 94.425,
-  CNY: 1 / 6.804,
-  EUR: 1.175,
+export const CURRENCY_SYMBOLS = {
+  USD: '$', USC: '¢', USDT: '$', USDC: '$', INR: '₹', EUR: '€',
+  GBP: '£', JPY: '¥', AUD: 'A$', CAD: 'C$', CHF: 'Fr', AED: 'AED', SGD: 'S$',
 };
 
-const CURRENCY_MAP = DASHBOARD_CURRENCIES.reduce((map, currency) => {
-  map[currency.code] = currency;
+const CURRENCY_MAP = DASHBOARD_CURRENCIES.reduce((map, c) => {
+  map[c.code] = c;
   return map;
 }, {});
 
-export function normalizeCurrencyCode(code, fallback = 'USD') {
-  const normalized = String(code || '').trim().toUpperCase();
-  return CURRENCY_MAP[normalized] ? normalized : fallback;
-}
+export const getCurrencySymbol = (code) => CURRENCY_SYMBOLS[String(code || '').trim().toUpperCase()] || CURRENCY_MAP[String(code || '').trim().toUpperCase()]?.symbol || '$';
 
-export function getCurrencyMeta(code) {
-  return CURRENCY_MAP[normalizeCurrencyCode(code)] || CURRENCY_MAP.USD;
-}
+export const normalizeCurrencyCode = (code, fallback = 'USD') => {
+  const norm = String(code || '').trim().toUpperCase();
+  return CURRENCY_MAP[norm] ? norm : fallback;
+};
 
-export function convertCurrency(value, fromCode, toCode) {
-  const numericValue = Number(value);
-  if (!Number.isFinite(numericValue)) return 0;
-
-  const from = normalizeCurrencyCode(fromCode);
-  const to = normalizeCurrencyCode(toCode);
-  if (from === to) return numericValue;
-
-  return (numericValue * USD_VALUE[from]) / USD_VALUE[to];
-}
-
-export function convertTradePnlForDisplay(trade, displayCurrency, fallbackCurrency = 'USD') {
-  const sourceCurrency = String(trade?.pnl_currency || trade?.pnlCurrency || fallbackCurrency).trim().toUpperCase();
-  const convert = (value) => value === null || value === undefined || value === '' ? value : convertCurrency(value, sourceCurrency, displayCurrency);
-  const pnl = convert(trade?.pnl);
-  const grossPnl = convert(trade?.gross_pnl ?? trade?.grossPnl);
-  const netPnl = convert(trade?.net_pnl ?? trade?.netPnl);
-  const finalPnl = convert(trade?.final_pnl ?? trade?.finalPnl);
-
-  return {
-    ...trade,
-    pnl,
-    gross_pnl: grossPnl,
-    grossPnl,
-    net_pnl: netPnl,
-    netPnl,
-    final_pnl: finalPnl,
-    finalPnl,
-    total_charges: convert(trade?.total_charges),
-    source_pnl: trade?.source_pnl ?? trade?.pnl,
-    source_currency: sourceCurrency,
-    pnl_currency: displayCurrency,
-    pnlCurrency: displayCurrency,
-    display_currency: displayCurrency,
-  };
-}
+export const getCurrencyMeta = (code) => {
+  const norm = normalizeCurrencyCode(code);
+  return CURRENCY_MAP[norm] || { code: norm, symbol: getCurrencySymbol(norm) };
+};
 
 export function formatCurrency(value, currencyCode, options = {}) {
   const num = Number(value);
-  const currency = getCurrencyMeta(currencyCode);
+  if (!Number.isFinite(num)) return '--';
+  const symbol = getCurrencySymbol(currencyCode);
   const decimals = options.decimals ?? 2;
-
-  if (!Number.isFinite(num)) {
-    return `${currency.symbol}0.00`;
-  }
-
-  const sign = num < 0 ? '-' : '';
-  return `${sign}${currency.symbol}${Math.abs(num).toFixed(decimals)}`;
+  const formatted = Math.abs(num).toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+  const sign = num < 0 ? '-' : (options.showPlus && num > 0 ? '+' : '');
+  return `${sign}${symbol}${formatted}`;
 }
 
 export function formatCompactCurrency(value, currencyCode) {
   const num = Number(value);
-  const currency = getCurrencyMeta(currencyCode);
-  if (!Number.isFinite(num)) return `${currency.symbol}0`;
-
-  const absolute = Math.abs(num);
+  if (!Number.isFinite(num)) return `${getCurrencySymbol(currencyCode)}0`;
+  const abs = Math.abs(num);
   const sign = num < 0 ? '-' : '';
-  if (absolute >= 100000) {
-    return `${sign}${currency.symbol}${(absolute / 100000).toFixed(2)}L`;
-  }
-  if (absolute >= 1000) {
-    return `${sign}${currency.symbol}${(absolute / 1000).toFixed(2)}K`;
-  }
-
-  return `${sign}${currency.symbol}${absolute.toFixed(0)}`;
+  const sym = getCurrencySymbol(currencyCode);
+  if (abs >= 100000) return `${sign}${sym}${(abs / 100000).toFixed(2)}L`;
+  if (abs >= 1000) return `${sign}${sym}${(abs / 1000).toFixed(2)}K`;
+  return `${sign}${sym}${abs.toFixed(0)}`;
 }
+
+export const convertCurrency = (value) => Number(value) || 0;
+export const convertTradePnlForDisplay = (trade) => trade;

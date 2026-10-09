@@ -16,14 +16,12 @@
     --tw-prose-th-borders: var(--color-border-primary);
     --tw-prose-td-borders: var(--color-border-secondary);
 
-    /* Base */
     color: var(--tw-prose-body);
     font-size: var(--text-md);
     line-height: var(--text-md--line-height);
 }
 
 .prose :not(:where([class~="not-prose"], [class~="not-prose"] *)) {
-    /* Text */
     &:where(p) {
         margin-top: calc(var(--spacing) * 4);
         margin-bottom: calc(var(--spacing) * 4);
@@ -36,7 +34,6 @@
         margin-bottom: 1.2em;
     }
 
-    /* Lists */
     &:where(ol) {
         list-style-type: decimal;
 
@@ -66,13 +63,11 @@
         margin-bottom: 0;
     }
 
-    /* Horizontal rules */
     &:where(hr) {
         margin-top: calc(var(--spacing) * 8);
         margin-bottom: calc(var(--spacing) * 8);
     }
 
-    /* Quotes */
     &:where(blockquote) {
         color: var(--tw-prose-quotes);
 
@@ -98,7 +93,6 @@
         content: close-quote;
     }
 
-    /* Headings */
     &:where(h1) {
         color: var(--tw-prose-headings);
         font-weight: 600;
@@ -163,8 +157,6 @@
         color: inherit;
     }
 
-    /* Media */
-
     &:where(img) {
         border-radius: var(--radius-xl);
         width: 100%;
@@ -213,7 +205,6 @@
         font-style: normal;
     }
 
-    /* Inline elements */
     &:where(a:not(h1 a, h2 a, h3 a, h4 a, h5 a, h6 a)) {
         font-weight: 400;
         text-decoration: underline;
@@ -231,7 +222,6 @@
         text-decoration: none;
     }
 
-    /* Inline code element */
     &:where(code:not(pre code)) {
         font-size: 0.875rem;
         line-height: 1.25rem;
@@ -277,7 +267,6 @@
 
 .prose.md\:prose-lg:not(:where([class~="not-prose"], [class~="not-prose"] *)) {
     @media (width >= 48rem /* 768px */) {
-        /* Base */
         font-size: var(--text-lg);
         line-height: var(--text-lg--line-height);
     }
@@ -285,7 +274,6 @@
 
 .prose.md\:prose-lg :not(:where([class~="not-prose"], [class~="not-prose"] *)) {
     @media (width >= 48rem /* 768px */) {
-        /* Text */
         &:where(p) {
             margin-top: calc(var(--spacing) * 4.5);
             margin-bottom: calc(var(--spacing) * 4.5);
@@ -298,7 +286,6 @@
             margin-bottom: 1.09em;
         }
 
-        /* Lists */
         &:where(ol) {
             margin-top: calc(var(--spacing) * 4.5);
             margin-bottom: calc(var(--spacing) * 4.5);
@@ -321,13 +308,11 @@
             margin-bottom: 0;
         }
 
-        /* Horizontal rules */
         &:where(hr) {
             margin-top: calc(var(--spacing) * 8);
             margin-bottom: calc(var(--spacing) * 8);
         }
 
-        /* Quotes */
         &:where(blockquote) {
             padding-inline-start: 0;
             margin-top: calc(var(--spacing) * 12);
@@ -340,7 +325,6 @@
             line-height: var(--text-display-xs--line-height);
         }
 
-        /* Headings */
         &:where(h1) {
             font-size: var(--text-display-md);
             line-height: var(--text-display-md--line-height);
@@ -395,7 +379,6 @@
             margin-top: calc(var(--spacing) * 4);
         }
 
-        /* Inline elements */
         &:where(a:not(h1 a, h2 a, h3 a, h4 a, h5 a, h6 a)) {
             font-weight: 400;
             text-decoration: underline;
@@ -407,7 +390,6 @@
             text-decoration: none;
         }
 
-        /* Inline code element */
         &:where(code:not(pre code)) {
             font-size: 0.875rem;
             line-height: 1.25rem;
@@ -421,7 +403,6 @@
     }
 }
 
-/* Remove top margin from first element */
 .prose > :first-child:not(:where([class~="not-prose"], [class~="not-prose"] *)) {
     margin-top: 0;
 }

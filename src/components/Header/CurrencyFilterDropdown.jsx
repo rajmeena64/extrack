@@ -1,7 +1,6 @@
-import React from 'react';
-import { ChevronDown } from '../../icons/lucideIcons';
+import { ChevronDown } from 'lucide-react';
 import { DASHBOARD_CURRENCIES, getCurrencyMeta, normalizeCurrencyCode } from '../../utils/user/Currency';
-import { Button, Dropdown } from '../Common/base';
+import { Button, Dropdown } from '@/components/ui';
 
 export default function CurrencyFilterDropdown({
   currencyCode = 'USD',

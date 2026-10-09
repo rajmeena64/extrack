@@ -1,11 +1,9 @@
 import { useEffect, useRef } from "react";
-import "./profile.css";
 import { getUserAvatar } from "../../../utils/user/userAvatar";
 
 export default function Profile({ user, onClose }) {
   const profileRef = useRef(null);
 
-  /* ---------- OUTSIDE CLICK CLOSE ---------- */
   useEffect(() => {
     const handleOutsideClick = (e) => {
       if (profileRef.current && !profileRef.current.contains(e.target)) {
@@ -19,116 +17,111 @@ export default function Profile({ user, onClose }) {
 
   if (!user) return null;
 
-  const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-    [user.firstName, user.lastName].filter(Boolean).join(" ") || "User"
-  )}&background=3b5cff&color=fff`;
   const profilePicture = getUserAvatar(user);
+  const initials = `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase() || "U";
 
   return (
-    <div ref={profileRef} className="account-page">
-      {/* LEFT MENU */}
-      <aside className="settings-menu">
-        <h4>Account Settings</h4>
-        <ul>
-          <li className="active">My Profile</li>
-          <li>Security</li>
-          <li>Teams</li>
-          <li>Team Member</li>
-          <li>Notifications</li>
-          <li>Billing</li>
-          <li>Data Export</li>
-          <li className="danger">Delete Account</li>
+    <div ref={profileRef} className="account-page flex flex-col min-[901px]:flex-row gap-7 p-7 bg-[#f5f7fb] rounded-2xl">
+      <aside className="settings-menu w-full min-[901px]:w-[260px] bg-white rounded-[14px] p-[22px] shrink-0">
+        <h4 className="text-base font-semibold mb-[18px] text-[#111]">Account Settings</h4>
+        <ul className="list-none p-0 m-0">
+          <li className="py-3 px-3.5 rounded-lg text-sm cursor-pointer transition-colors duration-200 bg-[#e6ebff] text-[#3b5cff] font-semibold">My Profile</li>
+          <li className="py-3 px-3.5 rounded-lg text-sm text-[#555] cursor-pointer transition-colors duration-200 hover:bg-[#f0f2ff]">Security</li>
+          <li className="py-3 px-3.5 rounded-lg text-sm text-[#555] cursor-pointer transition-colors duration-200 hover:bg-[#f0f2ff]">Teams</li>
+          <li className="py-3 px-3.5 rounded-lg text-sm text-[#555] cursor-pointer transition-colors duration-200 hover:bg-[#f0f2ff]">Team Member</li>
+          <li className="py-3 px-3.5 rounded-lg text-sm text-[#555] cursor-pointer transition-colors duration-200 hover:bg-[#f0f2ff]">Notifications</li>
+          <li className="py-3 px-3.5 rounded-lg text-sm text-[#555] cursor-pointer transition-colors duration-200 hover:bg-[#f0f2ff]">Billing</li>
+          <li className="py-3 px-3.5 rounded-lg text-sm text-[#555] cursor-pointer transition-colors duration-200 hover:bg-[#f0f2ff]">Data Export</li>
+          <li className="py-3 px-3.5 rounded-lg text-sm cursor-pointer transition-colors duration-200 text-[#e54848] hover:bg-[#f0f2ff]">Delete Account</li>
         </ul>
       </aside>
 
-      {/* RIGHT CONTENT */}
-      <section className="settings-content">
-        <h2>My Profile</h2>
+      <section className="settings-content flex-1">
+        <h2 className="text-xl font-semibold mb-[18px] text-[#111]">My Profile</h2>
 
-        {/* PROFILE TOP */}
-        <div className="box profile-top">
-          <div className="profile-left">
-            <img
-              src={profilePicture || defaultAvatar}
-              alt={`${[user.firstName, user.lastName].filter(Boolean).join(" ") || "User"} profile`}
-              referrerPolicy="no-referrer"
-              onError={(event) => {
-                if (event.currentTarget.dataset.fallbackApplied) return;
-                event.currentTarget.dataset.fallbackApplied = "true";
-                event.currentTarget.src = defaultAvatar;
-              }}
-            />
+        <div className="box bg-white rounded-[14px] p-[22px] mb-5 flex items-center justify-between">
+          <div className="profile-left flex items-center gap-4">
+            {profilePicture ? (
+              <img
+                src={profilePicture}
+                alt={`${[user.firstName, user.lastName].filter(Boolean).join(" ") || "User"} profile`}
+                referrerPolicy="no-referrer"
+                className="w-16 h-16 rounded-full object-cover"
+              />
+            ) : (
+              <div className="w-16 h-16 rounded-full bg-[#3b5cff] text-white flex items-center justify-center text-xl font-bold uppercase select-none">
+                {initials}
+              </div>
+            )}
             <div>
-              <h3>{user.firstName} {user.lastName}</h3>
-              <p>{user.role || "User"}</p>
-              <span>{user.location || "—"}</span>
+              <h3 className="text-base font-semibold m-0 text-[#111]">{user.firstName} {user.lastName}</h3>
+              <p className="text-sm my-0.5 text-[#666]">{user.role || "User"}</p>
+              <span className="text-[13px] text-[#999]">{user.location || "—"}</span>
             </div>
           </div>
 
-          <button className="icon-btn">✎ Edit</button>
+          <button className="icon-btn bg-[#f1f3ff] border-none py-[7px] px-3.5 rounded-lg text-[13px] font-medium text-[#3b5cff] cursor-pointer transition-colors duration-200 hover:bg-[#e1e6ff]">✎ Edit</button>
         </div>
 
-        {/* PERSONAL INFO */}
-        <div className="box">
-          <div className="box-head">
-            <h4>Personal Information</h4>
-            <button className="icon-btn">✎ Edit</button>
+        <div className="box bg-white rounded-[14px] p-[22px] mb-5">
+          <div className="box-head flex items-center justify-between mb-[18px]">
+            <h4 className="text-[15px] font-semibold m-0 text-[#111]">Personal Information</h4>
+            <button className="icon-btn bg-[#f1f3ff] border-none py-[7px] px-3.5 rounded-lg text-[13px] font-medium text-[#3b5cff] cursor-pointer transition-colors duration-200 hover:bg-[#e1e6ff]">✎ Edit</button>
           </div>
 
-          <div className="grid">
+          <div className="grid grid-cols-1 min-[901px]:grid-cols-2 gap-x-10 gap-y-[22px]">
             <div>
-              <label>First Name</label>
-              <p>{user.firstName}</p>
+              <label className="text-[13px] text-[#8a8a8a]">First Name</label>
+              <p className="mt-1 text-sm font-medium text-[#222]">{user.firstName}</p>
             </div>
 
             <div>
-              <label>Last Name</label>
-              <p>{user.lastName}</p>
+              <label className="text-[13px] text-[#8a8a8a]">Last Name</label>
+              <p className="mt-1 text-sm font-medium text-[#222]">{user.lastName}</p>
             </div>
 
             <div>
-              <label>Email address</label>
-              <p>{user.email}</p>
+              <label className="text-[13px] text-[#8a8a8a]">Email address</label>
+              <p className="mt-1 text-sm font-medium text-[#222]">{user.email}</p>
             </div>
 
             <div>
-              <label>Phone</label>
-              <p>{user.phone || "—"}</p>
+              <label className="text-[13px] text-[#8a8a8a]">Phone</label>
+              <p className="mt-1 text-sm font-medium text-[#222]">{user.phone || "—"}</p>
             </div>
 
             <div>
-              <label>Bio</label>
-              <p>{user.role || "—"}</p>
+              <label className="text-[13px] text-[#8a8a8a]">Bio</label>
+              <p className="mt-1 text-sm font-medium text-[#222]">{user.role || "—"}</p>
             </div>
           </div>
         </div>
 
-        {/* ADDRESS */}
-        <div className="box">
-          <div className="box-head">
-            <h4>Address</h4>
-            <button className="icon-btn">✎ Edit</button>
+        <div className="box bg-white rounded-[14px] p-[22px] mb-5">
+          <div className="box-head flex items-center justify-between mb-[18px]">
+            <h4 className="text-[15px] font-semibold m-0 text-[#111]">Address</h4>
+            <button className="icon-btn bg-[#f1f3ff] border-none py-[7px] px-3.5 rounded-lg text-[13px] font-medium text-[#3b5cff] cursor-pointer transition-colors duration-200 hover:bg-[#e1e6ff]">✎ Edit</button>
           </div>
 
-          <div className="grid">
+          <div className="grid grid-cols-1 min-[901px]:grid-cols-2 gap-x-10 gap-y-[22px]">
             <div>
-              <label>Country</label>
-              <p>{user.country || "—"}</p>
+              <label className="text-[13px] text-[#8a8a8a]">Country</label>
+              <p className="mt-1 text-sm font-medium text-[#222]">{user.country || "—"}</p>
             </div>
 
             <div>
-              <label>City / State</label>
-              <p>{user.city || "—"}</p>
+              <label className="text-[13px] text-[#8a8a8a]">City / State</label>
+              <p className="mt-1 text-sm font-medium text-[#222]">{user.city || "—"}</p>
             </div>
 
             <div>
-              <label>Postal Code</label>
-              <p>{user.postalCode || "—"}</p>
+              <label className="text-[13px] text-[#8a8a8a]">Postal Code</label>
+              <p className="mt-1 text-sm font-medium text-[#222]">{user.postalCode || "—"}</p>
             </div>
 
             <div>
-              <label>Tax ID</label>
-              <p>{user.taxId || "—"}</p>
+              <label className="text-[13px] text-[#8a8a8a]">Tax ID</label>
+              <p className="mt-1 text-sm font-medium text-[#222]">{user.taxId || "—"}</p>
             </div>
           </div>
         </div>

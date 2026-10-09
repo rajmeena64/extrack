@@ -39,7 +39,6 @@ function storeDarkMode(value) {
     localStorage.removeItem(LEGACY_THEME_STORAGE_KEY);
     localStorage.removeItem(PREVIOUS_THEME_STORAGE_KEY);
   } catch {
-    // Theme still works for this session if storage is unavailable.
   }
 }
 
@@ -76,7 +75,6 @@ function disableTransitions() {
   document.head.appendChild(css);
 
   return () => {
-    // Force browser to recalculate and commit styles instantly without any transition
     // eslint-disable-next-line no-unused-expressions
     window.getComputedStyle(document.body).opacity;
 
@@ -139,4 +137,4 @@ export function ThemeProvider({ children }) {
 export function useTheme() {
   return useContext(ThemeContext);
 }
-
+

@@ -1,48 +1,32 @@
 import React, { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
-
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import {
-  CalendarIcon,
-  ChevronDown,
-  CircleUserRound,
-  Clock,
-  CurrencyIcon,
-  EllipsisVertical,
-  FilterIcon,
-  Globe,
-  LayoutDashboard,
-  LoaderCircle,
-  Menu,
-  Plus,
-  RefreshCw,
-  Rocket,
-  Search,
-  X,
-} from '@/icons';
+import { ChevronDown, FilterIcon, LoaderCircle, Menu, Plus, RefreshCw, Rocket, Search, X } from '@/icons';
 import { useAuth } from '../../context/AuthContext';
 import { useAppDialog } from '../../context/AppDialogContext';
 import PageHeader from '../Layout/PageHeader';
 import Logo from '../Common/Logo/Logo';
 import CurrencyFilterDropdown from './CurrencyFilterDropdown';
-import { DASHBOARD_CURRENCIES, getCurrencyMeta } from '../../utils/user/Currency';
-import { formatDisplayDate, getTradeDisplayDate, getTradeDisplayTime } from '../../utils/trading/tradeTime';
+import { DASHBOARD_CURRENCIES } from '../../utils/user/Currency';
+import { formatDisplayDate, getTradeDisplayDate, getTradeDisplayTime, BROWSER_TIME_ZONE, TIME_ZONES } from '../../utils/trading/tradeTime';
 import { getUserAvatar } from '../../utils/user/userAvatar';
 import api from '../../utils/common/serve';
 import { API_URL } from '../../utils/common/constants';
 import { clearClientStorage } from '../../utils/storage/clientStorage';
 import { loadCachedUserSettings, saveUserSettings } from '../../utils/user/userSettings';
-import { BROWSER_TIME_ZONE, TIME_ZONES } from '../../utils/trading/tradeTime';
-import { SubmenuTrigger, Button as AriaButton } from 'react-aria-components';
 import { DropdownAccountCardXS } from '../user/DropdownAccountCard/DropdownAccountCardXS';
-import { Button, Dropdown } from '../Common/base';
+import { Button, Dropdown, DateRangePicker as UntitledDateRangePicker } from '@/components/ui';
 import SettingsModal from '../Settings/SettingsModal';
-const UserLoginModal = lazy(() => import('../user/UserLoginModal/UserLoginModal'));
-const Profile = lazy(() => import('../user/Profile/Profile'));
-import { DateRangePicker as UntitledDateRangePicker } from '../application/date-picker/date-range-picker';
 import { jsDateRangeToCalendarRange, calendarRangeToJsDateRange } from '../../utils/common/dateConversions';
 
-const formatDateLabel = (value) => formatDisplayDate(value);
+const Profile = lazy(() => import('../user/Profile/Profile'));
+const DashboardSettings = lazy(() => import('../Sidebar/DashboardSettings'));
+
+const MODES = [
+  { value: 'all', label: 'All Trades' },
+  { value: 'manual', label: 'Manual Trades' },
+  { value: 'api', label: 'Sync Trades' },
+];
 
 function Header({
   tradeMode,
@@ -54,92 +38,48 @@ function Header({
   defaultCurrencyCode = 'USD',
   onCurrencyChange,
 }) {
-  const [showLoginModal, setShowLoginModal] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
-
-  const [_mobileActionPanel, setMobileActionPanel] = useState(null);
   const [mobileActionsOpen, setMobileActionsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [layoutOpen, setLayoutOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const cachedPreferences = loadCachedUserSettings()?.preferences || {};
-  const [timeZone, setTimeZone] = useState(cachedPreferences.timeZone || BROWSER_TIME_ZONE);
+  const [timeZone, setTimeZone] = useState(() => loadCachedUserSettings()?.preferences?.timeZone || BROWSER_TIME_ZONE);
   const [isHeaderHidden, setIsHeaderHidden] = useState(false);
-  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
-  const [isTablet, setIsTablet] = useState(typeof window !== 'undefined' ? window.innerWidth < 1024 : false);
-  const [_isSmallMobile, setIsSmallMobile] = useState(typeof window !== 'undefined' ? window.innerWidth <= 480 : false);
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
+  const [isTablet, setIsTablet] = useState(() => typeof window !== 'undefined' && window.innerWidth < 1024);
   const [dashboardSyncing, setDashboardSyncing] = useState(false);
   const filterRef = useRef(null);
-
   const mobileActionsRef = useRef(null);
   const lastScrollYRef = useRef(0);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-
   const { user: currentUser, setUser } = useAuth();
   const { notify } = useAppDialog();
-  const googleProfilePicture = getUserAvatar(currentUser);
 
-  const modes = [
-    { value: 'all', label: 'All Trades' },
-    { value: 'manual', label: 'Manual Trades' },
-    { value: 'api', label: 'Sync Trades' },
-  ];
-
-  const currentLabel =
-    modes.find((mode) => mode.value === tradeMode)?.label || 'All Trades';
-  const _compactTradeLabel = tradeMode === 'manual' ? 'Manual' : tradeMode === 'api' ? 'Sync' : 'Trades';
-  const _selectedCurrency = getCurrencyMeta(currencyCode);
-  const _defaultCurrency = getCurrencyMeta(defaultCurrencyCode);
+  const currentLabel = MODES.find((mode) => mode.value === tradeMode)?.label || 'All Trades';
   const hasPopupOpen = filterOpen || mobileActionsOpen;
-  const shouldHideHeader = isHeaderHidden && !hasPopupOpen && !profileOpen && !settingsOpen && !showLoginModal;
-  const _profileName = [currentUser?.firstName, currentUser?.lastName].filter(Boolean).join(' ').trim();
-  const _profileInitials = `${currentUser?.firstName?.[0] || ''}${currentUser?.lastName?.[0] || ''}`.trim() || 'U';
+  const shouldHideHeader = isHeaderHidden && !hasPopupOpen && !profileOpen && !settingsOpen;
 
   const latestTradeDate = useMemo(() => {
-    if (!Array.isArray(trades) || trades.length === 0) {
-      return null;
-    }
-
-    const sortedTrades = [...trades].sort(
-      (left, right) => getTradeDisplayTime(right) - getTradeDisplayTime(left)
-    );
-
-    return getTradeDisplayDate(sortedTrades[0]);
+    if (!Array.isArray(trades) || trades.length === 0) return null;
+    const sorted = [...trades].sort((a, b) => getTradeDisplayTime(b) - getTradeDisplayTime(a));
+    return getTradeDisplayDate(sorted[0]);
   }, [trades]);
 
   const latestTradeLabel = useMemo(() => {
-    if (!latestTradeDate) {
-      return 'No imports yet';
-    }
-
-    return new Intl.DateTimeFormat('en-US', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(latestTradeDate);
+    if (!latestTradeDate) return 'No imports yet';
+    return new Intl.DateTimeFormat('en-US', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(latestTradeDate);
   }, [latestTradeDate]);
 
   const compactLatestTradeLabel = useMemo(() => {
-    if (!latestTradeDate) {
-      return 'No imports yet';
-    }
-
-    return new Intl.DateTimeFormat('en-US', {
-      day: '2-digit',
-      month: 'short',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(latestTradeDate);
+    if (!latestTradeDate) return 'No imports yet';
+    return new Intl.DateTimeFormat('en-US', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).format(latestTradeDate);
   }, [latestTradeDate]);
 
   const dateRangeLabel = useMemo(() => {
     if (dateRange?.from && dateRange?.to) {
-      return `${formatDateLabel(dateRange.from)} - ${formatDateLabel(dateRange.to)}`;
+      return `${formatDisplayDate(dateRange.from)} - ${formatDisplayDate(dateRange.to)}`;
     }
-
     return 'All time';
   }, [dateRange]);
 
@@ -148,27 +88,25 @@ function Header({
     setDashboardSyncing(true);
     try {
       const { data } = await api.get('/broker-connections');
-      const connections = (data?.connections || []).filter((connection) => (
-        connection.brokerSlug === 'ctrader' && connection.tradeMethod === 'oauth_sync' && connection.status === 'connected'
-      ));
-      const requests = connections.flatMap((connection) => {
-        const accountIds = connection.metadata?.authorizedAccountIds || [];
-        return accountIds.map((accountId) => ({ connectionId: connection.id, accountId }));
+      const connections = (data?.connections || []).filter((c) => c.status === 'connected' && c.tradeMethod !== 'manual_entry');
+      const requests = connections.flatMap((c) => {
+        const ids = c.metadata?.authorizedAccountIds || [];
+        return ids.length > 0 ? ids.map((accountId) => ({ connectionId: c.id, accountId })) : [{ connectionId: c.id, accountId: c.externalAccountId }];
       });
       if (!requests.length) {
         notify('No connected sync account found', 'warning');
         return;
       }
       const fromTimestamp = dateRange?.from ? new Date(dateRange.from).setHours(0, 0, 0, 0) : 0;
-      const toTimestamp = dateRange?.to ? new Date(dateRange.to).setHours(23, 59, 59, 999) : Date.now();
-      const results = await Promise.all(requests.map(async ({ connectionId, accountId }) => {
-        const response = await api.post(`/broker-connections/ctrader/${connectionId}/sync`, { accountId: String(accountId), fromTimestamp, toTimestamp });
-        return response.data;
+      const toTimestamp = Date.now();
+      const settled = await Promise.allSettled(requests.map(async ({ connectionId, accountId }) => {
+        const res = await api.post(`/broker-connections/${connectionId}/sync`, { accountId: accountId ? String(accountId) : undefined, fromTimestamp, toTimestamp });
+        return res.data;
       }));
-      const fetched = results.reduce((total, result) => total + (Number(result.fetchedCount) || 0), 0);
-      const newSaved = results.reduce((total, result) => total + (Number(result.newTradesCount) || 0), 0);
-      const updated = results.reduce((total, result) => total + (Number(result.updatedTradesCount) || 0), 0);
-
+      const results = settled.filter((s) => s.status === 'fulfilled').map((s) => s.value);
+      const fetched = results.reduce((acc, r) => acc + (Number(r.fetchedCount) || 0), 0);
+      const newSaved = results.reduce((acc, r) => acc + (Number(r.newTradesCount) || 0), 0);
+      const updated = results.reduce((acc, r) => acc + (Number(r.updatedTradesCount) || 0), 0);
       if (fetched === 0) {
         notify('Sync complete: No trades found', 'info');
       } else if (newSaved === 0) {
@@ -188,107 +126,78 @@ function Header({
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
       setIsTablet(window.innerWidth < 1024);
-      setIsSmallMobile(window.innerWidth <= 480);
     };
-
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (filterOpen && filterRef.current && !filterRef.current.contains(event.target)) {
-        setFilterOpen(false);
-      }
-
-      if (mobileActionsOpen && mobileActionsRef.current && !mobileActionsRef.current.contains(event.target)) {
-        setMobileActionsOpen(false);
-        setMobileActionPanel(null);
-      }
+    const handleClickOutside = (e) => {
+      if (filterOpen && filterRef.current && !filterRef.current.contains(e.target)) setFilterOpen(false);
+      if (mobileActionsOpen && mobileActionsRef.current && !mobileActionsRef.current.contains(e.target)) setMobileActionsOpen(false);
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [filterOpen, mobileActionsOpen]);
 
   useEffect(() => {
-    const handleEsc = (event) => {
-      if (event.key === 'Escape') {
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') {
         setProfileOpen(false);
+        setSettingsOpen(false);
         setMobileActionsOpen(false);
-        setMobileActionPanel(null);
       }
     };
-
-    if (profileOpen || mobileActionsOpen) {
-      document.addEventListener('keydown', handleEsc);
-    }
-
+    if (profileOpen || settingsOpen || mobileActionsOpen) document.addEventListener('keydown', handleEsc);
     return () => document.removeEventListener('keydown', handleEsc);
-  }, [mobileActionsOpen, profileOpen]);
+  }, [mobileActionsOpen, profileOpen, settingsOpen]);
 
   useEffect(() => {
     document.body.classList.toggle('dashboard-popup-open', hasPopupOpen);
-
-    return () => {
-      document.body.classList.remove('dashboard-popup-open');
-    };
+    return () => document.body.classList.remove('dashboard-popup-open');
   }, [hasPopupOpen]);
 
   useEffect(() => {
     const mainContent = document.querySelector('.main-content');
     const getScrollY = () => Math.max(window.scrollY || 0, document.documentElement.scrollTop || 0, mainContent?.scrollTop || 0);
-
     lastScrollYRef.current = getScrollY();
 
     const handleScroll = () => {
-      if (hasPopupOpen || profileOpen || showLoginModal) {
+      if (hasPopupOpen || profileOpen || settingsOpen) {
         setIsHeaderHidden(false);
         return;
       }
-
       const currentScrollY = getScrollY();
       const delta = currentScrollY - lastScrollYRef.current;
-
-      if (currentScrollY <= 8) {
-        setIsHeaderHidden(false);
-      } else if (delta > 4) {
-        setIsHeaderHidden(true);
-      } else if (delta < -4) {
-        setIsHeaderHidden(false);
-      }
-
+      if (currentScrollY <= 8) setIsHeaderHidden(false);
+      else if (delta > 4) setIsHeaderHidden(true);
+      else if (delta < -4) setIsHeaderHidden(false);
       lastScrollYRef.current = currentScrollY;
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     mainContent?.addEventListener('scroll', handleScroll, { passive: true });
     document.addEventListener('scroll', handleScroll, { passive: true });
-
     return () => {
       window.removeEventListener('scroll', handleScroll);
       mainContent?.removeEventListener('scroll', handleScroll);
       document.removeEventListener('scroll', handleScroll);
     };
-  }, [hasPopupOpen, profileOpen, showLoginModal]);
+  }, [hasPopupOpen, profileOpen, settingsOpen]);
 
   return (
     <>
       {hasPopupOpen && (
         <div
           className="fixed top-[var(--app-shell-header-height)] inset-x-0 bottom-0 z-[9000] bg-slate-900/20 backdrop-blur-[4px]"
-          onClick={() => {
-            setFilterOpen(false);
-            setMobileActionsOpen(false);
-            setMobileActionPanel(null);
-          }}
+          onClick={() => { setFilterOpen(false); setMobileActionsOpen(false); }}
         />
       )}
 
       <PageHeader
         title="Dashboard"
         className={`transition-transform duration-200 ease-out ${shouldHideHeader ? '-translate-y-[calc(100%+10px)] opacity-0 pointer-events-none' : ''}`}
-        keepVisible={hasPopupOpen || profileOpen || settingsOpen || showLoginModal}
+        keepVisible={hasPopupOpen || profileOpen || settingsOpen}
         left={isTablet ? (
           <div className="flex items-center gap-2">
             <Logo compact showText={false} className="shrink-0" />
@@ -307,9 +216,7 @@ function Header({
                       size="sm"
                       buttonClassName="whitespace-nowrap"
                       value={jsDateRangeToCalendarRange(dateRange)}
-                      onChange={(range) => {
-                        setDateRange?.(calendarRangeToJsDateRange(range));
-                      }}
+                      onChange={(range) => setDateRange?.(calendarRangeToJsDateRange(range))}
                       onApply={() => {}}
                     />
                   </div>
@@ -326,20 +233,10 @@ function Header({
                       >
                         {currentLabel}
                       </Button>
-
                       <Dropdown.Popover placement="bottom start" className="w-44 p-1">
-                        <Dropdown.Menu
-                          selectionMode="single"
-                          selectedKeys={new Set([tradeMode])}
-                          onAction={(key) => setTradeMode(String(key))}
-                        >
-                          {modes.map((mode) => (
-                            <Dropdown.Item
-                              key={mode.value}
-                              id={mode.value}
-                              label={mode.label}
-                              textValue={mode.label}
-                            >
+                        <Dropdown.Menu selectionMode="single" selectedKeys={new Set([tradeMode])} onAction={(key) => setTradeMode(String(key))}>
+                          {MODES.map((mode) => (
+                            <Dropdown.Item key={mode.value} id={mode.value} label={mode.label} textValue={mode.label}>
                               {mode.label}
                             </Dropdown.Item>
                           ))}
@@ -384,18 +281,18 @@ function Header({
                       firstName: currentUser.firstName,
                       lastName: currentUser.lastName,
                       email: currentUser.email,
-                      avatarUrl: googleProfilePicture,
+                      avatarUrl: getUserAvatar(currentUser),
                     }}
                     timeZone={timeZone}
                     onTimeZoneChange={async (nextTimeZone) => {
                       if (!TIME_ZONES.includes(nextTimeZone) || nextTimeZone === timeZone) return;
-                      const previousTimeZone = timeZone;
+                      const prev = timeZone;
                       setTimeZone(nextTimeZone);
                       try {
                         await saveUserSettings({ preferences: { timeZone: nextTimeZone } });
                         notify('Timezone updated', 'success');
                       } catch {
-                        setTimeZone(previousTimeZone);
+                        setTimeZone(prev);
                         notify('Timezone could not be updated', 'error');
                       }
                     }}
@@ -403,10 +300,7 @@ function Header({
                     onOpenDashboardLayout={() => setLayoutOpen(true)}
                     onOpenSettings={() => setSettingsOpen(true)}
                     onSignOut={() => {
-                      fetch(`${API_URL}/api/auth/logout`, {
-                        method: 'POST',
-                        credentials: 'include'
-                      })
+                      fetch(`${API_URL}/api/v1/auth/logout`, { method: 'POST', credentials: 'include' })
                         .catch(() => null)
                         .finally(() => {
                           clearClientStorage();
@@ -417,12 +311,10 @@ function Header({
                     }}
                     isMobile={isTablet}
                     dateRangeLabel={dateRangeLabel}
-                    onOpenDateRange={() => {
-                      setFilterOpen(false);
-                    }}
+                    onOpenDateRange={() => setFilterOpen(false)}
                     tradeMode={tradeMode}
                     tradeModeLabel={currentLabel}
-                    tradeModeOptions={modes}
+                    tradeModeOptions={MODES}
                     onTradeModeChange={(mode) => setTradeMode(mode)}
                     currencyCode={currencyCode}
                     currencyOptions={DASHBOARD_CURRENCIES}
@@ -433,7 +325,7 @@ function Header({
                 <button
                   className="inline-flex items-center gap-2 min-w-0 min-h-[32px] px-2 py-1 rounded-[10px] bg-white/90 dark:bg-[#0d0d0d] border border-black/10 dark:border-[#242424] cursor-pointer hover:bg-[var(--bg-hover)] transition-colors shrink-0"
                   type="button"
-                  onClick={() => setShowLoginModal(true)}
+                  onClick={() => navigate('/login')}
                 >
                   <div className="w-7 h-7 rounded-full bg-blue-600/10 text-blue-600 flex items-center justify-center font-bold text-xs shrink-0" aria-hidden="true">U</div>
                   <div className="flex flex-col text-left min-w-0 leading-tight">
@@ -540,13 +432,6 @@ function Header({
           </div>
         </>
       )}
-
-      <Suspense fallback={null}>
-        <UserLoginModal
-          isOpen={showLoginModal}
-          onClose={() => setShowLoginModal(false)}
-        />
-      </Suspense>
     </>
   );
 }

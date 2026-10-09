@@ -32,13 +32,13 @@ body.sidebar-expanded,
   --border-light: #e2e8f0;
   --border-medium: #cbd5e1;
 
-  --primary: #2563eb;
-  --primary-light: #60a5fa;
-  --primary-dark: #1d4ed8;
+  --primary: var(--color-brand-700);
+  --primary-light: var(--color-brand-500);
+  --primary-dark: var(--color-brand-800);
 
-  --purple: #2563eb;
-  --purple-light: rgba(37, 99, 235, 0.1);
-  --purple-hover: rgba(37, 99, 235, 0.16);
+  --purple: var(--color-brand-700);
+  --purple-light: rgba(24, 73, 169, 0.1);
+  --purple-hover: rgba(24, 73, 169, 0.16);
 
   --button-bg: var(--color-bg-brand-solid);
   --button-bg-hover: var(--color-bg-brand-solid_hover);
@@ -116,7 +116,7 @@ body.sidebar-expanded,
   --overlay-backdrop: rgba(15, 23, 42, 0.72);
   --overlay-backdrop-strong: rgba(0, 0, 0, 0.96);
   --overlay-text: #ffffff;
-  --checkbox-accent: #175CD3;
+  --checkbox-accent: var(--color-brand-700);
 }
 
 .dark-mode {
@@ -299,7 +299,6 @@ body {
   height: var(--app-shell-header-height);
   display: flex;
   align-items: center;
-  /* Always left-aligned so icon never moves */
   justify-content: flex-start;
   padding-left: 16px;
   background: var(--bg-card);
@@ -808,4 +807,4 @@ input[type="checkbox"] {
     text-overflow: ellipsis;
   }
 }
-
+

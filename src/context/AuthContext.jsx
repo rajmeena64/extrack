@@ -22,8 +22,10 @@ export function AuthProvider({ children }) {
   const queryClient = useQueryClient();
   const initialStoredUser = useMemo(() => readStoredUser(), []);
   const [user, setUser] = useState(initialStoredUser);
-  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [isAuthLoading, setIsAuthLoading] = useState(!initialStoredUser);
   const userRef = useRef(null);
+  const lastAuthCheckRef = useRef(0);
+  const inFlightAuthRef = useRef(null);
 
   useEffect(() => {
     userRef.current = user;
@@ -42,22 +44,33 @@ export function AuthProvider({ children }) {
     setUser(null);
   }, [queryClient]);
 
-  const refreshUser = useCallback(async () => {
-    try {
-      const { data } = await api.get('/auth/me');
+  const refreshUser = useCallback(async ({ force = false } = {}) => {
+    const now = Date.now();
+    if (!force && now - lastAuthCheckRef.current < 2 * 60 * 1000 && userRef.current) {
+      return userRef.current;
+    }
+    if (inFlightAuthRef.current) return inFlightAuthRef.current;
 
-      const user = data?.data?.user || data?.user;
-      if (data?.success && user) {
-        setUser(user);
-        return user;
+    inFlightAuthRef.current = (async () => {
+      try {
+        const { data } = await api.get('/auth/me');
+        const userData = data?.data?.user || data?.user;
+        if (data?.success && userData) {
+          setUser(userData);
+          lastAuthCheckRef.current = Date.now();
+          return userData;
+        }
+      } catch {
+        clearAuthState();
+        return null;
+      } finally {
+        inFlightAuthRef.current = null;
       }
-    } catch {
       clearAuthState();
       return null;
-    }
+    })();
 
-    clearAuthState();
-    return null;
+    return inFlightAuthRef.current;
   }, [clearAuthState]);
 
   useEffect(() => {
@@ -65,7 +78,7 @@ export function AuthProvider({ children }) {
 
     const bootstrapAuth = async () => {
       try {
-        await refreshUser();
+        await refreshUser({ force: true });
       } finally {
         if (isMounted) {
           setIsAuthLoading(false);

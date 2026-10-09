@@ -40,7 +40,6 @@ function cacheUserSettings(settings) {
     localStorage.removeItem(LEGACY_SETTINGS_STORAGE_KEY);
     localStorage.removeItem(PREVIOUS_SETTINGS_STORAGE_KEY);
   } catch {
-    // Storage can fail in private mode; backend settings still work.
   }
 }
 

@@ -1,6 +1,6 @@
 import { Plus } from "@untitledui/icons";
 import type { ButtonProps as AriaButtonProps } from "react-aria-components";
-import { Tooltip as AriaTooltip } from "@/components/Common/base";
+import { Tooltip as AriaTooltip } from "@/components/ui";
 import { cx } from "@/utils/cx";
 
 const sizes = {
