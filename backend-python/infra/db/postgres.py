@@ -27,6 +27,7 @@ async def init_db():
             min_size=int(os.getenv("DB_POOL_MIN", "1")),
             max_size=int(os.getenv("DB_POOL_MAX", "5")),
             ssl="require" if os.getenv("DB_SSL_ENABLED", "true") == "true" else False,
+            statement_cache_size=0,
         )
     return _pool
 
