@@ -2,6 +2,7 @@ import json
 import html
 import secrets
 import os
+import time
 import urllib.parse
 import asyncio
 from typing import Any
@@ -131,7 +132,7 @@ async def oauth_auth_server(request: Request):
         "registration_endpoint": f"{base}/register",
         "response_types_supported": ["code"],
         "grant_types_supported": ["authorization_code", "refresh_token"],
-        "token_endpoint_auth_methods_supported": ["client_secret_post", "none"],
+        "token_endpoint_auth_methods_supported": ["client_secret_post", "client_secret_basic", "none"],
         "code_challenge_methods_supported": ["S256"]
     }
 
@@ -144,7 +145,7 @@ async def oauth_protected_resource(request: Request):
         "authorization_servers": [base]
     }
 
-@mcp_router.post("/register")
+@mcp_router.post("/register", status_code=201)
 async def oauth_register(request: Request):
     body = await request.json()
     cid = f"mcp_{secrets.token_hex(8)}"
@@ -155,6 +156,7 @@ async def oauth_register(request: Request):
     grant_types = body["grant_types"] if "grant_types" in body else ["authorization_code"]
     resp_types = body["response_types"] if "response_types" in body else ["code"]
     auth_method = str(body["token_endpoint_auth_method"]) if "token_endpoint_auth_method" in body else "client_secret_post"
+    now_ts = int(time.time())
     return {
         "client_id": cid,
         "client_secret": sec,
@@ -162,7 +164,9 @@ async def oauth_register(request: Request):
         "redirect_uris": uris,
         "grant_types": grant_types,
         "response_types": resp_types,
-        "token_endpoint_auth_method": auth_method
+        "token_endpoint_auth_method": auth_method,
+        "client_id_issued_at": now_ts,
+        "client_secret_expires_at": 0
     }
 
 @mcp_router.get("/oauth/authorize")
