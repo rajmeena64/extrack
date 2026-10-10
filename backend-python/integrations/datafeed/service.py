@@ -1,4 +1,4 @@
-import asyncio, os
+import asyncio, os, re
 import httpx
 from typing import Optional, List, Dict, Any
 from core.errors.app_error import AppError
@@ -8,37 +8,15 @@ from integrations.datafeed.tinybird import fetch_tinybird_candles
 from integrations.datafeed.ctrader_feed import fetch_live_feed_candles
 from integrations.datafeed.binance import fetch_binance_candles
 
-TIMEFRAME_CATEGORIES = {
-    "minutes": {
-        "1minute": "1m",
-        "3minutes": "3m",
-        "5minutes": "5m",
-        "15minutes": "15m",
-        "30minutes": "30m",
-    },
-    "hours": {
-        "1hour": "1h",
-        "4hours": "4h",
-    },
-    "days": {
-        "1day": "1d",
-    },
-    "weeks": {
-        "1week": "1w",
-    },
-    "months": {
-        "1month": "1M",
-    },
-}
+UNIT_CODES = {"minute": "m", "hour": "h", "day": "d", "week": "w", "month": "M"}
 
 def resolve_timeframe(tf_str: Optional[str]) -> str:
     if not tf_str:
         raise AppError(ERROR_MESSAGES["MARKET"]["INVALID_TIMEFRAME"])
-    key = str(tf_str).strip()
-    for cat in TIMEFRAME_CATEGORIES.values():
-        if key in cat:
-            return cat[key]
-    raise AppError(ERROR_MESSAGES["MARKET"]["INVALID_TIMEFRAME"])
+    m = re.match(r"^([1-9]\d*)(minute|hour|day|week|month)s?$", str(tf_str).strip())
+    if not m:
+        raise AppError(ERROR_MESSAGES["MARKET"]["INVALID_TIMEFRAME"])
+    return f"{m.group(1)}{UNIT_CODES[m.group(2)]}"
 
 async def resolve_feed_provider(symbol: str) -> Optional[Dict[str, Any]]:
     inst = await get_instrument(symbol)
@@ -154,7 +132,7 @@ async def get_watchlist_quotes(symbols: List[str]) -> Dict[str, Dict[str, Any]]:
     if cfeed_symbols:
         async def fetch_one(sym: str):
             try:
-                c = await get_candles(sym, timeframe="1m", limit=1)
+                c = await get_candles(sym, timeframe="1minute", limit=1)
                 if c and len(c) > 0:
                     p = float(c[-1]["close"])
                     return sym, {"symbol": sym, "price": p, "last": p, "bid": p, "ask": p}

@@ -3,16 +3,24 @@ import {
   Calendar, Camera, ChartCandlestick, ChartLine, ChevronDown,
   CloudUpload, Maximize2, Play, Plus, RefreshCw, RotateCcw, RotateCw, Search, Settings, X
 } from '@/icons/lucideIcons';
+import { DropdownSelect } from '@/components/ui/dropdown';
 import { formatTradePrice } from '@/utils/trading/tradeCalculations';
 import { useInstruments, useDebouncedValue } from '@/hooks/useInstruments';
 
 import { TIMEFRAME_GROUPS } from './utils/chartHelpers';
 
 const formatPrice = (value, digits) => formatTradePrice(value, digits);
+const UNIT_LABELS = { minute: 'Minute', hour: 'Hour', day: 'Day', week: 'Week', month: 'Month' };
 const formatTimeframeLabel = (tf) => {
   for (const group of Object.values(TIMEFRAME_GROUPS)) {
     const item = group.find((i) => i.value === tf);
     if (item) return item.label;
+  }
+  const match = /^([1-9]\d*)(minute|hour|day|week|month)s?$/.exec(String(tf || '').trim());
+  if (match) {
+    const val = Number(match[1]);
+    const unitName = UNIT_LABELS[match[2]] || match[2];
+    return `${val} ${unitName}${val > 1 ? 's' : ''}`;
   }
   return tf;
 };
@@ -133,7 +141,8 @@ export function TradingChartHeader({
       return [];
     }
   });
-  const [customInput, setCustomInput] = useState('');
+  const [customValue, setCustomValue] = useState('1');
+  const [customUnit, setCustomUnit] = useState('minute');
   const [customError, setCustomError] = useState('');
   const dropdownRef = useRef(null);
   const timeframeRef = useRef(null);
@@ -156,19 +165,20 @@ export function TradingChartHeader({
 
   const handleAddCustomTimeframe = (e) => {
     e.preventDefault();
-    const raw = customInput.trim();
-    if (!/^([1-9]\d*)(m|min|h|hr|d|day|w|week|M|month)$/i.test(raw)) {
-      setCustomError('Valid timeframe required (e.g. 3m, 7m, 1hr, 2h, 1M)');
+    const val = parseInt(customValue, 10);
+    if (!Number.isFinite(val) || val <= 0) {
+      setCustomError('Enter a positive number');
       return;
     }
     setCustomError('');
+    const raw = `${val}${customUnit}`;
     if (!customTimeframes.includes(raw) && !(timeframes || []).includes(raw)) {
       const updated = [...customTimeframes, raw];
       setCustomTimeframes(updated);
       try { localStorage.setItem('entrack_custom_timeframes', JSON.stringify(updated)); } catch {}
     }
     onTimeframeChange(raw);
-    setCustomInput('');
+    setCustomValue('1');
     setTimeframeOpen(false);
   };
 
@@ -301,7 +311,9 @@ export function TradingChartHeader({
                     >
                       <span className="truncate">{formatTimeframeLabel(tf)}</span>
                       <div className="flex items-center gap-1.5 shrink-0">
-                        <span className="text-[10px] text-[var(--text-muted)] uppercase font-mono">{tf}</span>
+                        <span className="text-[10px] text-[var(--text-muted)] uppercase font-mono">
+                          {tf.replace('minute', 'm').replace('hour', 'h').replace('day', 'd').replace('week', 'w').replace('month', 'M')}
+                        </span>
                         <button
                           type="button"
                           className="w-4 h-4 rounded inline-flex items-center justify-center hover:bg-[var(--border-light,#e2e8f0)] text-[var(--text-muted)] hover:text-[var(--loss-color,#ef4444)] border-0 bg-transparent p-0 cursor-pointer"
@@ -316,15 +328,33 @@ export function TradingChartHeader({
                 </>
               )}
               <div className="h-px bg-[var(--border-light,#e2e8f0)] my-1" />
-              <form onSubmit={handleAddCustomTimeframe} className="p-1 flex flex-col gap-1">
+              <form onSubmit={handleAddCustomTimeframe} className="p-1.5 flex flex-col gap-1.5">
                 <div className="flex items-center gap-1">
                   <input
-                    type="text"
-                    value={customInput}
-                    onChange={(e) => { setCustomInput(e.target.value); if (customError) setCustomError(''); }}
-                    placeholder="e.g. 3m, 7m, 1hr"
-                    className="w-28 px-2 py-1 text-xs rounded border border-[var(--border-light,#e2e8f0)] bg-transparent text-[var(--text-primary,#0f172a)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--primary,#2563eb)]"
+                    type="number"
+                    min="1"
+                    max="999"
+                    value={customValue}
+                    onChange={(e) => { setCustomValue(e.target.value); if (customError) setCustomError(''); }}
+                    className="w-14 px-2 py-1 text-xs rounded border border-[var(--border-light,#e2e8f0)] bg-transparent text-[var(--text-primary,#0f172a)] focus:outline-none focus:border-[var(--primary,#2563eb)]"
+                    placeholder="1"
+                    aria-label="Custom timeframe value"
                   />
+                  <div className="flex-1 min-w-[90px]">
+                    <DropdownSelect
+                      value={customUnit}
+                      onChange={(e) => setCustomUnit(e.target.value)}
+                      options={[
+                        { value: 'minute', label: 'Minutes' },
+                        { value: 'hour', label: 'Hours' },
+                        { value: 'day', label: 'Days' },
+                        { value: 'week', label: 'Weeks' },
+                        { value: 'month', label: 'Months' },
+                      ]}
+                      size="sm"
+                      ariaLabel="Custom timeframe unit"
+                    />
+                  </div>
                   <button
                     type="submit"
                     className="px-2 py-1 text-xs font-semibold rounded bg-[var(--primary,#2563eb)] text-white hover:opacity-90 border-0 cursor-pointer shrink-0"
