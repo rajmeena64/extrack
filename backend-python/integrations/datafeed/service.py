@@ -104,17 +104,21 @@ async def get_watchlist_quotes(symbols: List[str]) -> Dict[str, Dict[str, Any]]:
     res = {}
     async with httpx.AsyncClient(timeout=3.0) as client:
         if bfeed_spot_symbols:
-            try:
-                spot_url = os.getenv("BINANCE_SPOT_API_URL", "https://data-api.binance.vision").rstrip("/")
-                resp = await client.get(f"{spot_url}/api/v3/ticker/price")
-                if resp.status_code == 200:
-                    pm = {item["symbol"]: float(item["price"]) for item in resp.json() if "symbol" in item and "price" in item}
-                    for sym in bfeed_spot_symbols:
-                        price = pm.get(sym)
-                        if price is not None:
-                            res[sym] = {"symbol": sym, "price": price, "last": price, "bid": price, "ask": price}
-            except Exception:
-                pass
+            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
+            spot_url = os.getenv("BINANCE_SPOT_API_URL", "https://data-api.binance.vision").rstrip("/")
+            for u in (f"{spot_url}/api/v3/ticker/price", "https://data-api.binance.vision/api/v3/ticker/price", "https://api.binance.com/api/v3/ticker/price"):
+                try:
+                    resp = await client.get(u, headers=headers, follow_redirects=True)
+                    if resp.status_code == 200:
+                        pm = {item["symbol"]: float(item["price"]) for item in resp.json() if "symbol" in item and "price" in item}
+                        for sym in bfeed_spot_symbols:
+                            price = pm.get(sym)
+                            if price is not None:
+                                res[sym] = {"symbol": sym, "price": price, "last": price, "bid": price, "ask": price}
+                        if res:
+                            break
+                except Exception:
+                    pass
 
         if bfeed_futures_symbols:
             try:

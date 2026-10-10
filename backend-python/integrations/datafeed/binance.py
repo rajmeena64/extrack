@@ -46,6 +46,8 @@ def _clean_ts_ms(val: Optional[Any]) -> Optional[int]:
     except (ValueError, TypeError):
         return None
 
+HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
+
 async def fetch_binance_candles(
     symbol: str,
     timeframe: str = "1m",
@@ -57,10 +59,7 @@ async def fetch_binance_candles(
     clean_sym = symbol.strip().upper()
     interval = parse_binance_timeframe(timeframe)
     lim = max(1, min(limit, 1000))
-    base_url = FUTURES_API_URL if is_futures else SPOT_API_URL
     endpoint = "/fapi/v1/klines" if is_futures else "/api/v3/klines"
-    url = f"{base_url}{endpoint}"
-
     params: Dict[str, Any] = {"symbol": clean_sym, "interval": interval, "limit": lim}
     st_ms = _clean_ts_ms(start_time)
     et_ms = _clean_ts_ms(end_time)
@@ -69,27 +68,50 @@ async def fetch_binance_candles(
     if et_ms is not None:
         params["endTime"] = et_ms
 
-    try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            resp = await client.get(url, params=params)
-            if resp.status_code != 200:
-                return []
-            data = resp.json()
-            if not isinstance(data, list):
-                return []
-            res = []
-            for item in data:
-                if isinstance(item, list) and len(item) >= 6:
-                    ts = int(item[0])
-                    res.append({
-                        "time": ts // 1000 if ts > 10_000_000_000 else ts,
-                        "open": float(item[1]),
-                        "high": float(item[2]),
-                        "low": float(item[3]),
-                        "close": float(item[4]),
-                        "volume": float(item[5])
-                    })
-            return res
-    except Exception as e:
-        logger.warning("binance.fetch_failed", {"symbol": clean_sym, "is_futures": is_futures, "error": str(e)})
-        return []
+    candidate_bases = [FUTURES_API_URL] if is_futures else [SPOT_API_URL, "https://data-api.binance.vision", "https://api.binance.com"]
+    seen = set()
+    async with httpx.AsyncClient(timeout=6.0, follow_redirects=True, headers=HEADERS) as client:
+        for base in candidate_bases:
+            if not base or base in seen:
+                continue
+            seen.add(base)
+            url = f"{base.rstrip('/')}{endpoint}"
+            try:
+                resp = await client.get(url, params=params)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    if isinstance(data, list) and data:
+                        res = []
+                        for item in data:
+                            if isinstance(item, list) and len(item) >= 6:
+                                ts = int(item[0])
+                                res.append({
+                                    "time": ts // 1000 if ts > 10_000_000_000 else ts,
+                                    "open": float(item[1]),
+                                    "high": float(item[2]),
+                                    "low": float(item[3]),
+                                    "close": float(item[4]),
+                                    "volume": float(item[5])
+                                })
+                        if res:
+                            return res
+            except Exception:
+                pass
+
+    if not is_futures:
+        try:
+            async with httpx.AsyncClient(timeout=6.0, follow_redirects=True, headers=HEADERS) as client:
+                fb_url = "https://extrack-backend-9xk0.onrender.com/api/datafeed/candles"
+                fb_params = {"symbol": clean_sym, "timeframe": "1minute" if interval == "1m" else timeframe, "limit": lim}
+                if st_ms is not None: fb_params["startTime"] = st_ms
+                if et_ms is not None: fb_params["endTime"] = et_ms
+                resp = await client.get(fb_url, params=fb_params)
+                if resp.status_code == 200:
+                    d = resp.json()
+                    c = d.get("candles") or d.get("data")
+                    if isinstance(c, list) and c:
+                        return c
+        except Exception:
+            pass
+
+    return []
