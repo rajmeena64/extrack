@@ -105,7 +105,7 @@ async def get_watchlist_quotes(symbols: List[str]) -> Dict[str, Dict[str, Any]]:
     async with httpx.AsyncClient(timeout=3.0) as client:
         if bfeed_spot_symbols:
             try:
-                spot_url = os.getenv("BINANCE_SPOT_API_URL", "https://api.binance.com").rstrip("/")
+                spot_url = os.getenv("BINANCE_SPOT_API_URL", "https://data-api.binance.vision").rstrip("/")
                 resp = await client.get(f"{spot_url}/api/v3/ticker/price")
                 if resp.status_code == 200:
                     pm = {item["symbol"]: float(item["price"]) for item in resp.json() if "symbol" in item and "price" in item}

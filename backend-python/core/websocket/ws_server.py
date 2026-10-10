@@ -168,7 +168,7 @@ class WebSocketServerManager:
                 self.ctrader_ws = None
 
     async def _market_ticker_loop(self):
-        b_url = os.getenv("BINANCE_API_URL", "https://api.binance.com").rstrip("/")
+        b_url = os.getenv("BINANCE_API_URL", "https://data-api.binance.vision").rstrip("/")
         async with httpx.AsyncClient(timeout=3.0) as client:
             while len(self.all_sockets) > 0:
                 try:

@@ -19,7 +19,7 @@ REFRESH_SECRET = _refresh_sec if _refresh_sec else (_jwt_sec if _jwt_sec else ""
 ISSUER = os.getenv("JWT_ISSUER", "entrack-api")
 AUDIENCE = os.getenv("JWT_AUDIENCE", "entrack-web")
 COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() == "true" or os.getenv("NODE_ENV") == "production"
-COOKIE_DOMAIN = os.getenv("COOKIE_DOMAIN")
+COOKIE_DOMAIN = os.getenv("COOKIE_DOMAIN") or None
 COOKIE_SAMESITE = os.getenv("COOKIE_SAMESITE", "lax").lower()
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:

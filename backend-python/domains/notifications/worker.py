@@ -12,7 +12,7 @@ from core.logger.logger import logger
 _prev_prices: Dict[str, float] = {}
 
 async def _fetch_binance_prices() -> Dict[str, float]:
-    b_url = os.getenv("BINANCE_API_URL", "https://api.binance.com").rstrip("/")
+    b_url = os.getenv("BINANCE_API_URL", "https://data-api.binance.vision").rstrip("/")
     url = f"{b_url}/api/v3/ticker/price"
     try:
         async with httpx.AsyncClient(timeout=3.0) as client:

@@ -22,4 +22,4 @@ export { InfoTooltip } from "./info-tooltip";
 export { Skeleton } from "./skeleton";
 export { Modal, type ModalProps } from "./modal";
 export { ImageViewerModal, type ImageViewerModalProps } from "./image-viewer-modal";
-
+export { NotFound, type NotFoundProps } from "./not-found";

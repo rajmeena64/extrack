@@ -4,7 +4,7 @@ import httpx
 from typing import Optional, List, Dict, Any
 from core.logger.logger import logger
 
-SPOT_API_URL = os.getenv("BINANCE_SPOT_API_URL", "https://api.binance.com").rstrip("/")
+SPOT_API_URL = os.getenv("BINANCE_SPOT_API_URL", "https://data-api.binance.vision").rstrip("/")
 FUTURES_API_URL = os.getenv("BINANCE_FUTURES_API_URL", "https://fapi.binance.com").rstrip("/")
 VALID_BINANCE_INTERVALS = {"1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "8h", "12h", "1d", "3d", "1w", "1M"}
 
