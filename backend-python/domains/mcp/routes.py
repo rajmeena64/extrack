@@ -14,7 +14,7 @@ from core.errors.app_error import AppError
 from core.errors.messages import ERROR_MESSAGES
 from infra.db.postgres import init_db, get_db
 from infra.db.redis import get_redis
-from domains.auth.service import verify_access_token, get_current_user_id, verify_password
+from domains.auth.service import verify_access_token, get_current_user_id, verify_password, hash_token
 from domains.mcp.tools import get_my_trades, get_performance_metrics, get_trade_details, get_journal_entries
 from domains.mcp.oauth import (
     authenticate_google_user, sign_mcp_token, save_mcp_connection,
@@ -202,6 +202,16 @@ async def oauth_authorize_post(request: Request, conn: asyncpg.Connection = Depe
                 user_id = int(uid)
         except Exception:
             pass
+
+    if not user_id and not data.get("email"):
+        ref_cookie = request.cookies.get("refreshToken")
+        if ref_cookie:
+            ref_row = await conn.fetchrow(
+                "SELECT user_id FROM app_auth.refresh_tokens WHERE token_hash = $1 AND revoked_at IS NULL AND expires_at > NOW() LIMIT 1",
+                hash_token(ref_cookie)
+            )
+            if ref_row and ref_row.get("user_id"):
+                user_id = int(ref_row["user_id"])
 
     if not user_id:
         email = str(data.get("email") or "").strip().lower()

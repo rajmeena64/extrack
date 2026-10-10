@@ -57,7 +57,7 @@ function McpAuthorizePage() {
       if (data.redirect_url) {
         window.location.href = data.redirect_url;
       } else {
-        setErrorMsg(data.detail || data.error || 'Authorization failed.');
+        setErrorMsg(data.message || data.detail || data.error || 'Authorization failed.');
       }
     } catch {
       setErrorMsg('Could not complete authorization.');
@@ -89,7 +89,7 @@ function McpAuthorizePage() {
       if (data.redirect_url) {
         window.location.href = data.redirect_url;
       } else {
-        setErrorMsg(data.detail || data.error || 'Invalid credentials.');
+        setErrorMsg(data.message || data.detail || data.error || 'Invalid credentials.');
       }
     } catch {
       setErrorMsg('Could not complete authorization.');
