@@ -102,7 +102,7 @@ async def get_watchlist_quotes(symbols: List[str]) -> Dict[str, Dict[str, Any]]:
             cfeed_symbols.append(info["symbol"])
 
     res = {}
-    async with httpx.AsyncClient(timeout=3.0) as client:
+    async with httpx.AsyncClient(timeout=6.0) as client:
         if bfeed_spot_symbols:
             headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
             spot_url = os.getenv("BINANCE_SPOT_API_URL", "https://data-api.binance.vision").rstrip("/")
@@ -119,6 +119,17 @@ async def get_watchlist_quotes(symbols: List[str]) -> Dict[str, Dict[str, Any]]:
                             break
                 except Exception:
                     pass
+
+        if bfeed_spot_symbols and not res:
+            try:
+                sym_str = ",".join(bfeed_spot_symbols)
+                fb_resp = await client.get(f"https://extrack-backend-9xk0.onrender.com/api/market-chart/watchlist-quotes?symbols={sym_str}", headers=headers)
+                if fb_resp.status_code == 200:
+                    fb_data = fb_resp.json().get("quotes") or fb_resp.json().get("data")
+                    if isinstance(fb_data, dict):
+                        res.update(fb_data)
+            except Exception:
+                pass
 
         if bfeed_futures_symbols:
             try:
