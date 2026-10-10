@@ -4,6 +4,7 @@ import { Chart } from "@/features/markets";
 import PerformanceChart from "@/features/analytics/components/Widgets/PerformanceChart";
 import SymbolWithIcon from "@/components/Common/SymbolWithIcon/SymbolWithIcon";
 import MainContentWrapper from "@/components/Layout/MainContentWrapper";
+import PageHeader from "@/components/Layout/PageHeader";
 import { Card, ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui";
 import RichTextNotes from "@/components/ui/rich-text-notes";
 import { useBreakpoint } from "@/hooks/use-breakpoint";
