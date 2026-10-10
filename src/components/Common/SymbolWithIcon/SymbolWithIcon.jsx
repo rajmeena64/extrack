@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { CRYPTO_ICONS, FLAG_ICONS } from "./availableIcons";
 
 const getCapitalLetters = (str) =>
   String(str || "")
@@ -41,12 +42,11 @@ const getIconLookupCodes = (asset) => {
 
 const getAssetIconPaths = (asset) =>
   getIconLookupCodes(asset).flatMap((code) => {
-    const lowerCode = code.toLowerCase();
-
-    return [
-      `/assets/crypto/color/${lowerCode}.svg`,
-      `/assets/flags/4x3/${lowerCode}.svg`,
-    ];
+    const lower = code.toLowerCase();
+    const paths = [];
+    if (CRYPTO_ICONS.has(lower)) paths.push(`/assets/crypto/color/${lower}.svg`);
+    if (FLAG_ICONS.has(lower)) paths.push(`/assets/flags/4x3/${lower}.svg`);
+    return paths;
   });
 
 const getPairParts = (capitalOnly) => {
