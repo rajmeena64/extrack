@@ -9,7 +9,6 @@ export { Slider } from "./slider";
 export { Tag, TagGroup, TagList, TagAvatar, type TagItem } from "./tags";
 export { Toggle, ToggleBase } from "./toggle";
 export { Tooltip, TooltipTrigger } from "./tooltip";
-export { RichTextNotes } from "./rich-text-notes";
 export { ColorPicker } from "./color-picker";
 export { Calendar } from "./date-picker/calendar";
 export { DatePicker } from "./date-picker/date-picker";

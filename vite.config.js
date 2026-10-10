@@ -65,9 +65,14 @@ export default defineConfig({
               return 'vendor-core'
             }
 
-            // Heavy dependencies that are lazy-loaded or route-specific
             if (normalizedId.includes('chart.js') || normalizedId.includes('lightweight-charts')) {
               return 'vendor-charts'
+            }
+            if (normalizedId.includes('@tiptap') || normalizedId.includes('prosemirror')) {
+              return 'vendor-editor'
+            }
+            if (normalizedId.includes('@sentry')) {
+              return 'vendor-sentry'
             }
             if (normalizedId.includes('@mui') || normalizedId.includes('@emotion')) {
               return 'vendor-ui'
@@ -75,7 +80,6 @@ export default defineConfig({
             if (normalizedId.includes('react-day-picker') || normalizedId.includes('date-fns')) {
               return 'vendor-date'
             }
-            
             return 'vendor'
           }
         }

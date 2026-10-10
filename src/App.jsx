@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { Agentation } from 'agentation';
 import './styles/app-shell.css';
 import './styles/mobile.css';
 import './styles/globals.css';
+
+const DevAgentation = import.meta.env.DEV ? lazy(() => import('agentation').then((m) => ({ default: m.Agentation }))) : null;
 
 import tradeApi from './utils/api/tradeApi';
 import { API_URL, WS_URL } from './utils/common/constants';
@@ -61,6 +62,14 @@ const isPublicLandingRoute = (pathname) => {
     path === '/demo' || path.startsWith('/demo/') ||
     path === '/features' || path.startsWith('/features/') ||
     path === '/documentation' || path.startsWith('/documentation/')
+  );
+};
+
+const isPublicAuthRoute = (pathname) => {
+  const path = normalizeRoutePath(pathname);
+  return (
+    path === '/login' || path === '/signup' || path === '/forgot-password' ||
+    path === '/verify-email-pending' || path === '/verify-email' || path === '/reset-password'
   );
 };
 
@@ -496,12 +505,20 @@ function App() {
 
   if (isAuthLoading) {
     const currentPath = typeof window === 'undefined' ? '/' : window.location.pathname;
-    if (!user && isPublicLandingRoute(currentPath)) {
+    if (!user && (isPublicLandingRoute(currentPath) || isPublicAuthRoute(currentPath))) {
       return (
         <BrowserRouter>
           <ThemeProvider>
             <Suspense fallback={<RouteFallback />}>
-              <LandingPage />
+              <Routes>
+                <Route path="/login" element={<AuthPage initialTab="login" />} />
+                <Route path="/signup" element={<AuthPage initialTab="signup" />} />
+                <Route path="/forgot-password" element={<AuthPage initialTab="forgot" />} />
+                <Route path="/verify-email-pending" element={<AuthPage initialTab="verification" />} />
+                <Route path="/verify-email" element={<VerifyEmailPage />} />
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
+                <Route path="*" element={<LandingPage />} />
+              </Routes>
             </Suspense>
           </ThemeProvider>
         </BrowserRouter>
@@ -513,7 +530,7 @@ function App() {
   return (
     <BrowserRouter>
       <ThemeProvider>
-        {import.meta.env.DEV && <Agentation />}
+        {DevAgentation && <Suspense fallback={null}><DevAgentation /></Suspense>}
         {user ? (
           <AuthenticatedApp
             tradeMode={tradeMode}

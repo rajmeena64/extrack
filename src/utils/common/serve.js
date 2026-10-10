@@ -64,12 +64,9 @@ const forceLogout = async () => {
     notifyLogout();
     return;
   }
-
   isForceLoggingOut = true;
-
   try {
-    await api.post("/auth/logout");
-  } catch {
+    api.post("/auth/logout").catch(() => null);
   } finally {
     clearClientStorage();
     notifyLogout();
@@ -83,9 +80,7 @@ const refreshAuthToken = async () => {
       subscribeTokenRefresh((err) => (err ? reject(err) : resolve()));
     });
   }
-
   isRefreshing = true;
-
   try {
     await axios.post(
       `${API_URL}/api/v1/auth/refresh-token`,
@@ -95,7 +90,8 @@ const refreshAuthToken = async () => {
     onRefreshed(null);
   } catch (refreshError) {
     onRefreshed(refreshError);
-    await forceLogout();
+    clearClientStorage();
+    notifyLogout();
     throw refreshError;
   } finally {
     isRefreshing = false;
@@ -109,16 +105,23 @@ api.interceptors.response.use(
     const requestUrl = String(originalRequest?.url || "");
     const isRefreshRequest = requestUrl.includes("/refresh-token");
     const isLogoutRequest = requestUrl.includes("/logout");
+    const isMeRequest = requestUrl.includes("/auth/me");
     const isLogout = error.response?.data?.logout;
+    const isAuthRequired = error.response?.data?.code === "AUTH_REQUIRED";
     const isUnauthorized =
       error.response?.data?.expired ||
       error.response?.status === 401;
 
     if (isRefreshRequest || isLogoutRequest) {
       if (isLogout || isUnauthorized) {
-        await forceLogout();
+        clearClientStorage();
+        notifyLogout();
       }
+      return Promise.reject(error);
+    }
 
+    if (isMeRequest && (isAuthRequired || !localStorage.getItem("authUser"))) {
+      clearClientStorage();
       return Promise.reject(error);
     }
 
