@@ -167,6 +167,13 @@ async def resolve_target_currency(conn: asyncpg.Connection, uid: int, currency: 
         if not is_supported_currency(c):
             raise AppError(ERROR_MESSAGES["CURRENCY"]["UNSUPPORTED"])
         return c
+    cache_key = f"user_currency:{uid}"
+    try:
+        cached = await get_redis().get(cache_key)
+        if cached and is_supported_currency(cached):
+            return cached
+    except Exception:
+        pass
     row = await conn.fetchrow("SELECT settings FROM app.user_settings WHERE user_id = $1", uid)
     if row and row["settings"]:
         s = row["settings"]
@@ -176,12 +183,19 @@ async def resolve_target_currency(conn: asyncpg.Connection, uid: int, currency: 
             if isinstance(d_cfg, dict) and d_cfg.get("currency"):
                 c = str(d_cfg["currency"]).upper().strip()
                 if is_supported_currency(c):
+                    try:
+                        await get_redis().set(cache_key, c)
+                    except Exception:
+                        pass
                     return c
     u_row = await conn.fetchrow("SELECT preferred_currency FROM app_auth.users WHERE id = $1", uid)
     pref = str(u_row["preferred_currency"]).upper().strip() if (u_row and u_row.get("preferred_currency")) else None
-    if pref and is_supported_currency(pref):
-        return pref
-    return "USD"
+    resolved = pref if (pref and is_supported_currency(pref)) else "USD"
+    try:
+        await get_redis().set(cache_key, resolved)
+    except Exception:
+        pass
+    return resolved
 
 @trading_router.get("/analytics/dashboard")
 async def get_dashboard_analytics(
