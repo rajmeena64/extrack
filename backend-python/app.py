@@ -79,6 +79,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["WWW-Authenticate", "Mcp-Session-Id"],
     max_age=86400,
 )
 
