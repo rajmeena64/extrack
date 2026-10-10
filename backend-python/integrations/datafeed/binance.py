@@ -103,7 +103,7 @@ async def fetch_binance_candles(
             tf_map = {"m": "minute", "h": "hour", "d": "day", "w": "week", "M": "month"}
             m = re.match(r"^([1-9]\d*)([mhdwM])$", interval)
             fb_tf = f"{m.group(1)}{tf_map[m.group(2)]}" if m else "1minute"
-            async with httpx.AsyncClient(timeout=3.0, follow_redirects=True, headers=HEADERS) as client:
+            async with httpx.AsyncClient(timeout=8.0, follow_redirects=True, headers=HEADERS) as client:
                 fb_url = "https://extrack-backend-9xk0.onrender.com/api/datafeed/candles"
                 fb_params = {"symbol": clean_sym, "timeframe": fb_tf, "limit": lim}
                 if st_ms is not None: fb_params["startTime"] = st_ms

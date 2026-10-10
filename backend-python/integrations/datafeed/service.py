@@ -47,7 +47,7 @@ async def get_candles(
 
     canonical_sym = info["symbol"]
     if info["is_bfeed"]:
-        binance_data = await fetch_binance_candles(
+        return await fetch_binance_candles(
             canonical_sym,
             timeframe=canonical_tf,
             start_time=start_time,
@@ -55,8 +55,6 @@ async def get_candles(
             limit=limit,
             is_futures=info["is_futures"]
         )
-        if binance_data:
-            return binance_data
 
     historical = []
     try:
@@ -102,7 +100,7 @@ async def get_watchlist_quotes(symbols: List[str]) -> Dict[str, Dict[str, Any]]:
                 spot_url = os.getenv("BINANCE_SPOT_API_URL", "https://data-api.binance.vision").rstrip("/")
                 for u in (f"{spot_url}/api/v3/ticker/price", "https://data-api.binance.vision/api/v3/ticker/price"):
                     try:
-                        r = await client.get(u, params={"symbols": json.dumps(b_spot)})
+                        r = await client.get(u, params={"symbols": json.dumps(b_spot, separators=(',', ':'))})
                         if r.status_code == 200:
                             for it in r.json():
                                 if "symbol" in it and "price" in it:
