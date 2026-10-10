@@ -14,7 +14,9 @@ const submitBtnCls = "mt-4 min-h-[48px] w-full rounded-xl bg-[var(--button-bg)] 
 function McpAuthorizePage() {
   const [params] = useSearchParams();
   const clientId = params.get('client_id') || '';
-  const clientName = params.get('client_name') || (clientId === 'claude' ? 'Claude' : (clientId || 'AI Assistant'));
+  const rawClientName = params.get('client_name') || '';
+  const isClaude = clientId.toLowerCase().includes('claude') || clientId.startsWith('mcp_') || rawClientName.toLowerCase().includes('claude');
+  const clientName = rawClientName || (isClaude ? 'Claude' : (clientId || 'AI Assistant'));
   const redirectUri = params.get('redirect_uri') || '';
   const state = params.get('state') || '';
   const codeChallenge = params.get('code_challenge') || '';
@@ -25,11 +27,75 @@ function McpAuthorizePage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(errorParam ? decodeURIComponent(errorParam) : '');
 
   const handleGoogleAuth = () => {
     if (!API_URL) return;
     const returnUrl = `/oauth/authorize?${params.toString()}`;
     window.location.href = `${API_URL}/api/v1/auth/google?next=${encodeURIComponent(returnUrl)}`;
+  };
+
+  const handleAuthorize = async (e) => {
+    if (e) e.preventDefault();
+    setSubmitting(true);
+    setErrorMsg('');
+    try {
+      const res = await fetch(`${API_URL}/oauth/authorize`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          client_id: clientId,
+          client_name: clientName,
+          redirect_uri: redirectUri,
+          state,
+          code_challenge: codeChallenge,
+        })
+      });
+      const data = await res.json();
+      if (data.redirect_url) {
+        window.location.href = data.redirect_url;
+      } else {
+        setErrorMsg(data.detail || data.error || 'Authorization failed.');
+      }
+    } catch {
+      setErrorMsg('Could not complete authorization.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleEmailSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setErrorMsg('');
+    try {
+      const res = await fetch(`${API_URL}/oauth/authorize`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          client_id: clientId,
+          client_name: clientName,
+          redirect_uri: redirectUri,
+          state,
+          code_challenge: codeChallenge,
+          email,
+          password,
+        })
+      });
+      const data = await res.json();
+      if (data.redirect_url) {
+        window.location.href = data.redirect_url;
+      } else {
+        setErrorMsg(data.detail || data.error || 'Invalid credentials.');
+      }
+    } catch {
+      setErrorMsg('Could not complete authorization.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const isUserAuthenticated = Boolean(user && !switchAccount);
@@ -45,9 +111,9 @@ function McpAuthorizePage() {
           <p className="mt-1 text-[13px] text-[var(--text-secondary)]">Authorize {clientName} to access your trading journal</p>
         </div>
 
-        {errorParam && (
+        {errorMsg && (
           <div className="mb-4 rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-[12px] font-semibold text-red-400 text-center">
-            {decodeURIComponent(errorParam)}
+            {errorMsg}
           </div>
         )}
 
@@ -75,14 +141,9 @@ function McpAuthorizePage() {
               <div className="text-[12px] text-[var(--text-secondary)]">{user.email}</div>
             </div>
 
-            <form method="POST" action={`${API_URL}/oauth/authorize`}>
-              <input type="hidden" name="client_id" value={clientId} />
-              <input type="hidden" name="client_name" value={clientName} />
-              <input type="hidden" name="redirect_uri" value={redirectUri} />
-              <input type="hidden" name="state" value={state} />
-              <input type="hidden" name="code_challenge" value={codeChallenge} />
-              <button type="submit" className={submitBtnCls}>Authorize {clientName}</button>
-            </form>
+            <button type="button" onClick={handleAuthorize} disabled={submitting} className={submitBtnCls}>
+              {submitting ? 'Connecting...' : `Authorize ${clientName}`}
+            </button>
 
             <button
               type="button"
@@ -112,13 +173,7 @@ function McpAuthorizePage() {
               </span>
             </div>
 
-            <form method="POST" action={`${API_URL}/oauth/authorize`}>
-              <input type="hidden" name="client_id" value={clientId} />
-              <input type="hidden" name="client_name" value={clientName} />
-              <input type="hidden" name="redirect_uri" value={redirectUri} />
-              <input type="hidden" name="state" value={state} />
-              <input type="hidden" name="code_challenge" value={codeChallenge} />
-
+            <form onSubmit={handleEmailSubmit}>
               <div className="mb-3">
                 <label className={labelCls}>Email</label>
                 <input
@@ -154,7 +209,9 @@ function McpAuthorizePage() {
                 </div>
               </div>
 
-              <button type="submit" className={submitBtnCls}>Log In &amp; Authorize</button>
+              <button type="submit" disabled={submitting} className={submitBtnCls}>
+                {submitting ? 'Connecting...' : 'Log In & Authorize'}
+              </button>
             </form>
 
             {user && switchAccount && (

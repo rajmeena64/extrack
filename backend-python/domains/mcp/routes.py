@@ -176,12 +176,16 @@ async def oauth_authorize_get(request: Request):
 
 @mcp_router.post("/oauth/authorize")
 async def oauth_authorize_post(request: Request, conn: asyncpg.Connection = Depends(get_db)):
-    form = await request.form()
-    client_id = str(form.get("client_id") or "")
-    client_name = str(form.get("client_name") or "")
-    redirect_uri = str(form.get("redirect_uri") or "")
-    state = str(form.get("state") or "")
-    challenge = str(form.get("code_challenge") or "")
+    ct = request.headers.get("content-type", "")
+    try:
+        data = (await request.form()) if ("form" in ct) else (await request.json())
+    except Exception:
+        data = {}
+    client_id = str(data.get("client_id") or "")
+    client_name = str(data.get("client_name") or "")
+    redirect_uri = str(data.get("redirect_uri") or "")
+    state = str(data.get("state") or "")
+    challenge = str(data.get("code_challenge") or "")
 
     if not await is_trusted_redirect_uri(redirect_uri, client_id):
         raise HTTPException(status_code=400, detail="Invalid redirect_uri")
@@ -189,7 +193,7 @@ async def oauth_authorize_post(request: Request, conn: asyncpg.Connection = Depe
     cookie_token = request.cookies.get("accessToken")
     user_id = None
 
-    if cookie_token and not form.get("email"):
+    if cookie_token and not data.get("email"):
         try:
             payload = verify_access_token(cookie_token)
             uid = payload.get("sub")
@@ -199,18 +203,21 @@ async def oauth_authorize_post(request: Request, conn: asyncpg.Connection = Depe
             pass
 
     if not user_id:
-        email = str(form.get("email") or "").strip().lower()
-        password = str(form.get("password") or "")
+        email = str(data.get("email") or "").strip().lower()
+        password = str(data.get("password") or "")
         row = await conn.fetchrow("SELECT id, password_hash FROM app_auth.users WHERE lower(email) = $1 LIMIT 1", email)
         pwd_hash = row["password_hash"] if (row and row.get("password_hash")) else ""
         if not row or not pwd_hash or not verify_password(password, pwd_hash):
+            msg = ERROR_MESSAGES["AUTH"]["INVALID_CREDENTIALS"]["message"]
+            if "json" in request.headers.get("accept", "") or "json" in ct:
+                raise HTTPException(status_code=401, detail=msg)
             furl = (os.getenv("FRONTEND_URL") or "http://localhost:3000").rstrip("/")
             params_dict = {
                 "client_id": client_id,
                 "redirect_uri": redirect_uri,
                 "state": state,
                 "code_challenge": challenge,
-                "error": ERROR_MESSAGES["AUTH"]["INVALID_CREDENTIALS"]["message"]
+                "error": msg
             }
             if client_name:
                 params_dict["client_name"] = client_name
@@ -219,7 +226,10 @@ async def oauth_authorize_post(request: Request, conn: asyncpg.Connection = Depe
 
     code = await create_oauth_code(user_id, client_id, redirect_uri, challenge)
     sep = "&" if "?" in redirect_uri else "?"
-    return RedirectResponse(f"{redirect_uri}{sep}code={code}" + (f"&state={state}" if state else ""), status_code=302)
+    target_url = f"{redirect_uri}{sep}code={code}" + (f"&state={state}" if state else "")
+    if "json" in request.headers.get("accept", "") or "json" in ct:
+        return {"success": True, "redirect_url": target_url}
+    return RedirectResponse(target_url, status_code=302)
 
 @mcp_router.post("/oauth/token")
 async def oauth_token_endpoint(request: Request, conn: asyncpg.Connection = Depends(get_db)):
