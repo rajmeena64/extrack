@@ -368,12 +368,14 @@ async def get_ws_token(user_id: Any = Depends(get_current_user_id)):
     return {"success": True, "token": sign_ws_token(user_id)}
 
 @auth_router.get("/google")
-async def google_login():
+async def google_login(next: Optional[str] = None):
     try:
         state = generate_raw_token(24)
         auth_url = google_provider.get_auth_url(state)
         res = RedirectResponse(auth_url, status_code=302)
         res.set_cookie(key="googleOAuthState", value=state, max_age=600, httponly=True, secure=COOKIE_SECURE, samesite=COOKIE_SAMESITE, domain=COOKIE_DOMAIN, path="/")
+        if next and next.startswith("/"):
+            res.set_cookie(key="oauthNext", value=next, max_age=600, httponly=True, secure=COOKIE_SECURE, samesite=COOKIE_SAMESITE, domain=COOKIE_DOMAIN, path="/")
         return res
     except Exception:
         furl = os.getenv("FRONTEND_URL")
@@ -394,6 +396,7 @@ async def google_callback(
     err_res = RedirectResponse(f"{frontend_url}/", status_code=302)
     err_res.delete_cookie(key="googleOAuthState", path="/", domain=COOKIE_DOMAIN)
     err_res.delete_cookie(key="googleOAuthState", path="/api/v1/auth", domain=COOKIE_DOMAIN)
+    err_res.delete_cookie(key="oauthNext", path="/", domain=COOKIE_DOMAIN)
     if error or not code or not state:
         return err_res
     cookie_state = request.cookies.get("googleOAuthState")
@@ -412,10 +415,13 @@ async def google_callback(
         ua_h = request.headers.get("user-agent")
         ua = ua_h if ua_h else "unknown"
         bg.add_task(send_login_notification_email, profile["email"], profile["name"], ip, ua)
-        res = RedirectResponse(f"{frontend_url}/dashboard", status_code=302)
+        next_cookie = request.cookies.get("oauthNext")
+        target_path = next_cookie if (next_cookie and next_cookie.startswith("/")) else "/dashboard"
+        res = RedirectResponse(f"{frontend_url}{target_path}", status_code=302)
         set_auth_cookies(res, jwt_access, raw_refresh, refresh_expires)
         res.delete_cookie(key="googleOAuthState", path="/", domain=COOKIE_DOMAIN)
         res.delete_cookie(key="googleOAuthState", path="/api/v1/auth", domain=COOKIE_DOMAIN)
+        res.delete_cookie(key="oauthNext", path="/", domain=COOKIE_DOMAIN)
         return res
     except Exception:
         return err_res

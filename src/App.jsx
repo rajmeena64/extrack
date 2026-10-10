@@ -24,6 +24,7 @@ import PageHeader from './components/Layout/PageHeader';
 const VerifyEmailPage = lazy(() => import('./features/auth/components/VerifyEmailPage'));
 const ResetPasswordPage = lazy(() => import('./features/auth/components/ResetPasswordPage'));
 const ProfileOnboardingPage = lazy(() => import('./features/auth/components/ProfileOnboardingPage'));
+const McpAuthorizePage = lazy(() => import('./features/auth/components/McpAuthorizePage'));
 const AuthPage = lazy(() => import('./features/auth/components/AuthPage'));
 const LandingPage = lazy(() => import('./components/Landing/LandingPage'));
 const Dashboard = lazy(() => import('./features/analytics/components/Dashboard/dashboard'));
@@ -69,7 +70,8 @@ const isPublicAuthRoute = (pathname) => {
   const path = normalizeRoutePath(pathname);
   return (
     path === '/login' || path === '/signup' || path === '/forgot-password' ||
-    path === '/verify-email-pending' || path === '/verify-email' || path === '/reset-password'
+    path === '/verify-email-pending' || path === '/verify-email' || path === '/reset-password' ||
+    path === '/oauth/authorize'
   );
 };
 
@@ -237,6 +239,13 @@ function AuthenticatedApp(props) {
   const location = useLocation();
   const currentPath = normalizeRoutePath(location.pathname);
 
+  if (currentPath === '/oauth/authorize') {
+    return (
+      <Suspense fallback={<RouteFallback />}>
+        <McpAuthorizePage />
+      </Suspense>
+    );
+  }
   if (currentPath === '/auth/oauth-callback') return <Navigate to="/dashboard" replace />;
   if (!isProfileComplete(user)) {
     return (
@@ -517,6 +526,7 @@ function App() {
                 <Route path="/verify-email-pending" element={<AuthPage initialTab="verification" />} />
                 <Route path="/verify-email" element={<VerifyEmailPage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
+                <Route path="/oauth/authorize" element={<McpAuthorizePage />} />
                 <Route path="*" element={<LandingPage />} />
               </Routes>
             </Suspense>
@@ -555,6 +565,7 @@ function App() {
               <Route path="/verify-email-pending" element={<AuthPage initialTab="verification" />} />
               <Route path="/verify-email" element={<VerifyEmailPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/oauth/authorize" element={<McpAuthorizePage />} />
               <Route path="/auth/oauth-callback" element={<Navigate to="/" replace />} />
               <Route path="*" element={<LandingPage />} />
             </Routes>
