@@ -3,11 +3,12 @@ import html
 import secrets
 import os
 import urllib.parse
+import asyncio
 from typing import Any
 import httpx
 from pydantic import BaseModel
 from fastapi import APIRouter, Request, Depends, HTTPException
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse, Response
 import asyncpg
 from core.errors.app_error import AppError
 from core.errors.messages import ERROR_MESSAGES
@@ -294,15 +295,48 @@ async def mcp_revoke_connection(payload: RevokePayload, user_id: Any = Depends(g
     return {"success": True, "message": "Connection revoked successfully"}
 
 @mcp_router.get("/mcp")
+@mcp_router.get("/sse")
 async def handle_mcp_get(request: Request):
+    has_auth = request.headers.get("Authorization") or request.query_params.get("token")
+    if not has_auth:
+        base = _get_base_url(request)
+        raise HTTPException(
+            status_code=401,
+            detail=ERROR_MESSAGES["MCP"]["AUTH_REQUIRED"]["message"],
+            headers={"WWW-Authenticate": f'Bearer resource_metadata="{base}/.well-known/oauth-protected-resource"'}
+        )
+    raw_token, user_id = _extract_token_and_user_id(request)
+    await enforce_mcp_rate_limit(user_id)
+    pool = await init_db()
+    async with pool.acquire() as conn:
+        try:
+            await verify_mcp_connection(conn, user_id, raw_token)
+        except AppError as e:
+            raise HTTPException(status_code=401, detail=str(e))
     base = _get_base_url(request)
-    raise HTTPException(
-        status_code=401,
-        detail=ERROR_MESSAGES["MCP"]["AUTH_REQUIRED"]["message"],
-        headers={"WWW-Authenticate": f'Bearer resource_metadata="{base}/.well-known/oauth-protected-resource"'}
-    )
+    accept = request.headers.get("accept", "")
+    if "text/event-stream" in accept:
+        async def event_generator():
+            yield f"event: endpoint\ndata: {base}/mcp\n\n".encode("utf-8")
+            while not await request.is_disconnected():
+                await asyncio.sleep(15)
+                yield b": keepalive\n\n"
+        return StreamingResponse(
+            event_generator(),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "Connection": "keep-alive", "X-Accel-Buffering": "no"}
+        )
+    return {
+        "jsonrpc": "2.0",
+        "result": {
+            "status": "ready",
+            "protocolVersion": "2024-11-05",
+            "serverInfo": {"name": "entrack-mcp", "version": "1.0.0"}
+        }
+    }
 
 @mcp_router.post("/mcp")
+@mcp_router.post("/messages")
 async def handle_mcp_rpc(request: Request):
     raw_token, user_id = _extract_token_and_user_id(request)
     await enforce_mcp_rate_limit(user_id)
@@ -326,18 +360,19 @@ async def handle_mcp_rpc(request: Request):
     params = body.get("params") if isinstance(body.get("params"), dict) else {}
 
     if method == "initialize":
+        client_proto = str(params.get("protocolVersion") or "2024-11-05")
         return {
             "jsonrpc": "2.0",
             "id": req_id,
             "result": {
-                "protocolVersion": "2024-11-05",
+                "protocolVersion": client_proto,
                 "capabilities": {"tools": {"listChanged": False}},
                 "serverInfo": {"name": "entrack-mcp", "version": "1.0.0"}
             }
         }
 
     if method == "notifications/initialized":
-        return {"jsonrpc": "2.0", "id": req_id, "result": {}}
+        return Response(status_code=202)
 
     if method == "ping":
         return {"jsonrpc": "2.0", "id": req_id, "result": {}}
