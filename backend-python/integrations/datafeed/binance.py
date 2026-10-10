@@ -68,9 +68,9 @@ async def fetch_binance_candles(
     if et_ms is not None:
         params["endTime"] = et_ms
 
-    candidate_bases = [FUTURES_API_URL] if is_futures else [SPOT_API_URL, "https://data-api.binance.vision", "https://api.binance.com"]
+    candidate_bases = [FUTURES_API_URL] if is_futures else [SPOT_API_URL, "https://data-api.binance.vision"]
     seen = set()
-    async with httpx.AsyncClient(timeout=6.0, follow_redirects=True, headers=HEADERS) as client:
+    async with httpx.AsyncClient(timeout=3.0, follow_redirects=True, headers=HEADERS) as client:
         for base in candidate_bases:
             if not base or base in seen:
                 continue
@@ -103,7 +103,7 @@ async def fetch_binance_candles(
             tf_map = {"m": "minute", "h": "hour", "d": "day", "w": "week", "M": "month"}
             m = re.match(r"^([1-9]\d*)([mhdwM])$", interval)
             fb_tf = f"{m.group(1)}{tf_map[m.group(2)]}" if m else "1minute"
-            async with httpx.AsyncClient(timeout=6.0, follow_redirects=True, headers=HEADERS) as client:
+            async with httpx.AsyncClient(timeout=3.0, follow_redirects=True, headers=HEADERS) as client:
                 fb_url = "https://extrack-backend-9xk0.onrender.com/api/datafeed/candles"
                 fb_params = {"symbol": clean_sym, "timeframe": fb_tf, "limit": lim}
                 if st_ms is not None: fb_params["startTime"] = st_ms

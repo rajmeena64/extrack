@@ -1,4 +1,4 @@
-import asyncio, os, re
+import asyncio, json, os, re
 import httpx
 from typing import Optional, List, Dict, Any
 from core.errors.app_error import AppError
@@ -82,82 +82,85 @@ async def get_candles(
 async def get_watchlist_quotes(symbols: List[str]) -> Dict[str, Dict[str, Any]]:
     if not symbols:
         return {}
-
-    bfeed_spot_symbols = []
-    bfeed_futures_symbols = []
-    cfeed_symbols = []
-
+    b_spot, b_fut, c_syms = [], [], []
     for s in symbols:
         if not s or not str(s).strip():
             continue
         info = await resolve_feed_provider(str(s).strip())
         if not info:
             continue
+        sym = info["symbol"]
         if info["is_bfeed"]:
-            if info["is_futures"]:
-                bfeed_futures_symbols.append(info["symbol"])
-            else:
-                bfeed_spot_symbols.append(info["symbol"])
+            (b_fut if info["is_futures"] else b_spot).append(sym)
         else:
-            cfeed_symbols.append(info["symbol"])
-
-    res = {}
-    async with httpx.AsyncClient(timeout=6.0) as client:
-        if bfeed_spot_symbols:
-            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
-            spot_url = os.getenv("BINANCE_SPOT_API_URL", "https://data-api.binance.vision").rstrip("/")
-            for u in (f"{spot_url}/api/v3/ticker/price", "https://data-api.binance.vision/api/v3/ticker/price", "https://api.binance.com/api/v3/ticker/price"):
+            c_syms.append(sym)
+    res: Dict[str, Dict[str, Any]] = {}
+    async with httpx.AsyncClient(timeout=3.5, headers={"User-Agent": "Mozilla/5.0"}) as client:
+        tasks = []
+        if b_spot:
+            async def _fetch_b_spot():
+                spot_url = os.getenv("BINANCE_SPOT_API_URL", "https://data-api.binance.vision").rstrip("/")
+                for u in (f"{spot_url}/api/v3/ticker/price", "https://data-api.binance.vision/api/v3/ticker/price"):
+                    try:
+                        r = await client.get(u, params={"symbols": json.dumps(b_spot)})
+                        if r.status_code == 200:
+                            for it in r.json():
+                                if "symbol" in it and "price" in it:
+                                    p = float(it["price"])
+                                    res[it["symbol"]] = {"symbol": it["symbol"], "price": p, "last": p, "bid": p, "ask": p}
+                            if res:
+                                return
+                    except Exception:
+                        pass
                 try:
-                    resp = await client.get(u, headers=headers, follow_redirects=True)
-                    if resp.status_code == 200:
-                        pm = {item["symbol"]: float(item["price"]) for item in resp.json() if "symbol" in item and "price" in item}
-                        for sym in bfeed_spot_symbols:
-                            price = pm.get(sym)
-                            if price is not None:
-                                res[sym] = {"symbol": sym, "price": price, "last": price, "bid": price, "ask": price}
-                        if res:
-                            break
+                    fb = await client.get(f"https://extrack-backend-9xk0.onrender.com/api/market-chart/watchlist-quotes?symbols={','.join(b_spot)}")
+                    if fb.status_code == 200:
+                        d = fb.json().get("quotes") or fb.json().get("data")
+                        if isinstance(d, dict):
+                            res.update(d)
                 except Exception:
                     pass
-
-        if bfeed_spot_symbols and not res:
-            try:
-                sym_str = ",".join(bfeed_spot_symbols)
-                fb_resp = await client.get(f"https://extrack-backend-9xk0.onrender.com/api/market-chart/watchlist-quotes?symbols={sym_str}", headers=headers)
-                if fb_resp.status_code == 200:
-                    fb_data = fb_resp.json().get("quotes") or fb_resp.json().get("data")
-                    if isinstance(fb_data, dict):
-                        res.update(fb_data)
-            except Exception:
-                pass
-
-        if bfeed_futures_symbols:
-            try:
-                fut_url = os.getenv("BINANCE_FUTURES_API_URL", "https://fapi.binance.com").rstrip("/")
-                resp = await client.get(f"{fut_url}/fapi/v1/ticker/price")
-                if resp.status_code == 200:
-                    pm = {item["symbol"]: float(item["price"]) for item in resp.json() if "symbol" in item and "price" in item}
-                    for sym in bfeed_futures_symbols:
-                        price = pm.get(sym)
-                        if price is not None:
-                            res[sym] = {"symbol": sym, "price": price, "last": price, "bid": price, "ask": price}
-            except Exception:
-                pass
-
-    if cfeed_symbols:
-        async def fetch_one(sym: str):
-            try:
-                c = await get_candles(sym, timeframe="1minute", limit=1)
-                if c and len(c) > 0:
-                    p = float(c[-1]["close"])
-                    return sym, {"symbol": sym, "price": p, "last": p, "bid": p, "ask": p}
-            except Exception:
-                pass
-            return sym, None
-
-        results = await asyncio.gather(*[fetch_one(s) for s in cfeed_symbols], return_exceptions=True)
-        for item in results:
-            if isinstance(item, tuple) and item[1]:
-                res[item[0]] = item[1]
-
+            tasks.append(_fetch_b_spot())
+        if b_fut:
+            async def _fetch_b_fut():
+                try:
+                    fut_url = os.getenv("BINANCE_FUTURES_API_URL", "https://fapi.binance.com").rstrip("/")
+                    r = await client.get(f"{fut_url}/fapi/v1/ticker/price")
+                    if r.status_code == 200:
+                        pm = {it["symbol"]: float(it["price"]) for it in r.json() if "symbol" in it and "price" in it}
+                        for sym in b_fut:
+                            p = pm.get(sym)
+                            if p is not None:
+                                res[sym] = {"symbol": sym, "price": p, "last": p, "bid": p, "ask": p}
+                except Exception:
+                    pass
+            tasks.append(_fetch_b_fut())
+        if c_syms:
+            async def _fetch_cfeed():
+                feed_url = str(os.getenv("FEED_SERVICE_URL") or os.getenv("MARKET_FEED_URL") or "http://140.245.14.79").rstrip("/")
+                key = os.getenv("FEED_INTERNAL_API_KEY", "")
+                hdrs = {"x-internal-api-key": key} if key else {}
+                try:
+                    r = await client.get(f"{feed_url}/internal/quotes", params={"symbols": ",".join(c_syms)}, headers=hdrs)
+                    if r.status_code == 200:
+                        qd = r.json().get("quotes", {}).get("quotes", {})
+                        for sym, q in qd.items():
+                            p = float(q.get("bid") or q.get("ask") or 0.0)
+                            res[sym] = {"symbol": sym, "price": p, "last": p, "bid": float(q.get("bid") or p), "ask": float(q.get("ask") or p)}
+                except Exception:
+                    pass
+                missing = [s for s in c_syms if s not in res]
+                if missing:
+                    async def _one(s):
+                        try:
+                            c = await get_candles(s, timeframe="1minute", limit=1)
+                            if c:
+                                p = float(c[-1]["close"])
+                                res[s] = {"symbol": s, "price": p, "last": p, "bid": p, "ask": p}
+                        except Exception:
+                            pass
+                    await asyncio.gather(*[_one(s) for s in missing], return_exceptions=True)
+            tasks.append(_fetch_cfeed())
+        if tasks:
+            await asyncio.gather(*tasks, return_exceptions=True)
     return res
