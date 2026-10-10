@@ -68,7 +68,7 @@ async def fetch_binance_candles(
     if et_ms is not None:
         params["endTime"] = et_ms
 
-    candidate_bases = [FUTURES_API_URL] if is_futures else [SPOT_API_URL, "https://data-api.binance.vision"]
+    candidate_bases = [FUTURES_API_URL] if is_futures else [SPOT_API_URL, "https://api.binance.us", "https://data-api.binance.vision"]
     seen = set()
     async with httpx.AsyncClient(timeout=3.0, follow_redirects=True, headers=HEADERS) as client:
         for base in candidate_bases:

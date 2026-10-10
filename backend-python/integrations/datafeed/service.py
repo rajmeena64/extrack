@@ -98,7 +98,7 @@ async def get_watchlist_quotes(symbols: List[str]) -> Dict[str, Dict[str, Any]]:
         if b_spot:
             async def _fetch_b_spot():
                 spot_url = os.getenv("BINANCE_SPOT_API_URL", "https://data-api.binance.vision").rstrip("/")
-                for u in (f"{spot_url}/api/v3/ticker/price", "https://data-api.binance.vision/api/v3/ticker/price"):
+                for u in (f"{spot_url}/api/v3/ticker/price", "https://api.binance.us/api/v3/ticker/price", "https://data-api.binance.vision/api/v3/ticker/price"):
                     try:
                         r = await client.get(u, params={"symbols": json.dumps(b_spot, separators=(',', ':'))})
                         if r.status_code == 200:
