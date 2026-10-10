@@ -306,6 +306,7 @@ function Header({
                           clearClientStorage();
                           setUser(null);
                           window.dispatchEvent(new Event('auth:logout'));
+                          navigate('/login', { replace: true });
                           notify('Logged out successfully', 'success');
                         });
                     }}

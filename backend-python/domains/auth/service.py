@@ -123,8 +123,8 @@ def set_auth_cookies(response: Response, access_token: str, refresh_token: str, 
 
 def clear_auth_cookies(response: Response):
     for path in ["/", "/api/auth"]:
-        response.delete_cookie(key="accessToken", path=path, domain=COOKIE_DOMAIN)
-        response.delete_cookie(key="refreshToken", path=path, domain=COOKIE_DOMAIN)
+        response.delete_cookie(key="accessToken", path=path, domain=COOKIE_DOMAIN, secure=COOKIE_SECURE, httponly=True, samesite=COOKIE_SAMESITE)
+        response.delete_cookie(key="refreshToken", path=path, domain=COOKIE_DOMAIN, secure=COOKIE_SECURE, httponly=True, samesite=COOKIE_SAMESITE)
 
 _user_status_cache: Dict[str, float] = {}
 

@@ -120,8 +120,7 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    if (isMeRequest && (isAuthRequired || !localStorage.getItem("authUser"))) {
-      clearClientStorage();
+    if (isMeRequest && !localStorage.getItem("authUser")) {
       return Promise.reject(error);
     }
 
