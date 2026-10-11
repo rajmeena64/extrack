@@ -4,8 +4,8 @@ from typing import Optional, List, Dict, Any
 import httpx
 from core.logger.logger import logger
 
-FEED_SERVICE_URL = str(os.getenv("FEED_SERVICE_URL") or os.getenv("MARKET_FEED_URL") or "").rstrip("/")
-FEED_INTERNAL_API_KEY = os.getenv("FEED_INTERNAL_API_KEY", "")
+FEED_SERVICE_URL = str(os.getenv("FEED_SERVICE_URL") or os.getenv("MARKET_FEED_URL") or "https://feed.entrack.in").rstrip("/")
+FEED_INTERNAL_API_KEY = os.getenv("FEED_INTERNAL_API_KEY", "b1dee1c2eff0bd96ab004d99c46332ea9c477159739c9b01429f4ce8cbff9bba")
 
 def _to_ms(val: Optional[Any]) -> Optional[int]:
     if val is None or val == "":

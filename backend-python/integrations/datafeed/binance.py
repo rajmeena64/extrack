@@ -68,9 +68,16 @@ async def fetch_binance_candles(
     if et_ms is not None:
         params["endTime"] = et_ms
 
-    candidate_bases = [FUTURES_API_URL, "https://fapi.binance.com"] if is_futures else [SPOT_API_URL, "https://api.binance.us", "https://data-api.binance.vision"]
+    candidate_bases = [
+        FUTURES_API_URL,
+        "https://fapi.binance.com",
+        "https://fapi1.binance.com",
+        "https://fapi2.binance.com",
+        "https://fapi3.binance.com",
+        "https://fapi4.binance.com"
+    ] if is_futures else [SPOT_API_URL, "https://api.binance.us", "https://data-api.binance.vision"]
     seen = set()
-    async with httpx.AsyncClient(timeout=3.0, follow_redirects=True, headers=HEADERS) as client:
+    async with httpx.AsyncClient(timeout=4.0, follow_redirects=True, headers=HEADERS) as client:
         for base in candidate_bases:
             if not base or base in seen:
                 continue
@@ -97,27 +104,4 @@ async def fetch_binance_candles(
                             return res
             except Exception:
                 pass
-
-    try:
-        tf_map = {"m": "minute", "h": "hour", "d": "day", "w": "week", "M": "month"}
-        m = re.match(r"^([1-9]\d*)([mhdwM])$", interval)
-        fb_tf = f"{m.group(1)}{tf_map[m.group(2)]}" if m else "1minute"
-        async with httpx.AsyncClient(timeout=8.0, follow_redirects=True, headers=HEADERS) as client:
-            fb_url = "https://extrack-backend-9xk0.onrender.com/api/datafeed/candles"
-            fb_params = {"symbol": clean_sym, "timeframe": fb_tf, "limit": lim}
-            if is_futures:
-                fb_params["market"] = "futures"
-            if st_ms is not None:
-                fb_params["startTime"] = st_ms
-            if et_ms is not None:
-                fb_params["endTime"] = et_ms
-            resp = await client.get(fb_url, params=fb_params)
-            if resp.status_code == 200:
-                d = resp.json()
-                c = d.get("candles") or d.get("data")
-                if isinstance(c, list) and c:
-                    return c
-    except Exception:
-        pass
-
     return []

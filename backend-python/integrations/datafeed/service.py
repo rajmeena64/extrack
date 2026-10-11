@@ -121,32 +121,23 @@ async def get_watchlist_quotes(symbols: List[str]) -> Dict[str, Dict[str, Any]]:
             tasks.append(_fetch_b_spot())
         if b_fut:
             async def _fetch_b_fut():
-                try:
-                    fut_url = os.getenv("BINANCE_FUTURES_API_URL", "https://fapi.binance.com").rstrip("/")
-                    r = await client.get(f"{fut_url}/fapi/v1/ticker/price")
-                    if r.status_code == 200:
-                        pm = {it["symbol"]: float(it["price"]) for it in r.json() if "symbol" in it and "price" in it}
-                        for sym in b_fut:
-                            p = pm.get(sym)
-                            if p is not None:
+                fut_bases = [os.getenv("BINANCE_FUTURES_API_URL", "https://fapi.binance.com").rstrip("/"), "https://fapi1.binance.com", "https://fapi2.binance.com", "https://fapi3.binance.com"]
+                async def _one_fut(sym: str):
+                    for base in fut_bases:
+                        try:
+                            r = await client.get(f"{base}/fapi/v1/ticker/price", params={"symbol": sym})
+                            if r.status_code == 200:
+                                p = float(r.json()["price"])
                                 res[sym] = {"symbol": sym, "price": p, "last": p, "bid": p, "ask": p}
-                        if any(s in res for s in b_fut):
-                            return
-                except Exception:
-                    pass
-                try:
-                    fb = await client.get(f"https://extrack-backend-9xk0.onrender.com/api/market-chart/watchlist-quotes?symbols={','.join(b_fut)}")
-                    if fb.status_code == 200:
-                        d = fb.json().get("quotes") or fb.json().get("data")
-                        if isinstance(d, dict):
-                            res.update(d)
-                except Exception:
-                    pass
+                                return
+                        except Exception:
+                            pass
+                await asyncio.gather(*[_one_fut(s) for s in b_fut], return_exceptions=True)
             tasks.append(_fetch_b_fut())
         if c_syms:
             async def _fetch_cfeed():
-                feed_url = str(os.getenv("FEED_SERVICE_URL") or os.getenv("MARKET_FEED_URL") or "http://140.245.14.79").rstrip("/")
-                key = os.getenv("FEED_INTERNAL_API_KEY", "")
+                feed_url = str(os.getenv("FEED_SERVICE_URL") or os.getenv("MARKET_FEED_URL") or "https://feed.entrack.in").rstrip("/")
+                key = os.getenv("FEED_INTERNAL_API_KEY", "b1dee1c2eff0bd96ab004d99c46332ea9c477159739c9b01429f4ce8cbff9bba")
                 hdrs = {"x-internal-api-key": key} if key else {}
                 try:
                     r = await client.get(f"{feed_url}/internal/quotes", params={"symbols": ",".join(c_syms)}, headers=hdrs)
