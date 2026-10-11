@@ -168,22 +168,26 @@ class WebSocketServerManager:
                 self.ctrader_ws = None
 
     async def _market_ticker_loop(self):
-        b_url = os.getenv("BINANCE_API_URL", "https://data-api.binance.vision").rstrip("/")
+        feed_url = str(os.getenv("FEED_SERVICE_URL") or os.getenv("MARKET_FEED_URL") or "").rstrip("/")
+        key = os.getenv("FEED_INTERNAL_API_KEY", "")
+        hdrs = {"x-internal-api-key": key} if key else {}
         async with httpx.AsyncClient(timeout=3.0) as client:
             while len(self.all_sockets) > 0:
                 try:
                     symbols = self.get_all_subscribed_symbols()
-                    if symbols:
-                        crypto_syms = [s for s in symbols if s.endswith("USDT") or s.endswith("BUSD") or s in {"BTC", "ETH", "SOL", "XRP", "ADA", "BNB"}]
+                    if symbols and feed_url:
+                        crypto_syms = [s for s in symbols if s.endswith("USDT") or s in {"BTC", "ETH", "SOL", "XRP", "ADA", "BNB"}]
                         if crypto_syms:
-                            resp = await client.get(f"{b_url}/api/v3/ticker/price")
+                            resp = await client.get(f"{feed_url}/internal/binance/price", headers=hdrs)
                             if resp.status_code == 200:
-                                price_map = {item["symbol"]: float(item["price"]) for item in resp.json() if "symbol" in item and "price" in item}
-                                now_ts = int(time.time())
-                                for s in crypto_syms:
-                                    pair = s if s.endswith("USDT") else f"{s}USDT"
-                                    if pair in price_map:
-                                        await self.broadcast_tick(s, price_map[pair], now_ts)
+                                d = resp.json().get("data", [])
+                                if isinstance(d, list):
+                                    price_map = {item["symbol"]: float(item["price"]) for item in d if isinstance(item, dict) and "symbol" in item and "price" in item}
+                                    now_ts = int(time.time())
+                                    for s in crypto_syms:
+                                        pair = s if s.endswith("USDT") else f"{s}USDT"
+                                        if pair in price_map:
+                                            await self.broadcast_tick(s, price_map[pair], now_ts)
                 except Exception as e:
                     logger.warning("ws_ticker_loop.error", {"error": str(e)})
                 await asyncio.sleep(1.0)
