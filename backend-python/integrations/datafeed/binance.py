@@ -48,6 +48,14 @@ def _clean_ts_ms(val: Optional[Any]) -> Optional[int]:
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
 
+def _parse_klines(data: Any) -> List[Dict[str, Any]]:
+    if not isinstance(data, list):
+        return []
+    return [
+        {"time": int(i[0]) // 1000 if int(i[0]) > 10_000_000_000 else int(i[0]), "open": float(i[1]), "high": float(i[2]), "low": float(i[3]), "close": float(i[4]), "volume": float(i[5])}
+        for i in data if isinstance(i, list) and len(i) >= 6
+    ]
+
 async def fetch_binance_candles(
     symbol: str,
     timeframe: str = "1m",
@@ -67,41 +75,37 @@ async def fetch_binance_candles(
         params["startTime"] = st_ms
     if et_ms is not None:
         params["endTime"] = et_ms
-
+    if is_futures:
+        feed_url = str(os.getenv("FEED_SERVICE_URL") or os.getenv("MARKET_FEED_URL") or "https://feed.entrack.in").rstrip("/")
+        key = os.getenv("FEED_INTERNAL_API_KEY", "b1dee1c2eff0bd96ab004d99c46332ea9c477159739c9b01429f4ce8cbff9bba")
+        hdrs = {"x-internal-api-key": key, **HEADERS} if key else HEADERS
+        try:
+            async with httpx.AsyncClient(timeout=4.0, follow_redirects=True, headers=hdrs) as client:
+                resp = await client.get(f"{feed_url}/internal/binance/klines", params=params)
+                if resp.status_code == 200:
+                    res = _parse_klines(resp.json().get("candles"))
+                    if res:
+                        return res
+        except Exception:
+            pass
     candidate_bases = [
         FUTURES_API_URL,
         "https://fapi.binance.com",
         "https://fapi1.binance.com",
-        "https://fapi2.binance.com",
-        "https://fapi3.binance.com",
-        "https://fapi4.binance.com"
-    ] if is_futures else [SPOT_API_URL, "https://api.binance.us", "https://data-api.binance.vision"]
+        "https://fapi2.binance.com"
+    ] if is_futures else [SPOT_API_URL, "https://data-api.binance.vision"]
     seen = set()
     async with httpx.AsyncClient(timeout=4.0, follow_redirects=True, headers=HEADERS) as client:
         for base in candidate_bases:
             if not base or base in seen:
                 continue
             seen.add(base)
-            url = f"{base.rstrip('/')}{endpoint}"
             try:
-                resp = await client.get(url, params=params)
+                resp = await client.get(f"{base.rstrip('/')}{endpoint}", params=params)
                 if resp.status_code == 200:
-                    data = resp.json()
-                    if isinstance(data, list) and data:
-                        res = []
-                        for item in data:
-                            if isinstance(item, list) and len(item) >= 6:
-                                ts = int(item[0])
-                                res.append({
-                                    "time": ts // 1000 if ts > 10_000_000_000 else ts,
-                                    "open": float(item[1]),
-                                    "high": float(item[2]),
-                                    "low": float(item[3]),
-                                    "close": float(item[4]),
-                                    "volume": float(item[5])
-                                })
-                        if res:
-                            return res
+                    res = _parse_klines(resp.json())
+                    if res:
+                        return res
             except Exception:
                 pass
     return []

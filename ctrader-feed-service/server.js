@@ -2,6 +2,7 @@ const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 
 const http = require('http');
+const os = require('os');
 const express = require('express');
 const WebSocket = require('ws');
 const {
@@ -13,19 +14,27 @@ const {
   getWatchlistQuotes,
   subscribeAllSymbols,
   subscribeLiveTicks,
+  subscribeSpotsBatch,
+  unsubscribeLiveTicks,
 } = require('./src/ctrader/socket.client');
 const { connectionState, ctraderConfig, tokenState } = require('./src/ctrader/state');
-const { loadCtraderTokensFromStore } = require('./src/ctrader/token.service');
-const { getData, getStatus, getSymbolByName, recordTick, seedCandles } = require('./src/feed-cache.service');
+const { getCtraderCatalogFromDb, loadCtraderTokensFromStore, refreshAccessToken } = require('./src/ctrader/token.service');
+const { getData, getStatus, getSymbolByName, recordTick, removeSymbolCache, seedCandles, setCandleAppendReady, setTinybirdSymbols } = require('./src/feed-cache.service');
+const tinybirdIngest = require('./src/tinybird-ingest.service');
+const { startTelegramMonitor, sendTelegramAlert } = require('./src/telegram-monitor.service');
 const { requireInternalKey, verifyInternalKey } = require('./src/security');
 const logger = require('./src/logger.service');
+
+const SERVICE_STARTED_AT = new Date();
+let totalRequestsHandled = 0;
 
 const app = express();
 app.disable('x-powered-by');
 app.use(express.json({ limit: '100kb' }));
 
-// Global Request Logger Middleware
+// Global Request Logger Middleware & Metrics
 app.use((req, res, next) => {
+  totalRequestsHandled += 1;
   const start = Date.now();
   res.on('finish', () => {
     const duration = Date.now() - start;
@@ -40,15 +49,10 @@ app.use((req, res, next) => {
 
 const HOST = process.env.FEED_HOST || '127.0.0.1';
 const PORT = Number(process.env.FEED_PORT || 8020);
-const PRESUBSCRIBED_SYMBOLS = String(process.env.CTRADER_PRESUBSCRIBED_SYMBOLS || process.env.PRESUBSCRIBED_SYMBOLS || 'EURUSD,GBPUSD,USDJPY,AUDUSD,USDCAD,USDCHF,NZDUSD,XAUUSD,XAGUSD,BTCUSD,ETHUSD,US30,NAS100,SPX500')
-  .split(',')
-  .map((symbol) => symbol.trim())
-  .filter(Boolean);
 const BOOTSTRAP_INTERVALS = String(process.env.FEED_BOOTSTRAP_INTERVALS || '1m')
   .split(',')
   .map((interval) => interval.trim())
   .filter(Boolean);
-const BOOTSTRAP_CANDLES = String(process.env.FEED_BOOTSTRAP_CANDLES || 'true') === 'true';
 
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ noServer: true });
@@ -105,55 +109,65 @@ wss.on('connection', (ws) => {
   ws.on('message', async (data) => {
     try {
       const message = JSON.parse(data.toString('utf8'));
+
+      if (message.type === 'PING') {
+        ws.send(JSON.stringify({ type: 'PONG', timestamp: Date.now() }));
+        return;
+      }
+
       if (message.type === 'MARKET_SUBSCRIBE' && Array.isArray(message.symbols)) {
         for (const sym of message.symbols) {
           const norm = normalizeSymbol(sym);
           if (norm) {
             ws.subscribedSymbols.add(norm);
-            // Auto subscribe on cTrader if not already subscribed
             subscribeLiveTicks(sym).catch(() => null);
           }
         }
-      } else if (message.type === 'MARKET_UNSUBSCRIBE' && Array.isArray(message.symbols)) {
+        ws.send(JSON.stringify({
+          type: 'MARKET_SUBSCRIBED',
+          symbols: Array.from(ws.subscribedSymbols),
+        }));
+        return;
+      }
+
+      if (message.type === 'MARKET_UNSUBSCRIBE' && Array.isArray(message.symbols)) {
         for (const sym of message.symbols) {
           const norm = normalizeSymbol(sym);
           if (norm) ws.subscribedSymbols.delete(norm);
         }
+        ws.send(JSON.stringify({
+          type: 'MARKET_UNSUBSCRIBED',
+          symbols: Array.from(ws.subscribedSymbols),
+        }));
+        return;
       }
-    } catch (_err) {
-      // Ignore malformed client frames
+    } catch {
+      // Ignore invalid JSON payloads from clients
     }
   });
+
+  ws.on('error', () => {});
 });
 
 function connected() {
-  return Boolean(
-    connectionState.ws &&
-    connectionState.ws.readyState === connectionState.ws.OPEN &&
-    ctraderConfig.isAppAuthed &&
-    ctraderConfig.isAccountAuthed
-  );
+  return Boolean(ctraderConfig.isAppAuthed && ctraderConfig.isAccountAuthed);
 }
 
 function getPublicTokenStatus() {
-  const expiresAt = Number(ctraderConfig.expiresAt || 0);
+  const now = Date.now();
   return {
     hasAccessToken: Boolean(ctraderConfig.accessToken),
     hasRefreshToken: Boolean(ctraderConfig.refreshToken),
-    hasClientId: Boolean(ctraderConfig.clientId),
-    hasClientSecret: Boolean(ctraderConfig.clientSecret),
-    expiresAtIso: expiresAt ? new Date(expiresAt).toISOString() : null,
-    expiresInSeconds: expiresAt ? Math.max(0, Math.floor((expiresAt - Date.now()) / 1000)) : null,
-    lastTokenRefreshError: tokenState.lastRefreshError || null,
+    expiresInSeconds: ctraderConfig.expiresAt ? Math.max(0, Math.floor((ctraderConfig.expiresAt - now) / 1000)) : null,
+    expired: ctraderConfig.expiresAt ? now >= ctraderConfig.expiresAt : null,
   };
 }
 
 async function bootstrapCandlesForSymbol(symbol, symbolInfo) {
-  if (!BOOTSTRAP_CANDLES || !symbolInfo) return;
+  if (!symbolInfo) return;
 
   const endTime = Date.now();
-  const todayUtcStart = new Date().setUTCHours(0, 0, 0, 0);
-  const startTime = Math.min(todayUtcStart, endTime - (24 * 60 * 60 * 1000));
+  const startTime = endTime - (24 * 60 * 60 * 1000); // 24 hours of 1-minute candles
 
   for (const interval of BOOTSTRAP_INTERVALS) {
     try {
@@ -162,92 +176,86 @@ async function bootstrapCandlesForSymbol(symbol, symbolInfo) {
         interval,
         startTime,
         endTime,
-        limit: 1500,
+        limit: 1440,
       });
 
-      const count = result?.candles?.length || 0;
-      seedCandles(symbolInfo.id, interval, result.candles || []);
-      logger.info('BOOTSTRAP', `Seeded ${symbol} (${interval}): ${count} candles in RAM cache`);
-    } catch (err) {
-      logger.warn('BOOTSTRAP_ERROR', `Failed to seed ${symbol} (${interval}): ${err.message}`);
+      if (result?.candles && Array.isArray(result.candles)) {
+        await seedCandles(symbolInfo.id, interval, result.candles);
+      }
+    } catch (error) {
+      logger.warn('BOOTSTRAP', `Bootstrap error for ${symbol} (${interval}): ${error.message}`);
     }
   }
 }
 
 async function startFeed() {
-  await loadCtraderTokensFromStore();
-
-  const missing = [];
-  if (!ctraderConfig.clientId && !process.env.CTRADER_CLIENT_ID) missing.push('CTRADER_CLIENT_ID');
-  if (!ctraderConfig.clientSecret && !process.env.CTRADER_CLIENT_SECRET) missing.push('CTRADER_CLIENT_SECRET');
-  if (!ctraderConfig.accessToken && !ctraderConfig.refreshToken) {
-    missing.push('CTRADER_ACCESS_TOKEN or CTRADER_REFRESH_TOKEN');
+  logger.info('STARTUP', 'Starting ctrader-feed-service in clean on-demand mode...');
+  try {
+    await loadCtraderTokensFromStore({ force: true });
+    logger.info('STARTUP', `Tokens loaded from DB. Account ID: ${ctraderConfig.accountId}`);
+  } catch (err) {
+    logger.warn('STARTUP', `Failed loading tokens from DB: ${err.message}`);
   }
 
-  if (missing.length) {
-    const errorMsg = `Missing env: ${missing.join(', ')}`;
-    logger.error('STARTUP', errorMsg);
-    throw new Error(errorMsg);
-  }
+  connectSocket();
 
-  logger.info('cTrader', 'Connecting WebSocket client...');
-  await connectSocket();
-
-  // Retry loop for ready state
   for (let attempt = 0; attempt < 10; attempt += 1) {
     try {
       await ensureCtraderReady();
-      logger.info('cTrader', `cTrader ready on attempt ${attempt + 1}`);
+      logger.info('STARTUP', 'cTrader connection established and ready.');
       break;
     } catch (err) {
-      logger.warn('cTrader', `Waiting for ready state attempt ${attempt + 1}/10: ${err.message}`);
+      logger.warn('STARTUP', `Waiting for ready state attempt ${attempt + 1}/10: ${err.message}`);
       await new Promise((r) => setTimeout(r, 2000));
     }
   }
 
-  // Subscribe key watchlist symbols without flooding the connection
-  if (PRESUBSCRIBED_SYMBOLS.some((s) => s.toUpperCase() === 'ALL')) {
-    try {
-      logger.info('cTrader', 'Subscribing all available symbols...');
-      await subscribeAllSymbols(Number(process.env.CTRADER_SUBSCRIBE_BATCH_SIZE || 50), 50);
-      logger.info('cTrader', `All symbols subscribed. Total: ${ctraderConfig.liveTickSubscriptions.size}`);
-    } catch (err) {
-      logger.warn('cTrader', `Error subscribing all symbols: ${err.message}`);
-    }
-  } else {
-    for (const requested of PRESUBSCRIBED_SYMBOLS) {
-      try {
-        await subscribeLiveTicks(requested);
-      } catch (err) {
-        logger.warn('cTrader', `Failed to subscribe live ticks for ${requested}: ${err.message}`);
-      }
-    }
-  }
+  const catalog = await getCtraderCatalogFromDb();
+  const liveFeedSymbols = catalog.filter((s) => s.is_live_feed).map((s) => s.symbol);
+  const ramCachedSymbols = catalog.filter((s) => s.is_ram_cached).map((s) => s.symbol);
+  const tinybirdSymbols = catalog.filter((s) => s.historical_data_source === 'tinybird').map((s) => s.symbol);
+  setTinybirdSymbols(tinybirdSymbols);
 
-  // Bootstrap initial recent candle buffer for key watchlist symbols (top 50 symbols if ALL)
+  logger.info('STARTUP', `Database Catalog: ${catalog.length} active cTrader instruments (${tinybirdSymbols.length} Tinybird, ${ramCachedSymbols.length} RAM cached, ${liveFeedSymbols.length} Live feed).`);
+
   const symbols = await getSymbols();
   const byNormalized = new Map(
-    symbols.map((symbol) => [
-      String(symbol.normalizedName || symbol.name || '').replace(/[^a-z0-9]/gi, '').toUpperCase(),
-      symbol,
+    symbols.map((s) => [
+      String(s.normalizedName || s.name || '').replace(/[^a-z0-9]/gi, '').toUpperCase(),
+      s,
     ])
   );
 
-  const isAll = PRESUBSCRIBED_SYMBOLS.some((s) => s.toUpperCase() === 'ALL');
-  const symbolsToBootstrap = isAll
-    ? symbols.slice(0, 50)
-    : PRESUBSCRIBED_SYMBOLS.map((s) => byNormalized.get(s.replace(/[^a-z0-9]/gi, '').toUpperCase())).filter(Boolean);
-
-  logger.info('BOOTSTRAP', `Starting candle bootstrap for ${symbolsToBootstrap.length} symbols...`);
-  for (const match of symbolsToBootstrap) {
-    if (!match?.name) continue;
-    try {
-      await bootstrapCandlesForSymbol(match.name, match);
-    } catch (error) {
-      logger.warn('BOOTSTRAP_ERROR', `Bootstrap error for ${match.name}: ${error.message}`);
-    }
+  setCandleAppendReady(false);
+  const validIds = liveFeedSymbols
+    .map((sym) => byNormalized.get(String(sym).replace(/[^a-z0-9]/gi, '').toUpperCase())?.id)
+    .filter((id) => Number.isFinite(Number(id)) && Number(id) > 0);
+  if (validIds.length > 0) {
+    await subscribeSpotsBatch(validIds).catch(() => null);
   }
-  logger.info('BOOTSTRAP', `Candle bootstrap complete.`);
+
+  (async () => {
+    if (tinybirdSymbols.length > 0) {
+      await tinybirdIngest.reconcileGapsOnStartup(tinybirdSymbols, fetchCtraderKlines).catch((err) => {
+        logger.warn('STARTUP', `Tinybird gap reconciliation error: ${err.message}`);
+      });
+    }
+
+    for (const sym of ramCachedSymbols) {
+      const match = byNormalized.get(String(sym).replace(/[^a-z0-9]/gi, '').toUpperCase());
+      if (!match) continue;
+      let snapshot = await getData(match.name, { interval: '1m', limitCandles: 1440 });
+      if (!snapshot?.found || snapshot.candles.length < 1440) {
+        await bootstrapCandlesForSymbol(match.name, match).catch(() => null);
+        snapshot = await getData(match.name, { interval: '1m', limitCandles: 1440 });
+        await new Promise((r) => setTimeout(r, 100));
+      }
+      logger.info('CACHE', `[${match.name}] ${snapshot?.candles?.length || 0}/1440 candles ready in memory cache`);
+    }
+
+    setCandleAppendReady(true);
+    logger.info('STARTUP', 'All gaps reconciled up to last minute. Live candle appending enabled.');
+  })().catch(() => {});
 }
 
 app.get('/health', (req, res) => {
@@ -258,7 +266,7 @@ app.get('/health', (req, res) => {
   });
 });
 
-app.get('/internal/status', requireInternalKey, (req, res) => {
+app.get('/internal/status', requireInternalKey, async (req, res) => {
   res.json({
     success: true,
     connected: connected(),
@@ -267,10 +275,171 @@ app.get('/internal/status', requireInternalKey, (req, res) => {
     symbolCount: ctraderConfig.symbols.size,
     liveTickSubscriptionCount: ctraderConfig.liveTickSubscriptions.size,
     subscriptions: Array.from(ctraderConfig.liveTickSubscriptions.values()),
-    presubscribedSymbols: PRESUBSCRIBED_SYMBOLS,
     token: getPublicTokenStatus(),
-    cache: getStatus(),
+    cache: await getStatus(),
   });
+});
+
+/**
+ * Super Comprehensive Diagnostics & Observability Endpoint
+ * GET /internal/diagnostics
+ */
+app.get('/internal/diagnostics', requireInternalKey, async (req, res) => {
+  const now = Date.now();
+  const uptimeSeconds = Math.floor((now - SERVICE_STARTED_AT.getTime()) / 1000);
+  const cacheStatus = await getStatus();
+
+  // Format human readable uptime
+  const days = Math.floor(uptimeSeconds / (24 * 3600));
+  const hours = Math.floor((uptimeSeconds % (24 * 3600)) / 3600);
+  const minutes = Math.floor((uptimeSeconds % 3600) / 60);
+  const seconds = uptimeSeconds % 60;
+  const uptimeHuman = `${days > 0 ? `${days}d ` : ''}${hours > 0 ? `${hours}h ` : ''}${minutes}m ${seconds}s`;
+
+  // Memory Metrics
+  const memUsage = process.memoryUsage();
+  const totalSysMem = os.totalmem();
+  const freeSysMem = os.freemem();
+  const usedSysMem = totalSysMem - freeSysMem;
+
+  return res.json({
+    success: true,
+    service: 'ctrader-feed-service',
+    version: '1.0.0',
+    timestamp: new Date().toISOString(),
+    uptime: {
+      startedAt: SERVICE_STARTED_AT.toISOString(),
+      startedAtIST: SERVICE_STARTED_AT.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
+      uptimeSeconds,
+      uptimeHuman,
+    },
+    ctrader: {
+      connected: connected(),
+      appAuthed: connectionState.appAuthed,
+      accountAuthed: connectionState.accountAuthed,
+      accountId: ctraderConfig.accountId,
+      isDemo: ctraderConfig.isDemo,
+      token: getPublicTokenStatus(),
+      totalBrokerSymbolsAvailable: ctraderConfig.symbols.size,
+      activeSubscriptionsCount: ctraderConfig.liveTickSubscriptions.size,
+      activeSubscriptionSymbols: Array.from(ctraderConfig.liveTickSubscriptions.values()),
+    },
+    cache: {
+      maxRollingCandlesPerSymbol: cacheStatus.maxRollingCandlesPerSymbol,
+      cachedKeysCount: cacheStatus.cachedKeysCount,
+      totalCandlesInMemory: cacheStatus.totalCandlesInMemory,
+      estimatedCacheMemoryMB: cacheStatus.estimatedCacheMemoryMB,
+      symbols: cacheStatus.symbols,
+    },
+    system: {
+      nodeVersion: process.version,
+      platform: process.platform,
+      arch: process.arch,
+      processMemory: {
+        heapUsedMB: Number((memUsage.heapUsed / (1024 * 1024)).toFixed(2)),
+        heapTotalMB: Number((memUsage.heapTotal / (1024 * 1024)).toFixed(2)),
+        rssMB: Number((memUsage.rss / (1024 * 1024)).toFixed(2)),
+        externalMB: Number((memUsage.external / (1024 * 1024)).toFixed(2)),
+      },
+      hostMemory: {
+        totalMB: Number((totalSysMem / (1024 * 1024)).toFixed(2)),
+        freeMB: Number((freeSysMem / (1024 * 1024)).toFixed(2)),
+        usedPercent: `${((usedSysMem / totalSysMem) * 100).toFixed(1)}%`,
+      },
+      loadAverage: os.loadavg(),
+    },
+    throughput: {
+      totalRequestsHandled,
+      totalTicksReceived: cacheStatus.throughput.totalTicksReceived,
+      liveTicksPerSecond: cacheStatus.throughput.ticksPerSecond,
+    },
+  });
+});
+
+/**
+ * Dynamic Dynamic Symbol Sync Endpoint (Hot-update without restarts)
+ * POST /internal/sync-symbols
+ */
+app.post('/internal/sync-symbols', requireInternalKey, async (req, res) => {
+  const { ramCachedSymbols = [], liveFeedSymbols = [] } = req.body || {};
+  logger.info('SYNC', `Dynamic sync requested: ${ramCachedSymbols.length} RAM cached, ${liveFeedSymbols.length} live feed.`);
+
+  // If cTrader not yet connected (e.g. fresh restart), acknowledge and defer gracefully.
+  // klines endpoint handles cold cache on-demand when user opens a chart.
+  if (!connected()) {
+    logger.warn('SYNC', 'cTrader not yet connected. Sync deferred — charts will load on-demand.');
+    return res.json({
+      success: true,
+      message: 'cTrader not yet connected. Sync deferred — charts will load on-demand.',
+      activeLiveSubscriptionsCount: 0,
+      warmedUpSymbols: [],
+      totalCachedSymbolsCount: 0,
+      totalCandlesInMemory: 0,
+      deferred: true,
+    });
+  }
+
+  try {
+    const symbols = await getSymbols();
+    const byNormalized = new Map(
+      symbols.map((s) => [
+        String(s.normalizedName || s.name || '').replace(/[^a-z0-9]/gi, '').toUpperCase(),
+        s,
+      ])
+    );
+
+    // 1. Subscribe live stream ticks for requested symbols & Unsubscribe removed ones
+    const targetLiveNormalized = new Set(liveFeedSymbols.map((s) => String(s).replace(/[^a-z0-9]/gi, '').toUpperCase()));
+    for (const sym of liveFeedSymbols) {
+      subscribeLiveTicks(sym).catch((err) => {
+        logger.warn('SYNC', `Failed subscribing live ticks for ${sym}: ${err.message}`);
+      });
+    }
+
+    for (const subId of Array.from(ctraderConfig.liveTickSubscriptions.values())) {
+      const symInfo = ctraderConfig.symbols.get(Number(subId));
+      if (symInfo && !targetLiveNormalized.has(symInfo.normalizedName)) {
+        unsubscribeLiveTicks(symInfo.name).catch(() => null);
+      }
+    }
+
+    const currentStatus = await getStatus();
+    res.json({
+      success: true,
+      message: 'Symbols dynamically synced successfully',
+      activeLiveSubscriptionsCount: liveFeedSymbols.length,
+      warmedUpSymbols: ramCachedSymbols,
+      totalCachedSymbolsCount: currentStatus.cachedKeysCount,
+      totalCandlesInMemory: currentStatus.totalCandlesInMemory,
+      deferred: false,
+    });
+
+    (async () => {
+      const targetRamNormalized = new Set(ramCachedSymbols.map((s) => String(s).replace(/[^a-z0-9]/gi, '').toUpperCase()));
+      for (const sym of ramCachedSymbols) {
+        const match = byNormalized.get(String(sym).replace(/[^a-z0-9]/gi, '').toUpperCase());
+        if (!match) continue;
+        const snapshot = await getData(match.name, { interval: '1m', limitCandles: 1440 });
+        if (!snapshot?.found || snapshot.candles.length < 1440) {
+          try {
+            await bootstrapCandlesForSymbol(match.name, match);
+            await new Promise((r) => setTimeout(r, 100));
+          } catch (err) {
+            logger.warn('SYNC', `Warmup failed for ${match.name}: ${err.message}`);
+          }
+        }
+      }
+
+      for (const sym of symbols) {
+        if (!targetRamNormalized.has(sym.normalizedName)) {
+          await removeSymbolCache(sym.name);
+        }
+      }
+    })().catch(() => {});
+  } catch (error) {
+    logger.error('SYNC', `Sync failed: ${error.message}`);
+    return res.status(500).json({ success: false, error: error.message });
+  }
 });
 
 app.get('/internal/logs', (req, res) => {
@@ -300,19 +469,16 @@ app.get('/internal/symbols', requireInternalKey, async (req, res) => {
 });
 
 app.get('/internal/quotes', requireInternalKey, async (req, res) => {
-  const symbols = String(req.query.symbols || '')
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean);
+  const rawSymbols = req.query.symbols;
+  const symbols = typeof rawSymbols === 'string'
+    ? rawSymbols.split(',').map((s) => s.trim()).filter(Boolean)
+    : [];
 
   try {
-    const result = await getWatchlistQuotes(symbols);
+    const quotes = await getWatchlistQuotes(symbols);
     return res.json({
       success: true,
-      connected: connected(),
-      ...result,
-      serverTime: Math.floor(Date.now() / 1000),
-      serverTimeMs: Date.now(),
+      quotes,
     });
   } catch (error) {
     res.locals.errorReason = error.message;
@@ -323,65 +489,69 @@ app.get('/internal/quotes', requireInternalKey, async (req, res) => {
   }
 });
 
-app.get('/internal/data/:symbol', requireInternalKey, async (req, res) => {
-  const symbol = String(req.params.symbol || '').trim();
-  const interval = String(req.query.interval || '1m');
-  const limitTicks = Number(req.query.limitTicks || 2000);
-  const limitCandles = Number(req.query.limitCandles || 500);
+app.get('/internal/quote', requireInternalKey, (req, res) => {
+  const symbol = req.query.symbol;
+  if (!symbol) {
+    res.locals.errorReason = 'Missing symbol query param';
+    return res.status(400).json({ success: false, error: 'Missing symbol' });
+  }
 
+  const snapshot = getQuoteSnapshot(symbol);
+  if (!snapshot.found) {
+    res.locals.errorReason = `Symbol '${symbol}' not found`;
+    return res.status(404).json({ success: false, error: 'Symbol not found' });
+  }
+
+  return res.json({
+    success: true,
+    symbol: snapshot.symbol.name,
+    quote: snapshot.quote,
+  });
+});
+
+app.get('/internal/binance/price', requireInternalKey, async (req, res) => {
+  const symbol = req.query.symbol;
   try {
-    await ensureCtraderReady();
+    const url = symbol ? `https://fapi.binance.com/fapi/v1/ticker/price?symbol=${encodeURIComponent(String(symbol).toUpperCase())}` : 'https://fapi.binance.com/fapi/v1/ticker/price';
+    const r = await fetch(url);
+    const data = await r.json();
+    return res.json({ success: true, data });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
 
-    const snapshot = getData(symbol, {
-      interval,
-      limitTicks,
-      limitCandles,
-    });
-
-    if (!snapshot.found) {
-      res.locals.errorReason = `Symbol ${symbol} not found or not loaded in cache`;
-      return res.status(404).json({
-        success: false,
-        error: 'Symbol not found or not loaded',
-        symbol,
-      });
-    }
-
-    res.locals.candlesCount = snapshot.candles?.length || 0;
-    res.locals.source = 'cache';
-
-    return res.json({
-      success: true,
-      ...snapshot,
-      serverTime: Math.floor(Date.now() / 1000),
-      serverTimeMs: Date.now(),
-    });
-  } catch (error) {
-    res.locals.errorReason = error.message;
-    return res.status(error.status || 500).json({
-      success: false,
-      error: 'Market feed unavailable',
-    });
+app.get('/internal/binance/klines', requireInternalKey, async (req, res) => {
+  const { symbol, interval = '1m', limit = 500, startTime, endTime } = req.query;
+  if (!symbol) return res.status(400).json({ success: false, error: 'Missing symbol' });
+  try {
+    const params = new URLSearchParams({ symbol: String(symbol).toUpperCase(), interval: String(interval), limit: String(limit) });
+    if (startTime) params.set('startTime', String(startTime));
+    if (endTime) params.set('endTime', String(endTime));
+    const r = await fetch(`https://fapi.binance.com/fapi/v1/klines?${params.toString()}`);
+    const data = await r.json();
+    return res.json({ success: true, symbol, candles: data });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
   }
 });
 
 app.get('/internal/klines', requireInternalKey, async (req, res) => {
-  const symbol = String(req.query.symbol || req.query.symbolName || '').trim();
-  const interval = String(req.query.interval || '1m');
-  const startTime = req.query.startTime ? Number(req.query.startTime) : undefined;
-  const endTime = req.query.endTime ? Number(req.query.endTime) : undefined;
-  const limit = req.query.limit ? Number(req.query.limit) : 1000;
+  const { symbol, interval = '1m', startTime, endTime, limit = 250 } = req.query;
+
+  if (!symbol) {
+    res.locals.errorReason = 'Missing symbol parameter';
+    return res.status(400).json({
+      success: false,
+      error: 'Missing symbol parameter',
+    });
+  }
 
   try {
-    if (!symbol) {
-      res.locals.errorReason = 'Missing symbol query param';
-      return res.status(400).json({ success: false, error: 'Invalid symbol' });
-    }
-
     // 1. If memory cache has sufficient rolling candles and no specific historical range requested, return RAM cache instantly (< 1ms)
     const minRequired = Math.min(Number(limit) || 250, 200);
     if (!startTime && !endTime) {
-      const snapshot = getData(symbol, { interval, limitCandles: limit });
+      const snapshot = await getData(symbol, { interval, limitCandles: limit });
       if (snapshot?.found && Array.isArray(snapshot?.candles) && snapshot.candles.length >= minRequired) {
         res.locals.candlesCount = snapshot.candles.length;
         res.locals.source = 'cache';
@@ -406,109 +576,75 @@ app.get('/internal/klines', requireInternalKey, async (req, res) => {
       limit,
     });
 
-    // Populate seed cache with newly fetched candles for rolling live aggregation
-    if (!endTime && Array.isArray(result?.candles) && result.candles.length > 0) {
-      const symbolInfo = getSymbolByName(symbol);
-      if (symbolInfo?.id) {
-        seedCandles(symbolInfo.id, interval, result.candles);
-      }
+    const symbolInfo = getSymbolByName(symbol);
+    if (symbolInfo?.id && Array.isArray(result?.candles)) {
+      await seedCandles(symbolInfo.id, interval, result.candles);
     }
 
-    const candleCount = result?.candles?.length || 0;
-    res.locals.candlesCount = candleCount;
+    res.locals.candlesCount = result?.candles?.length || 0;
     res.locals.source = 'ctrader-api';
 
     return res.json({
       success: true,
       symbol,
       interval,
-      candles: result?.candles || [],
+      candles: result.candles,
       source: 'ctrader-api',
       serverTime: Math.floor(Date.now() / 1000),
       serverTimeMs: Date.now(),
     });
   } catch (error) {
-    res.locals.errorReason = error.message || 'Market klines unavailable';
-    logger.error('KLINES_ERROR', `Failed fetching klines for ${symbol}: ${error.message}`, {
-      symbol,
-      interval,
-      startTime,
-      endTime,
-      limit,
-    });
-    return res.status(error.status || 500).json({
-      success: false,
-      error: error.message || 'Market klines unavailable',
-    });
-  }
-});
-
-app.get('/internal/historical-candles', requireInternalKey, (req, res) => {
-  req.url = '/internal/klines' + (req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '');
-  app.handle(req, res);
-});
-
-app.get('/internal/quote/:symbol', requireInternalKey, async (req, res) => {
-  const symbol = String(req.params.symbol || '').trim();
-
-  try {
-    await ensureCtraderReady();
-    const snapshot = getData(symbol, { limitTicks: 1, limitCandles: 1 });
-
-    if (!snapshot.found) {
-      res.locals.errorReason = `Symbol ${symbol} not found or not loaded`;
-      return res.status(404).json({
-        success: false,
-        error: 'Symbol not found or not loaded',
-        symbol,
-      });
-    }
-
-    return res.json({
-      success: true,
-      symbol: snapshot.symbol,
-      quote: snapshot.quote,
-      serverTime: Math.floor(Date.now() / 1000),
-      serverTimeMs: Date.now(),
-    });
-  } catch (error) {
     res.locals.errorReason = error.message;
-    return res.status(error.status || 500).json({
+    return res.status(error.status || 502).json({
       success: false,
-      error: 'Market feed unavailable',
+      error: error.message || 'Failed fetching klines',
+      candles: [],
     });
   }
 });
 
-process.on('SIGINT', () => {
-  logger.info('PROCESS', 'SIGINT received. Cleaning up and exiting...');
-  cleanup();
-  process.exit(0);
-});
-
-process.on('SIGTERM', () => {
-  logger.info('PROCESS', 'SIGTERM received. Cleaning up and exiting...');
-  cleanup();
-  process.exit(0);
-});
-
-process.on('uncaughtException', (err) => {
-  logger.error('FATAL', `Uncaught Exception: ${err.message}`, { stack: err.stack });
-});
-
-process.on('unhandledRejection', (reason) => {
-  logger.error('FATAL', `Unhandled Rejection: ${reason instanceof Error ? reason.message : reason}`, {
-    stack: reason instanceof Error ? reason.stack : undefined,
+async function shutdown() {
+  logger.info('SHUTDOWN', 'Shutting down cTrader feed service...');
+  try {
+    await cleanup();
+  } catch {}
+  server.close(() => {
+    process.exit(0);
   });
-});
+}
+
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
+
+function startProactiveTokenRefresh() {
+  const interval = 12 * 60 * 60 * 1000;
+  const threshold = 5 * 24 * 60 * 60 * 1000;
+  setInterval(async () => {
+    try {
+      const exp = Number(ctraderConfig.expiresAt || 0);
+      if (exp > 0 && (exp - Date.now()) < threshold) {
+        logger.info('TOKEN', 'Proactively refreshing cTrader token...');
+        const ok = await refreshAccessToken();
+        if (ok) {
+          sendTelegramAlert('Token Refreshed', 'cTrader token refreshed in background.', false).catch(() => {});
+        } else {
+          sendTelegramAlert('Token Refresh Failed', tokenState.lastRefreshError || 'Unknown error', true).catch(() => {});
+        }
+      }
+    } catch (err) {
+      logger.error('TOKEN', `Proactive refresh error: ${err.message}`);
+      sendTelegramAlert('Token Refresh Error', err.message, true).catch(() => {});
+    }
+  }, interval).unref?.();
+}
 
 server.listen(PORT, HOST, async () => {
-  logger.info('SERVER', `ctrader-feed-service listening on http://${HOST}:${PORT}`);
+  logger.info('SERVER', `ctrader-feed-service HTTP/WS listening on http://${HOST}:${PORT}`);
+  startTelegramMonitor({ startedAt: SERVICE_STARTED_AT });
+  startProactiveTokenRefresh();
   try {
     await startFeed();
-    logger.info('SERVER', 'ctrader-feed-service ready and active.');
   } catch (error) {
-    logger.error('SERVER', `ctrader-feed-service failed to start feed: ${error.message}`, { stack: error.stack });
+    logger.error('FATAL', `Failed to start feed: ${error.message}`);
   }
 });
-

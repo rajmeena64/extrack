@@ -98,7 +98,7 @@ async def get_watchlist_quotes(symbols: List[str]) -> Dict[str, Dict[str, Any]]:
         if b_spot:
             async def _fetch_b_spot():
                 spot_url = os.getenv("BINANCE_SPOT_API_URL", "https://data-api.binance.vision").rstrip("/")
-                for u in (f"{spot_url}/api/v3/ticker/price", "https://api.binance.us/api/v3/ticker/price", "https://data-api.binance.vision/api/v3/ticker/price"):
+                for u in (f"{spot_url}/api/v3/ticker/price", "https://data-api.binance.vision/api/v3/ticker/price"):
                     try:
                         r = await client.get(u, params={"symbols": json.dumps(b_spot, separators=(',', ':'))})
                         if r.status_code == 200:
@@ -110,19 +110,24 @@ async def get_watchlist_quotes(symbols: List[str]) -> Dict[str, Dict[str, Any]]:
                                 return
                     except Exception:
                         pass
-                try:
-                    fb = await client.get(f"https://extrack-backend-9xk0.onrender.com/api/market-chart/watchlist-quotes?symbols={','.join(b_spot)}")
-                    if fb.status_code == 200:
-                        d = fb.json().get("quotes") or fb.json().get("data")
-                        if isinstance(d, dict):
-                            res.update(d)
-                except Exception:
-                    pass
             tasks.append(_fetch_b_spot())
         if b_fut:
             async def _fetch_b_fut():
-                fut_bases = [os.getenv("BINANCE_FUTURES_API_URL", "https://fapi.binance.com").rstrip("/"), "https://fapi1.binance.com", "https://fapi2.binance.com", "https://fapi3.binance.com"]
+                feed_url = str(os.getenv("FEED_SERVICE_URL") or os.getenv("MARKET_FEED_URL") or "https://feed.entrack.in").rstrip("/")
+                key = os.getenv("FEED_INTERNAL_API_KEY", "b1dee1c2eff0bd96ab004d99c46332ea9c477159739c9b01429f4ce8cbff9bba")
+                hdrs = {"x-internal-api-key": key} if key else {}
+                fut_bases = [os.getenv("BINANCE_FUTURES_API_URL", "https://fapi.binance.com").rstrip("/"), "https://fapi1.binance.com"]
                 async def _one_fut(sym: str):
+                    try:
+                        r = await client.get(f"{feed_url}/internal/binance/price", params={"symbol": sym}, headers=hdrs)
+                        if r.status_code == 200:
+                            d = r.json().get("data", {})
+                            if "price" in d:
+                                p = float(d["price"])
+                                res[sym] = {"symbol": sym, "price": p, "last": p, "bid": p, "ask": p}
+                                return
+                    except Exception:
+                        pass
                     for base in fut_bases:
                         try:
                             r = await client.get(f"{base}/fapi/v1/ticker/price", params={"symbol": sym})
