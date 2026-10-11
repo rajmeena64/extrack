@@ -25,7 +25,7 @@ async def resolve_feed_provider(symbol: str) -> Optional[Dict[str, Any]]:
     source = str(inst.get("marketSource") or "").lower()
     cat = str(inst.get("category") or "").lower()
     pt = str(inst.get("productType") or "").lower()
-    is_futures = cat in ("perpetual", "future") or pt == "future"
+    is_futures = source == "entrackbfeed" or cat in ("perpetual", "future") or pt == "future"
     return {
         "symbol": inst["symbol"],
         "is_bfeed": source == "entrackbfeed",
@@ -130,6 +130,16 @@ async def get_watchlist_quotes(symbols: List[str]) -> Dict[str, Dict[str, Any]]:
                             p = pm.get(sym)
                             if p is not None:
                                 res[sym] = {"symbol": sym, "price": p, "last": p, "bid": p, "ask": p}
+                        if any(s in res for s in b_fut):
+                            return
+                except Exception:
+                    pass
+                try:
+                    fb = await client.get(f"https://extrack-backend-9xk0.onrender.com/api/market-chart/watchlist-quotes?symbols={','.join(b_fut)}")
+                    if fb.status_code == 200:
+                        d = fb.json().get("quotes") or fb.json().get("data")
+                        if isinstance(d, dict):
+                            res.update(d)
                 except Exception:
                     pass
             tasks.append(_fetch_b_fut())
