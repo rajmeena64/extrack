@@ -24,7 +24,7 @@ async def update_trade(pool: asyncpg.Pool, user_id: int, unique_id: str, updates
         await pool.execute("""
             INSERT INTO trading.option_trade_details (
                 trade_id, underlying_symbol, option_type, strike_price, expiry_date, contract_multiplier, lot_size, expiration_outcome
-            ) VALUES ($1, $2, $3, $4::numeric, $5::date, $6::numeric, $7::numeric, $8)
+            ) VALUES ($1, $2, $3, $4::numeric, $5::text::date, $6::numeric, $7::numeric, $8)
             ON CONFLICT (trade_id) DO UPDATE SET
                 underlying_symbol = EXCLUDED.underlying_symbol,
                 option_type = EXCLUDED.option_type,

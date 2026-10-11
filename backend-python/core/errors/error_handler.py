@@ -23,7 +23,7 @@ async def app_error_handler(request: Request, exc: AppError):
     logger.error("request.failed", {"code": exc.code, "status": exc.status_code, "message": exc.message, "path": str(request.url.path), "method": request.method})
     return JSONResponse(
         status_code=exc.status_code,
-        content={"success": False, "message": exc.message, "code": exc.code, "data": exc.details or None},
+        content={"success": False, "message": exc.message, "error": exc.message, "code": exc.code, "data": exc.details or None},
         headers=_cors_headers(request)
     )
 
@@ -33,7 +33,7 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
     headers = {**_cors_headers(request), **(exc.headers if exc.headers else {})}
     return JSONResponse(
         status_code=exc.status_code,
-        content={"success": False, "message": detail, "code": "HTTP_ERROR"},
+        content={"success": False, "message": detail, "error": detail, "code": "HTTP_ERROR"},
         headers=headers
     )
 
@@ -48,7 +48,7 @@ async def validation_error_handler(request: Request, exc: RequestValidationError
     logger.warning("request.validation_failed", {"field": field, "message": clean_message, "path": str(request.url.path)})
     return JSONResponse(
         status_code=400,
-        content={"success": False, "message": clean_message, "code": "VALIDATION_ERROR"},
+        content={"success": False, "message": clean_message, "error": clean_message, "code": "VALIDATION_ERROR"},
         headers=_cors_headers(request)
     )
 
@@ -56,6 +56,6 @@ async def generic_error_handler(request: Request, exc: Exception):
     logger.error("request.unhandled_exception", {"status": 500, "message": str(exc), "path": str(request.url.path), "method": request.method})
     return JSONResponse(
         status_code=500,
-        content={"success": False, "message": "Something went wrong. Please try again later.", "code": "INTERNAL_SERVER_ERROR"},
+        content={"success": False, "message": "Something went wrong. Please try again later.", "error": "Something went wrong. Please try again later.", "code": "INTERNAL_SERVER_ERROR"},
         headers=_cors_headers(request)
     )

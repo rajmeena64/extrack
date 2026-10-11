@@ -208,7 +208,7 @@ export default function ManualEntryForm({ brokers = [], selectedBrokerId, setSel
   const mutation = useMutation({
     mutationFn: async (payload) => {
       const { data } = await api.post('/trades', payload);
-      if (!data?.success) throw new Error(data?.error || 'Trade save failed');
+      if (!data?.success) throw new Error(data?.message || data?.error || 'Trade save failed');
       if (screenshot) {
         const body = new FormData();
         body.append('unique_id', payload.unique_id);
@@ -224,7 +224,7 @@ export default function ManualEntryForm({ brokers = [], selectedBrokerId, setSel
       navigate(`/trade/${saved?.unique_id || payload.unique_id}`, { state: { tradeData: saved || payload } });
     },
     onError: (e) => {
-      const msg = e?.response?.data?.error || 'Trade could not be saved';
+      const msg = e?.response?.data?.message || e?.response?.data?.error || e?.message || 'Trade could not be saved';
       setError(msg);
       notify(msg, 'error');
     },
@@ -272,7 +272,7 @@ export default function ManualEntryForm({ brokers = [], selectedBrokerId, setSel
       entry_price: entryPrice, exit_price: exitPrice, entry_timestamp: entryDate.toISOString(),
       exit_timestamp: exitDate ? exitDate.toISOString() : null, currency: activeCurrency, pnl_currency: activeCurrency,
       option_details: optionDetails,
-      market_details: ['forex', 'cfd'].includes(effectiveProductType) ? { contractSize: form.multiplier || selectedInstrument?.contractSize || null } : ['future', 'perpetual'].includes(effectiveProductType) ? { pnlMultiplier: form.multiplier || selectedInstrument?.contractSize || null } : {},
+      market_details: ['forex', 'cfd', 'future', 'perpetual'].includes(effectiveProductType) ? { contractSize: form.multiplier || selectedInstrument?.contractSize || null } : {},
       charges: (() => { const total = Math.abs(number(form.entryFees, 0)) + Math.abs(number(form.exitFees, 0)); return total > 0 ? { otherFees: -total } : {}; })(),
       actual_net_pnl: form.actualNetPnl === '' ? null : number(form.actualNetPnl),
       strategy: form.strategy, notes: form.notes, attachments: [],
