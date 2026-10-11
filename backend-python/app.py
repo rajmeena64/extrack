@@ -37,6 +37,7 @@ AI_ORIGINS_REGEX = r"^https://.*(claude\.ai|anthropic\.com|chatgpt\.com|openai\.
 
 import asyncio
 from domains.notifications.worker import run_alerts_worker
+from core.finance.fx_worker import run_fx_worker
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -48,10 +49,12 @@ async def lifespan(app: FastAPI):
     await refresh_instrument_cache()
     await refresh_fx_cache()
     worker_task = asyncio.create_task(run_alerts_worker())
+    fx_worker_task = asyncio.create_task(run_fx_worker())
     live_task = asyncio.create_task(ctrader_live_sync.start())
     yield
     await ctrader_live_sync.stop()
     live_task.cancel()
+    fx_worker_task.cancel()
     worker_task.cancel()
     await close_db()
     await close_redis()

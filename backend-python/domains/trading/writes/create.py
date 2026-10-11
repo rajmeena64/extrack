@@ -3,7 +3,6 @@ import uuid
 import asyncpg
 from domains.instruments.registry import normalize_symbol, ensure_loaded, find_by_symbol
 from core.calculations.calculator import calculate_trade_pnl
-from core.finance.currency import get_fx_rate
 from domains.trading.mapper import get_broker_trade_mapping, map_manual_trade, map_broker_trade
 from core.errors.app_error import AppError
 from core.errors.messages import ERROR_MESSAGES
@@ -90,23 +89,11 @@ async def prepare_row_params(pool: asyncpg.Pool, t: dict, user_id: int, parsed_c
     calc_qty = closed_qty if (exit_p is not None and closed_qty is not None and 0.0 < closed_qty < qty) else qty
     if exit_p is not None and closed_qty is not None and 0.0 < closed_qty < qty:
         status = "partially_closed"
-    raw_curr = t.get("pnl_currency")
-    profit_curr = inst.get("profitCurrency") if (inst and inst.get("profitCurrency")) else "USD"
-    account_curr = str(raw_curr).upper().strip() if raw_curr else profit_curr
-    conversion_rate = 1.0
-    if profit_curr and profit_curr != account_curr:
-        ts = t.get("exit_timestamp") if t.get("exit_timestamp") is not None else t.get("entry_timestamp")
-        dt_key = str(ts)[:10] if ts else ""
-        cache_key = (profit_curr, account_curr, dt_key)
-        if rate_cache is not None and cache_key in rate_cache:
-            conversion_rate = rate_cache[cache_key]
-        else:
-            conversion_rate = await get_fx_rate(pool, profit_curr, account_curr, dt_key)
-            if rate_cache is not None:
-                rate_cache[cache_key] = conversion_rate
+    curr = str(t.get("currency") or t.get("pnl_currency") or "USD").upper().strip()
+    pnl_curr = str(t.get("pnl_currency") or curr).upper().strip()
     gross, net, pct = calculate_trade_pnl(
         entry_p=entry_p, exit_p=exit_p, qty=calc_qty, mult=mult, side=side, charges=charges,
-        category=cat, conversion_rate=conversion_rate,
+        category=cat, conversion_rate=1.0,
         gross_pnl=float(t["gross_pnl"]) if t.get("gross_pnl") is not None else None,
         net_pnl=float(t["net_pnl"]) if t.get("net_pnl") is not None else None,
         pct_change=float(t["percent_change"]) if t.get("percent_change") is not None else None,
@@ -114,8 +101,6 @@ async def prepare_row_params(pool: asyncpg.Pool, t: dict, user_id: int, parsed_c
     )
     sym = inst["symbol"] if inst else normalize_symbol(t.get("symbol"))
     pt = inst["productType"] if (inst and inst.get("productType")) else t.get("product_type")
-    curr = t.get("currency")
-    pnl_curr = account_curr
     src = str(t["source"] if t.get("source") is not None else "manual").lower().strip()
     return (
         t["unique_id"], user_id, parsed_conn_id, sym, side, status,

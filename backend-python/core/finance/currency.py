@@ -4,7 +4,7 @@ import asyncpg
 from core.errors.app_error import AppError
 from core.errors.messages import ERROR_MESSAGES
 
-NORM_MAP = {"USDT": "USD", "USDC": "USD"}
+NORM_MAP = {"USDT": "USD", "USDC": "USD", "FDUSD": "USD", "USD1": "USD"}
 _fx_cache: dict[tuple[str, str], dict[str, float]] = {}
 _fx_dates: dict[tuple[str, str], list[str]] = {}
 
@@ -45,8 +45,7 @@ async def refresh_fx_cache():
     _fx_dates = {p: list(d.keys()) for p, d in temp.items()}
 
 def get_cached_fx_rate(base: str | None, quote: str | None, date_val: date | str | None = None) -> float:
-    if not base or not quote:
-        raise AppError(ERROR_MESSAGES["CURRENCY"]["PARAMS_MISSING"])
+    if not base or not quote: return 1.0
     b = str(base).upper().strip()
     q = str(quote).upper().strip()
     if b == q: return 1.0
@@ -76,9 +75,9 @@ def get_cached_fx_rate(base: str | None, quote: str | None, date_val: date | str
             r1 = get_cached_fx_rate(norm_b, "USD", d_str)
             r2 = get_cached_fx_rate("USD", norm_q, d_str)
             if r1 > 0 and r2 > 0: return r1 * r2
-        except AppError:
+        except Exception:
             pass
-    raise AppError(ERROR_MESSAGES["CURRENCY"]["RATE_UNAVAILABLE"])
+    return 1.0
 
 async def get_fx_rate(pool: asyncpg.Pool, base: str, quote: str, rate_date: date | str | None = None) -> float:
     b, q = normalize_currency(base), normalize_currency(quote)
@@ -91,6 +90,13 @@ async def get_fx_rate(pool: asyncpg.Pool, base: str, quote: str, rate_date: date
     inv_params = [q, b, d_obj] if d_obj else [q, b]
     inv_row = await pool.fetchrow(f"SELECT rate FROM fx_rates WHERE base_currency = $1 AND quote_currency = $2 {q_filter} ORDER BY rate_date DESC LIMIT 1", *inv_params)
     if inv_row and float(inv_row["rate"]) > 0: return 1.0 / float(inv_row["rate"])
+    if b != "USD" and q != "USD":
+        try:
+            r1 = await get_fx_rate(pool, b, "USD", rate_date)
+            r2 = await get_fx_rate(pool, "USD", q, rate_date)
+            if r1 > 0 and r2 > 0: return r1 * r2
+        except Exception:
+            pass
     raise AppError(ERROR_MESSAGES["CURRENCY"]["RATE_UNAVAILABLE"])
 
 async def get_fx_rate_map(pool: asyncpg.Pool, base: str, quote: str) -> dict[str, float]:
