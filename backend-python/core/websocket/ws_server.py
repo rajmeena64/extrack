@@ -7,6 +7,7 @@ from fastapi import WebSocket
 import httpx
 import websockets
 from core.logger.logger import logger
+from domains.instruments.registry import find_by_symbol
 
 MAX_WS_PER_USER = int(os.environ.get("MAX_WS_CONNECTIONS_PER_USER", 10))
 MAX_WS_TOTAL = int(os.environ.get("MAX_WS_TOTAL_CONNECTIONS", 1000))
@@ -47,7 +48,10 @@ class WebSocketServerManager:
     def set_subscriptions(self, ws: WebSocket, symbols: list[str]):
         if ws not in self.socket_symbols:
             self.socket_symbols[ws] = set()
-        cleaned = {str(s).strip().upper().replace("/", "").replace("-", "").replace("_", "") for s in symbols if s}
+        cleaned = set()
+        for s in symbols:
+            inst = find_by_symbol(s)
+            cleaned.add(inst["symbol"] if inst else str(s).strip().upper())
         self.socket_symbols[ws] = cleaned
         self.sync_ctrader_subscriptions()
 
@@ -73,7 +77,8 @@ class WebSocketServerManager:
                 self.all_sockets.discard(ws)
 
     async def broadcast_tick(self, symbol: str, price: float, timestamp: int | None = None):
-        clean_sym = symbol.strip().upper().replace("/", "").replace("-", "").replace("_", "")
+        inst = find_by_symbol(symbol)
+        clean_sym = inst["symbol"] if inst else symbol.strip().upper()
         ts = timestamp or int(time.time())
         payload = {
             "type": "MARKET_TICK",
@@ -88,7 +93,7 @@ class WebSocketServerManager:
             }
         }
         for ws, syms in list(self.socket_symbols.items()):
-            if clean_sym in syms or (clean_sym + "USDT") in syms or clean_sym.replace("USDT", "") in syms:
+            if clean_sym in syms:
                 try:
                     await ws.send_json(payload)
                 except Exception:
@@ -96,7 +101,8 @@ class WebSocketServerManager:
 
     async def broadcast_raw_tick(self, tick: dict):
         raw_sym = str(tick.get("symbolName") or tick.get("symbol") or "")
-        clean_sym = raw_sym.strip().upper().replace("/", "").replace("-", "").replace("_", "")
+        inst = find_by_symbol(raw_sym)
+        clean_sym = inst["symbol"] if inst else raw_sym.strip().upper()
         if not clean_sym:
             return
         bid = float(tick.get("bid") or 0)
@@ -107,7 +113,7 @@ class WebSocketServerManager:
         tick["last"] = price
         payload = {"type": "MARKET_TICK", "tick": tick}
         for ws, syms in list(self.socket_symbols.items()):
-            if clean_sym in syms or (clean_sym + "USDT") in syms or clean_sym.replace("USDT", "") in syms:
+            if clean_sym in syms:
                 try:
                     await ws.send_json(payload)
                 except Exception:
@@ -176,18 +182,21 @@ class WebSocketServerManager:
                 try:
                     symbols = self.get_all_subscribed_symbols()
                     if symbols and feed_url:
-                        crypto_syms = [s for s in symbols if s.endswith("USDT") or s in {"BTC", "ETH", "SOL", "XRP", "ADA", "BNB"}]
-                        if crypto_syms:
+                        b_syms = set()
+                        for s in symbols:
+                            inst = find_by_symbol(s)
+                            if inst and str(inst.get("marketSource") or "").lower() == "entrackbfeed":
+                                b_syms.add(inst["symbol"])
+                        if b_syms:
                             resp = await client.get(f"{feed_url}/internal/binance/price", headers=hdrs)
                             if resp.status_code == 200:
                                 d = resp.json().get("data", [])
                                 if isinstance(d, list):
                                     price_map = {item["symbol"]: float(item["price"]) for item in d if isinstance(item, dict) and "symbol" in item and "price" in item}
                                     now_ts = int(time.time())
-                                    for s in crypto_syms:
-                                        pair = s if s.endswith("USDT") else f"{s}USDT"
-                                        if pair in price_map:
-                                            await self.broadcast_tick(s, price_map[pair], now_ts)
+                                    for sym in b_syms:
+                                        if sym in price_map:
+                                            await self.broadcast_tick(sym, price_map[sym], now_ts)
                 except Exception as e:
                     logger.warning("ws_ticker_loop.error", {"error": str(e)})
                 await asyncio.sleep(1.0)
