@@ -12,7 +12,8 @@ USERINFO_URL = os.getenv("GOOGLE_USERINFO_URL", "https://www.googleapis.com/oaut
 def get_config() -> tuple[str, str, str]:
     cid = os.getenv("GOOGLE_CLIENT_ID", "").strip()
     sec = os.getenv("GOOGLE_CLIENT_SECRET", "").strip()
-    cb = os.getenv("GOOGLE_CALLBACK_URL", "").strip() or f"{os.getenv('API_URL', 'http://localhost:5000').rstrip('/')}/api/v1/auth/google/callback"
+    api_url = str(os.getenv("API_URL", "")).rstrip("/")
+    cb = os.getenv("GOOGLE_CALLBACK_URL", "").strip() or (f"{api_url}/api/v1/auth/google/callback" if api_url else "")
     if not cid or not sec:
         raise AppError(ERROR_MESSAGES["AUTH"]["GOOGLE_NOT_CONFIGURED"])
     return cid, sec, cb

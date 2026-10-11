@@ -378,8 +378,7 @@ async def google_login(next: Optional[str] = None):
             res.set_cookie(key="oauthNext", value=next, max_age=600, httponly=True, secure=COOKIE_SECURE, samesite=COOKIE_SAMESITE, domain=COOKIE_DOMAIN, path="/")
         return res
     except Exception:
-        furl = os.getenv("FRONTEND_URL")
-        frontend_url = furl.rstrip("/") if furl else "http://localhost:3000"
+        frontend_url = str(os.getenv("FRONTEND_URL", "")).rstrip("/")
         return RedirectResponse(f"{frontend_url}/", status_code=302)
 
 @auth_router.get("/google/callback")
@@ -391,8 +390,7 @@ async def google_callback(
     error: Optional[str] = None,
     conn: asyncpg.Connection = Depends(get_db)
 ):
-    furl = os.getenv("FRONTEND_URL")
-    frontend_url = furl.rstrip("/") if furl else "http://localhost:3000"
+    frontend_url = str(os.getenv("FRONTEND_URL", "")).rstrip("/")
     err_res = RedirectResponse(f"{frontend_url}/", status_code=302)
     err_res.delete_cookie(key="googleOAuthState", path="/", domain=COOKIE_DOMAIN)
     err_res.delete_cookie(key="googleOAuthState", path="/api/v1/auth", domain=COOKIE_DOMAIN)

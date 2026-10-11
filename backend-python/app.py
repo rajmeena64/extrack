@@ -33,8 +33,6 @@ origins_list = [o.strip() for o in raw_origins.split(",") if o.strip() and o.str
 furl = str(os.getenv("FRONTEND_URL", "")).strip().rstrip("/")
 if furl and furl not in origins_list:
     origins_list.append(furl)
-if not origins_list and not is_prod:
-    origins_list = ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5173", "http://127.0.0.1:5173"]
 AI_ORIGINS_REGEX = r"^https://.*(claude\.ai|anthropic\.com|chatgpt\.com|openai\.com|gemini\.google\.com|perplexity\.ai)$"
 
 import asyncio

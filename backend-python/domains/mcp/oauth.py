@@ -24,13 +24,16 @@ def hash_token(token: str) -> str:
 def sign_mcp_token(user_id: Any, days: int = MCP_ACCESS_DAYS, issuer: str | None = None, audience: str | None = None) -> str:
     if not ACCESS_SECRET:
         raise AppError(ERROR_MESSAGES["SERVER"]["CONFIG_ERROR"])
+    api_url = str(os.getenv("API_URL", "")).rstrip("/")
+    iss = issuer or os.getenv("MCP_ISSUER") or api_url
+    aud = audience or os.getenv("MCP_AUDIENCE") or (f"{iss}/mcp" if iss else "")
     payload = {
         "sub": str(user_id),
         "userId": user_id,
         "typ": "access",
         "purpose": "mcp",
-        "iss": issuer or os.getenv("MCP_ISSUER") or "https://api.entrack.in",
-        "aud": audience or os.getenv("MCP_AUDIENCE") or "https://api.entrack.in/mcp",
+        "iss": iss,
+        "aud": aud,
         "exp": datetime.now(timezone.utc) + timedelta(days=days),
     }
     return jwt.encode(payload, ACCESS_SECRET, algorithm="HS256")

@@ -17,8 +17,6 @@ def _is_trusted_origin(origin: str | None) -> bool:
     furl = str(os.getenv("FRONTEND_URL", "")).strip().rstrip("/")
     if furl:
         allowed.add(furl)
-    if not allowed and os.getenv("NODE_ENV") != "production":
-        allowed = {"http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5173", "http://127.0.0.1:5173"}
     return origin in allowed or bool(_AI_ORIGINS.match(origin))
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):

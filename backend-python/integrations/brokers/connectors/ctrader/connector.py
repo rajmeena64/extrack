@@ -37,12 +37,12 @@ class CTraderBroker(BaseBroker):
 
     async def get_authorization_url(self, user_id: int, connection_id: str, return_origin: str = "") -> str:
         cid, _ = self._get_client_creds({})
-        api_base = os.getenv("API_URL", "http://localhost:5000").rstrip("/")
-        cb_url = str(os.getenv("CTRADER_OAUTH_CALLBACK_URL", "")).strip() or f"{api_base}/api/v1/brokers/ctrader/callback"
+        api_base = str(os.getenv("API_URL", "")).rstrip("/")
+        cb_url = str(os.getenv("CTRADER_OAUTH_CALLBACK_URL", "")).strip() or (f"{api_base}/api/v1/brokers/ctrader/callback" if api_base else "")
         state = secrets.token_urlsafe(32)
         state_hash = hashlib.sha256(state.encode()).hexdigest()
         expires = datetime.now(timezone.utc) + timedelta(minutes=10)
-        origin = return_origin or os.getenv("FRONTEND_URL", "http://localhost:3000")
+        origin = return_origin or str(os.getenv("FRONTEND_URL", ""))
         pool = await init_db()
         await pool.execute("""
             INSERT INTO broker_connections.oauth_states (user_id, provider, connection_id, state_hash, expires_at, return_origin)
@@ -78,7 +78,7 @@ class CTraderBroker(BaseBroker):
         return []
 
     async def handle_oauth_callback(self, code: str, state: str, error: Optional[str] = None) -> str:
-        fallback_origin = os.getenv("FRONTEND_URL", "http://localhost:3000").rstrip("/")
+        fallback_origin = str(os.getenv("FRONTEND_URL", "")).rstrip("/")
         if error or not code or not state:
             return f"{fallback_origin}/add-trade?oauth=error&ctrader=error"
         state_hash = hashlib.sha256(state.encode()).hexdigest()

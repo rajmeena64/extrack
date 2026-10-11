@@ -178,7 +178,7 @@ async def oauth_authorize_get(request: Request):
     raw_cid = request.query_params.get("client_id") or ""
     if raw_r_uri and not await is_trusted_redirect_uri(raw_r_uri, raw_cid):
         raise HTTPException(status_code=400, detail="Invalid redirect_uri")
-    furl = (os.getenv("FRONTEND_URL") or "http://localhost:3000").rstrip("/")
+    furl = str(os.getenv("FRONTEND_URL", "")).rstrip("/")
     query = request.url.query
     return RedirectResponse(f"{furl}/oauth/authorize?{query}" if query else f"{furl}/oauth/authorize", status_code=302)
 
@@ -229,7 +229,7 @@ async def oauth_authorize_post(request: Request, conn: asyncpg.Connection = Depe
             msg = ERROR_MESSAGES["AUTH"]["INVALID_CREDENTIALS"]["message"]
             if "json" in request.headers.get("accept", "") or "json" in ct:
                 raise HTTPException(status_code=401, detail=msg)
-            furl = (os.getenv("FRONTEND_URL") or "http://localhost:3000").rstrip("/")
+            furl = str(os.getenv("FRONTEND_URL", "")).rstrip("/")
             params_dict = {
                 "client_id": client_id,
                 "redirect_uri": redirect_uri,

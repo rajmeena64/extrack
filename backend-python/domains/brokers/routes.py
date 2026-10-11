@@ -21,7 +21,7 @@ async def list_brokers_endpoint(search: Optional[str] = Query(None), popular: bo
 @brokers_router.get("/oauth/{provider}/callback")
 async def broker_oauth_callback_endpoint(provider: str, request: Request, code: Optional[str] = None, state: Optional[str] = None, error: Optional[str] = None):
     connector = broker_registry.get(provider)
-    origin = (request.headers.get("origin") or os.getenv("FRONTEND_URL", "http://localhost:3000")).rstrip("/")
+    origin = (request.headers.get("origin") or os.getenv("FRONTEND_URL", "")).rstrip("/")
     if not connector or not hasattr(connector, "handle_oauth_callback"):
         return RedirectResponse(f"{origin}/add-trade?oauth=error")
     try:
@@ -85,7 +85,7 @@ async def connect_endpoint(connection_id: str, request: Request, payload: Option
     slug = conn.get("platformSlug") if (conn.get("platformSlug") and broker_registry.get(conn.get("platformSlug"))) else conn.get("brokerSlug")
     connector = broker_registry.get(slug)
     if connector and hasattr(connector, "get_authorization_url"):
-        origin = (request.headers.get("origin") or os.getenv("FRONTEND_URL", "http://localhost:3000")).rstrip("/")
+        origin = (request.headers.get("origin") or os.getenv("FRONTEND_URL", "")).rstrip("/")
         auth_url = await connector.get_authorization_url(uid, connection_id, return_origin=origin)
         return {"success": True, "authorizationUrl": auth_url}
     creds = payload if payload is not None else {}
