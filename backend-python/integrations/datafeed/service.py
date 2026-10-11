@@ -113,8 +113,8 @@ async def get_watchlist_quotes(symbols: List[str]) -> Dict[str, Dict[str, Any]]:
             tasks.append(_fetch_b_spot())
         if b_fut:
             async def _fetch_b_fut():
-                feed_url = str(os.getenv("FEED_SERVICE_URL") or os.getenv("MARKET_FEED_URL") or "https://feed.entrack.in").rstrip("/")
-                key = os.getenv("FEED_INTERNAL_API_KEY", "b1dee1c2eff0bd96ab004d99c46332ea9c477159739c9b01429f4ce8cbff9bba")
+                feed_url = str(os.getenv("FEED_SERVICE_URL") or os.getenv("MARKET_FEED_URL") or "").rstrip("/")
+                key = os.getenv("FEED_INTERNAL_API_KEY", "")
                 hdrs = {"x-internal-api-key": key} if key else {}
                 fut_bases = [os.getenv("BINANCE_FUTURES_API_URL", "https://fapi.binance.com").rstrip("/"), "https://fapi1.binance.com"]
                 async def _one_fut(sym: str):
@@ -141,8 +141,8 @@ async def get_watchlist_quotes(symbols: List[str]) -> Dict[str, Dict[str, Any]]:
             tasks.append(_fetch_b_fut())
         if c_syms:
             async def _fetch_cfeed():
-                feed_url = str(os.getenv("FEED_SERVICE_URL") or os.getenv("MARKET_FEED_URL") or "https://feed.entrack.in").rstrip("/")
-                key = os.getenv("FEED_INTERNAL_API_KEY", "b1dee1c2eff0bd96ab004d99c46332ea9c477159739c9b01429f4ce8cbff9bba")
+                feed_url = str(os.getenv("FEED_SERVICE_URL") or os.getenv("MARKET_FEED_URL") or "").rstrip("/")
+                key = os.getenv("FEED_INTERNAL_API_KEY", "")
                 hdrs = {"x-internal-api-key": key} if key else {}
                 try:
                     r = await client.get(f"{feed_url}/internal/quotes", params={"symbols": ",".join(c_syms)}, headers=hdrs)

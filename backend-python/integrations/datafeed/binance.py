@@ -76,18 +76,19 @@ async def fetch_binance_candles(
     if et_ms is not None:
         params["endTime"] = et_ms
     if is_futures:
-        feed_url = str(os.getenv("FEED_SERVICE_URL") or os.getenv("MARKET_FEED_URL") or "https://feed.entrack.in").rstrip("/")
-        key = os.getenv("FEED_INTERNAL_API_KEY", "b1dee1c2eff0bd96ab004d99c46332ea9c477159739c9b01429f4ce8cbff9bba")
-        hdrs = {"x-internal-api-key": key, **HEADERS} if key else HEADERS
-        try:
-            async with httpx.AsyncClient(timeout=4.0, follow_redirects=True, headers=hdrs) as client:
-                resp = await client.get(f"{feed_url}/internal/binance/klines", params=params)
-                if resp.status_code == 200:
-                    res = _parse_klines(resp.json().get("candles"))
-                    if res:
-                        return res
-        except Exception:
-            pass
+        feed_url = str(os.getenv("FEED_SERVICE_URL") or os.getenv("MARKET_FEED_URL") or "").rstrip("/")
+        key = os.getenv("FEED_INTERNAL_API_KEY", "")
+        if feed_url:
+            hdrs = {"x-internal-api-key": key, **HEADERS} if key else HEADERS
+            try:
+                async with httpx.AsyncClient(timeout=4.0, follow_redirects=True, headers=hdrs) as client:
+                    resp = await client.get(f"{feed_url}/internal/binance/klines", params=params)
+                    if resp.status_code == 200:
+                        res = _parse_klines(resp.json().get("candles"))
+                        if res:
+                            return res
+            except Exception:
+                pass
     candidate_bases = [
         FUTURES_API_URL,
         "https://fapi.binance.com",
