@@ -18,7 +18,7 @@ def _to_ms(val: Optional[Any]) -> Optional[int]:
 
 async def fetch_live_feed_candles(
     symbol: str,
-    timeframe: str = "1m",
+    timeframe: str,
     start_time: Optional[Any] = None,
     end_time: Optional[Any] = None,
     limit: int = 1000
@@ -28,12 +28,11 @@ async def fetch_live_feed_candles(
     clean_sym = symbol.strip().upper()
     url = f"{FEED_SERVICE_URL}/internal/klines"
     headers = {"x-internal-api-key": FEED_INTERNAL_API_KEY} if FEED_INTERNAL_API_KEY else {}
-    tf = "1M" if timeframe in ("1M", "1mo", "1month") else timeframe.lower()
     s_ms = _to_ms(start_time)
     e_ms = _to_ms(end_time)
-    if e_ms is None and tf != "1m":
+    if e_ms is None and timeframe != "1m":
         e_ms = int(time.time() * 1000)
-    params = {"symbol": clean_sym, "interval": tf, "limit": min(limit, 2000)}
+    params = {"symbol": clean_sym, "interval": timeframe, "limit": min(limit, 2000)}
     if s_ms is not None:
         params["startTime"] = s_ms
     if e_ms is not None:

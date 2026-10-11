@@ -1,22 +1,13 @@
-import asyncio, json, os, re
+import asyncio, json, os
 import httpx
 from typing import Optional, List, Dict, Any
 from core.errors.app_error import AppError
 from core.errors.messages import ERROR_MESSAGES
 from domains.instruments.registry import get_instrument
+from integrations.datafeed.timeframe import resolve_timeframe
 from integrations.datafeed.tinybird import fetch_tinybird_candles
 from integrations.datafeed.ctrader_feed import fetch_live_feed_candles
 from integrations.datafeed.binance import fetch_binance_candles
-
-UNIT_CODES = {"minute": "m", "hour": "h", "day": "d", "week": "w", "month": "M"}
-
-def resolve_timeframe(tf_str: Optional[str]) -> str:
-    if not tf_str:
-        raise AppError(ERROR_MESSAGES["MARKET"]["INVALID_TIMEFRAME"])
-    m = re.match(r"^([1-9]\d*)(minute|hour|day|week|month)s?$", str(tf_str).strip())
-    if not m:
-        raise AppError(ERROR_MESSAGES["MARKET"]["INVALID_TIMEFRAME"])
-    return f"{m.group(1)}{UNIT_CODES[m.group(2)]}"
 
 async def resolve_feed_provider(symbol: str) -> Optional[Dict[str, Any]]:
     inst = await get_instrument(symbol)
