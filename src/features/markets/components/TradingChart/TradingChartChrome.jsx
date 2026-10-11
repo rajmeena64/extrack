@@ -7,7 +7,7 @@ import { DropdownSelect } from '@/components/ui/dropdown';
 import { formatTradePrice } from '@/utils/trading/tradeCalculations';
 import { useInstruments, useDebouncedValue } from '@/hooks/useInstruments';
 
-import { TIMEFRAME_GROUPS } from './utils/chartHelpers';
+import { TIMEFRAME_GROUPS, formatShortTimeframe } from './utils/chartHelpers';
 
 const formatPrice = (value, digits) => formatTradePrice(value, digits);
 const UNIT_LABELS = { minute: 'Minute', hour: 'Hour', day: 'Day', week: 'Week', month: 'Month' };
@@ -203,13 +203,7 @@ export function TradingChartHeader({
     }).slice(0, 50);
   }, [availableSymbols, isServerSearch, searchQuery, serverResults]);
 
-  const activeShortLabel = useMemo(() => {
-    for (const group of Object.values(TIMEFRAME_GROUPS)) {
-      const item = group.find((i) => i.value === timeframe);
-      if (item) return item.short;
-    }
-    return timeframe;
-  }, [timeframe]);
+  const activeShortLabel = useMemo(() => formatShortTimeframe(timeframe), [timeframe]);
 
   return (
     <div className="flex justify-between items-center h-[38px] min-h-[38px] gap-2 px-2.5 rounded-md bg-[var(--bg-card,#ffffff)] relative z-50 overflow-visible shrink-0">
@@ -273,7 +267,7 @@ export function TradingChartHeader({
             onClick={() => setTimeframeOpen((p) => !p)}
             title="Select timeframe"
           >
-            <span className="uppercase">{activeShortLabel}</span>
+            <span>{activeShortLabel}</span>
           </button>
 
           {timeframeOpen && (
@@ -292,7 +286,7 @@ export function TradingChartHeader({
                       onClick={() => { onTimeframeChange(item.value); setTimeframeOpen(false); }}
                     >
                       <span>{item.label}</span>
-                      <span className="text-[10px] text-[var(--text-muted)] uppercase font-mono">{item.short}</span>
+                      <span className="text-[10px] text-[var(--text-muted)] font-mono">{item.short}</span>
                     </button>
                   ))}
                 </div>
@@ -311,9 +305,7 @@ export function TradingChartHeader({
                     >
                       <span className="truncate">{formatTimeframeLabel(tf)}</span>
                       <div className="flex items-center gap-1.5 shrink-0">
-                        <span className="text-[10px] text-[var(--text-muted)] uppercase font-mono">
-                          {tf.replace('minute', 'm').replace('hour', 'h').replace('day', 'd').replace('week', 'w').replace('month', 'M')}
-                        </span>
+                        <span className="text-[10px] text-[var(--text-muted)] font-mono">{formatShortTimeframe(tf)}</span>
                         <button
                           type="button"
                           className="w-4 h-4 rounded inline-flex items-center justify-center hover:bg-[var(--border-light,#e2e8f0)] text-[var(--text-muted)] hover:text-[var(--loss-color,#ef4444)] border-0 bg-transparent p-0 cursor-pointer"
@@ -445,19 +437,11 @@ export function TradingChartLegend({ symbolTitle, timeframe, candle, quote, pric
   const changePct = openPrice ? (changeVal / openPrice) * 100 : 0;
   const isPositive = changeVal >= 0;
   const valueColor = isPositive ? 'text-[var(--bull-candle,#089981)]' : 'text-[var(--bear-candle,#f23645)]';
-  const tfBadge = useMemo(() => {
-    const raw = String(timeframe || '').trim().toLowerCase();
-    if (raw.includes('month')) return 'M';
-    if (raw.includes('week')) return 'W';
-    if (raw.includes('day')) return 'D';
-    if (raw.includes('hour')) return `${raw.replace(/\D/g, '')}H`;
-    if (raw.includes('minute')) return `${raw.replace(/\D/g, '')}m`;
-    return raw.toUpperCase();
-  }, [timeframe]);
+  const tfBadge = useMemo(() => formatShortTimeframe(timeframe), [timeframe]);
 
   return (
     <div className={`absolute top-2 left-2.5 z-10 flex items-center gap-2 text-[11px] text-[var(--text-secondary,#64748b)] pointer-events-none select-none overflow-x-auto whitespace-nowrap scrollbar-none max-w-[calc(100%-16px)] ${className}`}>
-      <span className="font-semibold text-[var(--text-primary,#0f172a)]">{symbolTitle} · {timeframe} · Cboe One</span>
+      <span className="font-semibold text-[var(--text-primary,#0f172a)]">{symbolTitle} · {formatShortTimeframe(timeframe)} · Cboe One</span>
       <span className="inline-block text-[9px] px-1 py-0.2 rounded bg-[var(--bg-secondary,#f1f5f9)] text-[var(--text-secondary,#64748b)] font-semibold">{tfBadge}</span>
       <span className="flex items-center gap-0.5">O<span className={`font-mono tabular-nums font-medium ${valueColor}`}>{openPrice ? formatPrice(openPrice, digits) : '--'}</span></span>
       <span className="flex items-center gap-0.5">H<span className={`font-mono tabular-nums font-medium ${valueColor}`}>{highPrice ? formatPrice(highPrice, digits) : '--'}</span></span>

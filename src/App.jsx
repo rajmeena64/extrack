@@ -38,6 +38,8 @@ const ThatTrade = lazy(() => import('./features/trades/components/ThatTrade/That
 const DayReview = lazy(() => import('./features/trades/components/DayReview/DayReview'));
 const BacktestingPage = lazy(() => import('./features/markets/components/Backtesting/BacktestingPage'));
 const MarketTerminal = lazy(() => import('./features/markets/components/MarketTerminal/MarketTerminal'));
+const NotFound = lazy(() => import('@/components/ui/not-found'));
+const Profile = lazy(() => import('./components/user/Profile/Profile'));
 
 const startOfLocalDay = (date) => {
   const next = new Date(date);
@@ -106,25 +108,6 @@ const deriveCachedTradesForMode = (queryClient, userId, mode) => {
   }
   return undefined;
 };
-
-function Profile() {
-  const { user, isAuthLoading } = useAuth();
-  const navigate = useNavigate();
-  if (isAuthLoading) return <div style={{ padding: '40px' }}>Loading profile...</div>;
-  return (
-    <MainContentWrapper>
-      <PageHeader title="Profile" onBack={() => navigate(-1)} />
-      {user ? (
-        <>
-          <p><strong>Name:</strong> {user.firstName} {user.lastName}</p>
-          <p><strong>Email:</strong> {user.email}</p>
-        </>
-      ) : (
-        <p>Please login</p>
-      )}
-    </MainContentWrapper>
-  );
-}
 
 const isProfileComplete = (user) => (
   user?.profileComplete === undefined || user?.profileComplete === null
@@ -197,7 +180,7 @@ function CachedMainRoutes({
     ['economic-calendar', <EconomicCalendar />],
     ['backtesting', <BacktestingPage />],
     ['chart', <MarketTerminal pageActive={activeRouteKey === 'chart'} />],
-    ['profile', <Profile />],
+    ['profile', <MainContentWrapper><Profile /></MainContentWrapper>],
     ['day-review', <DayReview trades={convertedDashboardTrades} currencyCode={dashboardCurrency} />],
     ['trade-log', <TradeLog trades={convertedTrades} currencyCode={dashboardCurrency} />],
   ];
@@ -226,7 +209,7 @@ function CachedMainRoutes({
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/day-review/:dateKey" element={<DayReview trades={convertedDashboardTrades} currencyCode={dashboardCurrency} />} />
             <Route path="/trade/:uniqueId" element={<ThatTrade currencyCode={dashboardCurrency} />} />
-            <Route path="*" element={<Navigate to="/dashboard" />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
       )}
@@ -527,7 +510,8 @@ function App() {
                 <Route path="/verify-email" element={<VerifyEmailPage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/oauth/authorize" element={<McpAuthorizePage />} />
-                <Route path="*" element={<LandingPage />} />
+                <Route path="/" element={<LandingPage />} />
+                <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
           </ThemeProvider>

@@ -29,6 +29,7 @@ import {
 } from './utils/terminalHelpers';
 
 import Chart from '../TradingChart/Chart';
+import { formatShortTimeframe } from '../TradingChart/utils/chartHelpers';
 import AddChartSymbolPicker from './components/ChartPane/AddChartSymbolPicker';
 import WatchlistPanel from './components/Watchlist/WatchlistPanel';
 import OrderPanel from './components/OrderPanel/OrderPanel';
@@ -486,7 +487,7 @@ function MarketTerminal({ pageActive = true }) {
                       <span className={`text-[11px] font-medium ${tabDirection === 'down' ? 'text-[var(--bear-candle,#f23645)]' : 'text-[var(--bull-candle,#089981)]'}`}>{tabChange}</span>
                     </span>
                   </span>
-                  <span className="text-[10px] uppercase font-bold px-1 py-0.5 rounded bg-[var(--surface-muted-strong)] text-[var(--text-secondary)]">{item.interval}</span>
+                  <span className="text-[10px] font-bold px-1 py-0.5 rounded bg-[var(--surface-muted-strong)] text-[var(--text-secondary)]">{formatShortTimeframe(item.interval)}</span>
                   {charts.length > 1 && (
                     <i
                       role="button"

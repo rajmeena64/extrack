@@ -24,6 +24,21 @@ export const TIMEFRAME_GROUPS = {
   ],
 };
 
+export const formatShortTimeframe = (tf) => {
+  if (!tf) return "";
+  const s = String(tf).trim();
+  const m = /^([1-9]\d*)\s*([a-zA-Z]+)$/.exec(s);
+  if (!m) return s;
+  const val = m[1];
+  const unit = m[2];
+  if (unit === "M" || /^(mo|month|months)$/i.test(unit)) return `${val}M`;
+  if (/^(m|min|mins|minute|minutes)$/i.test(unit)) return `${val}m`;
+  if (/^(h|hr|hrs|hour|hours)$/i.test(unit)) return `${val}h`;
+  if (/^(d|day|days)$/i.test(unit)) return `${val}d`;
+  if (/^(w|week|weeks)$/i.test(unit)) return `${val}w`;
+  return s;
+};
+
 export const TIMEFRAMES = Object.values(TIMEFRAME_GROUPS).flatMap((g) => g.map((item) => item.value));
 
 export const parseTimeframeMs = (tf) => {

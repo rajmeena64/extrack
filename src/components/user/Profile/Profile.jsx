@@ -1,10 +1,15 @@
 import { useEffect, useRef } from "react";
+import { X } from "@/icons/lucideIcons";
 import { getUserAvatar } from "../../../utils/user/userAvatar";
+import { useAuth } from "@/context/AuthContext";
 
-export default function Profile({ user, onClose }) {
+export default function Profile({ user: propUser, onClose }) {
   const profileRef = useRef(null);
+  const { user: authUser } = useAuth();
+  const user = propUser || authUser;
 
   useEffect(() => {
+    if (!onClose) return;
     const handleOutsideClick = (e) => {
       if (profileRef.current && !profileRef.current.contains(e.target)) {
         onClose();
@@ -35,9 +40,15 @@ export default function Profile({ user, onClose }) {
           <li className="py-3 px-3.5 rounded-lg text-sm cursor-pointer transition-colors duration-200 text-[#e54848] hover:bg-[#f0f2ff]">Delete Account</li>
         </ul>
       </aside>
-
       <section className="settings-content flex-1">
-        <h2 className="text-xl font-semibold mb-[18px] text-[#111]">My Profile</h2>
+        <div className="flex items-center justify-between mb-[18px]">
+          <h2 className="text-xl font-semibold m-0 text-[#111]">My Profile</h2>
+          {onClose && (
+            <button type="button" onClick={onClose} aria-label="Close profile" className="cursor-pointer p-1 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors border-0 bg-transparent shrink-0">
+              <X size={20} />
+            </button>
+          )}
+        </div>
 
         <div className="box bg-white rounded-[14px] p-[22px] mb-5 flex items-center justify-between">
           <div className="profile-left flex items-center gap-4">

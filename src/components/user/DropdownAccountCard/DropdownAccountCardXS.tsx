@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { ArrowLeft, ChevronDown, Clock, LogOut01, Moon01, Settings01, User01 } from "@untitledui/icons";
+import { ArrowLeft, Calendar as CalendarIcon, ChevronDown, Clock, CurrencyDollar as CurrencyIcon, FilterLines as FilterIcon, LogOut01, Moon01, Settings01, User01 } from "@untitledui/icons";
 import { Avatar } from "./Avatar/avatar";
 import { ToggleBase } from "@/components/ui";
 import { useTheme } from "@/context/ThemeContext";
