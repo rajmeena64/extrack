@@ -22,7 +22,7 @@ from domains.mcp.oauth import (
     verify_mcp_connection, revoke_mcp_connection, list_user_mcp_connections,
     get_active_tool_names, create_oauth_code, exchange_oauth_code,
     verify_google_access_token, generate_mcp_refresh_token, refresh_mcp_token,
-    MCP_EXPIRES_IN
+    verify_mcp_jwt, MCP_EXPIRES_IN
 )
 from domains.mcp.rate_limit import enforce_mcp_rate_limit
 from domains.mcp.clients import save_registered_client, is_trusted_redirect_uri, get_client_name
@@ -110,7 +110,7 @@ def _extract_token_and_user_id(request: Request) -> tuple[str, int]:
             headers={"WWW-Authenticate": f'Bearer resource_metadata="{base}/.well-known/oauth-protected-resource"'}
         )
     try:
-        payload = verify_access_token(token)
+        payload = verify_mcp_jwt(token)
         if payload.get("purpose") != "mcp":
             raise HTTPException(status_code=401, detail=ERROR_MESSAGES["MCP"]["INVALID_TOKEN"]["message"])
         uid = payload.get("sub")
@@ -123,6 +123,7 @@ def _extract_token_and_user_id(request: Request) -> tuple[str, int]:
         raise HTTPException(status_code=401, detail=ERROR_MESSAGES["MCP"]["INVALID_TOKEN"]["message"])
 
 @mcp_router.get("/.well-known/oauth-authorization-server")
+@mcp_router.get("/.well-known/openid-configuration")
 async def oauth_auth_server(request: Request):
     base = _get_base_url(request)
     return {
@@ -133,7 +134,8 @@ async def oauth_auth_server(request: Request):
         "response_types_supported": ["code"],
         "grant_types_supported": ["authorization_code", "refresh_token"],
         "token_endpoint_auth_methods_supported": ["client_secret_post", "client_secret_basic", "none"],
-        "code_challenge_methods_supported": ["S256"]
+        "code_challenge_methods_supported": ["S256"],
+        "scopes_supported": ["mcp", "offline_access"]
     }
 
 @mcp_router.get("/.well-known/oauth-protected-resource")
@@ -142,7 +144,8 @@ async def oauth_protected_resource(request: Request):
     base = _get_base_url(request)
     return {
         "resource": f"{base}/mcp",
-        "authorization_servers": [base]
+        "authorization_servers": [base],
+        "scopes_supported": ["mcp"]
     }
 
 @mcp_router.post("/register", status_code=201)
@@ -260,7 +263,8 @@ async def oauth_token_endpoint(request: Request, conn: asyncpg.Connection = Depe
     if grant_type == "refresh_token":
         raw_ref = str(data["refresh_token"]) if data.get("refresh_token") is not None else ""
         try:
-            return await refresh_mcp_token(conn, raw_ref)
+            base = _get_base_url(request)
+            return await refresh_mcp_token(conn, raw_ref, issuer=base, audience=f"{base}/mcp")
         except AppError as e:
             raise HTTPException(status_code=400, detail=str(e))
 
@@ -271,7 +275,8 @@ async def oauth_token_endpoint(request: Request, conn: asyncpg.Connection = Depe
     user_id = await exchange_oauth_code(code, client_id, redirect_uri, verifier)
     if not user_id:
         raise HTTPException(status_code=400, detail=ERROR_MESSAGES["MCP"]["INVALID_CODE"]["message"])
-    token = sign_mcp_token(user_id)
+    base = _get_base_url(request)
+    token = sign_mcp_token(user_id, issuer=base, audience=f"{base}/mcp")
     ref_token = generate_mcp_refresh_token()
     c_name = await get_client_name(client_id)
     await save_mcp_connection(conn, user_id, token, client_name=c_name, refresh_token=ref_token)
@@ -279,7 +284,8 @@ async def oauth_token_endpoint(request: Request, conn: asyncpg.Connection = Depe
         "access_token": token,
         "refresh_token": ref_token,
         "token_type": "Bearer",
-        "expires_in": MCP_EXPIRES_IN
+        "expires_in": MCP_EXPIRES_IN,
+        "scope": str(data.get("scope") or "mcp")
     }
 
 
@@ -290,9 +296,9 @@ async def mcp_google_auth(payload: GoogleAuthPayload, conn: asyncpg.Connection =
 @mcp_router.get("/mcp/auth/connect-link")
 async def mcp_connect_link(request: Request, user_id: Any = Depends(get_current_user_id), conn: asyncpg.Connection = Depends(get_db)):
     uid = int(user_id)
-    token = sign_mcp_token(uid)
-    await save_mcp_connection(conn, uid, token, client_name="Web AI Link")
     base = _get_base_url(request)
+    token = sign_mcp_token(uid, issuer=base, audience=f"{base}/mcp")
+    await save_mcp_connection(conn, uid, token, client_name="Web AI Link")
     return {
         "success": True,
         "token": token,

@@ -21,7 +21,7 @@ MCP_EXPIRES_IN = MCP_ACCESS_DAYS * 86400
 def hash_token(token: str) -> str:
     return hashlib.sha256(str(token).encode("utf-8")).hexdigest()
 
-def sign_mcp_token(user_id: Any, days: int = MCP_ACCESS_DAYS) -> str:
+def sign_mcp_token(user_id: Any, days: int = MCP_ACCESS_DAYS, issuer: str | None = None, audience: str | None = None) -> str:
     if not ACCESS_SECRET:
         raise AppError(ERROR_MESSAGES["SERVER"]["CONFIG_ERROR"])
     payload = {
@@ -29,11 +29,17 @@ def sign_mcp_token(user_id: Any, days: int = MCP_ACCESS_DAYS) -> str:
         "userId": user_id,
         "typ": "access",
         "purpose": "mcp",
-        "iss": ISSUER,
-        "aud": AUDIENCE,
+        "iss": issuer or os.getenv("MCP_ISSUER") or "https://api.entrack.in",
+        "aud": audience or os.getenv("MCP_AUDIENCE") or "https://api.entrack.in/mcp",
         "exp": datetime.now(timezone.utc) + timedelta(days=days),
     }
     return jwt.encode(payload, ACCESS_SECRET, algorithm="HS256")
+
+def verify_mcp_jwt(token: str) -> dict[str, Any]:
+    if not ACCESS_SECRET:
+        raise AppError(ERROR_MESSAGES["SERVER"]["CONFIG_ERROR"])
+    return jwt.decode(token, ACCESS_SECRET, algorithms=["HS256"], options={"verify_exp": True, "verify_signature": True, "verify_aud": False, "verify_iss": False})
+
 
 def generate_mcp_refresh_token() -> str:
     return f"mcp_ref_{secrets.token_urlsafe(32)}"
@@ -51,7 +57,7 @@ async def save_mcp_connection(conn: asyncpg.Connection, user_id: int, token: str
     row = await conn.fetchrow(sql, user_id, client_name, h, ref_h, exp, ref_exp)
     return dict(row) if row else {}
 
-async def refresh_mcp_token(conn: asyncpg.Connection, raw_refresh_token: str) -> dict[str, Any]:
+async def refresh_mcp_token(conn: asyncpg.Connection, raw_refresh_token: str, issuer: str | None = None, audience: str | None = None) -> dict[str, Any]:
     if not raw_refresh_token:
         raise AppError(ERROR_MESSAGES["MCP"]["INVALID_TOKEN"])
     ref_h = hash_token(raw_refresh_token)
@@ -61,7 +67,7 @@ async def refresh_mcp_token(conn: asyncpg.Connection, raw_refresh_token: str) ->
         raise AppError(ERROR_MESSAGES["MCP"]["CONNECTION_NOT_FOUND"])
     if row["refresh_expires_at"] and row["refresh_expires_at"] <= datetime.now(timezone.utc):
         raise AppError(ERROR_MESSAGES["MCP"]["CONNECTION_EXPIRED"])
-    new_access_token = sign_mcp_token(row["user_id"])
+    new_access_token = sign_mcp_token(row["user_id"], issuer=issuer, audience=audience)
     new_refresh_token = generate_mcp_refresh_token()
     new_exp = datetime.now(timezone.utc) + timedelta(days=MCP_ACCESS_DAYS)
     new_ref_exp = datetime.now(timezone.utc) + timedelta(days=MCP_REFRESH_DAYS)
