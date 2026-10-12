@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const pool = require('../../infra/db/database');
+const pool = require('../../infra/db/supabase');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { createRateLimiter } = require('../../core/rateLimiter/index');
@@ -84,7 +84,7 @@ const queueLoginNotification = ({ user, req, method = 'password' }) => {
         email,
         name,
         method,
-        ipAddress: req.ip || req.socket?.remoteAddress || null,
+        ipAddress: req.ip || null,
         userAgent: String(req.headers['user-agent'] || '').slice(0, 512),
         loginTime: new Date(),
     }).catch((error) => {
@@ -93,63 +93,6 @@ const queueLoginNotification = ({ user, req, method = 'password' }) => {
 };
 
 const ADMIN_ACCOUNT_TYPES = new Set(['admin', 'superadmin']);
-const loginRateLimiter = createRateLimiter({
-    windowMs: process.env.LOGIN_RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000,
-    max: process.env.LOGIN_RATE_LIMIT_MAX || 10,
-    keyGenerator: (req) => {
-        const identifier = String(req.body?.email || req.body?.phone || '').trim().toLowerCase();
-        return `${req.ip}:${identifier || 'unknown'}`;
-    },
-    message: 'Too many login attempts. Please try again later.',
-});
-
-const refreshRateLimiter = createRateLimiter({
-    windowMs: process.env.REFRESH_RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000,
-    max: process.env.REFRESH_RATE_LIMIT_MAX || 30,
-    keyGenerator: (req) => req.ip,
-    message: 'Too many refresh attempts. Please try again later.',
-});
-
-// Helper function to generate tokens
-const generateTokens = async (userId) => {
-    // Access Token (15 minutes)
-    const accessToken = jwt.sign(
-        { userId: userId },
-        JWT_ACCESS_SECRET,
-        { expiresIn: '15m' }
-    );
-
-    // Refresh Token (30 days)
-    const refreshToken = jwt.sign(
-        { userId: userId },
-        JWT_REFRESH_SECRET,
-        { expiresIn: '30d' }
-    );
-    const refreshTokenHash = hashToken(refreshToken);
-
-    // Calculate expiry (30 days from now)
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 30);
-
-
-        // 🔥 1. Purana token delete
-    await pool.query(
-        `DELETE FROM ${TABLES.refreshTokens} WHERE user_id = $1`,
-        [userId]
-    );
-
-
-    // Save refresh token to database
-    logAuthTableUse('refresh_token_save', TABLES.refreshTokens);
-
-    await pool.query(
-        `INSERT INTO ${TABLES.refreshTokens} (user_id, token, expires_at) 
-         VALUES ($1, $2, $3)`,
-        [userId, refreshTokenHash, expiresAt]
-    );
-
-    return { accessToken, refreshToken, expiresAt };
-};
 
 // AUTH CHECK MIDDLEWARE
 const AUTH_USER_CACHE_TTL_MS = Number(process.env.AUTH_USER_CACHE_TTL_MS || 30000);
@@ -251,264 +194,7 @@ async function ensureActiveUser(userId) {
     }
 };
 
-// REGISTER
-router.post('/register', async (req, res) => {
-    const unexpectedFieldError = rejectUnexpectedFields(req.body, [
-        'firstName',
-        'lastName',
-        'email',
-        'phone',
-        'password',
-        'preferred_currency',
-    ]);
-    if (unexpectedFieldError) {
-        return res.status(400).json({ success: false, error: unexpectedFieldError });
-    }
 
-    const firstName = trimString(req.body.firstName, { max: 80, required: true });
-    const lastName = trimString(req.body.lastName, { max: 80 });
-    const email = trimString(req.body.email, { max: 254 });
-    const phone = trimString(req.body.phone, { max: 32 });
-    const password = trimString(req.body.password, { max: 200, required: true });
-    const preferred_currency = currencyCode(req.body.preferred_currency) || 'USD';
-
-    if (!firstName || !password || password.length < 6 || (!email && !phone)) {
-        return res.status(400).json({ success: false, error: 'Invalid registration details' });
-    }
-
-
-    try {
-        const saltRounds = 10;
-        const hashedPassword = await bcrypt.hash(password, saltRounds);
-
-        const result = await pool.query(
-            `INSERT INTO ${TABLES.users} (
-                first_name, last_name, email, phone,
-                password, preferred_currency, is_deleted
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING ${USER_SELECT}`,
-            [firstName, lastName, email, phone, hashedPassword, preferred_currency, false]
-        );
-
-        const newUser = result.rows[0];
-        
-        // Generate both tokens
-        const { accessToken, refreshToken, expiresAt } = await generateTokens(newUser.ID);
-
-        // Set refresh token in cookie
-        res.cookie('refreshToken', refreshToken, COOKIE_OPTIONS);
-        res.cookie('accessToken', accessToken, ACCESS_COOKIE_OPTIONS);
-
-        queueLoginNotification({ user: newUser, req, method: 'password' });
-
-        res.json({
-            success: true,
-            message: 'User registered successfully!',
-            refreshExpiresAt: expiresAt,
-            user: {
-                ID: newUser.ID,
-                firstName: newUser.firstName,
-                lastName: newUser.lastName,
-                email: newUser.email,
-                phone: newUser.phone,
-                preferred_currency: newUser.preferred_currency || 'USD'
-            }
-        });
-
-    } catch (error) {
-        const isDuplicate = error.code === '23505';
-        if (!isDuplicate) logInternalError(req, error, 'auth.legacy_register_failed');
-        return publicError(res, {
-            status: isDuplicate ? 409 : 500,
-            code: isDuplicate ? 'VALIDATION_FAILED' : 'INTERNAL_ERROR',
-            message: isDuplicate ? 'Please check the details and try again.' : undefined,
-            req,
-        });
-    }
-});
-
-// LOGIN
-router.post('/login', loginRateLimiter, async (req, res) => {
-    const { email, phone, password } = req.body;
-
-    logAuthTableUse('login_user_lookup', TABLES.users);
-
-    try {
-        let query = '';
-        let values = [];
-
-        if (email && email.trim() !== '') {
-            query = `SELECT ${USER_SELECT} FROM ${TABLES.users} WHERE email = $1 AND is_deleted = false`;
-            values = [email];
-        } else if (phone && phone.trim() !== '') {
-            query = `SELECT ${USER_SELECT} FROM ${TABLES.users} WHERE phone = $1 AND is_deleted = false`;
-            values = [phone];
-        } else {
-            return res.status(400).json({ 
-                success: false, 
-                error: "Please enter email or phone" 
-            });
-        }
-
-        const result = await pool.query(query, values);
-
-        if (result.rows.length === 0) {
-            return res.status(401).json({ 
-                success: false, 
-                error: "Invalid credentials." 
-            });
-        }
-
-        const user = result.rows[0];
-        const passwordMatch = await bcrypt.compare(password, user.password);
-        
-        if (!passwordMatch) {
-            return res.status(401).json({ 
-                success: false, 
-                error: "Invalid credentials." 
-            });
-        }
-
-        // Generate both tokens
-        const { accessToken, refreshToken, expiresAt } = await generateTokens(user.ID);
-
-        // Set refresh token in cookie
-        res.cookie('refreshToken', refreshToken, COOKIE_OPTIONS);
-        res.cookie('accessToken', accessToken, ACCESS_COOKIE_OPTIONS);
-
-        queueLoginNotification({ user, req, method: 'password' });
-        
-        res.json({ 
-            success: true,
-            refreshExpiresAt: expiresAt,
-            user: {
-                ID: user.ID,
-                firstName: user.firstName,
-                lastName: user.lastName,
-                email: user.email,
-                phone: user.phone,
-                accountType: user.accountType || 'manual',
-                preferred_currency: user.preferred_currency || 'USD'
-            }
-        });
-
-    } catch (error) {
-        logInternalError(req, error, 'auth.legacy_login_failed');
-        return publicError(res, { status: 500, code: 'INTERNAL_ERROR', req });
-    }
-});
-
-// Refresh token endpoint
-router.post('/refresh-token', refreshRateLimiter, async (req, res) => {
-    const refreshToken = req.cookies?.refreshToken;
-
-    try {
-        if (!refreshToken) {
-            return res.status(401).json({ 
-                success: false, 
-                error: 'Session expired. Please sign in again.',
-                logout: true 
-            });
-        }
-
-        // Verify refresh token
-        const decoded = jwt.verify(refreshToken, JWT_REFRESH_SECRET);
-        const refreshTokenHash = hashToken(refreshToken);
-
-        // Check database
-        logAuthTableUse('refresh_token_read', TABLES.refreshTokens);
-
-        const tokenResult = await pool.query(
-            `SELECT * FROM ${TABLES.refreshTokens} 
-             WHERE token = $1 AND user_id = $2 AND expires_at > NOW()`,
-            [refreshTokenHash, decoded.userId]
-        );
-
-        if (tokenResult.rows.length === 0) {
-            await pool.query(`DELETE FROM ${TABLES.refreshTokens} WHERE user_id = $1`, [decoded.userId]);
-            return res.status(401).json({ 
-                success: false, 
-                error: 'Session expired. Please sign in again.',
-                logout: true 
-            });
-        }
-
-        // Delete old token
-        await pool.query(
-            `DELETE FROM ${TABLES.refreshTokens} WHERE token = $1`,
-            [refreshTokenHash]
-        );
-
-        // Generate NEW tokens (30 days reset)
-        const { accessToken, refreshToken: newRefreshToken, expiresAt } = 
-            await generateTokens(decoded.userId);
-
-        // Set new cookie
-        res.cookie('refreshToken', newRefreshToken, COOKIE_OPTIONS);
-        res.cookie('accessToken', accessToken, ACCESS_COOKIE_OPTIONS);
-
-
-        res.json({
-            success: true,
-            refreshExpiresAt: expiresAt
-        });
-
-    } catch (error) {
-        
-        if (error.name === 'TokenExpiredError') {
-            // Delete expired token from database
-            try {
-                const decoded = jwt.decode(refreshToken);
-                if (decoded?.userId) {
-                    await pool.query(
-                        `DELETE FROM ${TABLES.refreshTokens} WHERE user_id = $1`,
-                        [decoded.userId]
-                    );
-                }
-            } catch (_cleanupError) {}
-        }
-        
-        return res.status(401).json({ 
-            success: false, 
-            error: 'Session expired. Please sign in again.',
-            logout: true 
-        });
-    }
-});
-
-
-
-// Logout endpoint
-router.post('/logout', async (req, res) => {
-    try {
-        const refreshToken = req.cookies?.refreshToken;
-
-        // If a token exists, delete it from the database
-        if (refreshToken) {
-            await pool.query(
-                `DELETE FROM ${TABLES.refreshTokens} WHERE token = $1`,
-                [hashToken(refreshToken)]
-            );
-        }
-
-        // 🍪 Clear cookie (IMPORTANT)
-        clearAuthCookies(res);
-
-
-        return res.json({
-            success: true,
-            logout: true,   // 🔥 IMPORTANT for frontend detection
-            message: 'Logged out successfully'
-        });
-
-    } catch (error) {
-
-        return res.status(500).json({
-            success: false,
-            logout: true,
-            error: 'Logout failed but session cleared'
-        });
-    }
-});
 
 
 
@@ -649,44 +335,7 @@ router.post('/update-profile', authCheck, async (req, res) => {
     }
 });
 
-// GET USER PROFILE
-router.get('/user-profile', authCheck, async (req, res) => {
-    const userId = req.userId;
 
-
-    try {
-        const result = await pool.query(
-            `SELECT ${USER_SELECT}
-             FROM ${TABLES.users} 
-             WHERE id = $1 AND is_deleted = false`,
-            [userId]
-        );
-
-        if (result.rows.length === 0) {
-            return res.status(404).json({ success: false, error: 'User not found' });
-        }
-
-        const user = result.rows[0];
-        
-        res.json({
-            success: true,
-            user: {
-                ID: user.ID,
-                firstName: user.firstName,
-                lastName: user.lastName,
-                email: user.email,
-                phone: user.phone,
-                accountType: user.accountType || 'manual',
-                preferred_currency: user.preferred_currency || 'USD',
-                createdAt: user.createdAt || user.created_at || null
-            }
-        });
-
-    } catch (error) {
-        logInternalError(req, error, 'auth.legacy_profile_load_failed');
-        return publicError(res, { status: 500, code: 'INTERNAL_ERROR', req });
-    }
-});
 
 router.get('/ws-token', authCheck, (req, res) => {
     const token = jwt.sign(
@@ -704,48 +353,7 @@ router.get('/ws-token', authCheck, (req, res) => {
     });
 });
 
-// UPDATE CURRENCY
-router.post('/update-currency', authCheck, async (req, res) => {
-    const currency = currencyCode(req.body.currency, { required: true });
-    const userId = req.userId;
 
-
-    if (!currency) {
-        return res.status(400).json({ success: false, error: 'Valid currency required' });
-    }
-
-    try {
-        const result = await pool.query(
-            `UPDATE ${TABLES.users} 
-             SET preferred_currency = $1 
-             WHERE id = $2 AND is_deleted = false 
-             RETURNING ${USER_SELECT}`,
-            [currency, userId]
-        );
-
-        if (result.rows.length === 0) {
-            return res.status(404).json({ success: false, error: 'User not found' });
-        }
-
-        const updatedUser = result.rows[0];
-        
-        res.json({
-            success: true,
-            message: 'Currency preference updated!',
-            user: {
-                ID: updatedUser.ID,
-                firstName: updatedUser.firstName,
-                lastName: updatedUser.lastName,
-                email: updatedUser.email,
-                preferred_currency: updatedUser.preferred_currency
-            }
-        });
-
-    } catch (error) {
-        logInternalError(req, error, 'auth.legacy_currency_update_failed');
-        return publicError(res, { status: 500, code: 'INTERNAL_ERROR', req });
-    }
-});
 
 // DELETE USER ACCOUNT
 router.delete('/delete-account', authCheck, async (req, res) => {
@@ -809,51 +417,7 @@ router.delete('/delete-account', authCheck, async (req, res) => {
     }
 });
 
-// ADMIN RESTORE
-router.post('/admin/restore-user/:userId', authCheck, async (req, res) => {
-    const { userId } = req.params;
-    const adminSecret = req.headers['x-admin-secret'];
-    const expectedAdminSecret = process.env.ADMIN_SECRET;
 
-    if (!expectedAdminSecret) {
-        return res.status(503).json({ error: 'Admin restore is not configured' });
-    }
-
-    if (!secretsMatch(adminSecret, expectedAdminSecret)) {
-        return res.status(403).json({ error: 'Admin access only' });
-    }
-    
-    try {
-        const adminUserResult = await pool.query(
-            `SELECT id AS "ID", account_type AS "accountType", is_deleted AS "isDeleted"
-             FROM ${TABLES.users}
-             WHERE id = $1`,
-            [req.userId]
-        );
-
-        if (adminUserResult.rows.length === 0 || adminUserResult.rows[0].isDeleted) {
-            return res.status(403).json({ error: 'Admin account not found' });
-        }
-
-        const adminAccountType = String(adminUserResult.rows[0].accountType || '').toLowerCase();
-        if (!ADMIN_ACCOUNT_TYPES.has(adminAccountType)) {
-            return res.status(403).json({ error: 'Admin role required' });
-        }
-
-        await pool.query(
-            `UPDATE ${TABLES.users} SET is_deleted = false, status = 'active' WHERE id = $1`,
-            [userId]
-        );
-        
-        res.json({ 
-            success: true, 
-            message: 'User account restored' 
-        });
-    } catch (error) {
-        logInternalError(req, error, 'auth.legacy_admin_restore_failed');
-        return publicError(res, { status: 500, code: 'INTERNAL_ERROR', req });
-    }
-});
 
 module.exports = router;
 module.exports.authCheck = authCheck; 

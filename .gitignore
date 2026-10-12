@@ -37,3 +37,10 @@ backend/server/.env.*
 .codex/
 CLAUDE.md
 GEMINI.md
+
+# Test & Debug Artifacts
+.playwright-cli/
+playwright-report/
+test-results/
+reproduction-screenshots/
+

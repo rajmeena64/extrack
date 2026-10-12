@@ -14,3 +14,18 @@ Manual smoke test order:
 All routes are admin-only through `authCheck` and `requireCtraderAdmin`.
 The module intentionally exposes read-only data and subscription state only.
 Trade execution, order modification, position closing, and cancel actions are not implemented.
+
+## User account OAuth
+
+The user-facing connection uses separate credentials and never shares the admin/feed token state:
+
+```env
+CTRADER_OAUTH_CLIENT_ID=
+CTRADER_OAUTH_CLIENT_SECRET=
+CTRADER_OAUTH_CALLBACK_URL=https://api.example.com/api/broker-connections/ctrader/callback
+USER_BROKER_CREDENTIALS_KEY=
+```
+
+`USER_BROKER_CREDENTIALS_KEY` must be a secret of at least 32 characters. Register the exact callback URL in the cTrader Open API application. Apply `20260801_ctrader_user_oauth.sql` before enabling the Connect cTrader button.
+
+The existing admin/feed cTrader connection uses its own `CTRADER_ADMIN_CREDENTIALS_KEY`.

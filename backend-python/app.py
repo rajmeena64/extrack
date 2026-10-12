@@ -1,4 +1,4 @@
-import os, json
+import os, json, asyncio
 from dotenv import load_dotenv
 load_dotenv()
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
@@ -22,7 +22,7 @@ from contextlib import asynccontextmanager
 from infra.db.postgres import init_db, close_db
 from infra.db.redis import get_redis, close_redis
 from infra.db.tinybird import close_tinybird
-from domains.instruments.registry import refresh_instrument_cache
+from domains.instruments.registry import refresh_instrument_cache, run_catalog_listener
 from core.finance.currency import refresh_fx_cache
 from domains.brokers.service import cleanup_expired_connections
 from integrations.brokers.connectors.ctrader.connector import ctrader_live_sync
@@ -35,9 +35,10 @@ if furl and furl not in origins_list:
     origins_list.append(furl)
 AI_ORIGINS_REGEX = r"^https://.*(claude\.ai|anthropic\.com|chatgpt\.com|openai\.com|gemini\.google\.com|perplexity\.ai)$"
 
-import asyncio
+from domains.notifications.service import hydrate_memory_alerts
 from domains.notifications.worker import run_alerts_worker
 from core.finance.fx_worker import run_fx_worker
+from domains.settings.chart_drawings import run_chart_drawings_worker, flush_pending_chart_drawings
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -48,12 +49,19 @@ async def lifespan(app: FastAPI):
     get_redis()
     await refresh_instrument_cache()
     await refresh_fx_cache()
+    await hydrate_memory_alerts()
+    ws_manager.ensure_loops()
     worker_task = asyncio.create_task(run_alerts_worker())
     fx_worker_task = asyncio.create_task(run_fx_worker())
+    drawings_task = asyncio.create_task(run_chart_drawings_worker())
     live_task = asyncio.create_task(ctrader_live_sync.start())
+    catalog_task = asyncio.create_task(run_catalog_listener())
     yield
+    catalog_task.cancel()
     await ctrader_live_sync.stop()
     live_task.cancel()
+    drawings_task.cancel()
+    await flush_pending_chart_drawings()
     fx_worker_task.cancel()
     worker_task.cancel()
     await close_db()

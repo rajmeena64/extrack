@@ -61,23 +61,59 @@ function normalizeSymbol(value) {
   return String(value || '').replace(/[^a-z0-9]/gi, '').toUpperCase();
 }
 
+const binanceLatestPrices = new Map();
+
 function broadcastTickToClients(tick) {
   if (!tick || !tick.symbolName) return;
   const rawSymbol = normalizeSymbol(tick.symbolName);
-
-  const payload = JSON.stringify({
-    type: 'MARKET_TICK',
-    tick: {
-      ...tick,
-      symbolName: tick.symbolName,
-    },
-  });
-
+  const payload = JSON.stringify({ type: 'MARKET_TICK', tick: { ...tick, symbolName: tick.symbolName } });
   for (const client of wss.clients) {
     if (client.readyState !== WebSocket.OPEN) continue;
-    if (client.subscribedSymbols && client.subscribedSymbols.has(rawSymbol)) {
+    if (!client.subscribedSymbols || client.subscribedSymbols.size === 0 || client.subscribedSymbols.has(rawSymbol) || client.subscribedSymbols.has('*')) {
       client.send(payload);
     }
+  }
+}
+
+function startBinanceStreams() {
+  const streams = [
+    { name: 'futures', url: 'wss://fstream.binance.com/ws/!miniTicker@arr' },
+    { name: 'spot', url: 'wss://stream.binance.com:9443/ws/!miniTicker@arr' }
+  ];
+  for (const s of streams) {
+    const connect = () => {
+      try {
+        const ws = new WebSocket(s.url);
+        ws.on('message', (data) => {
+          try {
+            const arr = JSON.parse(data.toString('utf8'));
+            if (Array.isArray(arr)) {
+              for (const item of arr) {
+                if (item.s && item.c) {
+                  const p = Number(item.c);
+                  if (p > 0) {
+                    binanceLatestPrices.set(item.s, { symbol: item.s, price: item.c });
+                    broadcastTickToClients({
+                      symbolName: item.s,
+                      price: p,
+                      last: p,
+                      bid: p,
+                      ask: p,
+                      timestamp: Math.floor(Number(item.E || Date.now()) / 1000)
+                    });
+                  }
+                }
+              }
+            }
+          } catch (_) {}
+        });
+        ws.on('error', () => { try { ws.close(); } catch (_) {} });
+        ws.on('close', () => { setTimeout(connect, 3000); });
+      } catch (_) {
+        setTimeout(connect, 5000);
+      }
+    };
+    connect();
   }
 }
 
@@ -511,6 +547,12 @@ app.get('/internal/quote', requireInternalKey, (req, res) => {
 
 app.get('/internal/binance/price', requireInternalKey, async (req, res) => {
   const symbol = req.query.symbol;
+  if (symbol) {
+    const cached = binanceLatestPrices.get(String(symbol).toUpperCase());
+    if (cached) return res.json({ success: true, data: cached });
+  } else if (binanceLatestPrices.size > 0) {
+    return res.json({ success: true, data: Array.from(binanceLatestPrices.values()) });
+  }
   try {
     const url = symbol ? `https://fapi.binance.com/fapi/v1/ticker/price?symbol=${encodeURIComponent(String(symbol).toUpperCase())}` : 'https://fapi.binance.com/fapi/v1/ticker/price';
     const r = await fetch(url);
@@ -642,6 +684,7 @@ server.listen(PORT, HOST, async () => {
   logger.info('SERVER', `ctrader-feed-service HTTP/WS listening on http://${HOST}:${PORT}`);
   startTelegramMonitor({ startedAt: SERVICE_STARTED_AT });
   startProactiveTokenRefresh();
+  startBinanceStreams();
   try {
     await startFeed();
   } catch (error) {

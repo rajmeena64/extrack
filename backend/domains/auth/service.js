@@ -91,14 +91,14 @@ async function issueSession(pool, res, userId, req) {
   logAuthTableUse('refresh_token_save', TABLES.refreshTokens);
 
   await pool.query(
-    `INSERT INTO ${TABLES.refreshTokens} (user_id, token_hash, token, expires_at, user_agent, ip_address)
-     VALUES ($1, $2, $2, $3, $4, $5)`,
+    `INSERT INTO ${TABLES.refreshTokens} (user_id, token_hash, expires_at, user_agent, ip_address)
+     VALUES ($1, $2, $3, $4, $5)`,
     [
       userId,
       refreshTokenHash,
       expiresAt,
       String(req.headers['user-agent'] || '').slice(0, 512),
-      req.ip || req.socket?.remoteAddress || null,
+      req.ip || null,
     ]
   );
 

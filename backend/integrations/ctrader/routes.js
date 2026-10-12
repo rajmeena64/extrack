@@ -1,21 +1,24 @@
 const { authCheck } = require('../../domains/auth/controller');
 const { createRateLimiter } = require('../../core/rateLimiter/index');
-const feedClient = require('./feed.client');
-const { getInstrumentBySymbol } = require('../../instruments/instrumentRegistry');
-const { connectionState, ctraderConfig, tokenState } = require('./state');
-const { requireCtraderAdmin } = require('./admin.middleware');
+const restClient = require('../datafeed/providers/entrackmicro');
+const feedClient = restClient;
+const { getInstrumentBySymbol, getAllInstruments } = require('../../instruments/instrumentRegistry');
+const { isCryptoSymbol, fetchBinanceMarketKlines } = require('../datafeed/providers/binance');
+const datafeed = require('../datafeed/datafeed');
+const { connectionState, ctraderConfig, tokenState } = require('./config/state');
+const { requireCtraderAdmin } = require('./middleware/admin.middleware');
 
 const ctraderKlineRateLimiter = createRateLimiter({
   windowMs: 60 * 1000,
   max: Number(process.env.CTRADER_KLINE_RATE_LIMIT_MAX || 60),
-  keyGenerator: (req) => req.userId || req.ip,
+  keyGenerator: (req) => req.ip,
   message: 'Too many cTrader kline requests. Please try again shortly.',
 });
 
 const ctraderDataRateLimiter = createRateLimiter({
   windowMs: 60 * 1000,
   max: Number(process.env.CTRADER_DATA_RATE_LIMIT_MAX || 120),
-  keyGenerator: (req) => req.userId || req.ip,
+  keyGenerator: (req) => req.ip,
   message: 'Too many cTrader data requests. Please try again shortly.',
 });
 
@@ -83,8 +86,14 @@ async function requireAllowedSymbolList(symbols = []) {
     throw error;
   }
 
-  const instruments = await Promise.all(unique.map((symbol) => requireAllowedInstrument(symbol)));
-  return instruments.map((instrument) => instrument.requestSymbol || instrument.symbol);
+  const instruments = await Promise.all(unique.map(async (symbol) => {
+    try {
+      return await requireAllowedInstrument(symbol);
+    } catch {
+      return { symbol, requestSymbol: symbol };
+    }
+  }));
+  return instruments.map((instrument) => instrument.requestSymbol);
 }
 
 function publicDepth(depth) {
@@ -158,7 +167,7 @@ async function subscribeChartConsumer(service, chartId, symbolName) {
 
   return {
     symbol: match,
-    source: 'ctrader-feed-service',
+    source: 'entrack-feed-service',
     preSubscribed: true,
     subscriptions: getChartSubscriptionSnapshot(),
   };
@@ -180,7 +189,60 @@ function getTokenStatus() {
   };
 }
 
-function registerCtraderRoutes(app, service) {
+
+const socketClient = require('./direct/socket.client');
+
+// Shared in-memory candle RAM cache & single-flight coalescing
+const backendCandleCache = new Map();
+const inFlightCandleRequests = new Map();
+const LIVE_CANDLE_CACHE_TTL_MS = 10 * 1000; // 10s for latest live forming candles
+const HISTORICAL_CANDLE_CACHE_TTL_MS = 5 * 60 * 1000; // 5m for past historical chunks
+const MAX_BACKEND_CACHE_ENTRIES = 500;
+
+async function getDynamicWarmupSymbols() {
+  try {
+    const dbInstruments = await instrumentRepository.list({ activeOnly: true, limit: 60 });
+    if (Array.isArray(dbInstruments) && dbInstruments.length > 0) {
+      return dbInstruments
+        .map((inst) => inst.sourceSymbol)
+        .filter(Boolean);
+    }
+  } catch {
+    // Database busy or offline
+  }
+
+  try {
+    const registryInstruments = await getAllInstruments();
+    if (Array.isArray(registryInstruments) && registryInstruments.length > 0) {
+      return registryInstruments
+        .slice(0, 60)
+        .map((inst) => inst.sourceSymbol)
+        .filter(Boolean);
+    }
+  } catch {
+    // Registry offline
+  }
+
+  return [];
+}
+
+function pruneBackendCandleCache() {
+  if (backendCandleCache.size <= MAX_BACKEND_CACHE_ENTRIES) return;
+  const now = Date.now();
+  for (const [k, v] of backendCandleCache.entries()) {
+    if (now >= v.expiresAt) {
+      backendCandleCache.delete(k);
+    }
+  }
+  if (backendCandleCache.size > MAX_BACKEND_CACHE_ENTRIES) {
+    const keys = Array.from(backendCandleCache.keys());
+    for (let i = 0; i < Math.floor(keys.length * 0.2); i++) {
+      backendCandleCache.delete(keys[i]);
+    }
+  }
+}
+
+function registerCtraderRoutes(app, service = socketClient) {
   app.get('/api/start-ctrader', ...adminOnly, async (req, res) => {
     try {
       if (!ctraderConfig.clientId || !ctraderConfig.clientSecret || !ctraderConfig.accessToken) {
@@ -196,7 +258,6 @@ function registerCtraderRoutes(app, service) {
 
       return res.json({
         success: true,
-        // TODO: Switch this to POST after frontend callers are updated.
         message: 'cTrader started',
         accountId: ctraderConfig.accountId,
       });
@@ -207,7 +268,6 @@ function registerCtraderRoutes(app, service) {
 
   app.get('/api/ctrader-status', ...adminOnly, (req, res) => {
     res.json({
-      success: true,
       connected: connectionState.ws && connectionState.ws.readyState === connectionState.ws.OPEN,
       accountId: ctraderConfig.accountId,
       isDemo: ctraderConfig.isDemo,
@@ -241,9 +301,11 @@ function registerCtraderRoutes(app, service) {
     }
   });
 
-  app.get('/api/ctrader-cache', ...adminOnly, (req, res) => {
+  app.get('/api/ctrader-cache', authCheck, (req, res) => {
     res.json({
       success: true,
+      candleCacheSize: backendCandleCache.size,
+      cachedCandleKeys: Array.from(backendCandleCache.keys()),
       symbols: Array.from(ctraderConfig.symbols.values()),
       latestTicks: Array.from(ctraderConfig.latestTicks.values()),
       latestDepth: Array.from(ctraderConfig.latestDepth.values()).map(publicDepth),
@@ -255,18 +317,18 @@ function registerCtraderRoutes(app, service) {
     });
   });
 
-  app.get('/api/ctrader-latest-tick', ...adminOnly, marketFeedRoute(async (req, res) => {
+  app.get('/api/ctrader-latest-tick', authCheck, marketFeedRoute(async (req, res) => {
     const instrument = await requireAllowedInstrument(req.query.symbol);
-    const feedResponse = await feedClient.getQuote(instrument.requestSymbol || instrument.symbol);
+    const feedResponse = await feedClient.getQuote(instrument.requestSymbol);
     res.json({
       success: true,
       tick: feedResponse.quote || null,
-      source: 'ctrader-feed-service',
+      source: 'entrack-feed-service',
       feedConnected: feedResponse.connected === true,
     });
   }));
 
-  app.get('/api/ctrader-latest-depth', ...adminOnly, asyncRoute(async (req, res) => {
+  app.get('/api/ctrader-latest-depth', authCheck, asyncRoute(async (req, res) => {
     await service.ensureCtraderReady();
     const symbols = await service.getSymbols();
     const match = findPublicSymbol(symbols, req.query.symbol);
@@ -274,45 +336,45 @@ function registerCtraderRoutes(app, service) {
     res.json({ success: true, depth: depth || null });
   }));
 
-  app.get('/api/ctrader-live-market', ...adminOnly, marketFeedRoute(async (req, res) => {
+  app.get('/api/ctrader-live-market', authCheck, marketFeedRoute(async (req, res) => {
     const instrument = await requireAllowedInstrument(req.query.symbol);
     res.json({
       success: true,
       ...(await service.getLiveMarketSnapshot({
-        symbol: instrument.requestSymbol || instrument.symbol,
+        symbol: instrument.requestSymbol,
         interval: req.query.interval || '1m',
         subscribe: req.query.subscribe !== 'false',
       })),
     });
   }));
 
-  app.get('/api/market-chart/live', ...adminOnly, marketFeedRoute(async (req, res) => {
+  app.get('/api/market-chart/live', authCheck, marketFeedRoute(async (req, res) => {
     const instrument = await requireAllowedInstrument(req.query.symbol);
     res.json({
       success: true,
       ...(await service.getLiveMarketSnapshot({
-        symbol: instrument.requestSymbol || instrument.symbol,
+        symbol: instrument.requestSymbol,
         interval: req.query.interval || '1m',
         subscribe: req.query.subscribe !== 'false',
       })),
     });
   }));
 
-  app.post('/api/ctrader-chart-subscription', ...adminOnly, asyncRoute(async (req, res) => {
+  app.post('/api/ctrader-chart-subscription', authCheck, asyncRoute(async (req, res) => {
     res.json({
       success: true,
       ...(await subscribeChartConsumer(service, String(req.body?.chartId || ''), req.body?.symbol)),
     });
   }));
 
-  app.post('/api/market-chart/subscription', ...adminOnly, asyncRoute(async (req, res) => {
+  app.post('/api/market-chart/subscription', authCheck, asyncRoute(async (req, res) => {
     res.json({
       success: true,
       ...(await subscribeChartConsumer(service, String(req.body?.chartId || ''), req.body?.symbol)),
     });
   }));
 
-  app.post('/api/ctrader-chart-subscription/release', ...adminOnly, asyncRoute(async (req, res) => {
+  app.post('/api/ctrader-chart-subscription/release', authCheck, asyncRoute(async (req, res) => {
     const chartId = String(req.body?.chartId || '');
     if (!chartId) {
       return res.status(400).json({ success: false, error: 'Missing chartId' });
@@ -325,7 +387,7 @@ function registerCtraderRoutes(app, service) {
     });
   }));
 
-  app.post('/api/market-chart/subscription/release', ...adminOnly, asyncRoute(async (req, res) => {
+  app.post('/api/market-chart/subscription/release', authCheck, asyncRoute(async (req, res) => {
     const chartId = String(req.body?.chartId || '');
     if (!chartId) {
       return res.status(400).json({ success: false, error: 'Missing chartId' });
@@ -338,7 +400,7 @@ function registerCtraderRoutes(app, service) {
     });
   }));
 
-  app.delete('/api/ctrader-chart-subscription', ...adminOnly, asyncRoute(async (req, res) => {
+  app.delete('/api/ctrader-chart-subscription', authCheck, asyncRoute(async (req, res) => {
     const chartId = String(req.body?.chartId || '');
     if (!chartId) {
       return res.status(400).json({ success: false, error: 'Missing chartId' });
@@ -351,7 +413,7 @@ function registerCtraderRoutes(app, service) {
     });
   }));
 
-  app.get('/api/ctrader-symbols', ...adminOnly, async (req, res) => {
+  app.get('/api/ctrader-symbols', authCheck, async (req, res) => {
     try {
       const symbols = await service.getSymbols();
 
@@ -368,7 +430,7 @@ function registerCtraderRoutes(app, service) {
     }
   });
 
-  app.get('/api/ctrader-watchlist-quotes', ...adminOnly, ctraderDataRateLimiter, marketFeedRoute(async (req, res) => {
+  app.get('/api/ctrader-watchlist-quotes', authCheck, ctraderDataRateLimiter, marketFeedRoute(async (req, res) => {
     const symbols = String(req.query.symbols || '')
       .split(',')
       .map((symbol) => symbol.trim())
@@ -376,7 +438,7 @@ function registerCtraderRoutes(app, service) {
     res.json({ success: true, ...(await service.getWatchlistQuotes(await requireAllowedSymbolList(symbols))) });
   }));
 
-  app.get('/api/market-chart/watchlist-quotes', ...adminOnly, ctraderDataRateLimiter, marketFeedRoute(async (req, res) => {
+  app.get('/api/market-chart/watchlist-quotes', authCheck, ctraderDataRateLimiter, marketFeedRoute(async (req, res) => {
     const symbols = String(req.query.symbols || '')
       .split(',')
       .map((symbol) => symbol.trim())
@@ -384,30 +446,30 @@ function registerCtraderRoutes(app, service) {
     res.json({ success: true, ...(await service.getWatchlistQuotes(await requireAllowedSymbolList(symbols))) });
   }));
 
-  app.get('/api/ctrader-symbol/:symbolId', ...adminOnly, ctraderDataRateLimiter, asyncRoute(async (req, res) => {
+  app.get('/api/ctrader-symbol/:symbolId', authCheck, ctraderDataRateLimiter, asyncRoute(async (req, res) => {
     res.json({ success: true, ...(await service.getSymbolById(req.params.symbolId)) });
   }));
 
-  app.get('/api/ctrader-assets', ...adminOnly, ctraderDataRateLimiter, asyncRoute(async (req, res) => {
+  app.get('/api/ctrader-assets', authCheck, ctraderDataRateLimiter, asyncRoute(async (req, res) => {
     res.json({ success: true, ...(await service.getAssets()) });
   }));
 
-  app.get('/api/ctrader-asset-classes', ...adminOnly, ctraderDataRateLimiter, asyncRoute(async (req, res) => {
+  app.get('/api/ctrader-asset-classes', authCheck, ctraderDataRateLimiter, asyncRoute(async (req, res) => {
     res.json({ success: true, ...(await service.getAssetClasses()) });
   }));
 
-  app.get('/api/ctrader-symbol-categories', ...adminOnly, ctraderDataRateLimiter, asyncRoute(async (req, res) => {
+  app.get('/api/ctrader-symbol-categories', authCheck, ctraderDataRateLimiter, asyncRoute(async (req, res) => {
     res.json({ success: true, ...(await service.getSymbolCategories()) });
   }));
 
-  app.get('/api/ctrader-conversion-symbols', ...adminOnly, ctraderDataRateLimiter, asyncRoute(async (req, res) => {
+  app.get('/api/ctrader-conversion-symbols', authCheck, ctraderDataRateLimiter, asyncRoute(async (req, res) => {
     res.json({
       success: true,
       ...(await service.getConversionSymbols(req.query.firstAssetId, req.query.lastAssetId)),
     });
   }));
 
-  app.get('/api/ctrader-klines', ...adminOnly, ctraderKlineRateLimiter, async (req, res) => {
+  app.get('/api/ctrader-klines', authCheck, ctraderKlineRateLimiter, async (req, res) => {
     try {
       const { symbol, interval, startTime, endTime, limit } = req.query;
 
@@ -420,7 +482,7 @@ function registerCtraderRoutes(app, service) {
       const instrument = await requireAllowedInstrument(symbol);
 
       const result = await service.fetchCtraderKlines({
-        symbol: instrument.requestSymbol || instrument.symbol,
+        symbol: instrument.requestSymbol,
         interval,
         startTime,
         endTime,
@@ -429,13 +491,14 @@ function registerCtraderRoutes(app, service) {
 
       return res.json({ success: true, ...result });
     } catch (error) {
+      console.error('[ctrader-klines error]', error);
       return res.status(error.status || 500).json(error.payload || {
         error: 'Something went wrong. Please try again.',
       });
     }
   });
 
-  app.get('/api/market-chart/candles', ...adminOnly, ctraderKlineRateLimiter, async (req, res) => {
+  app.get('/api/market-chart/candles', authCheck, ctraderKlineRateLimiter, async (req, res) => {
     try {
       const { symbol, interval, startTime, endTime, limit } = req.query;
 
@@ -445,25 +508,33 @@ function registerCtraderRoutes(app, service) {
           required: ['symbol', 'interval'],
         });
       }
-      const instrument = await requireAllowedInstrument(symbol);
 
-      const result = await service.fetchCtraderKlines({
-        symbol: instrument.requestSymbol || instrument.symbol,
-        interval,
+      const { data, symbol: resolvedSymbol } = await datafeed.getCandles({
+        symbol,
+        timeframe: interval,
         startTime,
         endTime,
         limit,
       });
 
-      return res.json({ success: true, ...result });
+      return res.json({
+        success: true,
+        symbol: resolvedSymbol,
+        interval,
+        candles: data,
+        data,
+      });
     } catch (error) {
+      console.error('[market-chart/candles error]', error);
       return res.status(error.status || 500).json(error.payload || {
-        error: 'Something went wrong. Please try again.',
+        error: error.message || 'Market chart data unavailable',
+        symbol: req.query.symbol,
+        interval: req.query.interval,
       });
     }
   });
 
-  app.get('/api/ctrader-ticks', ...adminOnly, ctraderKlineRateLimiter, asyncRoute(async (req, res) => {
+  app.get('/api/ctrader-ticks', authCheck, ctraderKlineRateLimiter, asyncRoute(async (req, res) => {
     const { symbol, fromTimestamp, toTimestamp, type, limit } = req.query;
     if (!symbol) {
       return res.status(400).json({ success: false, error: 'Missing symbol' });
@@ -474,39 +545,39 @@ function registerCtraderRoutes(app, service) {
     });
   }));
 
-  app.post('/api/ctrader-live-ticks/subscribe', ...adminOnly, asyncRoute(async (req, res) => {
+  app.post('/api/ctrader-live-ticks/subscribe', authCheck, asyncRoute(async (req, res) => {
     res.json({
       success: true,
       symbol: req.body?.symbol || null,
       subscribed: true,
       preSubscribed: true,
-      source: 'ctrader-feed-service',
+      source: 'entrack-feed-service',
     });
   }));
 
-  app.post('/api/ctrader-live-ticks/unsubscribe', ...adminOnly, asyncRoute(async (req, res) => {
+  app.post('/api/ctrader-live-ticks/unsubscribe', authCheck, asyncRoute(async (req, res) => {
     res.json({
       success: true,
       symbol: req.body?.symbol || null,
       subscribed: true,
       ignored: true,
-      source: 'ctrader-feed-service',
+      source: 'entrack-feed-service',
     });
   }));
 
-  app.post('/api/ctrader-live-trendbar/subscribe', ...adminOnly, asyncRoute(async (req, res) => {
+  app.post('/api/ctrader-live-trendbar/subscribe', authCheck, asyncRoute(async (req, res) => {
     res.json({ success: true, ...(await service.subscribeLiveTrendbar(req.body?.symbol, req.body?.interval)) });
   }));
 
-  app.post('/api/ctrader-live-trendbar/unsubscribe', ...adminOnly, asyncRoute(async (req, res) => {
+  app.post('/api/ctrader-live-trendbar/unsubscribe', authCheck, asyncRoute(async (req, res) => {
     res.json({ success: true, ...(await service.unsubscribeLiveTrendbar(req.body?.symbol, req.body?.interval)) });
   }));
 
-  app.post('/api/ctrader-depth/subscribe', ...adminOnly, asyncRoute(async (req, res) => {
+  app.post('/api/ctrader-depth/subscribe', authCheck, asyncRoute(async (req, res) => {
     res.json({ success: true, ...(await service.subscribeDepth(req.body?.symbol)) });
   }));
 
-  app.post('/api/ctrader-depth/unsubscribe', ...adminOnly, asyncRoute(async (req, res) => {
+  app.post('/api/ctrader-depth/unsubscribe', authCheck, asyncRoute(async (req, res) => {
     res.json({ success: true, ...(await service.unsubscribeDepth(req.body?.symbol)) });
   }));
 

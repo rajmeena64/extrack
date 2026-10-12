@@ -4,7 +4,8 @@ function normalizeStoredSymbol(value) {
   if (!rawSymbol) return "";
 
   if (rawSymbol.includes(":")) {
-    rawSymbol = rawSymbol.split(":").pop();
+    const parts = rawSymbol.split(":");
+    rawSymbol = parts[0].includes("/") ? parts[0] : parts.pop();
   }
 
   rawSymbol = rawSymbol.replace(/\s+/g, "");

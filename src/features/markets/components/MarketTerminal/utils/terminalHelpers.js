@@ -63,7 +63,7 @@ export const readStoredWatchlistSymbols = () => {
     if (raw === null) return DEFAULT_WATCHLIST_SYMBOLS;
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return DEFAULT_WATCHLIST_SYMBOLS;
-    return parsed.map(normalizeStreamSymbol).filter(Boolean);
+    return Array.from(new Set(parsed.map(normalizeStreamSymbol).filter(Boolean)));
   } catch {
     return DEFAULT_WATCHLIST_SYMBOLS;
   }
@@ -290,7 +290,8 @@ export const getSymbolSubtitle = (item, symbol) => {
 
 export const classifySymbol = (symbol, item = null) => {
   const pt = String(item?.productType || item?.category || '').toLowerCase();
-  if (['crypto', 'crypto_spot', 'perpetual'].includes(pt) || pt.includes('crypto')) return 'Crypto';
+  const ac = String(item?.assetClass || '').toLowerCase();
+  if (ac === 'crypto' || ['crypto', 'crypto_spot', 'perpetual'].includes(pt) || pt.includes('crypto')) return 'Crypto';
   if (['forex_cfd', 'forex', 'cfd'].includes(pt) || pt.includes('forex')) return 'Forex & CFD';
   if (['stock_etf', 'stock', 'equity', 'stocks'].includes(pt) || pt.includes('stock')) return 'Stocks & ETFs';
   if (['future', 'futures'].includes(pt) || pt.includes('future')) return 'Futures';

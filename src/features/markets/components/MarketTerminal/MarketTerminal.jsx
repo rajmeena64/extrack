@@ -1,10 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Bell, ChevronDown, ChevronUp, RefreshCw, Settings, X } from '@/icons/lucideIcons';
+import { Bell, Menu, PanelRightOpen, Settings, X } from '@/icons/lucideIcons';
 import MainContentWrapper from '@/components/Layout/MainContentWrapper';
-import PageHeader from '@/components/Layout/PageHeader';
 import SymbolWithIcon from '@/components/Common/SymbolWithIcon/SymbolWithIcon';
-import { ChartLayoutPicker } from '../TradingChart/TradingChartChrome';
 import { useAppDialog } from '@/context/AppDialogContext';
 import api from '@/utils/common/serve';
 import { formatTradePrice } from '@/utils/trading/tradeCalculations';
@@ -36,7 +33,7 @@ import OrderPanel from './components/OrderPanel/OrderPanel';
 import PositionsPanel from './components/PositionsPanel/PositionsPanel';
 import TerminalSettingsModal from './components/Settings/TerminalSettingsModal';
 
-const readBoolStorage = (key, def = true) => {
+const readBoolStorage = (key, def = false) => {
   try {
     const saved = window.localStorage.getItem(key);
     return saved !== null ? JSON.parse(saved) : def;
@@ -46,10 +43,9 @@ const readBoolStorage = (key, def = true) => {
 };
 
 function MarketTerminal({ pageActive = true }) {
-  const navigate = useNavigate();
   const { data: userSettings } = useUserSettings();
   const [selectedWatchlistSymbols, setSelectedWatchlistSymbols] = useState(readStoredWatchlistSymbols);
-  const [charts, setCharts] = useState(() => [{ id: createChartId(), symbol: readStoredActiveSymbol(), interval: '1minute' }]);
+  const [charts, setCharts] = useState(() => [{ id: createChartId(), symbol: readStoredActiveSymbol(), interval: '1' }]);
   const [activeChartId, setActiveChartId] = useState(charts[0].id);
   const [layout, setLayout] = useState('1');
   const [fitNonce, setFitNonce] = useState(0);
@@ -63,22 +59,15 @@ function MarketTerminal({ pageActive = true }) {
   const watchlistQuoteBufferRef = useRef({});
   const watchlistQuoteFlushTimerRef = useRef(null);
   const watchlistTodayBaselineRef = useRef({ dateKey: getLocalDateKey(), prices: {}, dailyReferences: {} });
-  const [headerExpanded, setHeaderExpanded] = useState(false);
 
-  const [showWatchlist, setShowWatchlist] = useState(() => readBoolStorage('market_terminal_show_watchlist'));
-  const [showOrderPanel, setShowOrderPanel] = useState(() => readBoolStorage('market_terminal_show_order'));
-  const [showPositionsPanel, setShowPositionsPanel] = useState(() => readBoolStorage('market_terminal_show_positions'));
+  const [showWatchlist, setShowWatchlist] = useState(() => readBoolStorage('market_terminal_show_watchlist', false));
+  const [showOrderPanel, setShowOrderPanel] = useState(() => readBoolStorage('market_terminal_show_order_v2', true));
+  const [showPositionsPanel, setShowPositionsPanel] = useState(() => readBoolStorage('market_terminal_show_positions_v2', true));
 
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showAlertsDrawer, setShowAlertsDrawer] = useState(false);
   const [alerts, setAlerts] = useState([]);
-  const alertsRef = useRef(alerts);
-  const prevPricesRef = useRef({});
   const { notify } = useAppDialog();
-
-  useEffect(() => {
-    alertsRef.current = alerts;
-  }, [alerts]);
 
   useEffect(() => {
     let cancelled = false;
@@ -99,8 +88,8 @@ function MarketTerminal({ pageActive = true }) {
   useEffect(() => {
     try {
       window.localStorage.setItem('market_terminal_show_watchlist', JSON.stringify(showWatchlist));
-      window.localStorage.setItem('market_terminal_show_order', JSON.stringify(showOrderPanel));
-      window.localStorage.setItem('market_terminal_show_positions', JSON.stringify(showPositionsPanel));
+      window.localStorage.setItem('market_terminal_show_order_v2', JSON.stringify(showOrderPanel));
+      window.localStorage.setItem('market_terminal_show_positions_v2', JSON.stringify(showPositionsPanel));
     } catch {}
   }, [showWatchlist, showOrderPanel, showPositionsPanel]);
 
@@ -118,7 +107,7 @@ function MarketTerminal({ pageActive = true }) {
   }, [activeChart, activeChartId, charts, selectedLayout.capacity]);
 
   const compact = visibleCharts.length > 1;
-  const { data: dbInstruments = [] } = useInstruments('', { limit: 250 });
+  const { data: dbInstruments = [] } = useInstruments('', { limit: 2500 });
 
   const allAvailableSymbols = useMemo(() => {
     const bySymbol = new Map();
@@ -181,11 +170,12 @@ function MarketTerminal({ pageActive = true }) {
     const priceNum = Number(newTargetPrice);
     if (!Number.isFinite(priceNum) || priceNum <= 0) return;
     setAlerts((prev) => prev.map((a) => (a.id === alertId ? { ...a, targetPrice: priceNum } : a)));
+    api.patch(`/notifications/alerts/${alertId}`, { targetPrice: priceNum }).catch(() => null);
   }, []);
 
   useEffect(() => {
     if (userSettings?.watchlistSymbols && Array.isArray(userSettings.watchlistSymbols) && userSettings.watchlistSymbols.length > 0) {
-      setSelectedWatchlistSymbols(userSettings.watchlistSymbols);
+      setSelectedWatchlistSymbols(Array.from(new Set(userSettings.watchlistSymbols.map(normalizeStreamSymbol).filter(Boolean))));
     }
     if (userSettings?.activeSymbol) {
       const dbSymbol = normalizeStreamSymbol(userSettings.activeSymbol);
@@ -287,37 +277,6 @@ function MarketTerminal({ pageActive = true }) {
         if (!requestSymbol) return;
         const nextQuote = normalizeStreamQuote(tick, readInstrumentDigits(instrumentDigitsBySymbol, requestSymbol));
         queueWatchlistQuote(requestSymbol, nextQuote);
-
-        const currentPrice = Number(nextQuote.last != null ? nextQuote.last : (nextQuote.bid != null ? nextQuote.bid : nextQuote.ask));
-        if (Number.isFinite(currentPrice) && currentPrice > 0) {
-          const prevPrice = prevPricesRef.current[requestSymbol];
-          prevPricesRef.current[requestSymbol] = currentPrice;
-          if (Number.isFinite(prevPrice) && prevPrice > 0 && prevPrice !== currentPrice) {
-            let triggeredAny = false;
-            const updatedAlerts = alertsRef.current.map((alert) => {
-              if (alert.status !== 'ACTIVE' || alert.symbol !== requestSymbol) return alert;
-              const target = Number(alert.targetPrice);
-              if (!Number.isFinite(target)) return alert;
-              let isTriggered = false;
-              if (alert.condition === 'ABOVE' && prevPrice < target && currentPrice >= target) isTriggered = true;
-              else if (alert.condition === 'BELOW' && prevPrice > target && currentPrice <= target) isTriggered = true;
-              else if ((prevPrice < target && currentPrice >= target) || (prevPrice > target && currentPrice <= target)) isTriggered = true;
-
-              if (isTriggered) {
-                triggeredAny = true;
-                playAlertSound();
-                const displayPrice = formatTradePrice(target, readInstrumentDigits(instrumentDigitsBySymbol, requestSymbol));
-                notify?.(`ALERT: ${alert.symbol} hit target price ${displayPrice}!`, 'warning');
-                if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-                  try { new Notification(`Price Alert: ${alert.symbol}`, { body: `Target price ${displayPrice} reached! ${alert.note || ''}` }); } catch {}
-                }
-                return { ...alert, status: 'TRIGGERED', triggeredAt: Date.now(), triggeredPrice: currentPrice };
-              }
-              return alert;
-            });
-            if (triggeredAny) setAlerts(updatedAlerts);
-          }
-        }
       },
     });
 
@@ -346,7 +305,7 @@ function MarketTerminal({ pageActive = true }) {
     if (!normalized) return;
     setCharts((cur) => {
       if (cur.length >= MAX_CHARTS) return cur;
-      const nextChart = { id: createChartId(), symbol: normalized, interval: activeChart?.interval || '1minute' };
+      const nextChart = { id: createChartId(), symbol: normalized, interval: activeChart?.interval ?? '1' };
       setActiveChartId(nextChart.id);
       return [...cur, nextChart];
     });
@@ -427,18 +386,8 @@ function MarketTerminal({ pageActive = true }) {
       return next;
     });
   }, [activeChartId]);
-
-  const goBack = useCallback(() => {
-    if (window.history.length > 1) navigate(-1);
-    else navigate('/dashboard');
-  }, [navigate]);
-
   const terminalActions = (
     <div className="flex items-center gap-1 shrink-0">
-      <ChartLayoutPicker layout={layout} layouts={LAYOUTS} onLayoutChange={setLayout} />
-      <button className="relative inline-flex items-center justify-center w-7 h-7 rounded-md border-0 bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-colors cursor-pointer" onClick={() => setFitNonce((v) => v + 1)} title="Fit active chart" type="button">
-        <RefreshCw size={14} aria-hidden="true" />
-      </button>
       <button className={`relative inline-flex items-center justify-center w-7 h-7 rounded-md border-0 bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-colors cursor-pointer ${showAlertsDrawer ? 'bg-[var(--bg-hover)] text-[var(--text-primary)]' : ''}`} onClick={() => setShowAlertsDrawer((p) => !p)} title="Price Alerts" type="button">
         <Bell size={14} aria-hidden="true" />
         {alerts.filter((a) => a.status === 'ACTIVE').length > 0 && (
@@ -450,16 +399,20 @@ function MarketTerminal({ pageActive = true }) {
       <button className={`relative inline-flex items-center justify-center w-7 h-7 rounded-md border-0 bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-colors cursor-pointer ${showSettingsModal ? 'bg-[var(--bg-hover)] text-[var(--text-primary)]' : ''}`} onClick={() => setShowSettingsModal((p) => !p)} title="Terminal Settings" type="button">
         <Settings size={14} aria-hidden="true" />
       </button>
-      <button className="relative inline-flex items-center justify-center w-7 h-7 rounded-md border-0 bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-colors cursor-pointer" onClick={() => setHeaderExpanded((p) => !p)} title={headerExpanded ? 'Collapse header' : 'Expand header'} type="button">
-        {headerExpanded ? <ChevronUp size={14} aria-hidden="true" /> : <ChevronDown size={14} aria-hidden="true" />}
-      </button>
     </div>
   );
 
+  if (allAvailableSymbols.length === 0) {
+    return (
+      <MainContentWrapper className="flex items-center justify-center h-screen h-[100dvh] max-h-screen max-h-[100dvh] overflow-hidden select-none">
+        <div className="w-8 h-8 border-2 border-[var(--primary,#2563eb)]/20 border-t-[var(--primary,#2563eb)] rounded-full animate-spin" />
+      </MainContentWrapper>
+    );
+  }
+
   return (
     <MainContentWrapper className="flex flex-col h-screen h-[100dvh] max-h-screen max-h-[100dvh] overflow-hidden box-border pt-0 px-2.5 pb-2.5 max-[768px]:pt-[60px] max-[768px]:px-2 max-[768px]:pb-2 max-[520px]:px-1.5 max-[480px]:pb-[calc(82px+env(safe-area-inset-bottom,0px))]">
-      {headerExpanded && <PageHeader title="Market Terminal" onBack={goBack} keepVisible className="relative z-10 mb-1.5 shrink-0" actions={terminalActions} />}
-      <div className={`relative flex flex-col flex-1 min-w-0 min-h-0 gap-1.5 overflow-hidden ${!headerExpanded ? 'mt-2' : ''}`}>
+      <div className="relative flex flex-col flex-1 min-w-0 min-h-0 gap-1.5 overflow-hidden mt-2">
         <header className="flex items-center justify-between min-h-[38px] rounded-md bg-[var(--bg-card)] shrink-0 overflow-x-auto scrollbar-none z-10">
           <div className="flex items-center min-w-0 flex-1 overflow-x-auto scrollbar-none">
             {charts.map((item) => {
@@ -507,12 +460,8 @@ function MarketTerminal({ pageActive = true }) {
 
           <div className="flex items-center gap-1 px-2 shrink-0">
             <AddChartSymbolPicker disabled={charts.length >= MAX_CHARTS} onSelect={addChart} options={addChartSymbolOptions} />
-            {!headerExpanded && (
-              <>
-                <span className="w-px h-4 bg-[var(--border-light)] mx-0.5 shrink-0" />
-                {terminalActions}
-              </>
-            )}
+            <span className="w-px h-4 bg-[var(--border-light)] mx-0.5 shrink-0" />
+            {terminalActions}
           </div>
         </header>
 
@@ -532,13 +481,33 @@ function MarketTerminal({ pageActive = true }) {
                   onClose={handleCloseWatchlist}
                 />
               </ResizablePanel>
-              <ResizableHandle className="w-1.5 bg-transparent hover:bg-transparent" />
+              <ResizableHandle className="w-1.5" />
             </>
           )}
 
-          <ResizablePanel id="market-center" minSize="30%" className="min-w-0 min-h-0 overflow-hidden">
+          <ResizablePanel id="market-center" minSize="30%" className="min-w-0 min-h-0 overflow-hidden relative">
+            {!showWatchlist && (
+              <button
+                type="button"
+                className="absolute left-0 top-12 z-20 flex items-center justify-center w-5 h-8 rounded-r-md border border-l-0 border-[var(--border-light)] bg-[var(--bg-card)]/90 backdrop-blur-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] shadow-xs cursor-pointer transition-colors"
+                onClick={() => setShowWatchlist(true)}
+                title="Open Watchlist"
+              >
+                <Menu size={12} />
+              </button>
+            )}
+            {!showOrderPanel && (
+              <button
+                type="button"
+                className="absolute right-0 top-12 z-20 flex items-center justify-center w-5 h-8 rounded-l-md border border-r-0 border-[var(--border-light)] bg-[var(--bg-card)]/90 backdrop-blur-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] shadow-xs cursor-pointer transition-colors"
+                onClick={() => setShowOrderPanel(true)}
+                title="Open Order Form"
+              >
+                <PanelRightOpen size={12} />
+              </button>
+            )}
             <ResizablePanelGroup direction="vertical" className="min-w-0 min-h-0 h-full w-full">
-              <ResizablePanel id="market-charts" minSize="30%" className="min-w-0 min-h-0 overflow-hidden">
+              <ResizablePanel id="market-charts" defaultSize={showPositionsPanel ? "75%" : "100%"} minSize="30%" className="min-w-0 min-h-0 overflow-hidden">
                 <main
                   className={`w-full h-full min-w-0 min-h-0 overflow-hidden relative flex flex-col bg-transparent ${chartAreaDragActive ? 'ring-2 ring-inset ring-[var(--primary,#2563eb)] bg-[var(--accent-info-soft)]/20' : ''}`}
                   data-chart-drop-target="area"
@@ -571,6 +540,7 @@ function MarketTerminal({ pageActive = true }) {
                             onAddAlert={handleAddAlert}
                             onUpdateAlertPrice={handleUpdateAlertPrice}
                             onDeleteAlert={handleDeleteAlert}
+                            onOpenOrderPanel={() => setShowOrderPanel(true)}
                             onLayoutChange={setLayout}
                             pageActive={pageActive && isGridVisible}
                             prioritySymbols={selectedWatchlistSymbols}
@@ -592,7 +562,7 @@ function MarketTerminal({ pageActive = true }) {
 
               {showPositionsPanel && (
                 <>
-                  <ResizableHandle className="h-1.5 w-full bg-transparent hover:bg-transparent" />
+                  <ResizableHandle className="h-1.5 w-full" />
                   <ResizablePanel id="market-positions" defaultSize="25%" minSize="12%" maxSize="60%" collapsible className="min-w-0 min-h-0 overflow-hidden">
                     <PositionsPanel quote={activeQuote} onClose={() => setShowPositionsPanel(false)} />
                   </ResizablePanel>
@@ -603,7 +573,7 @@ function MarketTerminal({ pageActive = true }) {
 
           {showOrderPanel && (
             <>
-              <ResizableHandle className="w-1.5 bg-transparent hover:bg-transparent" />
+              <ResizableHandle className="w-1.5" />
               <ResizablePanel id="market-order" defaultSize="20%" minSize="14%" maxSize="35%" collapsible className="min-w-0 min-h-0 overflow-hidden">
                 <OrderPanel symbol={activeSymbol} quote={activeQuote} onClose={() => setShowOrderPanel(false)} />
               </ResizablePanel>

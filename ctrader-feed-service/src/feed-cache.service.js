@@ -1,34 +1,19 @@
 const { ctraderConfig } = require('./ctrader/state');
 const { findExactSymbolMatch } = require('./ctrader/symbols.service');
+const tinybirdIngest = require('./tinybird-ingest.service');
 
-const DEFAULT_RETENTION_MS = 24 * 60 * 60 * 1000;
+tinybirdIngest.startBatchFlusher(30000);
 
-function boundedNumber(value, fallback, min, max) {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return fallback;
-  return Math.min(Math.max(parsed, min), max);
-}
-
-const RETENTION_MS = boundedNumber(
-  process.env.FEED_RETENTION_MS,
-  DEFAULT_RETENTION_MS,
-  60 * 1000,
-  24 * 60 * 60 * 1000
-);
-const MAX_TICKS_PER_SYMBOL = boundedNumber(process.env.FEED_MAX_TICKS_PER_SYMBOL, 5000, 1, 50000);
-
-const INTERVAL_SECONDS = {
-  '1m': 60,
-  '3m': 3 * 60,
-  '5m': 5 * 60,
-  '15m': 15 * 60,
-  '30m': 30 * 60,
-  '1h': 60 * 60,
-  '4h': 4 * 60 * 60,
-};
-
-const tickCache = new Map();
-const candleSeedCache = new Map();
+const MAX_ROLLING_CANDLES = 1440;
+const rollingCandles = new Map();
+const activeCandles = new Map();
+const lastQueuedTimestamps = new Map();
+let totalTicksCount = 0;
+let recentTicksCount = 0;
+let lastTickRateWindowMs = Date.now();
+let lastCalculatedTicksPerSec = 0;
+let isCandleAppendReady = false;
+let tinybirdSymbolsSet = new Set();
 
 function toSeconds(raw) {
   const num = Number(raw);
@@ -42,9 +27,7 @@ function getSymbolByName(symbolName) {
 
 function tickTimeMs(tick) {
   const raw = Number(tick?.timestamp || tick?.serverTime || 0);
-  if (Number.isFinite(raw) && raw > 0) {
-    return raw > 1e12 ? raw : raw * 1000;
-  }
+  if (Number.isFinite(raw) && raw > 0) return raw > 1e12 ? raw : raw * 1000;
   return Date.now();
 }
 
@@ -59,179 +42,144 @@ function getQuotePrice(tick) {
   return null;
 }
 
-function pruneSymbolTicks(symbolId) {
-  const key = Number(symbolId);
-  const arr = tickCache.get(key);
-  if (!arr) return [];
-
-  const cutoff = Date.now() - RETENTION_MS;
-  let start = 0;
-  while (start < arr.length && Number(arr[start].timeMs) < cutoff) {
-    start += 1;
-  }
-
-  let next = start > 0 ? arr.slice(start) : arr;
-  if (next.length > MAX_TICKS_PER_SYMBOL) {
-    next = next.slice(next.length - MAX_TICKS_PER_SYMBOL);
-  }
-
-  tickCache.set(key, next);
-  return next;
-}
-
-function pruneAll() {
-  for (const symbolId of tickCache.keys()) {
-    pruneSymbolTicks(symbolId);
-  }
-
-  const cutoffSeconds = Math.floor((Date.now() - RETENTION_MS) / 1000);
-  for (const [seedKey, candles] of candleSeedCache.entries()) {
-    const filtered = candles.filter((candle) => Number(candle.time) >= cutoffSeconds);
-    candleSeedCache.set(seedKey, filtered);
-  }
-}
-
-function recordTick(tick) {
-  if (!tick || !Number.isFinite(Number(tick.symbolId))) return;
-
-  const symbolId = Number(tick.symbolId);
-  const timeMs = tickTimeMs(tick);
-  const price = getQuotePrice(tick);
-
-  const item = {
-    symbolId,
-    symbolName: tick.symbolName || null,
-    time: Math.floor(timeMs / 1000),
-    timeMs,
-    bid: Number.isFinite(Number(tick.bid)) && Number(tick.bid) > 0 ? Number(tick.bid) : null,
-    ask: Number.isFinite(Number(tick.ask)) && Number(tick.ask) > 0 ? Number(tick.ask) : null,
-    last: Number.isFinite(Number(price)) ? Number(price) : null,
-    receivedAt: tick.receivedAt || new Date().toISOString(),
-  };
-
-  const arr = tickCache.get(symbolId) || [];
-  arr.push(item);
-  tickCache.set(symbolId, arr);
-  pruneSymbolTicks(symbolId);
-}
-
-function seedCandles(symbolId, interval, candles = []) {
-  const id = Number(symbolId);
-  if (!Number.isFinite(id) || !interval) return;
-
+async function seedCandles(symbolIdOrName, candles = []) {
+  if (!symbolIdOrName || !Array.isArray(candles) || candles.length === 0) return;
+  const symInfo = Number.isFinite(Number(symbolIdOrName)) ? ctraderConfig.symbols.get(Number(symbolIdOrName)) : null;
+  const symbolName = symInfo?.name || String(symbolIdOrName);
   const valid = candles
     .map((candle) => {
       const isArr = Array.isArray(candle);
-      const timeSec = toSeconds(isArr ? candle[0] : candle?.time);
-      const open = Number(isArr ? candle[1] : candle?.open);
-      const high = Number(isArr ? candle[2] : candle?.high);
-      const low = Number(isArr ? candle[3] : candle?.low);
-      const close = Number(isArr ? candle[4] : candle?.close);
-      const volume = Number(isArr ? candle[5] || 0 : candle?.volume || 0);
-      return {
-        time: timeSec,
-        timeMs: timeSec * 1000,
-        open,
-        high,
-        low,
-        close,
-        volume,
-      };
+      return [
+        toSeconds(isArr ? candle[0] : candle?.time),
+        Number(isArr ? candle[1] : candle?.open),
+        Number(isArr ? candle[2] : candle?.high),
+        Number(isArr ? candle[3] : candle?.low),
+        Number(isArr ? candle[4] : candle?.close),
+        Number(isArr ? candle[5] || 0 : candle?.volume || 0),
+      ];
     })
-    .filter((candle) => (
-      Number.isFinite(candle.time) &&
-      candle.time > 0 &&
-      Number.isFinite(candle.open) &&
-      Number.isFinite(candle.high) &&
-      Number.isFinite(candle.low) &&
-      Number.isFinite(candle.close)
-    ));
-
-  candleSeedCache.set(`${id}:${interval}`, valid);
-}
-
-function buildCandlesFromTicks(ticks, interval = '1m') {
-  const bucketSize = INTERVAL_SECONDS[interval] || INTERVAL_SECONDS['1m'];
+    .filter((c) => Number.isFinite(c[0]) && c[0] > 0 && Number.isFinite(c[1]) && Number.isFinite(c[2]) && Number.isFinite(c[3]) && Number.isFinite(c[4]))
+    .sort((a, b) => a[0] - b[0]);
+  if (valid.length === 0) return;
+  const minTimeSec = Math.floor(Date.now() / 1000) - (MAX_ROLLING_CANDLES * 60);
+  const existing = rollingCandles.get(symbolName) || [];
   const byTime = new Map();
-
-  for (const tick of ticks || []) {
-    const price = Number(tick.last);
-    const time = Number(tick.time);
-    if (!Number.isFinite(price) || !Number.isFinite(time)) continue;
-
-    const bucket = Math.floor(time / bucketSize) * bucketSize;
-    const existing = byTime.get(bucket);
-
-    if (!existing) {
-      byTime.set(bucket, { time: bucket, timeMs: bucket * 1000, open: price, high: price, low: price, close: price });
-      continue;
-    }
-
-    existing.high = Math.max(existing.high, price);
-    existing.low = Math.min(existing.low, price);
-    existing.close = price;
-  }
-
-  return Array.from(byTime.values()).sort((a, b) => a.time - b.time);
+  for (const c of existing) if (c[0] >= minTimeSec) byTime.set(c[0], c);
+  for (const c of valid) if (c[0] >= minTimeSec && !byTime.has(c[0])) byTime.set(c[0], c);
+  const merged = Array.from(byTime.values()).sort((a, b) => a[0] - b[0]).slice(-MAX_ROLLING_CANDLES);
+  rollingCandles.set(symbolName, merged);
 }
 
-function mergeCandles(seed = [], live = []) {
-  const byTime = new Map();
-  for (const candle of seed) {
-    if (candle && Number.isFinite(Number(candle.time))) {
-      const time = Number(candle.time);
-      byTime.set(time, { ...candle, timeMs: candle.timeMs || time * 1000 });
-    }
-  }
-  for (const candle of live) {
-    if (!candle || !Number.isFinite(Number(candle.time))) continue;
-    const time = Number(candle.time);
-    const existing = byTime.get(time);
-    if (existing) {
-      // PRESERVE the authoritative seed open price from the true start of the candle bucket!
-      byTime.set(time, {
-        time,
-        timeMs: time * 1000,
-        open: Number.isFinite(Number(existing.open)) ? Number(existing.open) : Number(candle.open),
-        high: Math.max(Number(existing.high), Number(candle.high)),
-        low: Math.min(Number(existing.low), Number(candle.low)),
-        close: Number(candle.close),
-      });
-    } else {
-      byTime.set(time, { ...candle, timeMs: candle.timeMs || time * 1000 });
-    }
-  }
-  return Array.from(byTime.values()).sort((a, b) => a.time - b.time);
+function setCandleAppendReady(ready) {
+  isCandleAppendReady = Boolean(ready);
 }
 
-function getData(symbolName, { interval = '1m', limitTicks = 2000, limitCandles = 500 } = {}) {
+function setTinybirdSymbols(symbols = []) {
+  tinybirdSymbolsSet = new Set(
+    (Array.isArray(symbols) ? symbols : []).map((s) => String(s || '').trim().toUpperCase()).filter(Boolean)
+  );
+}
+
+function getTinybirdSymbols() {
+  return Array.from(tinybirdSymbolsSet);
+}
+
+function closeActiveCandle(symbolName, active) {
+  if (!isCandleAppendReady || !active || !Number.isFinite(active.volume) || active.volume <= 0) return;
+  const prevTs = lastQueuedTimestamps.get(symbolName) || 0;
+  if (active.time <= prevTs) return;
+  lastQueuedTimestamps.set(symbolName, active.time);
+  const closedCandle = [active.time, active.open, active.high, active.low, active.close, active.volume];
+  const list = rollingCandles.get(symbolName) || [];
+  list.push(closedCandle);
+  if (list.length > MAX_ROLLING_CANDLES) list.splice(0, list.length - MAX_ROLLING_CANDLES);
+  rollingCandles.set(symbolName, list);
+  if (tinybirdSymbolsSet.has(String(symbolName || '').trim().toUpperCase())) {
+    tinybirdIngest.queueCandle({
+      symbol: symbolName,
+      timestamp: active.time,
+      open: active.open,
+      high: active.high,
+      low: active.low,
+      close: active.close,
+      volume: active.volume,
+    });
+  }
+}
+
+setInterval(() => {
+  const nowBucket = Math.floor(Date.now() / 60000) * 60;
+  for (const [symbolName, active] of activeCandles.entries()) {
+    if (active && active.time < nowBucket) {
+      closeActiveCandle(symbolName, active);
+      activeCandles.delete(symbolName);
+    }
+  }
+}, 1000);
+
+function recordTick(tick) {
+  if (!tick || !Number.isFinite(Number(tick.symbolId))) return;
+  totalTicksCount += 1;
+  recentTicksCount += 1;
+  const now = Date.now();
+  if (now - lastTickRateWindowMs >= 5000) {
+    const elapsedSec = (now - lastTickRateWindowMs) / 1000;
+    lastCalculatedTicksPerSec = Number((recentTicksCount / elapsedSec).toFixed(1));
+    recentTicksCount = 0;
+    lastTickRateWindowMs = now;
+  }
+  const symbolId = Number(tick.symbolId);
+  const symInfo = ctraderConfig.symbols.get(symbolId);
+  const symbolName = symInfo?.name;
+  if (!symbolName) return;
+  const timeMs = tickTimeMs(tick);
+  const price = getQuotePrice(tick);
+  if (!Number.isFinite(price) || price <= 0) return;
+  const timeSec = Math.floor(timeMs / 1000);
+  const bucketSec = Math.floor(timeSec / 60) * 60;
+  const active = activeCandles.get(symbolName);
+  if (!active) {
+    activeCandles.set(symbolName, { time: bucketSec, open: price, high: price, low: price, close: price, volume: 1 });
+    return;
+  }
+  if (active.time === bucketSec) {
+    active.high = Math.max(active.high, price);
+    active.low = Math.min(active.low, price);
+    active.close = price;
+    active.volume = (active.volume || 0) + 1;
+  } else if (bucketSec > active.time) {
+    closeActiveCandle(symbolName, active);
+    activeCandles.set(symbolName, { time: bucketSec, open: price, high: price, low: price, close: price, volume: 1 });
+  }
+}
+
+async function getData(symbolName, { limitCandles = 500 } = {}) {
   const symbol = getSymbolByName(symbolName);
-  if (!symbol) {
-    return { found: false };
+  if (!symbol) return { found: false };
+  const requestedLimit = Math.min(Math.max(Number(limitCandles) || 1, 1), MAX_ROLLING_CANDLES);
+  const list = (rollingCandles.get(symbol.name) || []).slice(-requestedLimit);
+  const candles = list.map((c) => [...c]);
+  const active = activeCandles.get(symbol.name);
+  if (active) {
+    const last = candles[candles.length - 1];
+    if (!last || last[0] < active.time) {
+      candles.push([active.time, active.open, active.high, active.low, active.close, active.volume]);
+    } else if (last && last[0] === active.time) {
+      last[2] = Math.max(last[2], active.high);
+      last[3] = Math.min(last[3], active.low);
+      last[4] = active.close;
+      last[5] = (last[5] || 0) + active.volume;
+    }
   }
-
-  const symbolId = Number(symbol.id);
-  const ticks = pruneSymbolTicks(symbolId);
-  const latestTick = ctraderConfig.latestTicks.get(symbolId) || null;
-  const seed = candleSeedCache.get(`${symbolId}:${interval}`) || [];
-  const liveCandles = buildCandlesFromTicks(ticks, interval);
-  const candles = mergeCandles(seed, liveCandles);
-  const sliced = candles.slice(-Math.min(Math.max(Number(limitCandles) || 1, 1), 2000));
-  const arrayCandles = sliced.map((c) => (
-    Array.isArray(c)
-      ? c
-      : [Number(c.time), Number(c.open), Number(c.high), Number(c.low), Number(c.close), Number(c.volume || 0)]
-  ));
-
+  const latestTick = ctraderConfig.latestTicks.get(Number(symbol.id)) || null;
+  const sliced = candles.slice(-requestedLimit);
   return {
     found: true,
     symbol,
     quote: latestTick,
-    ticks: ticks.slice(-Math.min(Math.max(Number(limitTicks) || 1, 1), MAX_TICKS_PER_SYMBOL)),
-    candles: arrayCandles,
-    retentionMs: RETENTION_MS,
-    retainedHours: RETENTION_MS / (60 * 60 * 1000),
-    maxTicksPerSymbol: MAX_TICKS_PER_SYMBOL,
+    candles: sliced,
+    retentionCount: sliced.length,
+    maxCandles: MAX_ROLLING_CANDLES,
     cacheOnly: true,
   };
 }
@@ -246,22 +194,42 @@ function getQuoteSnapshot(symbolName) {
   };
 }
 
-function getStatus() {
-  pruneAll();
-
+async function getStatus() {
+  const symbols = Array.from(rollingCandles.entries()).map(([sym, list]) => {
+    const first = list[0] || null;
+    const last = list[list.length - 1] || null;
+    return {
+      symbol: sym,
+      interval: '1m',
+      candleCount: list.length,
+      firstCandleTime: first ? first[0] : null,
+      firstCandleTimeIso: first ? new Date(first[0] * 1000).toISOString() : null,
+      lastCandleTime: last ? last[0] : null,
+      lastCandleTimeIso: last ? new Date(last[0] * 1000).toISOString() : null,
+      lastPrice: last ? last[4] : null,
+    };
+  });
   return {
-    retentionMs: RETENTION_MS,
-    retainedHours: RETENTION_MS / (60 * 60 * 1000),
-    maxTicksPerSymbol: MAX_TICKS_PER_SYMBOL,
-    symbolCacheCount: tickCache.size,
-    cachedSymbols: Array.from(tickCache.entries()).map(([symbolId, ticks]) => ({
-      symbolId: Number(symbolId),
-      symbolName: ctraderConfig.symbols.get(Number(symbolId))?.name || null,
-      tickCount: ticks.length,
-      firstTime: ticks[0]?.time || null,
-      lastTime: ticks[ticks.length - 1]?.time || null,
-    })),
+    storage: 'memory',
+    usedMemory: `${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB`,
+    maxRollingCandlesPerSymbol: MAX_ROLLING_CANDLES,
+    cachedKeysCount: symbols.length,
+    activeFormingCandlesInRam: activeCandles.size,
+    symbols,
+    throughput: {
+      totalTicksReceived: totalTicksCount,
+      ticksPerSecond: lastCalculatedTicksPerSec,
+    },
   };
+}
+
+async function removeSymbolCache(symbolName) {
+  if (!symbolName) return;
+  rollingCandles.delete(symbolName);
+}
+
+function pruneAll() {
+  rollingCandles.clear();
 }
 
 module.exports = {
@@ -271,5 +239,9 @@ module.exports = {
   getSymbolByName,
   pruneAll,
   recordTick,
+  removeSymbolCache,
   seedCandles,
+  setCandleAppendReady,
+  setTinybirdSymbols,
+  getTinybirdSymbols,
 };

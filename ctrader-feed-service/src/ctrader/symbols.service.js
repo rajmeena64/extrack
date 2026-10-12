@@ -1,6 +1,5 @@
 const { PRICE_SCALE } = require('./constants');
 const { ctraderConfig } = require('./state');
-const { normalizeStoredSymbol } = require('../../shared/utils/symbols');
 
 function normalizeSymbolName(symbolName) {
   return String(symbolName || '')
@@ -9,42 +8,41 @@ function normalizeSymbolName(symbolName) {
 }
 
 function cacheAssets(assetsData) {
-  const assets = assetsData?.asset || assetsData?.assets || [];
-  assets.forEach((asset) => {
-    const id = Number(asset.assetId);
-    if (Number.isFinite(id)) {
-      ctraderConfig.assets.set(id, asset.name || asset.displayName);
-    }
-  });
+  const assets = Array.isArray(assetsData)
+    ? assetsData
+    : (assetsData?.assets || assetsData?.asset || []);
+  // Assets are available if needed for symbol conversions
+  return assets;
 }
 
 function cacheSymbols(symbolsData) {
-  if (!symbolsData?.symbols?.length && !symbolsData?.symbol?.length) {
+  const symbols = Array.isArray(symbolsData)
+    ? symbolsData
+    : (symbolsData?.symbols || symbolsData?.symbol || []);
+
+  if (!symbols.length) {
     return;
   }
 
-  const symbols = symbolsData.symbols || symbolsData.symbol || [];
   symbols.forEach((symbol) => {
-    const id = Number(symbol.symbolId);
+    const id = Number(symbol.symbolId || symbol.id);
 
     if (!Number.isFinite(id)) {
       return;
     }
 
-    const baseAsset = symbol.baseAsset || (symbol.baseAssetId ? ctraderConfig.assets.get(Number(symbol.baseAssetId)) : null);
-    const quoteAsset = symbol.quoteAsset || (symbol.quoteAssetId ? ctraderConfig.assets.get(Number(symbol.quoteAssetId)) : null);
-
+    const name = symbol.symbolName || symbol.name || '';
     ctraderConfig.symbols.set(id, {
       id,
-      name: symbol.symbolName,
-      displayName: symbol.displayName || symbol.symbolName,
-      requestSymbol: symbol.symbolName,
-      normalizedName: normalizeSymbolName(symbol.symbolName),
+      name,
+      displayName: symbol.displayName || name,
+      requestSymbol: symbol.symbolName || name,
+      normalizedName: normalizeSymbolName(name),
       description: symbol.description,
-      baseAsset,
-      quoteAsset,
       digits: Number.isFinite(Number(symbol.digits)) ? Number(symbol.digits) : null,
       pipPosition: Number.isFinite(Number(symbol.pipPosition)) ? Number(symbol.pipPosition) : null,
+      baseAsset: symbol.baseAsset,
+      quoteAsset: symbol.quoteAsset,
     });
 
     if (!ctraderConfig.currentSymbolId) {
@@ -53,25 +51,25 @@ function cacheSymbols(symbolsData) {
   });
 }
 
-function cacheSymbolDetails(symbols = []) {
+function cacheSymbolDetails(symbolsData) {
+  const symbols = Array.isArray(symbolsData)
+    ? symbolsData
+    : (symbolsData?.symbols || symbolsData?.symbol || []);
+
   symbols.forEach((symbol) => {
-    const id = Number(symbol.symbolId);
+    const id = Number(symbol.symbolId || symbol.id);
     if (!Number.isFinite(id)) return;
 
     const existing = ctraderConfig.symbols.get(id) || {};
-    const baseAsset = symbol.baseAsset || (symbol.baseAssetId ? ctraderConfig.assets.get(Number(symbol.baseAssetId)) : existing.baseAsset ?? null);
-    const quoteAsset = symbol.quoteAsset || (symbol.quoteAssetId ? ctraderConfig.assets.get(Number(symbol.quoteAssetId)) : existing.quoteAsset ?? null);
-
+    const name = existing.name || symbol.symbolName || symbol.name || '';
     ctraderConfig.symbols.set(id, {
       ...existing,
       id,
-      name: existing.name || symbol.symbolName || symbol.name,
-      displayName: existing.displayName || symbol.symbolName || symbol.name,
-      requestSymbol: existing.requestSymbol || symbol.symbolName || symbol.name,
-      normalizedName: existing.normalizedName || normalizeSymbolName(symbol.symbolName || symbol.name),
+      name,
+      displayName: existing.displayName || symbol.displayName || symbol.symbolName || name,
+      requestSymbol: existing.requestSymbol || symbol.symbolName || name,
+      normalizedName: existing.normalizedName || normalizeSymbolName(name),
       description: existing.description || symbol.description,
-      baseAsset,
-      quoteAsset,
       digits: Number.isFinite(Number(symbol.digits)) ? Number(symbol.digits) : existing.digits ?? null,
       pipPosition: Number.isFinite(Number(symbol.pipPosition)) ? Number(symbol.pipPosition) : existing.pipPosition ?? null,
     });
@@ -79,7 +77,10 @@ function cacheSymbolDetails(symbols = []) {
 }
 
 function findExactSymbolMatch(symbol) {
-  const normalized = normalizeStoredSymbol(symbol);
+  if (Number.isFinite(Number(symbol)) && ctraderConfig.symbols.has(Number(symbol))) {
+    return ctraderConfig.symbols.get(Number(symbol));
+  }
+  const normalized = normalizeSymbolName(symbol);
   if (!normalized) return null;
 
   // 1. Direct match by candidate normalized name or raw name
@@ -91,10 +92,10 @@ function findExactSymbolMatch(symbol) {
 
   // 2. Match by candidate's displayName or requestSymbol
   for (const candidate of ctraderConfig.symbols.values()) {
-    if (candidate.displayName && normalizeStoredSymbol(candidate.displayName) === normalized) {
+    if (candidate.displayName && normalizeSymbolName(candidate.displayName) === normalized) {
       return candidate;
     }
-    if (candidate.requestSymbol && normalizeStoredSymbol(candidate.requestSymbol) === normalized) {
+    if (candidate.requestSymbol && normalizeSymbolName(candidate.requestSymbol) === normalized) {
       return candidate;
     }
   }

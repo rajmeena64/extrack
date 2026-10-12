@@ -18,6 +18,7 @@ class WebSocketServerManager:
         self.all_sockets: Set[WebSocket] = set()
         self.socket_symbols: Dict[WebSocket, Set[str]] = {}
         self.ticker_task: asyncio.Task | None = None
+        self.fut_task: asyncio.Task | None = None
         self.ctrader_task: asyncio.Task | None = None
         self.ctrader_ws: Any = None
 
@@ -59,6 +60,11 @@ class WebSocketServerManager:
         res = set()
         for syms in self.socket_symbols.values():
             res.update(syms)
+        try:
+            from domains.notifications.service import get_active_alert_symbols
+            res.update(get_active_alert_symbols())
+        except Exception:
+            pass
         return res
 
     async def send_to_user(self, user_id: str, payload: Dict[str, Any]):
@@ -76,18 +82,27 @@ class WebSocketServerManager:
             except Exception:
                 self.all_sockets.discard(ws)
 
-    async def broadcast_tick(self, symbol: str, price: float, timestamp: int | None = None):
+    async def process_market_tick(self, symbol: str, price: float, bid: float = 0.0, ask: float = 0.0, timestamp: int | None = None):
+        if not symbol or price <= 0:
+            return
         inst = find_by_symbol(symbol)
         clean_sym = inst["symbol"] if inst else symbol.strip().upper()
+        b = bid if bid > 0 else price
+        a = ask if ask > 0 else price
         ts = timestamp or int(time.time())
+        try:
+            from domains.notifications.service import evaluate_tick_alerts
+            await evaluate_tick_alerts(clean_sym, price)
+        except Exception:
+            pass
         payload = {
             "type": "MARKET_TICK",
             "tick": {
                 "symbolName": clean_sym,
                 "price": price,
                 "last": price,
-                "bid": price,
-                "ask": price,
+                "bid": b,
+                "ask": a,
                 "timestamp": ts,
                 "serverTime": ts
             }
@@ -99,36 +114,50 @@ class WebSocketServerManager:
                 except Exception:
                     pass
 
+    async def broadcast_tick(self, symbol: str, price: float, timestamp: int | None = None):
+        await self.process_market_tick(symbol, price, timestamp=timestamp)
+
     async def broadcast_raw_tick(self, tick: dict):
         raw_sym = str(tick.get("symbolName") or tick.get("symbol") or "")
-        inst = find_by_symbol(raw_sym)
-        clean_sym = inst["symbol"] if inst else raw_sym.strip().upper()
-        if not clean_sym:
-            return
         bid = float(tick.get("bid") or 0)
         ask = float(tick.get("ask") or 0)
         price = float(tick.get("price") or ((bid + ask) / 2 if bid and ask else bid or ask))
-        tick["symbolName"] = clean_sym
-        tick["price"] = price
-        tick["last"] = price
-        payload = {"type": "MARKET_TICK", "tick": tick}
-        for ws, syms in list(self.socket_symbols.items()):
-            if clean_sym in syms:
-                try:
-                    await ws.send_json(payload)
-                except Exception:
-                    pass
+        await self.process_market_tick(raw_sym, price, bid=bid, ask=ask, timestamp=tick.get("timestamp"))
 
     def ensure_loops(self):
-        if self.ticker_task is None or self.ticker_task.done():
-            self.ticker_task = asyncio.create_task(self._market_ticker_loop())
         if self.ctrader_task is None or self.ctrader_task.done():
             self.ctrader_task = asyncio.create_task(self._ctrader_stream_loop())
+        if self.ticker_task is None or self.ticker_task.done():
+            self.ticker_task = asyncio.create_task(self._binance_stream_loop("wss://stream.binance.com:9443/ws/!miniTicker@arr"))
+        if self.fut_task is None or self.fut_task.done():
+            self.fut_task = asyncio.create_task(self._binance_stream_loop("wss://fstream.binance.com/ws/!miniTicker@arr"))
+
+    async def _binance_stream_loop(self, url: str):
+        while True:
+            try:
+                async with websockets.connect(url, open_timeout=10, ping_interval=20, ping_timeout=10) as ws:
+                    async for raw in ws:
+                        try:
+                            data = json.loads(raw)
+                            if isinstance(data, list):
+                                for item in data:
+                                    s = item.get("s")
+                                    c = item.get("c")
+                                    if s and c:
+                                        ts = int(item.get("E", 0)) // 1000 or int(time.time())
+                                        await self.process_market_tick(s, float(c), timestamp=ts)
+                        except Exception:
+                            pass
+            except Exception:
+                await asyncio.sleep(2.0)
 
     def sync_ctrader_subscriptions(self):
         ws = self.ctrader_ws
         if ws is not None:
             syms = list(self.get_all_subscribed_symbols())
+            if not syms:
+                from domains.instruments.registry import _cache
+                syms = [i["symbol"] for i in _cache.get("list", []) if str(i.get("marketSource") or "").lower() == "entrackcfeed"]
             if syms:
                 asyncio.create_task(self._safe_ws_send(ws, json.dumps({
                     "type": "MARKET_SUBSCRIBE",
@@ -148,16 +177,9 @@ class WebSocketServerManager:
         ws_url = feed_url.replace("https://", "wss://").replace("http://", "ws://") + "/internal/stream"
         api_key = os.getenv("FEED_INTERNAL_API_KEY", "")
         headers = {"x-internal-api-key": api_key} if api_key else None
-
-        while len(self.all_sockets) > 0:
+        while True:
             try:
-                async with websockets.connect(
-                    ws_url,
-                    additional_headers=headers,
-                    open_timeout=10,
-                    ping_interval=20,
-                    ping_timeout=10
-                ) as ws:
+                async with websockets.connect(ws_url, additional_headers=headers, open_timeout=10, ping_interval=20, ping_timeout=10) as ws:
                     self.ctrader_ws = ws
                     self.sync_ctrader_subscriptions()
                     async for raw in ws:
@@ -167,38 +189,12 @@ class WebSocketServerManager:
                                 await self.broadcast_raw_tick(msg["tick"])
                         except Exception:
                             pass
-            except Exception as e:
+            except Exception:
                 self.ctrader_ws = None
                 await asyncio.sleep(2.0)
             finally:
                 self.ctrader_ws = None
 
-    async def _market_ticker_loop(self):
-        feed_url = str(os.getenv("FEED_SERVICE_URL") or os.getenv("MARKET_FEED_URL") or "").rstrip("/")
-        key = os.getenv("FEED_INTERNAL_API_KEY", "")
-        hdrs = {"x-internal-api-key": key} if key else {}
-        async with httpx.AsyncClient(timeout=3.0) as client:
-            while len(self.all_sockets) > 0:
-                try:
-                    symbols = self.get_all_subscribed_symbols()
-                    if symbols and feed_url:
-                        b_syms = set()
-                        for s in symbols:
-                            inst = find_by_symbol(s)
-                            if inst and str(inst.get("marketSource") or "").lower() == "entrackbfeed":
-                                b_syms.add(inst["symbol"])
-                        if b_syms:
-                            resp = await client.get(f"{feed_url}/internal/binance/price", headers=hdrs)
-                            if resp.status_code == 200:
-                                d = resp.json().get("data", [])
-                                if isinstance(d, list):
-                                    price_map = {item["symbol"]: float(item["price"]) for item in d if isinstance(item, dict) and "symbol" in item and "price" in item}
-                                    now_ts = int(time.time())
-                                    for sym in b_syms:
-                                        if sym in price_map:
-                                            await self.broadcast_tick(sym, price_map[sym], now_ts)
-                except Exception as e:
-                    logger.warning("ws_ticker_loop.error", {"error": str(e)})
-                await asyncio.sleep(1.0)
-
 ws_manager = WebSocketServerManager()
+
+

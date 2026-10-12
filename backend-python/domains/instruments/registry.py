@@ -1,3 +1,4 @@
+import asyncio
 from typing import Optional, List, Dict, Any
 from infra.db.postgres import init_db
 
@@ -10,6 +11,9 @@ SELECT_SQL = """
         category,
         asset_class AS "assetClass",
         product_type AS "productType",
+        base_asset AS "baseAsset",
+        quote_asset AS "quoteAsset",
+        icon,
         market_source AS "marketSource",
         profit_currency AS "profitCurrency",
         digits,
@@ -112,3 +116,26 @@ async def list_instruments(
             (q in i["displayName"].lower() if i.get("displayName") else False)
         )]
     return res[:limit]
+
+async def run_catalog_listener():
+    import os, asyncpg
+    dsn = os.getenv("DATABASE_URL")
+    ssl = "require" if os.getenv("DB_SSL_ENABLED", "true") == "true" else False
+    while True:
+        conn = None
+        try:
+            conn = await asyncpg.connect(dsn=dsn, ssl=ssl)
+            await conn.add_listener("catalog_instruments_changed", lambda *_: asyncio.create_task(refresh_instrument_cache()))
+            while not conn.is_closed():
+                await asyncio.sleep(2)
+        except asyncio.CancelledError:
+            if conn and not conn.is_closed():
+                await conn.close()
+            break
+        except Exception:
+            if conn and not conn.is_closed():
+                try:
+                    await conn.close()
+                except Exception:
+                    pass
+            await asyncio.sleep(5)

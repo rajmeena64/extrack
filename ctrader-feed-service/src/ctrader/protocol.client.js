@@ -44,6 +44,7 @@ function createProtocolClient({ getRoot, getSocket }) {
       if (waitForResponse) {
         pendingRequests.set(requestId, {
           payloadType,
+          payloadData,
           sentAt: Date.now(),
           resolve: null,
           reject: null,
@@ -83,16 +84,32 @@ function createProtocolClient({ getRoot, getSocket }) {
     });
   }
 
-  function findPendingRequestByResponseType(responsePayloadType) {
+  function toFiniteNumber(val) {
+    if (val === null || val === undefined) return NaN;
+    if (typeof val === 'number') return val;
+    if (typeof val === 'string') return Number(val);
+    if (typeof val.toString === 'function') return Number(val.toString());
+    return Number(val);
+  }
+
+  function findPendingRequestByResponseType(responsePayloadType, decodedPayload) {
     const matches = [];
+    const resSymId = decodedPayload ? toFiniteNumber(decodedPayload.symbolId) : NaN;
 
     for (const [pendingRequestId, pending] of pendingRequests.entries()) {
       if (EXPECTED_RESPONSE_BY_REQUEST[pending.payloadType] === responsePayloadType) {
-        matches.push([pendingRequestId, pending]);
+        const reqSymId = pending.payloadData ? toFiniteNumber(pending.payloadData.symbolId) : NaN;
+        if (Number.isFinite(resSymId) && Number.isFinite(reqSymId)) {
+          if (resSymId === reqSymId) {
+            matches.push([pendingRequestId, pending]);
+          }
+        } else {
+          matches.push([pendingRequestId, pending]);
+        }
       }
     }
 
-    if (matches.length === 1) {
+    if (matches.length > 0) {
       return {
         requestId: matches[0][0],
         pending: matches[0][1],
@@ -109,8 +126,17 @@ function createProtocolClient({ getRoot, getSocket }) {
     let resolvedRequestId = requestId;
     let pending = requestId ? pendingRequests.get(requestId) : null;
 
+    let decodedPayloadObj = null;
+    const responseTypeName = RESPONSE_TYPE_NAMES[decoded.payloadType];
+    if (responseTypeName && root) {
+      try {
+        const ResponseType = root.lookupType(responseTypeName);
+        decodedPayloadObj = ResponseType.decode(decoded.payload);
+      } catch {}
+    }
+
     if (!pending && !requestId) {
-      const fallbackPending = findPendingRequestByResponseType(decoded.payloadType);
+      const fallbackPending = findPendingRequestByResponseType(decoded.payloadType, decodedPayloadObj);
       if (fallbackPending) {
         resolvedRequestId = fallbackPending.requestId;
         pending = fallbackPending.pending;
@@ -142,37 +168,31 @@ function createProtocolClient({ getRoot, getSocket }) {
       return true;
     }
 
-    const responseTypeName = RESPONSE_TYPE_NAMES[decoded.payloadType];
-
     if (!responseTypeName) {
       pending.reject(new Error(`Unexpected cTrader response type ${decoded.payloadType}`));
       return true;
     }
 
-    try {
-      const ResponseType = root.lookupType(responseTypeName);
-      pending.resolve(ResponseType.decode(decoded.payload));
-    } catch (error) {
-      pending.reject(error);
+    if (decodedPayloadObj) {
+      pending.resolve(decodedPayloadObj);
+    } else {
+      try {
+        const ResponseType = root.lookupType(responseTypeName);
+        pending.resolve(ResponseType.decode(decoded.payload));
+      } catch (error) {
+        pending.reject(error);
+      }
     }
 
     return true;
   }
 
   async function requestMessage(payloadType, payloadData, timeoutMs = 15000) {
-    const runRequest = async () => {
-      const requestId = sendMessage(payloadType, payloadData, true);
-
-      if (!requestId) {
-        throw new Error('Failed to send cTrader request');
-      }
-
-      return waitForResponse(requestId, timeoutMs);
-    };
-
-    const queuedRequest = requestQueue.catch(() => {}).then(runRequest);
-    requestQueue = queuedRequest.catch(() => {});
-    return queuedRequest;
+    const requestId = sendMessage(payloadType, payloadData, true);
+    if (!requestId) {
+      throw new Error('Failed to send cTrader request');
+    }
+    return waitForResponse(requestId, timeoutMs);
   }
 
   return {

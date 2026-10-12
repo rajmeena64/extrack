@@ -1,29 +1,57 @@
-import React, { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import BacktestPlaybackControls from "@/features/markets/components/Backtesting/components/BacktestPlaybackControls";
-import {
-  DEFAULT_LAYOUTS,
-  TradingChartFooter,
-  TradingChartHeader,
-  TradingChartLegend,
-} from "./TradingChartChrome";
 import { normalizeStoredSymbol } from "@/utils/trading/symbols";
 import { readDraggedSymbol } from "@/features/markets/components/MarketTerminal/utils/terminalHelpers";
-import { getDatabaseInstrumentDigits } from "@/features/markets/components/MarketTerminal/utils/instrumentDigits";
+import { createTvDatafeed } from "./datafeeds/tvDatafeed";
+import chartDrawingsApi from "@/utils/api/chartDrawingsApi";
+import { useUserSettings } from "@/hooks/useUserSettings";
+import { saveUserSettings } from "@/utils/user/userSettings";
+import { useTheme } from "@/context/ThemeContext";
+import { API_URL } from "@/utils/common/constants";
+import { Bell, ArrowUpRight, ArrowDownRight, ChartLine } from "@/icons/lucideIcons";
+import { formatTradePrice } from "@/utils/trading/tradeCalculations";
 
-import { useChartInstance } from "./engine/useChartInstance";
-import { useChartDataEngine } from "./engine/useChartDataEngine";
-import { useChartReplayEngine } from "./engine/useChartReplayEngine";
-import { useChartOverlays } from "./engine/useChartOverlays";
-import { useChartDrawing } from "./drawing/useChartDrawing";
-import TradingChartToolbar from "./drawing/TradingChartToolbar";
-import { DrawingActionBar } from "./drawing/DrawingActionBar";
-import { useCrosshair } from "./crosshair";
-import { createDefaultDatafeed } from "./datafeeds/defaultDatafeed";
-import {
-  INTERVAL_MS,
-  TIMEFRAMES,
-} from "./utils/chartHelpers";
+const readCssVar = (name) => {
+  if (typeof window === "undefined") return "";
+  return getComputedStyle(document.body).getPropertyValue(name).trim();
+};
+
+const toTvInterval = (tf) => {
+  const s = String(tf ?? "15").trim();
+  const m = s.match(/^(\d*)([a-zA-Z]+)$/);
+  if (!m) return s;
+  const val = parseInt(m[1] || "1", 10) || 1;
+  const u = m[2];
+  if (u === "m" || u.toLowerCase().startsWith("min")) return String(val);
+  if (u.toLowerCase().startsWith("h")) return String(val * 60);
+  if (u.toLowerCase().startsWith("d")) return `${val}D`;
+  if (u.toLowerCase().startsWith("w")) return `${val}W`;
+  if (u === "M" || u.toLowerCase().startsWith("mo")) return `${val}M`;
+  return s;
+};
+
+const sanitizeDrawingState = (st, sym) => {
+  if (!st?.charts?.[0]?.panes?.[0]?.sources) return null;
+  const clone = JSON.parse(JSON.stringify(st));
+  const ms = clone.charts[0].panes[0].sources.find((s) => s?.type === "MainSeries");
+  if (ms?.state && sym) {
+    ms.state.symbol = sym;
+    ms.state.shortName = sym;
+  }
+  return clone;
+};
+
+const readStoredChartState = (sym) => {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem("entrack_chart_global_layout");
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return sanitizeDrawingState(parsed?.state ?? parsed, sym);
+    }
+  } catch {}
+  return null;
+};
 
 function Chart({
   chart,
@@ -31,495 +59,525 @@ function Chart({
   darkMode,
   symbol: directSymbol,
   timeframe: directTimeframe,
-  interval: directInterval,
   active = false,
-  compact = false,
-  fitNonce,
-  pageActive = true,
-  availableSymbols = [],
-  prioritySymbols = [],
-  initialQuote,
   alerts = [],
+  priceDigits,
   onAddAlert,
   onUpdateAlertPrice,
   onDeleteAlert,
-  layout = "1",
-  layouts = DEFAULT_LAYOUTS,
-  onLayoutChange,
+  onOpenOrderPanel,
   onSymbolChange,
   onIntervalChange,
-  onTimeframeChange,
   onDropSymbol,
   onActivate,
-  onQuote,
-  live = true,
-  priceDigits,
-  markers = [],
-  lines = [],
-  trades = [],
   uniqueId,
-  anchorTime: customAnchorTime,
-  onCandleData,
-  onQuoteChange,
-  onReplayChange,
-  onReplayTick,
   className = "",
 }) {
   const queryClient = useQueryClient();
-
-  const targetSymbol = chart?.symbol || directSymbol || "EURUSD";
-  const targetTimeframe = chart?.interval || directInterval || directTimeframe || "15minutes";
-
-  const normalizedSymbol = useMemo(
-    () => normalizeStoredSymbol(targetSymbol) || targetSymbol || "EURUSD",
-    [targetSymbol]
-  );
+  const targetSymbol = chart?.symbol ?? directSymbol;
+  const targetTimeframe = toTvInterval(chart?.interval ?? directTimeframe ?? "15");
+  const normalizedSymbol = useMemo(() => normalizeStoredSymbol(targetSymbol), [targetSymbol]);
 
   const [tf, setTf] = useState(() => targetTimeframe);
   const [isDragTarget, setIsDragTarget] = useState(false);
-  const [resolvedDigits, setResolvedDigits] = useState(() => {
-    const num = Number(priceDigits);
-    return Number.isInteger(num) && num >= 0 && num <= 8 ? num : null;
-  });
+  const [plusMenu, setPlusMenu] = useState(null);
+  const { darkMode: contextDarkMode } = useTheme() || {};
+  const isDark = Boolean(darkMode ?? contextDarkMode ?? (typeof document !== "undefined" && document.documentElement.classList.contains("dark")));
 
   useEffect(() => {
-    if (targetTimeframe) setTf(targetTimeframe);
-  }, [targetTimeframe]);
+    if (!plusMenu) return;
+    const onKey = (e) => {
+      if (e.key === "Escape") setPlusMenu(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [plusMenu]);
+
+  const containerRef = useRef(null);
+  const widgetRef = useRef(null);
+  const readyRef = useRef(false);
+  const orderLinesRef = useRef(new Map());
+  const chartShellRef = useRef(null);
+
+  const rawId = String(uniqueId ?? chart?.id ?? "main").replace(/[^a-zA-Z0-9_]/g, "_");
+  const containerId = `tv_chart_${rawId}`;
+
+  const currentSymbolRef = useRef(normalizedSymbol);
+  useEffect(() => { currentSymbolRef.current = normalizedSymbol; }, [normalizedSymbol]);
+  const { data: userSettings } = useUserSettings();
+  const lastLayoutRef = useRef(null);
+  const chartSettingsRef = useRef({});
+  const settingsTimerRef = useRef(null);
+  const pendingSaveRef = useRef(null);
+  const saveTimerRef = useRef(null);
+  const isLoadingRef = useRef(false);
+  const isInternalChangeRef = useRef(false);
+  const activeResolutionRef = useRef(targetTimeframe);
+  const lastLoadedSymbolRef = useRef(normalizedSymbol);
 
   useEffect(() => {
-    if (!chartApiRef.current) return;
-    const isIntraday = !/(day|week|month)/i.test(String(tf || ''));
-    try {
-      chartApiRef.current.timeScale()?.applyOptions({ timeVisible: isIntraday });
-    } catch {}
-  }, [tf]);
-
-  useEffect(() => {
-    const num = Number(priceDigits);
-    if (Number.isInteger(num) && num >= 0 && num <= 8) {
-      setResolvedDigits(num);
-      return;
+    const serverSettings = userSettings?.chart_settings;
+    if (serverSettings && typeof serverSettings === "object") {
+      chartSettingsRef.current = { ...chartSettingsRef.current, ...serverSettings };
+    } else {
+      try {
+        const local = localStorage.getItem("entrack_chart_settings");
+        if (local) chartSettingsRef.current = JSON.parse(local);
+      } catch {}
     }
-    let cancelled = false;
-    getDatabaseInstrumentDigits(normalizedSymbol).then((digits) => {
-      if (!cancelled && Number.isInteger(digits) && digits >= 0 && digits <= 8) {
-        setResolvedDigits(digits);
+  }, [userSettings]);
+
+  const scheduleSettingsSave = useCallback(() => {
+    if (settingsTimerRef.current) clearTimeout(settingsTimerRef.current);
+    settingsTimerRef.current = setTimeout(() => {
+      saveUserSettings({ chart_settings: chartSettingsRef.current }).catch(() => {});
+    }, 1000);
+  }, []);
+
+  const flushDrawings = useCallback((st) => {
+    if (!st) return;
+    try {
+      fetch(`${API_URL}/api/v1/chart-drawings/__GLOBAL__?flush=true`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ state: st }),
+        keepalive: true,
+      }).catch(() => {});
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    const handleBlur = () => {
+      const iframe = containerRef.current?.querySelector("iframe");
+      if (iframe && document.activeElement === iframe) onActivate?.();
+    };
+    window.addEventListener("blur", handleBlur);
+    return () => window.removeEventListener("blur", handleBlur);
+  }, [onActivate]);
+
+  useEffect(() => {
+    const handleUnload = () => {
+      if (pendingSaveRef.current?.state) {
+        flushDrawings(pendingSaveRef.current.state);
+      }
+    };
+    window.addEventListener("beforeunload", handleUnload);
+    const handleVisibility = () => {
+      if (document.visibilityState === "hidden") handleUnload();
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => {
+      window.removeEventListener("beforeunload", handleUnload);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, [flushDrawings]);
+
+  const syncAlertLines = useCallback((chartInstance) => {
+    if (!chartInstance) return;
+    const activeMap = orderLinesRef.current;
+    const currentSym = normalizeStoredSymbol(currentSymbolRef.current || targetSymbol);
+    const symbolAlerts = alerts.filter((a) => a.status === "ACTIVE" && normalizeStoredSymbol(a.symbol) === currentSym);
+    const validIds = new Set(symbolAlerts.map((a) => String(a.id)));
+
+    for (const [id, line] of activeMap.entries()) {
+      if (!validIds.has(id)) {
+        try { line.remove(); } catch {}
+        activeMap.delete(id);
+      }
+    }
+
+    symbolAlerts.forEach((alert) => {
+      const price = Number(alert.targetPrice);
+      if (!Number.isFinite(price) || price <= 0) return;
+      const alertId = String(alert.id);
+      let line = activeMap.get(alertId);
+
+      if (!line) {
+        try {
+          line = chartInstance.createOrderLine({ disableUndo: true });
+          line
+            .setPrice(price)
+            .setText(`Alert: ${currentSym}`)
+            .setEditable(true)
+            .setCancellable(true)
+            .setLineColor("#f59e0b")
+            .setBodyBorderColor("#f59e0b")
+            .setBodyBackgroundColor(readCssVar("--bg-card"))
+            .setBodyTextColor("#f59e0b")
+            .setCancelButtonBackgroundColor(readCssVar("--bg-card"))
+            .setCancelButtonBorderColor("#f59e0b")
+            .setCancelButtonIconColor("#f59e0b")
+            .setLineStyle(1)
+            .setExtendLeft(true)
+            .onMove(() => {
+              const newPrice = line.getPrice();
+              if (Number.isFinite(newPrice) && newPrice > 0) {
+                onUpdateAlertPrice?.(alert.id, newPrice);
+              }
+            })
+            .onCancel(() => {
+              onDeleteAlert?.(alert.id);
+            });
+          activeMap.set(alertId, line);
+        } catch {}
+      } else {
+        try {
+          line.setPrice(price);
+        } catch {}
       }
     });
-    return () => {
-      cancelled = true;
-    };
-  }, [normalizedSymbol, priceDigits]);
+  }, [alerts, targetSymbol, isDark, onUpdateAlertPrice, onDeleteAlert]);
 
-  const chartPricePrecision = resolvedDigits;
+  useEffect(() => {
+    let timer = null;
+    let destroyed = false;
 
-  const datafeed = useMemo(() => {
-    if (customDatafeed) return customDatafeed;
-    return createDefaultDatafeed({ queryClient, uniqueId });
-  }, [customDatafeed, queryClient, uniqueId]);
-
-  const anchorTime = useMemo(() => {
-    if (customAnchorTime) return Number(customAnchorTime);
-    if (Array.isArray(trades) && trades.length > 0) {
-      const tradeTimes = trades
-        .flatMap((t) => [t?.entryTime, t?.exitTime])
-        .map((val) => {
-          if (!val) return null;
-          const num = Number(val);
-          const ms = Number.isFinite(num) ? num : new Date(val).getTime();
-          return Number.isFinite(ms) ? (ms > 1e12 ? Math.floor(ms / 1000) : Math.floor(ms)) : null;
-        })
-        .filter(Boolean);
-
-      if (tradeTimes.length > 0) return Math.min(...tradeTimes);
-    }
-    return undefined;
-  }, [customAnchorTime, trades]);
-
-  const {
-    chartRef,
-    chartShellRef,
-    chartApiRef,
-    candleSeriesRef,
-    tradeMarkerPrimitiveRef,
-    isChartReady,
-    isFullscreen,
-    latestCandle,
-    setLatestCandle,
-    cssVariables,
-    toggleFullscreen,
-    saveSnapshot,
-  } = useChartInstance({
-    darkMode,
-    pricePrecision: chartPricePrecision,
-    symbol: normalizedSymbol,
-  });
-
-  const { updateOverlays, clearOverlays } = useChartOverlays({
-    chartApiRef,
-    candleSeriesRef,
-    markerPrimitiveRef: tradeMarkerPrimitiveRef,
-    pricePrecision: chartPricePrecision,
-  });
-  const { crosshairMode, setCrosshairMode } = useCrosshair({ chartApiRef, chartRef });
-
-  const {
-    isReplaying,
-    isReplayPlaying,
-    replaySpeed,
-    replayActiveRef,
-    startReplay,
-    stopReplay,
-    togglePlay,
-    stepForward,
-    stepBackward,
-    setSpeed,
-  } = useChartReplayEngine({
-    chartDataRef: { current: [] },
-    candleSeriesRef,
-    chartApiRef,
-    onReplayChange: (state) => {
-      if (state.candle) {
-        setLatestCandle(state.candle);
-        if (state.active) {
-          updateOverlays({
-            markers,
-            lines,
-            trades,
-            alerts,
-            symbol: normalizedSymbol,
-            candles: chartDataRef.current,
-            timeframe: tf,
-            maxTime: state.candle.time,
-          });
+    const initWidget = () => {
+      if (destroyed || !containerRef.current || !window.TradingView?.widget) return;
+      try {
+        if (widgetRef.current) {
+          try { widgetRef.current.remove(); } catch {}
+          widgetRef.current = null;
+          readyRef.current = false;
+          orderLinesRef.current.clear();
         }
-      }
-      onReplayChange?.(state);
-    },
-    onTick: (candle, cursorIndex) => {
-      onReplayTick?.(candle, cursorIndex);
-    },
-    onResetFullChart: () => {
-      if (chartDataRef.current.length > 0) {
-        candleSeriesRef.current?.setData(chartDataRef.current);
-        setLatestCandle(chartDataRef.current.at(-1) || null);
-        updateOverlays({
-          markers,
-          lines,
-          trades,
-          alerts,
+
+        const datafeed = customDatafeed || createTvDatafeed({ queryClient, uniqueId: rawId });
+        const initialSavedData = readStoredChartState(normalizedSymbol);
+        const widget = new window.TradingView.widget({
+          container: containerId,
           symbol: normalizedSymbol,
-          candles: chartDataRef.current,
-          timeframe: tf,
+          interval: toTvInterval(tf),
+          library_path: "/charting_library/",
+          datafeed,
+          theme: isDark ? "Dark" : "Light",
+          locale: "en",
+          autosize: true,
+          auto_save_delay: 2,
+          saved_data: initialSavedData || undefined,
+          custom_font_family: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+          settings_adapter: {
+            initialSettings: chartSettingsRef.current || {},
+            setValue: (k, v) => {
+              chartSettingsRef.current[k] = v;
+              try { localStorage.setItem("entrack_chart_settings", JSON.stringify(chartSettingsRef.current)); } catch {}
+              scheduleSettingsSave();
+            },
+            removeValue: (k) => {
+              delete chartSettingsRef.current[k];
+              try { localStorage.setItem("entrack_chart_settings", JSON.stringify(chartSettingsRef.current)); } catch {}
+              scheduleSettingsSave();
+            },
+          },
+          disabled_features: [
+            "widgetbar",
+            "right_toolbar",
+            "bottom_widgetbar",
+            "footer_widget",
+            "trading_account_manager",
+            "chart_event_hint",
+            "study_market_minimized",
+          ],
+          enabled_features: [
+            "header_symbol_search",
+            "chart_crosshair_menu",
+            "side_toolbar_in_fullscreen_mode",
+            "items_favoriting",
+            "hide_right_toolbar",
+            "property_pages",
+            "show_chart_property_page",
+            "use_localstorage_for_settings",
+            "custom_resolutions",
+          ],
+          overrides: {
+            "scalesProperties.fontSize": 12,
+          },
         });
-      }
-    },
-  });
 
-  const isLiveEnabled = live && !isReplaying && (!trades || trades.length === 0);
-
-  const { chartDataRef, loading, error, liveQuote } = useChartDataEngine({
-    datafeed,
-    symbol: normalizedSymbol,
-    timeframe: tf,
-    anchorTime,
-    chartApi: chartApiRef.current,
-    candleSeries: candleSeriesRef.current,
-    chartReady: isChartReady,
-    enableLiveStream: isLiveEnabled,
-    isReplayActive: isReplaying,
-    priceDigits: chartPricePrecision,
-    onCandleData: (candles) => {
-      setLatestCandle(candles.at(-1) || null);
-      onCandleData?.(candles);
-      if (!replayActiveRef.current) {
-        updateOverlays({
-          markers,
-          lines,
-          trades,
-          alerts,
-          symbol: normalizedSymbol,
-          candles,
-          timeframe: tf,
-        });
-      }
-    },
-    onTick: (candle) => {
-      if (!replayActiveRef.current && candle) {
-        setLatestCandle(candle);
-      }
-    },
-    onLiveQuote: (quote) => {
-      onQuoteChange?.(quote);
-      onQuote?.(quote?.symbolName || normalizedSymbol, quote);
-    },
-  });
-
-  const {
-    activeTool,
-    setActiveTool,
-    clearAll,
-    undo,
-    drawingsCount,
-    selectedDrawing,
-    selectedPosition,
-    updateSelectedStyle,
-    deleteSelected,
-  } = useChartDrawing({
-    chartApiRef,
-    candleSeriesRef,
-    symbol: normalizedSymbol,
-    chartDataRef,
-    timeframe: tf,
-  });
-
-  useEffect(() => {
-    if (!replayActiveRef.current && chartDataRef.current.length > 0) {
-      updateOverlays({
-        markers,
-        lines,
-        trades,
-        alerts,
-        symbol: normalizedSymbol,
-        candles: chartDataRef.current,
-        timeframe: tf,
-      });
-    }
-  }, [alerts, markers, lines, trades, normalizedSymbol, tf, updateOverlays]);
-
-  const goToActiveTrade = useCallback(() => {
-    const chartApi = chartApiRef.current;
-    const candles = chartDataRef.current;
-    if (!chartApi || !candles || candles.length === 0) return;
-
-    const targetTimes = [
-      ...(Array.isArray(trades)
-        ? trades.flatMap((t) => [t?.entryTime, t?.exitTime])
-        : []),
-      ...(anchorTime ? [anchorTime] : []),
-    ]
-      .map((v) => {
-        if (!v) return null;
-        const num = Number(v);
-        return Number.isFinite(num) ? (num > 1e12 ? Math.floor(num / 1000) : Math.floor(num)) : null;
-      })
-      .filter(Boolean);
-
-    if (targetTimes.length > 0) {
-      const minTime = Math.min(...targetTimes);
-      const maxTime = Math.max(...targetTimes);
-
-      const startIdx = candles.findIndex((c) => c.time >= minTime);
-      const resolvedStartIdx = startIdx >= 0 ? startIdx : 0;
-
-      let endIdx = candles.findIndex((c) => c.time >= maxTime);
-      if (endIdx < 0) endIdx = candles.length - 1;
-
-      const centerIdx = Math.floor((resolvedStartIdx + endIdx) / 2);
-      const spanBars = Math.max(endIdx - resolvedStartIdx + 30, 60);
-
-      try {
-        chartApi.priceScale('right')?.applyOptions({ autoScale: true });
-        chartApi.timeScale().setVisibleLogicalRange({
-          from: Math.max(0, centerIdx - Math.floor(spanBars / 2)),
-          to: Math.min(candles.length + 10, centerIdx + Math.ceil(spanBars / 2)),
-        });
-      } catch {
-      }
-    }
-  }, [anchorTime, chartApiRef, trades]);
-
-  const lastFitNonceRef = useRef(fitNonce);
-  useEffect(() => {
-    if (fitNonce && fitNonce !== lastFitNonceRef.current && chartApiRef.current) {
-      lastFitNonceRef.current = fitNonce;
-      try {
-        chartApiRef.current.priceScale('right')?.applyOptions({ autoScale: true });
-        if (anchorTime || (Array.isArray(trades) && trades.length > 0)) {
-          goToActiveTrade();
-        } else {
-          const candles = chartDataRef.current;
-          if (candles && candles.length > 0) {
-            const total = candles.length;
-            const visibleSpan = 90;
-            chartApiRef.current.timeScale().setVisibleLogicalRange({
-              from: Math.max(0, total - visibleSpan),
-              to: total + 6,
+        widget.onChartReady(() => {
+          if (destroyed) return;
+          readyRef.current = true;
+          const chartInstance = widget.chart();
+          const target = currentSymbolRef.current ?? normalizedSymbol;
+          lastLoadedSymbolRef.current = target;
+          const hasLocalLineTools = initialSavedData?.charts?.[0]?.panes?.[0]?.sources?.some((s) => String(s?.type ?? "").startsWith("LineTool"));
+          if (!hasLocalLineTools && target) {
+            isLoadingRef.current = true;
+            chartDrawingsApi.getDrawings("__GLOBAL__").then((res) => {
+              if (res?.drawing?.state && (currentSymbolRef.current === target || !currentSymbolRef.current)) {
+                const clean = sanitizeDrawingState(res.drawing.state, target);
+                if (clean) {
+                  try {
+                    localStorage.setItem("entrack_chart_global_layout", JSON.stringify({ state: clean, updated_at: Date.now() }));
+                    widgetRef.current?.load(clean);
+                  } catch {}
+                }
+              }
+            }).catch(() => {}).finally(() => {
+              setTimeout(() => { isLoadingRef.current = false; }, 300);
             });
           }
+          const rawCurrentTvSymbol = chartInstance.symbol ? chartInstance.symbol() : null;
+          const currentTvSymbol = rawCurrentTvSymbol ? normalizeStoredSymbol(rawCurrentTvSymbol.includes(":") ? rawCurrentTvSymbol.split(":")[1] : rawCurrentTvSymbol) : null;
+
+          chartInstance.onSymbolChanged().subscribe(null, (symbolInfo) => {
+            const raw = symbolInfo?.name;
+            const clean = normalizeStoredSymbol(raw?.includes(":") ? raw.split(":")[1] : raw);
+            if (clean && clean !== lastLoadedSymbolRef.current) {
+              lastLoadedSymbolRef.current = clean;
+              currentSymbolRef.current = clean;
+              onSymbolChange?.(clean);
+            }
+          });
+
+          chartInstance.onIntervalChanged().subscribe(null, (newInterval) => {
+            activeResolutionRef.current = newInterval;
+            isInternalChangeRef.current = true;
+            setTf(newInterval);
+            onIntervalChange?.(newInterval);
+          });
+
+          if (target && currentTvSymbol && currentTvSymbol !== target) {
+            widget.setSymbol(target, toTvInterval(tf));
+          }
+
+          const iframeEl = containerRef.current?.querySelector("iframe");
+          if (iframeEl) {
+            try {
+              iframeEl.contentWindow?.addEventListener("pointerdown", () => onActivate?.());
+              iframeEl.contentWindow?.addEventListener("mousedown", () => onActivate?.());
+              const doc = iframeEl.contentDocument;
+              if (doc?.head && !doc.getElementById("entrack-font-fix")) {
+                const styleEl = doc.createElement("style");
+                styleEl.id = "entrack-font-fix";
+                styleEl.textContent = "html, body, .chart-page { -webkit-text-size-adjust: 100% !important; text-size-adjust: 100% !important; }";
+                doc.head.appendChild(styleEl);
+              }
+            } catch {}
+          }
+
+          widget.subscribe("onAutoSaveNeeded", () => {
+            if (isLoadingRef.current) return;
+            try {
+              widget.save((state) => {
+                if (!state?.charts?.[0]?.panes || isLoadingRef.current) return;
+                lastLayoutRef.current = state;
+                try {
+                  localStorage.setItem("entrack_chart_global_layout", JSON.stringify({ state, updated_at: Date.now() }));
+                } catch {}
+                pendingSaveRef.current = { state };
+                if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+                saveTimerRef.current = setTimeout(() => {
+                  if (pendingSaveRef.current?.state) {
+                    chartDrawingsApi.saveDrawings("__GLOBAL__", pendingSaveRef.current.state, false).catch(() => {});
+                  }
+                }, 1000);
+              });
+            } catch {}
+          });
+
+          widget.subscribe("onPlusClick", (e) => {
+            const clickPrice = Number(e?.price);
+            if (!Number.isFinite(clickPrice) || clickPrice <= 0) return;
+            onActivate?.();
+            const liveSym = currentSymbolRef.current || normalizedSymbol;
+            const iframe = containerRef.current?.querySelector("iframe");
+            const chartRect = chartShellRef.current?.getBoundingClientRect();
+            const iframeRect = iframe?.getBoundingClientRect();
+            const rawX = (iframeRect && chartRect ? iframeRect.left - chartRect.left : 0) + (e?.clientX || 0);
+            const rawY = (iframeRect && chartRect ? iframeRect.top - chartRect.top : 0) + (e?.clientY || 0);
+            const shellW = chartShellRef.current?.clientWidth || 600;
+            const shellH = chartShellRef.current?.clientHeight || 400;
+            const menuW = 210;
+            const menuH = 140;
+            const posX = rawX + menuW > shellW ? Math.max(10, rawX - menuW - 10) : rawX + 10;
+            const posY = rawY + menuH > shellH ? Math.max(10, rawY - menuH - 10) : rawY;
+            setPlusMenu({ price: clickPrice, symbol: liveSym, x: posX, y: posY });
+          });
+
+          syncAlertLines(chartInstance);
+        });
+
+        widgetRef.current = widget;
+      } catch {}
+    };
+
+    if (window.TradingView?.widget) {
+      initWidget();
+    } else {
+      timer = setInterval(() => {
+        if (window.TradingView?.widget) {
+          clearInterval(timer);
+          initWidget();
         }
-      } catch {
+      }, 50);
+    }
+
+    return () => {
+      destroyed = true;
+      if (timer) clearInterval(timer);
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      if (widgetRef.current) {
+        try { widgetRef.current.remove(); } catch {}
+        widgetRef.current = null;
+        readyRef.current = false;
+        orderLinesRef.current.clear();
       }
-    }
-  }, [anchorTime, fitNonce, goToActiveTrade, trades]);
+    };
+  }, [containerId]);
 
-  const handleToggleReplay = useCallback(() => {
-    if (isReplaying) {
-      stopReplay();
-      return;
-    }
-    const candles = chartDataRef.current;
-    if (!candles || candles.length === 0) return;
+  useEffect(() => {
+    if (!readyRef.current || !widgetRef.current) return;
+    try {
+      if (typeof widgetRef.current.changeTheme === "function") {
+        widgetRef.current.changeTheme(isDark ? "Dark" : "Light");
+      }
+      const chartInstance = widgetRef.current.chart();
+      if (chartInstance) {
+        syncAlertLines(chartInstance);
+      }
+    } catch {}
+  }, [isDark, syncAlertLines]);
 
-    clearOverlays();
-    const entryTime = anchorTime || (Array.isArray(trades) && trades[0]?.entryTime ? Number(trades[0].entryTime) : null);
-    const entryIdx = entryTime ? candles.findIndex((c) => c.time >= entryTime) : -1;
-    const startIndex = entryIdx >= 0 ? Math.max(0, entryIdx - 10) : Math.max(0, candles.length - 50);
-    startReplay({ startIndex, customData: candles });
-  }, [anchorTime, clearOverlays, isReplaying, startReplay, stopReplay, trades]);
-
-  const fitContent = useCallback(() => {
-    if (chartApiRef.current) {
+  useEffect(() => {
+    if (!readyRef.current || !widgetRef.current) return;
+    const tvTf = toTvInterval(tf);
+    const chartInstance = widgetRef.current.chart();
+    if (lastLoadedSymbolRef.current !== normalizedSymbol) {
+      if (pendingSaveRef.current?.state) {
+        chartDrawingsApi.saveDrawings("__GLOBAL__", pendingSaveRef.current.state, false).catch(() => {});
+        pendingSaveRef.current = null;
+      }
+      lastLoadedSymbolRef.current = normalizedSymbol;
+      currentSymbolRef.current = normalizedSymbol;
+      activeResolutionRef.current = tvTf;
       try {
-        chartApiRef.current.priceScale('right')?.applyOptions({ autoScale: true });
-        if (anchorTime || (Array.isArray(trades) && trades.length > 0)) {
-          goToActiveTrade();
-        } else {
-          chartApiRef.current.timeScale().fitContent();
-        }
-      } catch {
+        widgetRef.current.setSymbol(normalizedSymbol, tvTf);
+      } catch {}
+    } else if (activeResolutionRef.current !== tvTf) {
+      if (isInternalChangeRef.current) {
+        isInternalChangeRef.current = false;
+        return;
       }
+      activeResolutionRef.current = tvTf;
+      try {
+        chartInstance.setResolution(tvTf);
+      } catch {}
     }
-  }, [anchorTime, chartApiRef, goToActiveTrade, trades]);
+  }, [normalizedSymbol, tf]);
 
-  const handleTimeframeChange = useCallback(
-    (newTf) => {
-      setTf(newTf);
-      onIntervalChange?.(newTf);
-      onTimeframeChange?.(newTf);
-    },
-    [onIntervalChange, onTimeframeChange]
-  );
+  useEffect(() => {
+    if (!readyRef.current || !widgetRef.current) return;
+    try {
+      syncAlertLines(widgetRef.current.chart());
+    } catch {}
+  }, [alerts, syncAlertLines]);
 
-  const handleSelectSymbol = useCallback(
-    (newSym) => {
-      onSymbolChange?.(newSym);
-    },
-    [onSymbolChange]
-  );
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+    if (!isDragTarget) setIsDragTarget(true);
+  };
 
-  const handleDragOver = useCallback((event) => {
-    if (!readDraggedSymbol(event)) return;
-    event.preventDefault();
-    event.dataTransfer.dropEffect = "copy";
-    setIsDragTarget(true);
-  }, []);
-
-  const handleDragLeave = useCallback((event) => {
-    if (!event.currentTarget.contains(event.relatedTarget)) {
+  const handleDragLeave = (e) => {
+    if (!e.currentTarget.contains(e.relatedTarget)) {
       setIsDragTarget(false);
     }
-  }, []);
+  };
 
-  const handleDrop = useCallback(
-    (event) => {
-      setIsDragTarget(false);
-      const droppedSymbol = readDraggedSymbol(event);
-      if (droppedSymbol) {
-        event.preventDefault();
-        onDropSymbol?.(droppedSymbol);
-        onSymbolChange?.(droppedSymbol);
-      }
-    },
-    [onDropSymbol, onSymbolChange]
-  );
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragTarget(false);
+    const sym = readDraggedSymbol(e);
+    if (sym) {
+      if (onDropSymbol) onDropSymbol(sym);
+      else if (onSymbolChange) onSymbolChange(sym);
+    }
+  };
 
   return (
     <div
-      className={`relative w-full h-full flex flex-col gap-1.5 bg-transparent overflow-hidden transition-all select-none ${
-        isDragTarget ? "ring-2 ring-inset ring-[var(--primary,#2563eb)] opacity-90" : ""
-      } ${isFullscreen ? "fixed inset-0 z-[9999] bg-[var(--bg-card,#131722)]" : ""} ${className}`}
       ref={chartShellRef}
+      className={`relative flex flex-col h-full w-full select-none bg-[var(--bg-card)] ${
+        active ? "ring-1 ring-[var(--primary)]" : ""
+      } ${isDragTarget ? "ring-2 ring-[var(--primary)] bg-[var(--primary)]/5" : ""} ${className}`}
       onClick={() => onActivate?.()}
+      onPointerDown={() => onActivate?.()}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      style={{
-        "--chart-loader-up": cssVariables?.pnlPositive || "#16a34a",
-        "--chart-loader-down": cssVariables?.pnlNegative || "#b91c1c",
-      }}
     >
-      <TradingChartHeader
-        title={targetSymbol}
-        activeSymbol={targetSymbol}
-        timeframe={tf}
-        timeframes={TIMEFRAMES}
-        onTimeframeChange={handleTimeframeChange}
-        availableSymbols={availableSymbols}
-        onSelectSymbol={handleSelectSymbol}
-        layout={layout}
-        layouts={layouts}
-        onLayoutChange={onLayoutChange}
-        candle={latestCandle}
-        quote={liveQuote || initialQuote}
-        priceDigits={chartPricePrecision}
-        replayActive={isReplaying}
-        replayDisabled={loading || chartDataRef.current.length === 0}
-        onReplay={trades?.length > 0 ? handleToggleReplay : undefined}
-        onFullscreen={toggleFullscreen}
-        onSnapshot={() => saveSnapshot(tf)}
-        isFullscreen={isFullscreen}
-      />
-
-      {error && !loading && (
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-3.5 z-10 bg-[var(--bg-card,#ffffff)] p-6 rounded-xl border border-[var(--loss-color,#ef4444)] shadow-sm min-w-[250px] text-center text-sm text-[var(--loss-color,#ef4444)]">
-          <span>{error}</span>
-        </div>
-      )}
-
-      <div className="relative w-full flex-1 min-h-0 flex flex-row gap-1.5 overflow-hidden">
-        <TradingChartToolbar
-          activeTool={activeTool}
-          onSelectTool={setActiveTool}
-          crosshairMode={crosshairMode}
-          onSelectCrosshairMode={setCrosshairMode}
-          onUndo={undo}
-          onClearAll={clearAll}
-          drawingsCount={drawingsCount}
-        />
-        <div className="relative flex-1 min-h-0 h-full flex flex-col rounded-md bg-[var(--bg-card,#ffffff)] dark:bg-[var(--bg-card,#131722)] overflow-hidden">
-          <div className="relative flex-1 min-h-0 w-full overflow-hidden">
-            <DrawingActionBar
-              selectedDrawing={selectedDrawing}
-              position={selectedPosition}
-              onUpdateStyle={updateSelectedStyle}
-              onDelete={deleteSelected}
-            />
-            <TradingChartLegend
-              symbolTitle={targetSymbol}
-              timeframe={tf}
-              candle={latestCandle}
-              quote={liveQuote || initialQuote}
-              priceDigits={chartPricePrecision}
-            />
-            {loading && (
-              <div
-                className="absolute top-0 left-0 right-0 z-20 h-0.5 bg-gradient-to-r from-transparent via-[var(--primary,#2563eb)] to-transparent animate-pulse pointer-events-none"
-                role="status"
-                aria-label="Loading chart data"
-              />
-            )}
-            <div className="w-full h-full min-h-0" ref={chartRef} />
-          </div>
-          {isReplaying && (
-            <BacktestPlaybackControls
-              isPlaying={isReplayPlaying}
-              speed={replaySpeed}
-              onTogglePlay={togglePlay}
-              onStep={stepForward}
-              onSpeedChange={setSpeed}
-            />
-          )}
-          <TradingChartFooter
-            chartApi={chartApiRef.current}
-            timeframe={tf}
-            timeframes={TIMEFRAMES}
-            onTimeframeChange={handleTimeframeChange}
-            onFit={fitContent}
-            onGoToTrade={trades?.length > 0 ? goToActiveTrade : undefined}
+      <div id={containerId} ref={containerRef} className="w-full h-full min-h-0 relative" />
+      {plusMenu && (
+        <>
+          <div
+            className="absolute inset-0 z-40 bg-transparent"
+            onClick={() => setPlusMenu(null)}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              setPlusMenu(null);
+            }}
           />
-        </div>
-      </div>
+          <div
+            className="absolute z-50 min-w-[210px] p-1 rounded-lg border shadow-xl bg-[var(--bg-card)] border-[var(--border-light)] text-[var(--text-primary)] animate-in fade-in zoom-in-95 duration-100 select-none"
+            style={{ left: plusMenu.x, top: plusMenu.y }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-2.5 py-1 text-[11px] font-bold text-[var(--text-secondary)] border-b border-[var(--border-light)] mb-1 flex items-center justify-between">
+              <span>{plusMenu.symbol}</span>
+              <span className="font-mono">{formatTradePrice(plusMenu.price, priceDigits)}</span>
+            </div>
+            <button
+              type="button"
+              className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs font-medium hover:bg-[var(--bg-hover)] text-left cursor-pointer transition-colors"
+              onClick={() => {
+                onAddAlert?.({ symbol: plusMenu.symbol, targetPrice: plusMenu.price });
+                setPlusMenu(null);
+              }}
+            >
+              <Bell size={13} className="text-amber-500 shrink-0" />
+              <span>Add alert at {formatTradePrice(plusMenu.price, priceDigits)}</span>
+            </button>
+            <button
+              type="button"
+              className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs font-medium hover:bg-[var(--bg-hover)] text-left cursor-pointer transition-colors"
+              onClick={() => {
+                onOpenOrderPanel?.({ price: plusMenu.price, side: "buy", symbol: plusMenu.symbol });
+                setPlusMenu(null);
+              }}
+            >
+              <ArrowUpRight size={13} className="text-emerald-500 shrink-0" />
+              <span>Buy at {formatTradePrice(plusMenu.price, priceDigits)}</span>
+            </button>
+            <button
+              type="button"
+              className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs font-medium hover:bg-[var(--bg-hover)] text-left cursor-pointer transition-colors"
+              onClick={() => {
+                onOpenOrderPanel?.({ price: plusMenu.price, side: "sell", symbol: plusMenu.symbol });
+                setPlusMenu(null);
+              }}
+            >
+              <ArrowDownRight size={13} className="text-red-500 shrink-0" />
+              <span>Sell at {formatTradePrice(plusMenu.price, priceDigits)}</span>
+            </button>
+            <button
+              type="button"
+              className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs font-medium hover:bg-[var(--bg-hover)] text-left cursor-pointer transition-colors"
+              onClick={() => {
+                try {
+                  widgetRef.current?.chart()?.createShape({ price: plusMenu.price }, { shape: "horizontal_line" });
+                } catch {}
+                setPlusMenu(null);
+              }}
+            >
+              <ChartLine size={13} className="text-[var(--text-secondary)] shrink-0" />
+              <span>Draw horizontal line</span>
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

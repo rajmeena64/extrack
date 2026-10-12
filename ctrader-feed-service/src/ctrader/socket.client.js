@@ -1,174 +1,243 @@
 const WebSocket = require('ws');
-const { normalizeStoredSymbol } = require('../../shared/utils/symbols');
 const {
   CTRADER_INTERVALS,
-  CTRADER_PERIODS,
-  MAX_RECONNECT_ATTEMPTS,
   PRICE_SCALE,
 } = require('./constants');
-const { getAccounts } = require('./accounts.service');
-const { loadProtos: loadProtobufRoot } = require('./proto.service');
-const { createProtocolClient } = require('./protocol.client');
 const {
-  cacheSymbols,
-  cacheSymbolDetails,
-  resolveSymbolId,
-} = require('./symbols.service');
-const {
-  buildCurrentCandle,
-  buildDepth,
-  buildQuote,
-  buildWatchlistQuotes,
-  getClosedHistoryEndTime,
-  getLatestTrendbarCandle,
-  getSymbolName,
-  normalizeCandles,
-  normalizeDepthEvent,
   normalizeSpotEvent,
+  normalizeCandles,
   trendbarToCandle,
+  buildCurrentCandle,
 } = require('./market-data.service');
+const { createProtocolClient } = require('./protocol.client');
 const { connectionState, ctraderConfig, tokenState } = require('./state');
 const {
-  ensureCtraderTokenStore,
-  ensureValidToken,
-} = require('./token.service');
+  cacheAssets,
+  cacheSymbols,
+  cacheSymbolDetails,
+  normalizeSymbolName,
+  resolveSymbolId,
+  trendbarToBinanceKline,
+} = require('./symbols.service');
+const { ensureValidToken } = require('./token.service');
+const { getAccounts } = require('./accounts.service');
+const { sendTelegramAlert } = require('../telegram-monitor.service');
 
 const protocol = createProtocolClient({
   getRoot: () => connectionState.root,
   getSocket: () => connectionState.ws,
 });
 
-async function loadProtos() {
-  connectionState.root = await loadProtobufRoot();
-  return connectionState.root;
-}
-
-function toPlain(typeName, value) {
-  try {
-    const Type = connectionState.root.lookupType(typeName);
-    return Type.toObject(value, {
-      defaults: false,
-      enums: String,
-      json: true,
-      longs: String,
-    });
-  } catch {
-    return value;
-  }
+function toPlain(typeName, message) {
+  if (!message || !connectionState.root) return null;
+  const Type = connectionState.root.lookupType(typeName);
+  return Type.toObject(message, {
+    defaults: true,
+    arrays: true,
+    objects: true,
+    longs: String,
+    enums: String,
+    bytes: String,
+  });
 }
 
 function getAccountIdPayload() {
   if (!ctraderConfig.accountId) {
-    const error = new Error('No cTrader account ID available');
-    error.status = 503;
-    throw error;
+    throw new Error('No cTrader account ID configured');
   }
-
   return {
-    ctidTraderAccountId: parseInt(ctraderConfig.accountId, 10),
+    ctidTraderAccountId: Number(ctraderConfig.accountId),
   };
 }
 
-function makeSubscriptionKey(symbolId, interval) {
-  return interval ? `${Number(symbolId)}:${interval}` : String(Number(symbolId));
+function makeSubscriptionKey(symbolId) {
+  return String(symbolId);
 }
 
-function parseFiniteInteger(value, fallback = undefined) {
-  const number = Number.parseInt(value, 10);
-  return Number.isFinite(number) ? number : fallback;
+function makeTrendbarSubscriptionKey(symbolId, period) {
+  return `${symbolId}:${period}`;
+}
+
+function getSymbolName(symbolId) {
+  const match = ctraderConfig.symbols.get(Number(symbolId));
+  return match?.name || String(symbolId);
+}
+
+function parseFiniteInteger(value, fallback = 0) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) ? parsed : fallback;
 }
 
 function parseTimestamp(value) {
-  const number = Number(value);
-  return Number.isFinite(number) && number >= 0 ? number : undefined;
+  if (!value) return undefined;
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return undefined;
+  return numeric;
 }
 
-function createHttpError(message, status = 400, payload = null) {
-  const error = new Error(message);
-  error.status = status;
-  if (payload) error.payload = payload;
-  return error;
+function normalizeStoredSymbol(value) {
+  return String(value || '').replace(/[^a-z0-9]/gi, '').toUpperCase();
+}
+
+function getClosedHistoryEndTime(interval) {
+  const intervalSeconds = {
+    '1m': 60,
+    '3m': 3 * 60,
+    '5m': 5 * 60,
+    '15m': 15 * 60,
+    '30m': 30 * 60,
+    '1h': 60 * 60,
+    '4h': 4 * 60 * 60,
+    '1d': 24 * 60 * 60,
+    '1w': 7 * 24 * 60 * 60,
+    '1M': 31 * 24 * 60 * 60,
+  }[interval] || 60;
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  return Math.floor(nowSeconds / intervalSeconds) * intervalSeconds * 1000;
+}
+
+function findSymbolMatch(symbol) {
+  const normalized = normalizeSymbolName(symbol);
+
+  for (const candidate of ctraderConfig.symbols.values()) {
+    if (candidate.normalizedName === normalized) {
+      return candidate;
+    }
+  }
+
+  return null;
 }
 
 async function ensureSymbolId(symbol) {
-  await ensureCtraderReady();
+  if (!symbol) {
+    throw new Error('Symbol is required');
+  }
 
   let symbolId = resolveSymbolId(symbol);
+
   if (!symbolId) {
     await requestSymbolsAsync();
     symbolId = resolveSymbolId(symbol);
   }
 
   if (!symbolId) {
-    const normalizedSymbol = normalizeStoredSymbol(symbol);
-    throw createHttpError(`cTrader symbol not found: ${symbol}`, 404, {
-      success: false,
-      error: `cTrader symbol not found: ${symbol}`,
-      symbol,
-      normalizedSymbol,
-      availableSymbolCount: ctraderConfig.symbols.size,
-    });
+    const match = findSymbolMatch(symbol);
+    if (match?.id) {
+      symbolId = Number(match.id);
+    }
   }
 
-  await ensureSymbolDetails(symbolId);
-  return Number(symbolId);
-}
-
-async function ensureSymbolDetails(symbolId) {
-  const numericSymbolId = Number(symbolId);
-  const cached = ctraderConfig.symbols.get(numericSymbolId);
-  const cachedDigits = Number(cached?.digits);
-
-  if (Number.isFinite(cachedDigits) && cachedDigits > 0) {
-    return cached;
+  if (!symbolId) {
+    const error = new Error(`Symbol ${symbol} was not found on cTrader`);
+    error.status = 404;
+    throw error;
   }
 
-  const raw = await protocol.requestMessage(2116, {
-    ...getAccountIdPayload(),
-    symbolId: [numericSymbolId],
-  });
-  const symbols = raw.symbol || raw.symbols || [];
-  cacheSymbolDetails(symbols);
-  return ctraderConfig.symbols.get(numericSymbolId) || cached || null;
+  return symbolId;
 }
 
-function normalizeTrendbarEvent(spotEvent) {
-  const symbolId = Number(spotEvent.symbolId);
-  const trendbars = (spotEvent.trendbar || []).map((trendbar) => ({
-    symbolId,
-    symbolName: getSymbolName(symbolId),
-    period: trendbar.period || null,
-    candle: trendbarToCandle(trendbar, symbolId),
-    raw: toPlain('ProtoOATrendbar', trendbar),
-    receivedAt: new Date().toISOString(),
-  }));
+function handleMessage(data) {
+  if (!connectionState.root) {
+    return;
+  }
 
-  trendbars.forEach((trendbar) => {
-    const key = makeSubscriptionKey(symbolId, trendbar.period);
-    ctraderConfig.latestTrendbars.set(key, trendbar);
-  });
-}
+  try {
+    const Message = connectionState.root.lookupType('ProtoMessage');
+    const decoded = Message.decode(data);
 
-function normalizeTickData(tickData = []) {
-  let currentTimestamp = null;
-
-  return tickData.map((tick, index) => {
-    const rawTimestamp = Number(tick.timestamp);
-    if (index === 0 || currentTimestamp === null) {
-      currentTimestamp = rawTimestamp;
-    } else {
-      currentTimestamp -= rawTimestamp;
+    if (protocol.resolvePendingResponse(decoded)) {
+      return;
     }
 
-    return {
-      timestamp: currentTimestamp,
-      price: Number(tick.tick) / PRICE_SCALE,
-      raw: toPlain('ProtoOATickData', tick),
-    };
-  });
+    switch (decoded.payloadType) {
+      case 2101: {
+        ctraderConfig.isAppAuthed = true;
+        sendAccountAuth();
+        break;
+      }
+
+      case 2103: {
+        const wasAuthed = ctraderConfig.isAccountAuthed;
+        ctraderConfig.isAccountAuthed = true;
+        requestSymbolsAsync().catch(() => {});
+        resubscribeActiveSubscriptions().catch(() => {});
+        if (!wasAuthed) {
+          sendTelegramAlert('Feed Connected', `cTrader account ${ctraderConfig.accountId} authenticated.`, false).catch(() => {});
+        }
+        break;
+      }
+
+      case 2131: {
+        const SpotEvent = connectionState.root.lookupType('ProtoOASpotEvent');
+        const event = SpotEvent.decode(decoded.payload);
+        const normalizedTick = normalizeSpotEvent(event, toPlain);
+        if (normalizedTick) {
+          ctraderConfig.latestTicks.set(Number(normalizedTick.symbolId), normalizedTick);
+          if (typeof global.__ctraderFeedOnTick === 'function') {
+            global.__ctraderFeedOnTick(normalizedTick);
+          }
+        }
+        break;
+      }
+
+      case 2155: {
+        const DepthEvent = connectionState.root.lookupType('ProtoOADepthEvent');
+        const event = DepthEvent.decode(decoded.payload);
+        const symbolId = Number(event.symbolId);
+        ctraderConfig.depthQuotes.set(symbolId, toPlain('ProtoOADepthEvent', event));
+        break;
+      }
+
+      case 2138: {
+        break;
+      }
+
+      case 2146: {
+        break;
+      }
+
+      case 2142: {
+        const ErrorRes = connectionState.root.lookupType('ProtoOAErrorRes');
+        const errorData = ErrorRes.decode(decoded.payload);
+        const authErrorCodes = new Set(['CH_ACCESS_TOKEN_INVALID', 'OA_AUTH_TOKEN_EXPIRED', 'INVALID_ACCESS_TOKEN']);
+        if (authErrorCodes.has(errorData.errorCode)) {
+          tokenState.lastRefreshError = errorData.description || errorData.errorCode;
+          sendTelegramAlert('Auth Error', `cTrader auth error: ${errorData.errorCode} - ${errorData.description || ''}`, true).catch(() => {});
+        }
+        break;
+      }
+
+      default:
+        break;
+    }
+  } catch (err) {
+  }
+}
+
+async function loadProtos() {
+  const protobuf = require('protobufjs');
+  const path = require('path');
+
+  const protoDir = path.resolve(__dirname, 'protobuf');
+
+  const root = new protobuf.Root();
+
+  await root.load([
+    path.join(protoDir, 'OpenApiModelMessages.proto'),
+    path.join(protoDir, 'OpenApiMessages.proto'),
+    path.join(protoDir, 'OpenApiCommonModelMessages.proto'),
+    path.join(protoDir, 'OpenApiCommonMessages.proto'),
+  ]);
+
+  connectionState.root = root;
+  return root;
 }
 
 function sendAppAuth() {
+  if (!ctraderConfig.clientId || !ctraderConfig.clientSecret) {
+    return;
+  }
+
   protocol.sendMessage(2100, {
     clientId: ctraderConfig.clientId,
     clientSecret: ctraderConfig.clientSecret,
@@ -176,7 +245,9 @@ function sendAppAuth() {
 }
 
 function sendAccountAuth() {
-  if (!ctraderConfig.accountId) return;
+  if (!ctraderConfig.accountId || !ctraderConfig.accessToken) {
+    return;
+  }
 
   protocol.sendMessage(2102, {
     ...getAccountIdPayload(),
@@ -185,23 +256,28 @@ function sendAccountAuth() {
 }
 
 async function requestSymbolsAsync() {
-  const symbolsData = await protocol.requestMessage(2114, getAccountIdPayload());
+  const assetsRes = await protocol.requestMessage(2112, getAccountIdPayload());
+  cacheAssets(assetsRes.asset || []);
 
-  cacheSymbols(symbolsData);
-  return Array.from(ctraderConfig.symbols.values());
+  const symbolsRes = await protocol.requestMessage(2114, {
+    ...getAccountIdPayload(),
+    includeArchivedSymbols: false,
+  });
+
+  cacheSymbols(symbolsRes.symbol || []);
+  return symbolsRes;
 }
 
-function requestCandles(symbolId = null, period = CTRADER_PERIODS.M1, count = 100) {
-  const targetSymbolId = symbolId || ctraderConfig.currentSymbolId;
-
-  if (!targetSymbolId || !ctraderConfig.accountId) return;
-
-  protocol.sendMessage(2137, {
+async function requestSymbolDetails(symbolIds = []) {
+  if (!symbolIds.length) return [];
+  const res = await protocol.requestMessage(2116, {
     ...getAccountIdPayload(),
-    symbolId: targetSymbolId,
-    period,
-    count,
+    symbolId: symbolIds.map(Number),
   });
+
+  const details = res.symbol || [];
+  cacheSymbolDetails(details);
+  return details;
 }
 
 async function requestTrendbars(symbolId, period, count, fromTimestamp, toTimestamp) {
@@ -215,11 +291,14 @@ async function requestTrendbars(symbolId, period, count, fromTimestamp, toTimest
     period,
   };
 
-  if (Number.isFinite(fromTimestamp)) {
+  const hasFrom = Number.isFinite(fromTimestamp);
+  const hasTo = Number.isFinite(toTimestamp);
+
+  if (hasFrom) {
     payload.fromTimestamp = fromTimestamp;
   }
 
-  if (Number.isFinite(toTimestamp)) {
+  if (hasTo) {
     payload.toTimestamp = toTimestamp;
   }
 
@@ -246,7 +325,7 @@ function startHeartbeat() {
     if (connectionState.ws && connectionState.ws.readyState === WebSocket.OPEN) {
       sendHeartbeat();
     }
-  }, 30000);
+  }, 10000);
 }
 
 function stopHeartbeat() {
@@ -256,19 +335,33 @@ function stopHeartbeat() {
   }
 }
 
-async function reconnect() {
-  if (connectionState.isConnecting) return;
-  if (connectionState.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) return;
+function reconnect() {
+  if (connectionState.reconnectTimer) return;
 
-  connectionState.reconnectAttempts += 1;
+  const delay = Math.min(1000 * Math.pow(2, connectionState.reconnectAttempts || 0), 30000);
+  connectionState.reconnectAttempts = (connectionState.reconnectAttempts || 0) + 1;
 
-  setTimeout(async () => {
-    await connectSocket();
-  }, 5000);
+  connectionState.reconnectTimer = setTimeout(async () => {
+    connectionState.reconnectTimer = null;
+    try {
+      await connectSocket();
+    } catch {
+      reconnect();
+    }
+  }, delay);
 }
 
 async function connectSocket() {
-  if (connectionState.isConnecting) return;
+  if (
+    connectionState.ws &&
+    (connectionState.ws.readyState === WebSocket.OPEN || connectionState.ws.readyState === WebSocket.CONNECTING)
+  ) {
+    return;
+  }
+
+  if (connectionState.isConnecting) {
+    return;
+  }
 
   connectionState.isConnecting = true;
 
@@ -316,20 +409,35 @@ async function connectSocket() {
       handleMessage(data);
     });
 
-    connectionState.ws.on('error', () => {});
+    connectionState.ws.on('error', (err) => {
+      sendTelegramAlert('WebSocket Error', `cTrader socket error: ${err?.message || 'unknown'}`, true).catch(() => {});
+    });
 
-    connectionState.ws.on('close', () => {
+    connectionState.ws.on('close', (code) => {
+      const hadAuth = ctraderConfig.isAccountAuthed;
+      ctraderConfig.isAppAuthed = false;
+      ctraderConfig.isAccountAuthed = false;
       connectionState.isConnecting = false;
       stopHeartbeat();
+      if (hadAuth) {
+        sendTelegramAlert('Feed Disconnected', `WebSocket closed (code: ${code}). Reconnecting...`, true).catch(() => {});
+      }
       reconnect();
     });
   } catch (err) {
     connectionState.isConnecting = false;
-    if (err.message.includes('access token could not be refreshed')) {
-      return;
-    }
+    sendTelegramAlert('Connection Error', `Failed to connect socket: ${err?.message || 'unknown'}`, true).catch(() => {});
     reconnect();
   }
+}
+
+function connected() {
+  return Boolean(
+    connectionState.ws &&
+    connectionState.ws.readyState === WebSocket.OPEN &&
+    ctraderConfig.isAppAuthed &&
+    ctraderConfig.isAccountAuthed
+  );
 }
 
 async function waitForSocketReady(timeoutMs = 20000) {
@@ -410,6 +518,27 @@ async function fetchCtraderKlines({ symbol, interval = '1m', startTime, endTime,
   const requestEndTime = Number.isFinite(resolvedEndTime)
     ? resolvedEndTime
     : (Number.isFinite(resolvedStartTime) ? getClosedHistoryEndTime(interval) : Date.now());
+
+  if (Number.isFinite(resolvedStartTime) && Number.isFinite(resolvedEndTime)) {
+    const rangeBars = Math.max(1, Math.floor((resolvedEndTime - resolvedStartTime) / intervalMs) + 1);
+    const parsedLimit = Number.parseInt(limit, 10);
+    const exactLimit = Number.isFinite(parsedLimit) && parsedLimit > 0 ? Math.min(parsedLimit, rangeBars, 2000) : Math.min(rangeBars, 2000);
+    const trendData = await requestTrendbars(symbolId, period, exactLimit, resolvedStartTime, resolvedEndTime);
+    const minSec = Math.floor(resolvedStartTime / 1000);
+    const maxSec = Math.floor(resolvedEndTime / 1000);
+    const chunk = trendData?.trendbar || trendData?.trendbars || [];
+    const candles = chunk
+      .map((trendbar) => trendbarToCandle(trendbar, symbolId))
+      .filter((kline) => Number.isFinite(kline.time) && kline.time >= minSec && kline.time <= maxSec)
+      .sort((a, b) => Number(a.time) - Number(b.time));
+    const symbolInfo = ctraderConfig.symbols.get(symbolId) || null;
+    return {
+      symbol: symbolInfo?.name || symbol,
+      interval,
+      candles: normalizeCandles(candles),
+    };
+  }
+
   const requestedRangeCount = Number.isFinite(resolvedStartTime) && Number.isFinite(requestEndTime)
     ? Math.ceil((requestEndTime - resolvedStartTime) / intervalMs) + 5
     : normalizedLimit;
@@ -499,61 +628,71 @@ async function getLiveMarketSnapshot({ symbol, interval = '1m', subscribe = true
     }
   }
 
-  const tick = match ? ctraderConfig.latestTicks.get(match.id) : null;
-  const depth = match ? buildDepth(ctraderConfig.latestDepth.get(match.id)) : null;
-  const previousCandle = match ? getLatestTrendbarCandle(match.id, interval) : null;
-  const candle = buildCurrentCandle({ tick, interval, previousCandle });
-  const quote = buildQuote(tick);
-
-  return {
+  const snapshot = {
     symbol: match,
-    symbols,
-    quote,
-    tick: quote,
-    candle,
-    depth,
-    subscribed: Boolean(match),
-    serverTime: Math.floor(Date.now() / 1000),
+    quote: ctraderConfig.latestTicks.get(symbolId) || null,
+    depth: ctraderConfig.depthQuotes.get(symbolId) || null,
+    candle: null,
   };
+
+  if (snapshot.quote) {
+    snapshot.candle = buildCurrentCandle({
+      tick: snapshot.quote,
+      interval,
+    });
+  }
+
+  return snapshot;
 }
 
-async function getWatchlistQuotes(symbolValues = []) {
+async function subscribeLiveTicks(symbol) {
   await ensureCtraderReady();
-  const allSymbols = await getSymbols();
-  const requestedSymbols = symbolValues.length
-    ? symbolValues
-      .map((value) => resolveSymbolId(value))
-      .filter(Boolean)
-      .map((symbolId) => ctraderConfig.symbols.get(Number(symbolId)))
-      .filter(Boolean)
-    : allSymbols.slice(0, 20);
+  const symbolId = await ensureSymbolId(symbol);
+  const subscriptionKey = makeSubscriptionKey(symbolId);
 
-  return {
-    quotes: buildWatchlistQuotes(requestedSymbols),
-    symbols: requestedSymbols,
-  };
-}
+  if (ctraderConfig.liveTickSubscriptions.has(subscriptionKey)) {
+    return {
+      subscribed: true,
+      alreadySubscribed: true,
+      symbolId,
+      symbolName: getSymbolName(symbolId),
+    };
+  }
 
-async function getSymbols() {
-  await ensureCtraderReady();
-  return Array.from(ctraderConfig.symbols.values());
-}
-
-async function getSymbolById(symbolId) {
-  await ensureCtraderReady();
-  const numericSymbolId = parseFiniteInteger(symbolId);
-  if (!numericSymbolId) throw createHttpError('Valid symbolId is required', 400);
-
-  const raw = await protocol.requestMessage(2116, {
+  const raw = await protocol.requestMessage(2127, {
     ...getAccountIdPayload(),
-    symbolId: [numericSymbolId],
+    symbolId: [Number(symbolId)],
+    subscribeToSpotTimestamp: true,
   });
-  cacheSymbolDetails(raw.symbol || raw.symbols || []);
+
+  console.log(`[cTrader SUB 2127 RES for ${symbol} (id:${symbolId})]:`, JSON.stringify(toPlain('ProtoOASubscribeSpotsRes', raw)));
+  ctraderConfig.liveTickSubscriptions.add(subscriptionKey);
 
   return {
-    symbols: raw.symbol || raw.symbols || [],
-    raw: toPlain('ProtoOASymbolByIdRes', raw),
+    subscribed: true,
+    symbolId,
+    symbolName: getSymbolName(symbolId),
+    raw: toPlain('ProtoOASubscribeSpotsRes', raw),
   };
+}
+
+async function unsubscribeLiveTicks(symbol) {
+  await ensureCtraderReady();
+  const symbolId = await ensureSymbolId(symbol);
+  const subscriptionKey = makeSubscriptionKey(symbolId);
+
+  if (!ctraderConfig.liveTickSubscriptions.has(subscriptionKey)) {
+    return { unsubscribed: true, wasNotSubscribed: true };
+  }
+
+  const raw = await protocol.requestMessage(2129, {
+    ...getAccountIdPayload(),
+    symbolId: [Number(symbolId)],
+  });
+
+  ctraderConfig.liveTickSubscriptions.delete(subscriptionKey);
+
+  return { unsubscribed: true, raw: toPlain('ProtoOAUnsubscribeSpotsRes', raw) };
 }
 
 async function fetchOneTickSide(symbolId, type, fromTimestamp, toTimestamp) {
@@ -610,7 +749,7 @@ async function subscribeSpotsBatch(symbolIds = []) {
   const numericIds = symbolIds.map(Number).filter((id) => Number.isFinite(id) && id > 0);
   if (!numericIds.length) return { subscribed: 0 };
 
-  protocol.sendMessage(2127, {
+  const raw = await protocol.requestMessage(2127, {
     ...getAccountIdPayload(),
     symbolId: numericIds,
     subscribeToSpotTimestamp: true,
@@ -620,7 +759,13 @@ async function subscribeSpotsBatch(symbolIds = []) {
     ctraderConfig.liveTickSubscriptions.add(makeSubscriptionKey(id));
   });
 
-  return { subscribed: numericIds.length };
+  return { subscribed: numericIds.length, raw: toPlain('ProtoOASubscribeSpotsRes', raw) };
+}
+
+async function resubscribeActiveSubscriptions() {
+  const ids = Array.from(ctraderConfig.liveTickSubscriptions).map(Number).filter((id) => Number.isFinite(id) && id > 0);
+  if (ids.length === 0) return { subscribed: 0 };
+  return subscribeSpotsBatch(ids);
 }
 
 async function subscribeAllSymbols(batchSize = 50, delayMs = 60) {
@@ -628,167 +773,72 @@ async function subscribeAllSymbols(batchSize = 50, delayMs = 60) {
   const allSymbols = await getSymbols();
   const allIds = allSymbols.map((s) => Number(s.id || s.symbolId)).filter((id) => Number.isFinite(id) && id > 0);
 
-  console.info(`[cTrader] 24/7 Subscribing ${allIds.length} symbols in batches of ${batchSize}...`);
+  console.log(`[cTrader] 24/7 Subscribing ${allIds.length} symbols in batches of ${batchSize}...`);
 
   for (let i = 0; i < allIds.length; i += batchSize) {
-    const chunk = allIds.slice(i, i + batchSize);
+    const batch = allIds.slice(i, i + batchSize);
     try {
-      await subscribeSpotsBatch(chunk);
+      await subscribeSpotsBatch(batch);
     } catch (err) {
-      console.warn(`[cTrader] Batch subscription error (${i}-${i + chunk.length}): ${err.message}`);
+      console.warn(`[cTrader] Batch subscribe failed at offset ${i}:`, err.message);
     }
-    if (i + batchSize < allIds.length && delayMs > 0) {
-      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    if (delayMs > 0 && i + batchSize < allIds.length) {
+      await new Promise((r) => setTimeout(r, delayMs));
     }
   }
 
-  console.info(`[cTrader] 24/7 Active Subscriptions: ${ctraderConfig.liveTickSubscriptions.size} symbols live.`);
+  return { total: allIds.length, subscribedCount: ctraderConfig.liveTickSubscriptions.size };
+}
+
+async function getSymbols() {
+  await ensureCtraderReady();
+  return Array.from(ctraderConfig.symbols.values());
+}
+
+async function getWatchlistQuotes(symbols = []) {
+  await ensureCtraderReady();
+  const quotes = {};
+  const requestedSymbols = [];
+
+  for (const sym of symbols) {
+    const match = findSymbolMatch(sym);
+    if (!match) continue;
+
+    requestedSymbols.push(match);
+    const tick = ctraderConfig.latestTicks.get(Number(match.id));
+    if (tick) {
+      quotes[match.name] = tick;
+    }
+  }
+
   return {
-    totalSubscribed: ctraderConfig.liveTickSubscriptions.size,
-    totalAvailable: allIds.length,
+    quotes,
+    symbols: requestedSymbols,
   };
-}
-
-async function subscribeLiveTicks(symbol) {
-  const symbolId = await ensureSymbolId(symbol);
-  const raw = await protocol.requestMessage(2127, {
-    ...getAccountIdPayload(),
-    symbolId: [symbolId],
-    subscribeToSpotTimestamp: true,
-  });
-  ctraderConfig.liveTickSubscriptions.add(makeSubscriptionKey(symbolId));
-  return { symbolId, symbolName: getSymbolName(symbolId), subscribed: true, raw: toPlain('ProtoOASubscribeSpotsRes', raw) };
-}
-
-async function unsubscribeLiveTicks(symbol) {
-  const symbolId = await ensureSymbolId(symbol);
-  const raw = await protocol.requestMessage(2129, {
-    ...getAccountIdPayload(),
-    symbolId: [symbolId],
-  });
-  ctraderConfig.liveTickSubscriptions.delete(makeSubscriptionKey(symbolId));
-  return { symbolId, symbolName: getSymbolName(symbolId), subscribed: false, raw: toPlain('ProtoOAUnsubscribeSpotsRes', raw) };
-}
-
-function handleEvent(decoded, typeName, handler) {
-  try {
-    const EventType = connectionState.root.lookupType(typeName);
-    const event = EventType.decode(decoded.payload);
-    handler(event);
-  } catch (error) {
-    if (process.env.NODE_ENV !== 'production') {
-      console.warn('ctrader.event_decode_failed', { typeName, error: error.message });
-    }
-  }
-}
-
-function handleMessage(data) {
-  try {
-    const root = connectionState.root;
-    const Message = root.lookupType('ProtoMessage');
-    const decoded = Message.decode(new Uint8Array(data));
-
-    if (protocol.resolvePendingResponse(decoded)) {
-      return;
-    }
-
-    switch (decoded.payloadType) {
-      case 2101:
-        ctraderConfig.isAppAuthed = true;
-        setTimeout(() => sendAccountAuth(), 500);
-        break;
-
-      case 2103:
-        try {
-          const AccAuthRes = root.lookupType('ProtoOAAccountAuthRes');
-          AccAuthRes.decode(decoded.payload);
-          ctraderConfig.isAccountAuthed = true;
-        } catch (_err) {
-          ctraderConfig.isAccountAuthed = true;
-        }
-        break;
-
-      case 2115:
-        handleEvent(decoded, 'ProtoOASymbolsListRes', cacheSymbols);
-        break;
-
-      case 2131:
-        handleEvent(decoded, 'ProtoOASpotEvent', (event) => {
-          const tick = normalizeSpotEvent(event, toPlain);
-          ctraderConfig.latestTicks.set(tick.symbolId, tick);
-          if (typeof global.__ctraderFeedOnTick === 'function') {
-            try {
-              global.__ctraderFeedOnTick(tick);
-            } catch (_error) {}
-          }
-          normalizeTrendbarEvent(event);
-        });
-        break;
-
-      case 2142:
-        handleEvent(decoded, 'ProtoOAErrorRes', (errorData) => {
-          const errorCode = errorData.errorCode || '';
-          if (errorCode === 'CH_ACCESS_TOKEN_INVALID' || errorCode === 'OA_AUTH_TOKEN_EXPIRED') {
-            tokenState.lastRefreshError = errorCode;
-            console.warn('ctrader.account_auth_failed.invalid_token', 'Access token is invalid. Clearing token and forcing refresh.');
-            ctraderConfig.accessToken = '';
-            ctraderConfig.expiresAt = 0;
-            if (connectionState.ws) {
-              connectionState.ws.close();
-            }
-          }
-        });
-        break;
-
-      case 2147:
-        handleEvent(decoded, 'ProtoOAAccountsTokenInvalidatedEvent', (_event) => {
-          tokenState.lastRefreshError = 'cTrader accounts token invalidated';
-          console.warn('ctrader.token_invalidated_event', 'Access token invalidated event received. Clearing token and forcing refresh.');
-          ctraderConfig.accessToken = '';
-          ctraderConfig.expiresAt = 0;
-          if (connectionState.ws) {
-            connectionState.ws.close();
-          }
-        });
-        break;
-
-      default:
-        break;
-    }
-  } catch (_err) {
-    // Suppress frame decode errors
-  }
 }
 
 function cleanup() {
   stopHeartbeat();
-
   if (connectionState.ws) {
     connectionState.ws.removeAllListeners();
     connectionState.ws.close();
     connectionState.ws = null;
   }
-
-  ctraderConfig.isAppAuthed = false;
-  ctraderConfig.isAccountAuthed = false;
-  ctraderConfig.liveTickSubscriptions.clear();
-  connectionState.isConnecting = false;
-  connectionState.reconnectAttempts = 0;
 }
 
 module.exports = {
   cleanup,
   connectSocket,
+  connected,
   ensureCtraderReady,
-  ensureCtraderTokenStore,
   fetchCtraderKlines,
   fetchCtraderTicks,
   getLiveMarketSnapshot,
-  getSymbolById,
   getSymbols,
   getWatchlistQuotes,
   loadProtos,
-  requestSymbolsAsync,
+  protocol,
+  resubscribeActiveSubscriptions,
   subscribeAllSymbols,
   subscribeLiveTicks,
   subscribeSpotsBatch,

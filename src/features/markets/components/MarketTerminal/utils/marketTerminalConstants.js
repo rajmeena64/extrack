@@ -1,5 +1,5 @@
 export const INTERVALS = ['1m', '5m', '15m', '1h', '4h', '1d'];
-export const DEFAULT_SYMBOL = 'EURUSD';
+export const DEFAULT_SYMBOL = 'XAUUSD';
 export const INITIAL_CANDLE_LIMIT = 1000;
 export const HISTORY_CHUNK_LIMIT = 1000;
 export const PAST_BUFFER_CHUNKS = 2;
@@ -34,7 +34,6 @@ export const DEFAULT_WATCHLIST_SYMBOLS = [
   'NZDUSD',
   'EURJPY',
   'GBPJPY',
-  'XAUUSD',
   'XAGUSD',
   'BTCUSDT',
   'ETHUSDT',
@@ -58,7 +57,6 @@ export const WATCHLIST_PRIORITY = new Map([
   'NZDUSD',
   'EURJPY',
   'GBPJPY',
-  'XAUUSD',
   'XAGUSD',
   'BTCUSDT',
   'ETHUSDT',

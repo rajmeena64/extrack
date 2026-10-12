@@ -7,16 +7,16 @@ const { performance } = require('perf_hooks');
 const jwt = require('jsonwebtoken');
 require('dotenv').config({ path: path.join(__dirname, '.env'), quiet: true });
 const Sentry = require('@sentry/node');
-const { errorMiddleware, publicError, sanitizeError } = require('./core/errors/safeErrors');
-const pool = require('./infra/db/database');
+const { errorMiddleware, publicError, safeResponseMiddleware, sanitizeError } = require('./core/errors/safeErrors');
+const pool = require('./infra/db/supabase');
 
 Sentry.init({
   dsn: process.env.SENTRY_DSN,
   environment: process.env.NODE_ENV || 'development',
 });
 
-
 const app = express();
+app.use(safeResponseMiddleware);
 const missingEnv = [];
 
 /* =======================
@@ -70,28 +70,6 @@ app.use(corsMiddleware);
 app.use(cookieParser());
 app.use(express.json({ limit: '2mb' }));
 
-      // app.use((req, res, next) => {
-      //   if (!req.originalUrl.startsWith('/api') || req.method === 'OPTIONS') {
-      //     return next();
-      //   }
-
-      //   const start = performance.now();
-
-      //   res.on('finish', () => {
-      //     const totalMs = Math.round(performance.now() - start);
-
-      //     if (totalMs > 300) {
-      //       console.log('[api-time]', {
-      //         method: req.method,
-      //         url: req.originalUrl,
-      //         status: res.statusCode,
-      //         total_ms: totalMs,
-      //       });
-      //     }
-      //   });
-
-      //   next();
-      // });
 
 function isTrustedOrigin(req) {
   const origin = corsMiddleware.normalizeOrigin(req.headers.origin);
@@ -145,43 +123,21 @@ app.use((req, res, next) => {
 /* =======================
    ROUTES
 ======================= */
-const authRoutes = require('./api/routes/auth');
-const secureAuthRoutes = require('./api/routes/secureAuth');
-const tradeRoutes = require('./api/routes/trade');
-const screenshotRoutes = require('./api/routes/screenshot');
-const analyticsRoutes = require('./api/routes/analytics');
-const aiAnalysisRoutes = require('./api/routes/aiAnalysis');
-const mt5Routes = require('./api/routes/mt5');
-const metaRoutes = require('./api/routes/meta');
 const wsBroadcast = require('./core/websocket/wsBroadcast');
-const settingsRoutes = require('./api/routes/settings');
-
-const apiRoutes = require('./api/routes/Api');
-
-const binanceRoutes = require('./api/routes/binance');
-const ohlcvRoute = require("./api/routes/ohlcv.route");
-const instrumentRoutes = require('./instruments/instrumentRoutes');
+const {
+  routes,
+  tradeRoutes,
+  settingsRoutes,
+  registerCtraderRoutes,
+  ensureCtraderTokenStore,
+} = require('./api/routes');
 const { refreshInstrumentCache } = require('./instruments/instrumentRegistry');
-
-const { registerCtraderRoutes, ensureCtraderTokenStore } = require('./api/routes/ctrader');
-
+const redis = require('./infra/db/redis');
 
 // **sab API routes pe automatically apply**
 app.use(wsBroadcast);
 
-app.use('/api/auth', secureAuthRoutes);
-app.use('/api', authRoutes);
-app.use('/api', tradeRoutes);
-app.use('/api', screenshotRoutes);
-app.use('/api', analyticsRoutes);
-app.use('/api', aiAnalysisRoutes);
-app.use('/api', mt5Routes);
-app.use('/api', metaRoutes);
-app.use('/api', settingsRoutes);
-app.use('/api', binanceRoutes);
-app.use('/api/instruments', instrumentRoutes);
-app.use('/api', apiRoutes);
-app.use("/api/ohlcv", ohlcvRoute);
+for (const [routePath, router] of routes) app.use(routePath, router);
 
 
 app.use(express.static(path.join(__dirname, '../js')));
@@ -212,17 +168,19 @@ const server = http.createServer(app);
 ======================= */
 const wss = new WebSocket.Server({ noServer: true });
 const {
-  attachMarketStreamRelay,
-  stopMarketStreamRelay,
-} = require('./integrations/ctrader/market-stream.relay');
+  attachDatafeedStream,
+  stopDatafeedStream,
+} = require('./integrations/datafeed/datafeed');
+const brokerRegistry = require('./brokers/connectors/registry');
 
 // make wss available in all routes
 app.set('wss', wss);
-attachMarketStreamRelay(wss);
+attachDatafeedStream(wss);
 
 wss.on('connection', (ws, req, userId) => {
   ws.userId = userId;
   ws.isAlive = true;
+  brokerRegistry.sendAllSnapshots(userId);
   ws.on('pong', () => {
     ws.isAlive = true;
   });
@@ -285,8 +243,13 @@ setInterval(() => {
   });
 }, 30000).unref();
 
-process.once('SIGTERM', stopMarketStreamRelay);
-process.once('SIGINT', stopMarketStreamRelay);
+function stopStreams() {
+  stopMarketStreamRelay();
+  brokerRegistry.stopAllLiveSync();
+}
+
+process.once('SIGTERM', stopStreams);
+process.once('SIGINT', stopStreams);
 
 /* =======================
    START SERVER
@@ -296,29 +259,19 @@ const PORT = Number(process.env.PORT || 5000);
 async function startServer() {
   try {
     await pool.warmPool();
-    if (typeof tradeRoutes.ensureApiTradeMetadataColumns === 'function') {
-      await tradeRoutes.ensureApiTradeMetadataColumns();
-    }
-
-    if (typeof ensureCtraderTokenStore === 'function') {
-      await ensureCtraderTokenStore();
-    }
-
-    if (typeof settingsRoutes.ensureUserSettingsTable === 'function') {
-      await settingsRoutes.ensureUserSettingsTable();
-    }
-
-    refreshInstrumentCache({ force: true }).catch((error) => {
-      console.warn('startup.instrument_cache_warm_failed', {
-        error: sanitizeError(error),
-      });
-    });
+    await Promise.all([
+      typeof tradeRoutes.ensureApiTradeMetadataColumns === 'function' ? tradeRoutes.ensureApiTradeMetadataColumns() : null,
+      typeof ensureCtraderTokenStore === 'function' ? ensureCtraderTokenStore() : null,
+      typeof settingsRoutes.ensureUserSettingsTable === 'function' ? settingsRoutes.ensureUserSettingsTable() : null,
+      refreshInstrumentCache({ force: true }).catch(() => null),
+      redis.ping().catch(() => null),
+    ]);
+    brokerRegistry.startAllLiveSync(wss);
   } catch (error) {
     console.error('startup.ensure_failed', { error: sanitizeError(error) });
     process.exit(1);
   }
-
-  server.listen(PORT,() => console.log(`server is strated on port ${PORT}`) );
+  server.listen(PORT, () => console.log(`server is strated on port ${PORT}`));
 }
 
 startServer();

@@ -4,7 +4,7 @@ import {
   createChart,
   createSeriesMarkers,
 } from 'lightweight-charts';
-import { getTradeDetailCandleOptions, getTradeDetailChartOptions, getTradeDetailChartTheme } from '@/features/markets/components/TradingChart/utils/tradeDetailChartDesign';
+import { getTradeDetailCandleOptions, getTradeDetailChartOptions, getTradeDetailChartTheme } from './tradeDetailChartDesign';
 
 const getThemeColor = (name, fallback) => {
   if (typeof window === 'undefined') return fallback;

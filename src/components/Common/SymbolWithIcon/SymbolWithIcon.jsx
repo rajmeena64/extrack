@@ -1,109 +1,22 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { CRYPTO_ICONS, FLAG_ICONS } from "./availableIcons";
+import { useInstrument } from "@/hooks/useInstruments";
 
-const getCapitalLetters = (str) =>
-  String(str || "")
-    .toUpperCase()
-    .match(/[A-Z0-9]/g)
-    ?.join("") || "";
+const SIZE_MAP = { sm: 14, md: 18, lg: 24 };
+const LABEL_SIZE_MAP = { sm: 9, md: 10, lg: 12 };
+const getFallbackLetters = (symbol) =>
+  String(symbol || "").toUpperCase().match(/[A-Z0-9]/g)?.join("").slice(0, 2) || "?";
 
-const getFallbackLetters = (symbol) => getCapitalLetters(symbol).slice(0, 2) || "?";
-
-const fixedSymbolIcons = {
-  XAUUSD: "/assets/commodities/xauusd.svg",
-  XAGUSD: "/assets/commodities/xagusd.svg",
-  BTCUSD: "/assets/crypto/color/btc.svg",
-  ETHUSD: "/assets/crypto/color/eth.svg",
-  US500: "/assets/commodities/us500.svg",
-  NAS100: "/assets/commodities/usd.svg",
-};
-
-const SIZE_MAP = {
-  sm: 14,
-  md: 18,
-  lg: 24,
-};
-
-const LABEL_SIZE_MAP = {
-  sm: 9,
-  md: 10,
-  lg: 12,
-};
-
-const STABLES = ["USDT", "USDC"];
-const QUOTE_ASSETS = ["USDT", "USDC", "USD", "EUR", "GBP", "JPY", "AUD", "NZD", "CAD", "CHF"];
-
-const getIconLookupCodes = (asset) => {
-  const normalized = getCapitalLetters(asset);
-  const withoutMultiplier = normalized.replace(/^\d+/, "");
-
-  return [...new Set([normalized, withoutMultiplier].filter(Boolean))];
-};
-
-const getAssetIconPaths = (asset) =>
-  getIconLookupCodes(asset).flatMap((code) => {
-    const lower = code.toLowerCase();
-    const paths = [];
-    if (CRYPTO_ICONS.has(lower)) paths.push(`/assets/crypto/color/${lower}.svg`);
-    if (FLAG_ICONS.has(lower)) paths.push(`/assets/flags/4x3/${lower}.svg`);
-    return paths;
-  });
-
-const getPairParts = (capitalOnly) => {
-  for (const quoteAsset of QUOTE_ASSETS) {
-    if (capitalOnly.length > quoteAsset.length && capitalOnly.endsWith(quoteAsset)) {
-      return {
-        base: capitalOnly.slice(0, -quoteAsset.length),
-        quote: quoteAsset,
-      };
-    }
-
-    if (STABLES.includes(quoteAsset) && capitalOnly.length > quoteAsset.length && capitalOnly.startsWith(quoteAsset)) {
-      return {
-        base: quoteAsset,
-        quote: capitalOnly.slice(quoteAsset.length),
-      };
-    }
+const getAssetIconPath = (asset, inst) => {
+  if (!asset) return null;
+  const k = String(asset).trim().toLowerCase();
+  if (inst?.assetClass === "metal" || (inst?.category === "cfd" && inst?.assetClass !== "crypto")) {
+    return `/assets/commodities/${inst?.icon?.toLowerCase() || k}.svg`;
   }
-
-  if (capitalOnly.length === 6) {
-    return {
-      base: capitalOnly.slice(0, 3),
-      quote: capitalOnly.slice(3),
-    };
-  }
-
+  if (inst?.category === "forex" || FLAG_ICONS.has(k)) return `/assets/flags/4x3/${k}.svg`;
+  if (CRYPTO_ICONS.has(k)) return `/assets/crypto/color/${k}.svg`;
   return null;
 };
-
-function TokenIcon({ asset, paths, style, onResolved }) {
-  const [pathIndex, setPathIndex] = useState(0);
-  const src = paths[pathIndex];
-
-  if (!src) {
-    onResolved?.(asset, false);
-    return null;
-  }
-
-  return (
-    <img
-      src={src}
-      alt={asset}
-      style={style}
-      onLoad={() => onResolved?.(asset, true)}
-      onError={() => {
-        const nextIndex = pathIndex + 1;
-
-        if (nextIndex >= paths.length) {
-          onResolved?.(asset, false);
-          return;
-        }
-
-        setPathIndex(nextIndex);
-      }}
-    />
-  );
-}
 
 function SymbolFallbackIcon({ symbol, iconSize }) {
   return (
@@ -133,140 +46,57 @@ function SymbolFallbackIcon({ symbol, iconSize }) {
   );
 }
 
-function PairIcon({ base, quote, iconSize, pairFlagStyle, fallbackSymbol }) {
-  const [baseHasIcon, setBaseHasIcon] = useState(null);
-  const [quoteHasIcon, setQuoteHasIcon] = useState(null);
-  const basePaths = useMemo(() => getAssetIconPaths(base), [base]);
-  const quotePaths = useMemo(() => getAssetIconPaths(quote), [quote]);
-
-  if (baseHasIcon === false || quoteHasIcon === false) {
-    return <SymbolFallbackIcon symbol={fallbackSymbol || `${base}${quote}`} iconSize={iconSize} />;
-  }
-
-  const handleResolved = (asset, hasIcon) => {
-    if (asset === base) setBaseHasIcon(hasIcon);
-    if (asset === quote) setQuoteHasIcon(hasIcon);
-  };
-
-  return (
-    <div style={{ position: "relative", width: iconSize, height: iconSize }}>
-      <TokenIcon
-        asset={base}
-        paths={basePaths}
-        style={{
-          ...pairFlagStyle,
-          left: 0,
-          top: iconSize / 4,
-          zIndex: 2,
-        }}
-        onResolved={handleResolved}
-      />
-
-      <TokenIcon
-        asset={quote}
-        paths={quotePaths}
-        style={{
-          ...pairFlagStyle,
-          left: iconSize / 3,
-          top: 0,
-          zIndex: 1,
-        }}
-        onResolved={handleResolved}
-      />
-    </div>
-  );
-}
-
-function AssetIcon({ asset, iconSize }) {
-  const [hasIcon, setHasIcon] = useState(null);
-  const paths = useMemo(() => getAssetIconPaths(asset), [asset]);
-
-  if (hasIcon === false) {
-    return <SymbolFallbackIcon symbol={asset} iconSize={iconSize} />;
-  }
-
-  return (
-    <TokenIcon
-      asset={asset}
-      paths={paths}
-      style={{
-        width: iconSize,
-        height: iconSize,
-        borderRadius: "50%",
-        objectFit: "cover",
-      }}
-      onResolved={(_, resolved) => setHasIcon(resolved)}
-    />
-  );
-}
-
 function SymbolWithIcon({ symbol, size = "md", showLabel = true, preferAssetIcon = false }) {
+  const inst = useInstrument(symbol);
+  const [hasError, setHasError] = useState(false);
+  useEffect(() => setHasError(false), [symbol]);
+
   const iconSize = SIZE_MAP[size] || 18;
   const labelSize = LABEL_SIZE_MAP[size] || 10;
   const pairSize = Math.floor(iconSize * 0.75);
 
-  const pairFlagStyle = {
-    width: pairSize,
-    height: pairSize,
-    borderRadius: "50%",
-    position: "absolute",
-    objectFit: "cover",
-  };
+  const baseSrc = getAssetIconPath(inst?.baseAsset, inst);
+  const quoteSrc = getAssetIconPath(inst?.quoteAsset, inst);
+  const isPair = !preferAssetIcon && Boolean(baseSrc && quoteSrc);
+  const singleSrc = isPair ? null : (baseSrc || getAssetIconPath(inst?.icon, inst) || getAssetIconPath(symbol, inst));
 
-  const uiSymbol = symbol;
-  const capitalOnly = getCapitalLetters(symbol);
-
-  if ((preferAssetIcon || !getPairParts(capitalOnly)) && capitalOnly) {
-    return (
-      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <AssetIcon asset={capitalOnly} iconSize={iconSize} />
-        {showLabel ? <span style={{ fontSize: labelSize }}>{uiSymbol}</span> : null}
-      </div>
-    );
-  }
-
-  if (fixedSymbolIcons[capitalOnly]) {
-    return (
-      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+  const renderIcon = () => {
+    if (hasError) return <SymbolFallbackIcon symbol={symbol} iconSize={iconSize} />;
+    if (isPair) {
+      return (
+        <div style={{ position: "relative", width: iconSize, height: iconSize, flexShrink: 0 }}>
+          <img
+            src={baseSrc}
+            alt={inst.baseAsset}
+            onError={() => setHasError(true)}
+            style={{ width: pairSize, height: pairSize, borderRadius: "50%", position: "absolute", left: 0, top: iconSize / 4, zIndex: 2, objectFit: "cover" }}
+          />
+          <img
+            src={quoteSrc}
+            alt={inst.quoteAsset}
+            onError={() => setHasError(true)}
+            style={{ width: pairSize, height: pairSize, borderRadius: "50%", position: "absolute", left: iconSize / 3, top: 0, zIndex: 1, objectFit: "cover" }}
+          />
+        </div>
+      );
+    }
+    if (singleSrc) {
+      return (
         <img
-          src={fixedSymbolIcons[capitalOnly]}
-          alt={capitalOnly}
-          style={{
-            width: iconSize,
-            height: iconSize,
-            borderRadius: "50%",
-            objectFit: "cover",
-          }}
+          src={singleSrc}
+          alt={symbol}
+          onError={() => setHasError(true)}
+          style={{ width: iconSize, height: iconSize, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
         />
-
-        {showLabel ? <span style={{ fontSize: labelSize }}>{uiSymbol}</span> : null}
-      </div>
-    );
-  }
-
-  const pairParts = getPairParts(capitalOnly);
-
-  if (pairParts) {
-    return (
-      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <PairIcon
-          key={`${pairParts.base}-${pairParts.quote}`}
-          base={pairParts.base}
-          quote={pairParts.quote}
-          fallbackSymbol={capitalOnly}
-          iconSize={iconSize}
-          pairFlagStyle={pairFlagStyle}
-        />
-
-        {showLabel ? <span style={{ fontSize: labelSize }}>{uiSymbol}</span> : null}
-      </div>
-    );
-  }
+      );
+    }
+    return <SymbolFallbackIcon symbol={symbol} iconSize={iconSize} />;
+  };
 
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-      <SymbolFallbackIcon symbol={capitalOnly || uiSymbol} iconSize={iconSize} />
-      {showLabel ? <span style={{ fontSize: labelSize }}>{uiSymbol}</span> : null}
+      {renderIcon()}
+      {showLabel ? <span style={{ fontSize: labelSize }}>{symbol}</span> : null}
     </div>
   );
 }

@@ -35,7 +35,7 @@ function getDbPool() {
 }
 
 function getKeyMaterial() {
-  const raw = String(process.env.MT5_CREDENTIALS_KEY || '').trim().replace(/^['"]|['"]$/g, '');
+  const raw = String(process.env.CTRADER_ADMIN_CREDENTIALS_KEY || process.env.MT5_CREDENTIALS_KEY || '').trim().replace(/^['"]|['"]$/g, '');
   if (!raw) return null;
   return crypto.createHash('sha256').update(raw).digest();
 }
@@ -293,11 +293,29 @@ async function ensureValidToken() {
   return Boolean(ctraderConfig.accessToken);
 }
 
+async function getCtraderCatalogFromDb() {
+  const pool = getDbPool();
+  if (!pool) return [];
+  try {
+    const result = await pool.query(
+      `SELECT symbol, display_name, category, asset_class, market_source, historical_data_source, is_ram_cached, is_live_feed, is_active
+       FROM trading_catalog.instruments
+       WHERE market_source IN ('entrackCfeed', 'ctrader') AND is_active = true
+       ORDER BY sort_order ASC NULLS LAST, symbol ASC`
+    );
+    return result.rows || [];
+  } catch (err) {
+    console.warn('[DB_CATALOG_ERROR]', err.message);
+    return [];
+  }
+}
+
 module.exports = {
   decryptToken,
   encryptToken,
   ensureCtraderTokenStore,
   ensureValidToken,
+  getCtraderCatalogFromDb,
   loadCtraderTokensFromStore,
   refreshAccessToken,
   saveCtraderTokensToStore,

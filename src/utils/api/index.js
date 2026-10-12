@@ -5,6 +5,7 @@ import brokerApi from './brokerApi';
 import marketApi from './marketApi';
 import settingsApi from './settingsApi';
 import aiApi from './aiApi';
+import chartDrawingsApi from './chartDrawingsApi';
 
 export const API = {
   auth: authApi,
@@ -14,7 +15,8 @@ export const API = {
   market: marketApi,
   settings: settingsApi,
   ai: aiApi,
+  chartDrawings: chartDrawingsApi,
 };
 
-export { authApi, tradeApi, analyticsApi, brokerApi, marketApi, settingsApi, aiApi };
+export { authApi, tradeApi, analyticsApi, brokerApi, marketApi, settingsApi, aiApi, chartDrawingsApi };
 export default API;

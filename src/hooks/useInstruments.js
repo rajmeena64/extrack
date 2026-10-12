@@ -34,6 +34,22 @@ export function useAllInstruments() {
   });
 }
 
+export function useInstrumentMap() {
+  const { data: instruments = [] } = useAllInstruments();
+  return useMemo(() => {
+    const map = new Map();
+    for (const inst of instruments) {
+      if (inst?.symbol) map.set(inst.symbol.toUpperCase(), inst);
+    }
+    return map;
+  }, [instruments]);
+}
+
+export function useInstrument(symbol) {
+  const map = useInstrumentMap();
+  return symbol ? map.get(String(symbol).trim().toUpperCase()) || null : null;
+}
+
 export function useInstruments(search = '', filters = {}) {
   const debouncedSearch = useDebouncedValue(search);
   const query = useAllInstruments();

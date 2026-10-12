@@ -54,7 +54,7 @@ const signupSchema = z
     preferred_currency: z.string().trim().length(3).optional(),
   })
   .strict()
-  .refine((value) => value.email || value.mobile || value.phone, {
+  .refine(({ email, mobile, phone }) => Boolean(email || mobile || phone), {
     message: 'Email or phone is required',
     path: ['email'],
   })
@@ -70,7 +70,7 @@ const loginSchema = z
     password: z.string().min(1).max(128),
   })
   .strict()
-  .refine((value) => value.email || value.phone, {
+  .refine(({ email, phone }) => Boolean(email || phone), {
     message: 'Email or phone is required',
     path: ['email'],
   });
@@ -88,7 +88,7 @@ const resetPasswordSchema = z
     confirmPassword: z.string().min(1),
   })
   .strict()
-  .refine((value) => (value.password || value.newPassword) === value.confirmPassword, {
+  .refine(({ password, newPassword, confirmPassword }) => (password || newPassword) === confirmPassword, {
     message: 'Passwords do not match',
     path: ['confirmPassword'],
   });

@@ -163,7 +163,7 @@ function normalizeSpotEvent(event, toPlain) {
 
   if (Array.isArray(event.trendbar) && event.trendbar.length > 0) {
     normalized.trendbars = event.trendbar.map((trendbar) => ({
-      raw: toPlain('ProtoOATrendbar', trendbar),
+      raw: typeof toPlain === 'function' ? toPlain('ProtoOATrendbar', trendbar) : trendbar,
       candle: trendbarToCandle(trendbar, symbolId),
       kline: trendbarToBinanceKline(trendbar),
     }));
@@ -236,6 +236,7 @@ function trendbarToCandle(trendbar, symbolId = null) {
   const close = (Number(trendbar.low) + Number(trendbar.deltaClose || 0)) / PRICE_SCALE;
   const high = (Number(trendbar.low) + Number(trendbar.deltaHigh || 0)) / PRICE_SCALE;
   const time = Number(trendbar.utcTimestampInMinutes) * 60;
+  const volume = Number(trendbar.volume || 0);
 
   return {
     time,
@@ -243,6 +244,7 @@ function trendbarToCandle(trendbar, symbolId = null) {
     high: roundPrice(high, symbolId),
     low: roundPrice(low, symbolId),
     close: roundPrice(close, symbolId),
+    volume,
   };
 }
 

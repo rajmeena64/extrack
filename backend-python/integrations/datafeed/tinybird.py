@@ -83,7 +83,7 @@ async def fetch_tinybird_candles(
     if e_sec is not None:
         conds.append(f"timestamp <= {e_sec}")
     where_clause = " AND ".join(conds)
-    order = "ASC" if s_sec is not None and e_sec is not None else "DESC"
+    order = "ASC" if s_sec is not None and e_sec is None else "DESC"
     if is_m1:
         sql = f"""
             SELECT timestamp AS time, open, high, low, close, volume

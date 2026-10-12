@@ -12,7 +12,6 @@ const ctraderConfig = {
   accountId: process.env.CTRADER_ACCOUNT_ID ? Number(process.env.CTRADER_ACCOUNT_ID) : null,
   isDemo: String(process.env.CTRADER_IS_DEMO || 'true') === 'true',
   symbols: new Map(),
-  assets: new Map(),
   currentSymbolId: null,
   accounts: [],
   currentAccount: null,
@@ -32,10 +31,7 @@ const connectionState = {
   ws: null,
   heartbeatInterval: null,
   reconnectAttempts: 0,
-  reconnectTimer: null,
   isConnecting: false,
-  lastConnectError: '',
-  lastApiError: '',
 };
 
 const tokenState = {

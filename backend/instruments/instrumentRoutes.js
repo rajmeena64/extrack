@@ -1,68 +1,26 @@
 const express = require('express');
-const {
-  getAllInstruments,
-  getInstrumentsByType,
-  getInstrumentBySymbol,
-  getInstrumentCacheStatus,
-  searchInstruments,
-} = require('./instrumentRegistry');
-const { logInternalError, publicError } = require('../core/errors/safeErrors');
+const { getAllInstruments, getInstrument, list } = require('./instrumentRegistry');
 
 const router = express.Router();
 
 router.get('/', async (req, res) => {
   try {
-    const { type } = req.query;
-    const instruments = type ? await getInstrumentsByType(type) : await getAllInstruments();
-
-    return res.json(instruments);
-  } catch (err) {
-    logInternalError(req, err, 'instruments.list_failed');
-    return publicError(res, {
-      status: 503,
-      code: 'MARKET_DATA_UNAVAILABLE',
-      req,
-    });
+    const { category, assetClass, productType, search, limit } = req.query;
+    const instruments = (search || category || assetClass || productType) ? await list({ category, assetClass, productType, search, limit: limit ? Number(limit) : 2000 }) : await getAllInstruments();
+    return res.json({ success: true, instruments });
+  } catch {
+    return res.status(503).json({ success: false, error: 'INSTRUMENT_REGISTRY_UNAVAILABLE' });
   }
 });
 
-router.get('/check', async (req, res) => {
+router.get('/:symbol', async (req, res) => {
   try {
-    const instrument = await getInstrumentBySymbol(req.query.symbol);
-
-    if (!instrument) {
-      return res.json({ exists: false });
-    }
-
-    return res.json({
-      exists: true,
-      instrument,
-    });
-  } catch (err) {
-    logInternalError(req, err, 'instruments.check_failed');
-    return publicError(res, {
-      status: 503,
-      code: 'MARKET_DATA_UNAVAILABLE',
-      req,
-    });
+    const instrument = await getInstrument(req.params.symbol);
+    if (!instrument) return res.status(404).json({ success: false, error: 'Instrument not found' });
+    return res.json({ success: true, instrument });
+  } catch {
+    return res.status(503).json({ success: false, error: 'INSTRUMENT_REGISTRY_UNAVAILABLE' });
   }
-});
-
-router.get('/search', async (req, res) => {
-  try {
-    return res.json(await searchInstruments(req.query.q));
-  } catch (err) {
-    logInternalError(req, err, 'instruments.search_failed');
-    return publicError(res, {
-      status: 503,
-      code: 'MARKET_DATA_UNAVAILABLE',
-      req,
-    });
-  }
-});
-
-router.get('/status', (req, res) => {
-  return res.json(getInstrumentCacheStatus());
 });
 
 module.exports = router;

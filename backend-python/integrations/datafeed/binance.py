@@ -1,5 +1,4 @@
-import os
-import httpx
+import os, time, httpx
 from typing import Optional, List, Dict, Any
 from core.logger.logger import logger
 from integrations.datafeed.timeframe import get_base_interval, aggregate_candles
@@ -7,6 +6,16 @@ from integrations.datafeed.timeframe import get_base_interval, aggregate_candles
 SPOT_API_URL = os.getenv("BINANCE_SPOT_API_URL", "https://data-api.binance.vision").rstrip("/")
 FUTURES_API_URL = os.getenv("BINANCE_FUTURES_API_URL", "https://fapi.binance.com").rstrip("/")
 VALID_BINANCE_INTERVALS = {"1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "8h", "12h", "1d", "3d", "1w", "1M"}
+HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
+
+_client: Optional[httpx.AsyncClient] = None
+_cache: Dict[str, Any] = {}
+
+def _get_client() -> httpx.AsyncClient:
+    global _client
+    if _client is None or _client.is_closed:
+        _client = httpx.AsyncClient(timeout=4.0, follow_redirects=True, headers=HEADERS, limits=httpx.Limits(max_keepalive_connections=20, max_connections=50))
+    return _client
 
 def _clean_ts_ms(val: Optional[Any]) -> Optional[int]:
     if val is None or val == "":
@@ -16,8 +25,6 @@ def _clean_ts_ms(val: Optional[Any]) -> Optional[int]:
         return n if n > 10_000_000_000 else n * 1000
     except (ValueError, TypeError):
         return None
-
-HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
 
 def _parse_klines(data: Any) -> List[Dict[str, Any]]:
     if not isinstance(data, list):
@@ -47,18 +54,27 @@ async def fetch_binance_candles(
         params["startTime"] = st_ms
     if et_ms is not None:
         params["endTime"] = et_ms
+
+    cache_key = f"{clean_sym}_{timeframe}_{st_ms}_{et_ms}_{lim}_{is_futures}"
+    now = time.time()
+    if cache_key in _cache:
+        entry = _cache[cache_key]
+        if now - entry["ts"] < (5.0 if et_ms is None else 300.0):
+            return entry["data"]
+
+    client = _get_client()
     if is_futures:
         feed_url = str(os.getenv("FEED_SERVICE_URL") or os.getenv("MARKET_FEED_URL") or "").rstrip("/")
         key = os.getenv("FEED_INTERNAL_API_KEY", "")
         if feed_url:
             hdrs = {"x-internal-api-key": key, **HEADERS} if key else HEADERS
             try:
-                async with httpx.AsyncClient(timeout=4.0, follow_redirects=True, headers=hdrs) as client:
-                    resp = await client.get(f"{feed_url}/internal/binance/klines", params=params)
-                    if resp.status_code == 200:
-                        res = _parse_klines(resp.json().get("candles"))
-                        if res:
-                            return aggregate_candles(res, timeframe) if is_composite else res
+                resp = await client.get(f"{feed_url}/internal/binance/klines", params=params, headers=hdrs)
+                if resp.status_code == 200:
+                    res = _parse_klines(resp.json().get("candles"))
+                    out = aggregate_candles(res, timeframe) if (res and is_composite) else res
+                    _cache[cache_key] = {"data": out, "ts": now}
+                    return out
             except Exception:
                 pass
     candidate_bases = [
@@ -68,17 +84,17 @@ async def fetch_binance_candles(
         "https://fapi2.binance.com"
     ] if is_futures else [SPOT_API_URL, "https://data-api.binance.vision"]
     seen = set()
-    async with httpx.AsyncClient(timeout=4.0, follow_redirects=True, headers=HEADERS) as client:
-        for base in candidate_bases:
-            if not base or base in seen:
-                continue
-            seen.add(base)
-            try:
-                resp = await client.get(f"{base.rstrip('/')}{endpoint}", params=params)
-                if resp.status_code == 200:
-                    res = _parse_klines(resp.json())
-                    if res:
-                        return aggregate_candles(res, timeframe) if is_composite else res
-            except Exception:
-                pass
+    for base in candidate_bases:
+        if not base or base in seen:
+            continue
+        seen.add(base)
+        try:
+            resp = await client.get(f"{base.rstrip('/')}{endpoint}", params=params)
+            if resp.status_code == 200:
+                res = _parse_klines(resp.json())
+                out = aggregate_candles(res, timeframe) if (res and is_composite) else res
+                _cache[cache_key] = {"data": out, "ts": now}
+                return out
+        except Exception:
+            pass
     return []

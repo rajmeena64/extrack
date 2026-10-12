@@ -17,10 +17,21 @@ BASE_UNITS = {"m": "1m", "h": "1h", "d": "1d", "w": "1w", "M": "1M"}
 def resolve_timeframe(raw_tf: Optional[str]) -> str:
     if not raw_tf:
         raise AppError(ERROR_MESSAGES["MARKET"]["INVALID_TIMEFRAME"])
-    m = re.match(r"^([1-9]\d*)\s*([a-zA-Z]+)$", str(raw_tf).strip())
+    s = str(raw_tf).strip()
+    if s.isdigit():
+        mins = int(s)
+        return f"{mins // 60}h" if mins >= 60 and mins % 60 == 0 else f"{mins}m"
+    if s in ("D", "1D"):
+        return "1d"
+    if s in ("W", "1W"):
+        return "1w"
+    if s in ("M", "1M"):
+        return "1M"
+    m = re.match(r"^([1-9]\d*)\s*([a-zA-Z]+)$", s)
     if not m:
         raise AppError(ERROR_MESSAGES["MARKET"]["INVALID_TIMEFRAME"])
-    unit = UNIT_MAP.get(m.group(2) if m.group(2) == "M" else m.group(2).lower())
+    raw_unit = m.group(2)
+    unit = UNIT_MAP.get(raw_unit if raw_unit == "M" else raw_unit.lower())
     if not unit:
         raise AppError(ERROR_MESSAGES["MARKET"]["INVALID_TIMEFRAME"])
     return f"{m.group(1)}{unit}"

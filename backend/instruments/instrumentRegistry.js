@@ -1,205 +1,89 @@
-const feedClient = require('../integrations/ctrader/feed.client');
-const { normalizeStoredSymbol } = require('../shared/utils/symbols');
+const pool = require('../infra/db/supabase');
 
-const CACHE_TTL_MS = Math.min(
-  Math.max(Number(process.env.INSTRUMENT_CACHE_TTL_MS) || 5 * 60 * 1000, 30 * 1000),
-  60 * 60 * 1000
-);
+const SELECT = `id, symbol, name, display_name AS "displayName", category, asset_class AS "assetClass", product_type AS "productType", profit_currency AS "profitCurrency", digits, TRIM_SCALE(contract_size)::text AS "contractSize", TRIM_SCALE(tick_size)::text AS "tickSize", TRIM_SCALE(pip_size)::text AS "pipSize"`;
 
-const registry = {
-  instruments: Object.freeze([]),
-  bySymbol: new Map(),
-  byRequestSymbol: new Map(),
-  expiresAt: 0,
-  lastRefreshAt: 0,
-  lastError: null,
-};
+const cache = { map: new Map(), list: [], ready: false };
 
-let refreshPromise = null;
-
-function normalizeSymbol(symbol) {
-  return normalizeStoredSymbol(symbol);
+async function refreshInstrumentCache() {
+  const { rows } = await pool.query(`SELECT ${SELECT} FROM trading_catalog.instruments WHERE is_active = TRUE ORDER BY sort_order, symbol`);
+  cache.map.clear();
+  cache.list = rows.map((r) => {
+    const item = { ...r, symbol: r.symbol.toUpperCase() };
+    cache.map.set(item.symbol, item);
+    return item;
+  });
+  cache.ready = true;
+  return cache.list;
 }
 
-function normalizeType(type) {
-  const normalizedType = String(type || '').trim().toLowerCase();
-  const aliases = {
-    commodities: 'commodity',
-    stocks: 'stock',
-    indices: 'index',
-    metal: 'commodity',
-    metals: 'commodity',
-  };
-
-  return aliases[normalizedType] || normalizedType;
+async function ensureLoaded() {
+  if (!cache.ready) await refreshInstrumentCache();
 }
 
-function classifyInstrument(symbol, source = {}) {
-  const cleanSymbol = normalizeSymbol(symbol);
-  const haystack = `${cleanSymbol} ${source.description || ''} ${source.category || ''} ${source.assetClassName || ''}`.toLowerCase();
-
-  if (/(crypto|coin|token|digital|bitcoin|ethereum)/.test(haystack)) {
-    return { type: 'crypto', category: 'crypto' };
-  }
-
-  if (/^(BTC|ETH|LTC|DOGE|ADA|SOL|XRP|BNB|DOT|AVAX|TRX|LINK|MATIC)/.test(cleanSymbol)) {
-    return { type: 'crypto', category: 'crypto' };
-  }
-
-  if (/^(XAU|XAG|XPT|XPD)/.test(cleanSymbol) || /(gold|silver|palladium|platinum|metal)/.test(haystack)) {
-    return { type: 'commodity', category: 'metals' };
-  }
-
-  if (/(oil|brent|wti|gas|energy)/.test(haystack)) {
-    return { type: 'commodity', category: 'energy' };
-  }
-
-  if (/(index|indices|nasdaq|dow|spx|us500|ustec|dax|ftse)/.test(haystack)) {
-    return { type: 'index', category: 'index' };
-  }
-
-  if (/^[A-Z]{6}$/.test(cleanSymbol)) {
-    return { type: 'forex', category: 'forex' };
-  }
-
-  return { type: 'stock', category: 'stocks' };
+function findBySymbol(symbol) {
+  if (!symbol) return null;
+  return cache.map.get(String(symbol).trim().toUpperCase()) || null;
 }
 
-function normalizeInstrument(rawInstrument) {
-  const requestSymbol = String(rawInstrument?.name || rawInstrument?.symbol || rawInstrument?.normalizedName || '').trim();
-  const symbol = normalizeSymbol(rawInstrument?.normalizedName || requestSymbol);
-  if (!symbol || !requestSymbol) return null;
-
-  const classification = classifyInstrument(symbol, rawInstrument);
-  const name = String(
-    rawInstrument?.description ||
-    rawInstrument?.displayName ||
-    rawInstrument?.symbolName ||
-    requestSymbol
-  ).trim();
-
-  return {
-    id: rawInstrument?.id ?? symbol,
-    symbol,
-    requestSymbol,
-    name,
-    type: classification.type,
-    category: classification.category,
-    broker: rawInstrument?.broker || 'ctrader',
-    source: 'ctrader-feed-service',
-    digits: Number.isFinite(Number(rawInstrument?.digits)) ? Number(rawInstrument.digits) : undefined,
-    subscribed: rawInstrument?.subscribed === true,
-    hasQuote: rawInstrument?.hasQuote === true,
-  };
-}
-
-function setRegistry(instruments) {
-  const bySymbol = new Map();
-  const byRequestSymbol = new Map();
-  const unique = [];
-
-  for (const instrument of instruments) {
-    if (!instrument?.symbol || bySymbol.has(instrument.symbol)) continue;
-    bySymbol.set(instrument.symbol, instrument);
-    byRequestSymbol.set(normalizeSymbol(instrument.requestSymbol), instrument);
-    unique.push(instrument);
-  }
-
-  registry.instruments = Object.freeze(unique);
-  registry.bySymbol = bySymbol;
-  registry.byRequestSymbol = byRequestSymbol;
-  registry.expiresAt = Date.now() + CACHE_TTL_MS;
-  registry.lastRefreshAt = Date.now();
-  registry.lastError = null;
-}
-
-async function refreshInstrumentCache({ force = false } = {}) {
-  if (!force && registry.instruments.length && Date.now() < registry.expiresAt) {
-    return registry.instruments;
-  }
-
-  if (refreshPromise) return refreshPromise;
-
-  refreshPromise = (async () => {
-    try {
-      const response = await feedClient.getFeedSymbols();
-      const symbols = Array.isArray(response?.symbols) ? response.symbols : [];
-      const instruments = symbols.map(normalizeInstrument).filter(Boolean);
-
-      if (!instruments.length) {
-        const error = new Error('Feed returned no instruments');
-        error.status = 503;
-        throw error;
-      }
-
-      setRegistry(instruments);
-      return registry.instruments;
-    } catch (error) {
-      registry.lastError = error;
-      if (registry.instruments.length) return registry.instruments;
-      throw error;
-    } finally {
-      refreshPromise = null;
-    }
-  })();
-
-  return refreshPromise;
-}
-
-async function getAllInstruments() {
-  return refreshInstrumentCache();
-}
-
-async function getInstrumentsByType(type) {
-  const normalizedType = normalizeType(type);
-  if (!normalizedType) return [];
-  const instruments = await refreshInstrumentCache();
-
-  return instruments.filter((instrument) => instrument.type === normalizedType || instrument.category === normalizedType);
-}
-
-async function searchInstruments(query) {
-  const normalizedQuery = String(query || '').trim().toLowerCase();
-  const instruments = await refreshInstrumentCache();
-  if (!normalizedQuery) return instruments;
-
-  return instruments.filter((instrument) => (
-    instrument.symbol.toLowerCase().includes(normalizedQuery) ||
-    instrument.requestSymbol.toLowerCase().includes(normalizedQuery) ||
-    instrument.name.toLowerCase().includes(normalizedQuery) ||
-    instrument.type.toLowerCase().includes(normalizedQuery) ||
-    instrument.category.toLowerCase().includes(normalizedQuery)
-  ));
+async function getInstrument(symbol) {
+  await ensureLoaded();
+  return findBySymbol(symbol);
 }
 
 async function getInstrumentBySymbol(symbol) {
-  await refreshInstrumentCache();
-  const normalized = normalizeSymbol(symbol);
-
-  return registry.bySymbol.get(normalized) || registry.byRequestSymbol.get(normalized) || null;
+  await ensureLoaded();
+  return findBySymbol(symbol);
 }
 
-async function isAllowedSymbol(symbol) {
-  return Boolean(await getInstrumentBySymbol(symbol));
+async function getAllInstruments() {
+  await ensureLoaded();
+  return cache.list;
 }
 
-function getInstrumentCacheStatus() {
+async function list({ category, assetClass, productType, search, limit = 500 } = {}) {
+  await ensureLoaded();
+  let res = cache.list;
+  if (category) {
+    const c = category.toLowerCase();
+    if (c === 'crypto') res = res.filter((i) => i.assetClass === 'crypto' || i.category === 'crypto');
+    else if (c === 'forex_cfd') res = res.filter((i) => ['forex', 'cfd'].includes(i.category) || ['forex', 'forex_cfd', 'metal', 'energy'].includes(i.assetClass));
+    else res = res.filter((i) => i.category?.toLowerCase() === c || i.assetClass?.toLowerCase() === c);
+  }
+  if (assetClass) res = res.filter((i) => i.assetClass?.toLowerCase() === assetClass.toLowerCase());
+  if (productType) res = res.filter((i) => i.productType?.toLowerCase() === productType.toLowerCase());
+  if (search) {
+    const q = search.toLowerCase();
+    res = res.filter((i) => i.symbol.toLowerCase().includes(q) || (i.name && i.name.toLowerCase().includes(q)) || (i.displayName && i.displayName.toLowerCase().includes(q)));
+  }
+  return res.slice(0, limit);
+}
+
+async function listHistoricalSyncSymbols() {
+  await ensureLoaded();
+  return cache.list;
+}
+
+function calculationSnapshot(instrument) {
+  if (!instrument) return null;
   return {
-    count: registry.instruments.length,
-    expiresAt: registry.expiresAt,
-    lastRefreshAt: registry.lastRefreshAt,
-    healthy: registry.instruments.length > 0 && !registry.lastError,
-    stale: registry.instruments.length > 0 && Date.now() >= registry.expiresAt,
-    lastError: registry.lastError ? 'Instrument cache refresh failed' : null,
+    instrumentId: instrument.id,
+    symbol: instrument.symbol,
+    assetClass: instrument.assetClass,
+    productType: instrument.productType,
+    contractSize: instrument.contractSize,
+    tickSize: instrument.tickSize,
+    pipSize: instrument.pipSize,
+    profitCurrency: instrument.profitCurrency,
   };
 }
 
 module.exports = {
+  calculationSnapshot,
+  findBySymbol,
   getAllInstruments,
-  getInstrumentsByType,
-  searchInstruments,
+  getInstrument,
   getInstrumentBySymbol,
-  getInstrumentCacheStatus,
-  isAllowedSymbol,
+  list,
+  listHistoricalSyncSymbols,
   refreshInstrumentCache,
 };

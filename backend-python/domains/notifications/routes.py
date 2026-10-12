@@ -1,7 +1,7 @@
 from typing import List, Dict, Any
 from fastapi import APIRouter, Depends
 from domains.auth.service import get_current_user_id
-from domains.notifications.service import get_user_alerts, create_user_alert, delete_user_alert, clear_triggered_alerts
+from domains.notifications.service import get_user_alerts, create_user_alert, delete_user_alert, update_user_alert, clear_triggered_alerts
 from core.errors.app_error import AppError
 from core.errors.messages import ERROR_MESSAGES
 
@@ -23,6 +23,14 @@ async def create_alert_endpoint(payload: Dict[str, Any], user_id: Any = Depends(
     condition = payload.get("condition", "ABOVE")
     note = payload.get("note", "")
     alert = await create_user_alert(int(user_id), str(symbol), float(target_price), str(condition), str(note))
+    return {"success": True, "alert": alert}
+
+@notifications_router.patch("/alerts/{alert_id}")
+async def update_alert_endpoint(alert_id: str, payload: Dict[str, Any], user_id: Any = Depends(get_current_user_id)):
+    target_price = payload.get("targetPrice")
+    if not target_price or float(target_price) <= 0:
+        raise AppError(ERROR_MESSAGES["NOTIFICATIONS"]["INVALID_ALERT_PAYLOAD"])
+    alert = await update_user_alert(int(user_id), alert_id, float(target_price))
     return {"success": True, "alert": alert}
 
 @notifications_router.delete("/alerts/triggered")

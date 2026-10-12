@@ -22,6 +22,9 @@ def _fmt_trade(t: dict) -> dict[str, Any]:
         "strategy": t.get("strategy"),
         "notes": t.get("notes"),
         "mistakes": cf.get("mistakes"),
+        "created_at": str(t["created_at"]) if t.get("created_at") is not None else None,
+        "source": t.get("source"),
+        "account_id": str(t["account_id"]) if t.get("account_id") is not None else None,
     }
 
 async def get_my_trades(pool: asyncpg.Pool, user_id: int, symbol: str | None = None, from_date: str | None = None, to_date: str | None = None, win_only: bool = False, loss_only: bool = False, side: str | None = None, limit: int = 20) -> list[dict[str, Any]]:

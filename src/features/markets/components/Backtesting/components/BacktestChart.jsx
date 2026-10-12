@@ -11,7 +11,7 @@ import {
   ohlcvChunkQueryKey,
 } from '../data/ohlcvChunks';
 import BacktestPlaybackControls from './BacktestPlaybackControls';
-import { TradingChartFooter, TradingChartHeader, TradingChartLegend } from '@/features/markets/components/TradingChart/TradingChartChrome';
+import { TradingChartFooter, TradingChartHeader, TradingChartLegend } from './BacktestChartChrome';
 import {
   applyTheme,
   createChartInstance,

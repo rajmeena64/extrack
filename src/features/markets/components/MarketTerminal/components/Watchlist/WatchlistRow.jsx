@@ -40,10 +40,6 @@ function WatchlistRow({
         if (event.button !== 0 || event.target.closest('button')) return;
         if (onPointerDragStart) onPointerDragStart(event, row.requestSymbol, row.symbol);
       }}
-      onMouseDown={(event) => {
-        if (event.button !== 0 || event.target.closest('button')) return;
-        if (onPointerDragStart) onPointerDragStart(event, row.requestSymbol, row.symbol);
-      }}
       onKeyDown={(event) => {
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault();

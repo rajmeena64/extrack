@@ -27,7 +27,7 @@ function createRateLimiter(options = {}) {
     const max = normalizeMax(options.max, 5);
     const keyGenerator = typeof options.keyGenerator === 'function'
         ? options.keyGenerator
-        : (req) => req.ip || req.socket?.remoteAddress || 'unknown';
+        : (req) => req.ip || 'unknown';
     const message = options.message || 'Too many requests. Please try again later.';
 
     return (req, res, next) => {

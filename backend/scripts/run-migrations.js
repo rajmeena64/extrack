@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const pool = require('../infra/db/database');
+const pool = require('../infra/db/supabase');
 
 async function ensureMigrationsTable() {
   await pool.query(`
