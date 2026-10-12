@@ -1,6 +1,6 @@
 const pool = require('../infra/db/supabase');
 
-const SELECT = `id, symbol, name, display_name AS "displayName", category, asset_class AS "assetClass", product_type AS "productType", profit_currency AS "profitCurrency", digits, TRIM_SCALE(contract_size)::text AS "contractSize", TRIM_SCALE(tick_size)::text AS "tickSize", TRIM_SCALE(pip_size)::text AS "pipSize"`;
+const SELECT = `id, symbol, name, display_name AS "displayName", category, asset_class AS "assetClass", product_type AS "productType", base_asset AS "baseAsset", quote_asset AS "quoteAsset", icon, profit_currency AS "profitCurrency", digits, TRIM_SCALE(contract_size)::text AS "contractSize", TRIM_SCALE(tick_size)::text AS "tickSize", TRIM_SCALE(pip_size)::text AS "pipSize"`;
 
 const cache = { map: new Map(), list: [], ready: false };
 
