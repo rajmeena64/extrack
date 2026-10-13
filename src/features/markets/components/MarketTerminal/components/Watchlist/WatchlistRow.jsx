@@ -1,6 +1,7 @@
 import React from 'react';
 import SymbolWithIcon from '@/components/Common/SymbolWithIcon/SymbolWithIcon';
 import { CheckCircle2, Plus } from '@/icons/lucideIcons';
+import { Skeleton } from '@/components/ui/skeleton';
 
 function WatchlistRow({
   row,
@@ -82,25 +83,35 @@ function WatchlistRow({
           </span>
         </span>
       </span>
-      <span className={`inline-flex items-center justify-end min-w-0 h-[18px] overflow-hidden text-[10.5px] tabular-nums font-[650] leading-[18px] text-ellipsis whitespace-nowrap ${
-        signalUp ? 'text-[var(--bull-candle,#089981)]' : 'text-[var(--bear-candle,#f23645)]'
-      }`}>
-        {todayChangeText}
-      </span>
-      <span className={`overflow-hidden border-0 rounded-[3px] text-[10.5px] tabular-nums font-[650] leading-[18px] text-ellipsis whitespace-nowrap px-1 text-right ${
-        livePriceUp
-          ? 'bg-[var(--bull-candle,#089981)] text-white shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--bull-candle,#089981)_38%,transparent)]'
-          : 'bg-[var(--bear-candle,#f23645)] text-white shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--bear-candle,#f23645)_42%,transparent)]'
-      }`}>
-        {quote?.bidText || '-'}
-      </span>
-      <span className={`overflow-hidden border-0 rounded-[3px] text-[10.5px] tabular-nums font-[650] leading-[18px] text-ellipsis whitespace-nowrap px-1 text-right ${
-        livePriceUp
-          ? 'bg-[var(--bull-candle,#089981)] text-white shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--bull-candle,#089981)_38%,transparent)]'
-          : 'bg-[var(--bear-candle,#f23645)] text-white shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--bear-candle,#f23645)_42%,transparent)]'
-      }`}>
-        {quote?.askText || '-'}
-      </span>
+      {quote ? (
+        <>
+          <span className={`inline-flex items-center justify-end min-w-0 h-[18px] overflow-hidden text-[10.5px] tabular-nums font-[650] leading-[18px] text-ellipsis whitespace-nowrap ${
+            signalUp ? 'text-[var(--bull-candle,#089981)]' : 'text-[var(--bear-candle,#f23645)]'
+          }`}>
+            {todayChangeText}
+          </span>
+          <span className={`overflow-hidden border-0 rounded-[3px] text-[10.5px] tabular-nums font-[650] leading-[18px] text-ellipsis whitespace-nowrap px-1 text-right ${
+            livePriceUp
+              ? 'bg-[var(--bull-candle,#089981)] text-white shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--bull-candle,#089981)_38%,transparent)]'
+              : 'bg-[var(--bear-candle,#f23645)] text-white shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--bear-candle,#f23645)_42%,transparent)]'
+          }`}>
+            {quote.bidText || '-'}
+          </span>
+          <span className={`overflow-hidden border-0 rounded-[3px] text-[10.5px] tabular-nums font-[650] leading-[18px] text-ellipsis whitespace-nowrap px-1 text-right ${
+            livePriceUp
+              ? 'bg-[var(--bull-candle,#089981)] text-white shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--bull-candle,#089981)_38%,transparent)]'
+              : 'bg-[var(--bear-candle,#f23645)] text-white shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--bear-candle,#f23645)_42%,transparent)]'
+          }`}>
+            {quote.askText || '-'}
+          </span>
+        </>
+      ) : (
+        <>
+          <Skeleton className="h-3 w-10 ml-auto" />
+          <Skeleton className="h-4.5 w-12 ml-auto rounded-[3px]" />
+          <Skeleton className="h-4.5 w-12 ml-auto rounded-[3px]" />
+        </>
+      )}
     </div>
   );
 }

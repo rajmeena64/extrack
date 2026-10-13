@@ -225,7 +225,7 @@ export default function WatchlistPanel({
       </div>
 
       <div className="min-h-0 overflow-y-auto scrollbar-thin">
-        {isLoading ? (
+        {isLoading || (!normalizedQuery && filteredSections.length === 0) ? (
           <div className="p-2 space-y-2">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="grid grid-cols-[minmax(70px,1fr)_minmax(52px,auto)_54px_54px] items-center gap-x-1.5 py-1">

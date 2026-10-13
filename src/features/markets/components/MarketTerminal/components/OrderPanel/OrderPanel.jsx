@@ -1,5 +1,6 @@
 import React from 'react';
 import { X } from '@/icons/lucideIcons';
+import { Skeleton } from '@/components/ui/skeleton';
 import OrderField from './OrderField';
 
 export default function OrderPanel({ symbol, quote, onClose }) {
@@ -24,14 +25,16 @@ export default function OrderPanel({ symbol, quote, onClose }) {
         <button className="flex flex-col items-start gap-1.5 min-h-[72px] rounded border border-[var(--accent-danger,#ef4444)] text-[var(--accent-danger,#ef4444)] bg-[var(--surface-subtle)] cursor-pointer p-3 text-left hover:opacity-95 transition-opacity" type="button">
           <span className="text-[var(--text-muted)] text-xs">Sell</span>
           <strong className="overflow-hidden w-full text-lg font-mono tabular-nums font-black text-ellipsis whitespace-nowrap">
-            {bidText}
+            {quote ? bidText : <Skeleton className="h-6 w-20" />}
           </strong>
         </button>
-        <i className="absolute left-1/2 bottom-2.5 -translate-x-1/2 z-[1] rounded-[3px] bg-[var(--surface-muted-strong)] text-[var(--text-primary)] text-[11px] not-italic font-extrabold px-1 py-0.5 pointer-events-none">{spreadText}</i>
+        <i className="absolute left-1/2 bottom-2.5 -translate-x-1/2 z-[1] rounded-[3px] bg-[var(--surface-muted-strong)] text-[var(--text-primary)] text-[11px] not-italic font-extrabold px-1 py-0.5 pointer-events-none">
+          {quote ? spreadText : <Skeleton className="h-3 w-6 inline-block" />}
+        </i>
         <button className="flex flex-col items-end gap-1.5 min-h-[72px] rounded border border-[var(--primary,#2563eb)] text-[var(--primary,#2563eb)] bg-[var(--surface-subtle)] cursor-pointer p-3 text-right hover:opacity-95 transition-opacity" type="button">
           <span className="text-[var(--text-muted)] text-xs">Buy</span>
           <strong className="overflow-hidden w-full text-lg font-mono tabular-nums font-black text-ellipsis whitespace-nowrap">
-            {askText}
+            {quote ? askText : <Skeleton className="h-6 w-20 ml-auto" />}
           </strong>
         </button>
       </div>

@@ -472,7 +472,7 @@ function MarketTerminal({ pageActive = true }) {
                 <WatchlistPanel
                   activeSymbol={activeSymbol}
                   availableSymbols={allAvailableSymbols}
-                  isLoading={isInstrumentsLoading || allAvailableSymbols.length === 0}
+                  isLoading={isInstrumentsLoading || allAvailableSymbols.length === 0 || Object.keys(quotes).length === 0}
                   onAddSymbol={addWatchlistSymbol}
                   onPointerDragStart={handlePointerDragStart}
                   onRemoveSymbol={removeWatchlistSymbol}

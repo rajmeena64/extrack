@@ -1,5 +1,6 @@
 import React from 'react';
 import { EllipsisVertical, X } from '@/icons/lucideIcons';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function PositionsPanel({ quote, onClose }) {
   return (
@@ -20,7 +21,7 @@ export default function PositionsPanel({ quote, onClose }) {
         <span>Equity: <strong className="text-[var(--text-primary)]">420.31 USC</strong></span>
         <span>Free Margin: <strong className="text-[var(--text-primary)]">420.31 USC</strong></span>
         <span>Balance: <strong className="text-[var(--text-primary)]">420.31 USC</strong></span>
-        <span>Last: <strong className="text-[var(--text-primary)]">{quote?.lastText || quote?.bidText || '-'}</strong></span>
+        <span>Last: <strong className="text-[var(--text-primary)]">{quote?.lastText || quote?.bidText ? (quote?.lastText || quote?.bidText) : <Skeleton className="h-3.5 w-12 inline-block align-middle" />}</strong></span>
       </div>
     </section>
   );
