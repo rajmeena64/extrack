@@ -50,6 +50,7 @@ function MarketTerminal({ pageActive = true }) {
   const [layout, setLayout] = useState('1');
   const [fitNonce, setFitNonce] = useState(0);
   const [quotes, setQuotes] = useState({});
+  const [quotesLoaded, setQuotesLoaded] = useState(false);
   const [chartAreaDragActive, setChartAreaDragActive] = useState(false);
   const [pointerDrag, setPointerDrag] = useState(null);
   const pointerDragRef = useRef(null);
@@ -248,6 +249,9 @@ function MarketTerminal({ pageActive = true }) {
     const requestKeyBySymbol = new Map(requestSymbols.map((s) => [normalizeStreamSymbol(s), s]));
     let cancelled = false;
 
+    setQuotesLoaded(false);
+    const fallbackTimer = setTimeout(() => { if (!cancelled) setQuotesLoaded(true); }, 2500);
+
     api.get('/market-chart/watchlist-quotes', { params: { symbols: requestSymbols.join(',') } })
       .then((res) => {
         if (cancelled || !res.data?.quotes) return;
@@ -259,7 +263,9 @@ function MarketTerminal({ pageActive = true }) {
             : null;
         }
         setQuotes((cur) => ({ ...cur, ...nextQuotes }));
-      }).catch(() => null);
+      }).catch(() => null).finally(() => {
+        if (!cancelled) setQuotesLoaded(true);
+      });
 
     const unsubscribe = subscribeMarketStream({
       symbols: requestSymbols,
@@ -282,6 +288,7 @@ function MarketTerminal({ pageActive = true }) {
 
     return () => {
       cancelled = true;
+      clearTimeout(fallbackTimer);
       unsubscribe();
     };
   }, [instrumentDigitsBySymbol, notify, pageActive, queueWatchlistQuote, watchlistSymbolsKey]);
@@ -472,7 +479,7 @@ function MarketTerminal({ pageActive = true }) {
                 <WatchlistPanel
                   activeSymbol={activeSymbol}
                   availableSymbols={allAvailableSymbols}
-                  isLoading={isInstrumentsLoading || allAvailableSymbols.length === 0 || Object.keys(quotes).length === 0}
+                  isLoading={!quotesLoaded || isInstrumentsLoading || allAvailableSymbols.length === 0}
                   onAddSymbol={addWatchlistSymbol}
                   onPointerDragStart={handlePointerDragStart}
                   onRemoveSymbol={removeWatchlistSymbol}

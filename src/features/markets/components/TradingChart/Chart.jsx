@@ -101,6 +101,8 @@ function Chart({
 
   const rawId = String(uniqueId ?? chart?.id ?? "main").replace(/[^a-zA-Z0-9_]/g, "_");
   const containerId = `tv_chart_${rawId}`;
+  const alertsRef = useRef(alerts);
+  alertsRef.current = alerts;
 
   const currentSymbolRef = useRef(normalizedSymbol);
   useEffect(() => { currentSymbolRef.current = normalizedSymbol; }, [normalizedSymbol]);
@@ -178,7 +180,8 @@ function Chart({
     if (!chartInstance) return;
     const activeMap = orderLinesRef.current;
     const currentSym = normalizeStoredSymbol(currentSymbolRef.current || targetSymbol);
-    const symbolAlerts = alerts.filter((a) => a.status === "ACTIVE" && normalizeStoredSymbol(a.symbol) === currentSym);
+    const sourceAlerts = alertsRef.current || alerts;
+    const symbolAlerts = (Array.isArray(sourceAlerts) ? sourceAlerts : []).filter((a) => a.status === "ACTIVE" && normalizeStoredSymbol(a.symbol) === currentSym);
     const validIds = new Set(symbolAlerts.map((a) => String(a.id)));
 
     for (const [id, line] of activeMap.entries()) {
@@ -229,6 +232,9 @@ function Chart({
       }
     });
   }, [alerts, targetSymbol, isDark, onUpdateAlertPrice, onDeleteAlert]);
+
+  const syncAlertLinesRef = useRef(syncAlertLines);
+  syncAlertLinesRef.current = syncAlertLines;
 
   useEffect(() => {
     let timer = null;
@@ -329,6 +335,7 @@ function Chart({
               lastLoadedSymbolRef.current = clean;
               currentSymbolRef.current = clean;
               onSymbolChange?.(clean);
+              syncAlertLinesRef.current?.(chartInstance);
             }
           });
 
@@ -397,7 +404,11 @@ function Chart({
             setPlusMenu({ price: clickPrice, symbol: liveSym, x: posX, y: posY });
           });
 
-          syncAlertLines(chartInstance);
+          const runSyncAlerts = () => {
+            try { syncAlertLinesRef.current?.(chartInstance); } catch {}
+          };
+          runSyncAlerts();
+          if (typeof chartInstance.dataReady === "function") chartInstance.dataReady(runSyncAlerts);
         });
 
         widgetRef.current = widget;
