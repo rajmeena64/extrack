@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, ChevronUp, EllipsisVertical, Info, Search, SlidersHorizontal, Trash2, X } from '@/icons/lucideIcons';
+import { Skeleton } from '@/components/ui/skeleton';
 import WatchlistRow from './WatchlistRow';
 import EditWatchlistModal from './EditWatchlistModal';
 import AboutSymbolModal from './AboutSymbolModal';
@@ -16,6 +17,7 @@ import {
 export default function WatchlistPanel({
   activeSymbol,
   availableSymbols,
+  isLoading = false,
   onAddSymbol,
   onPointerDragStart,
   onRemoveSymbol,
@@ -223,7 +225,24 @@ export default function WatchlistPanel({
       </div>
 
       <div className="min-h-0 overflow-y-auto scrollbar-thin">
-        {filteredSections.map((section) => {
+        {isLoading ? (
+          <div className="p-2 space-y-2">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="grid grid-cols-[minmax(70px,1fr)_minmax(52px,auto)_54px_54px] items-center gap-x-1.5 py-1">
+                <div className="flex items-center gap-2">
+                  <Skeleton className="w-5 h-5 rounded-full shrink-0" />
+                  <div className="space-y-1 flex-1 min-w-0">
+                    <Skeleton className="h-3 w-12" />
+                    <Skeleton className="h-2 w-8" />
+                  </div>
+                </div>
+                <Skeleton className="h-3 w-10 ml-auto" />
+                <Skeleton className="h-3 w-9 ml-auto" />
+                <Skeleton className="h-3 w-9 ml-auto" />
+              </div>
+            ))}
+          </div>
+        ) : filteredSections.map((section) => {
           const collapsed = !normalizedQuery && collapsedSections.has(section.title);
           return (
             <section className="border-b border-[var(--border-light)] p-0" key={section.title}>

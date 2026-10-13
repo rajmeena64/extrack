@@ -10,6 +10,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { API_URL } from "@/utils/common/constants";
 import { Bell, ArrowUpRight, ArrowDownRight, ChartLine } from "@/icons/lucideIcons";
 import { formatTradePrice } from "@/utils/trading/tradeCalculations";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const readCssVar = (name) => {
   if (typeof window === "undefined") return "";
@@ -81,6 +82,7 @@ function Chart({
   const [tf, setTf] = useState(() => targetTimeframe);
   const [isDragTarget, setIsDragTarget] = useState(false);
   const [plusMenu, setPlusMenu] = useState(null);
+  const [chartReady, setChartReady] = useState(false);
   const { darkMode: contextDarkMode } = useTheme() || {};
   const isDark = Boolean(darkMode ?? contextDarkMode ?? (typeof document !== "undefined" && document.documentElement.classList.contains("dark")));
 
@@ -237,6 +239,7 @@ function Chart({
     const initWidget = () => {
       if (destroyed || !containerRef.current || !window.TradingView?.widget) return;
       try {
+        setChartReady(false);
         if (widgetRef.current) {
           try { widgetRef.current.remove(); } catch {}
           widgetRef.current = null;
@@ -300,6 +303,12 @@ function Chart({
           if (destroyed) return;
           readyRef.current = true;
           const chartInstance = widget.chart();
+          try {
+            chartInstance.dataReady(() => setChartReady(true));
+            chartInstance.onDataLoaded().subscribe(null, () => setChartReady(true));
+          } catch {
+            setChartReady(true);
+          }
           const target = currentSymbolRef.current ?? normalizedSymbol;
           lastLoadedSymbolRef.current = target;
           const hasLocalLineTools = initialSavedData?.charts?.[0]?.panes?.[0]?.sources?.some((s) => String(s?.type ?? "").startsWith("LineTool"));
@@ -453,9 +462,18 @@ function Chart({
       lastLoadedSymbolRef.current = normalizedSymbol;
       currentSymbolRef.current = normalizedSymbol;
       activeResolutionRef.current = tvTf;
+      setChartReady(false);
       try {
-        widgetRef.current.setSymbol(normalizedSymbol, tvTf);
-      } catch {}
+        widgetRef.current.setSymbol(normalizedSymbol, tvTf, () => {
+          try {
+            chartInstance.dataReady(() => setChartReady(true));
+          } catch {
+            setChartReady(true);
+          }
+        });
+      } catch {
+        setChartReady(true);
+      }
     } else if (activeResolutionRef.current !== tvTf) {
       if (isInternalChangeRef.current) {
         isInternalChangeRef.current = false;
@@ -474,6 +492,11 @@ function Chart({
       syncAlertLines(widgetRef.current.chart());
     } catch {}
   }, [alerts, syncAlertLines]);
+
+  useEffect(() => {
+    const t = setTimeout(() => setChartReady(true), 4000);
+    return () => clearTimeout(t);
+  }, [normalizedSymbol, tf]);
 
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -510,6 +533,26 @@ function Chart({
       onDrop={handleDrop}
     >
       <div id={containerId} ref={containerRef} className="w-full h-full min-h-0 relative" />
+      {!chartReady && (
+        <div className="absolute inset-0 z-20 flex flex-col p-4 bg-[var(--bg-card)] pointer-events-none">
+          <div className="flex items-center justify-between pb-3 border-b border-[var(--border-light)]">
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-5 w-24" />
+              <Skeleton className="h-5 w-14" />
+              <Skeleton className="h-5 w-16" />
+            </div>
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-6 w-16" />
+              <Skeleton className="h-6 w-16" />
+            </div>
+          </div>
+          <div className="flex-1 flex items-end gap-2 pt-6 pb-4">
+            {Array.from({ length: 16 }).map((_, i) => (
+              <Skeleton key={i} className="flex-1" style={{ height: `${20 + ((i * 37) % 65)}%` }} />
+            ))}
+          </div>
+        </div>
+      )}
       {plusMenu && (
         <>
           <div

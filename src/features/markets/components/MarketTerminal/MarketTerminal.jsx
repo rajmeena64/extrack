@@ -107,7 +107,7 @@ function MarketTerminal({ pageActive = true }) {
   }, [activeChart, activeChartId, charts, selectedLayout.capacity]);
 
   const compact = visibleCharts.length > 1;
-  const { data: dbInstruments = [] } = useInstruments('', { limit: 2500 });
+  const { data: dbInstruments = [], isLoading: isInstrumentsLoading } = useInstruments('', { limit: 2500 });
 
   const allAvailableSymbols = useMemo(() => {
     const bySymbol = new Map();
@@ -472,6 +472,7 @@ function MarketTerminal({ pageActive = true }) {
                 <WatchlistPanel
                   activeSymbol={activeSymbol}
                   availableSymbols={allAvailableSymbols}
+                  isLoading={isInstrumentsLoading || allAvailableSymbols.length === 0}
                   onAddSymbol={addWatchlistSymbol}
                   onPointerDragStart={handlePointerDragStart}
                   onRemoveSymbol={removeWatchlistSymbol}
