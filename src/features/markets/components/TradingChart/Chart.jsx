@@ -72,6 +72,7 @@ function Chart({
   onActivate,
   uniqueId,
   className = "",
+  trades = [],
 }) {
   const queryClient = useQueryClient();
   const targetSymbol = chart?.symbol ?? directSymbol;
@@ -97,6 +98,7 @@ function Chart({
   const widgetRef = useRef(null);
   const readyRef = useRef(false);
   const orderLinesRef = useRef(new Map());
+  const executionsRef = useRef(null);
   const chartShellRef = useRef(null);
 
   const rawId = String(uniqueId ?? chart?.id ?? "main").replace(/[^a-zA-Z0-9_]/g, "_");
@@ -236,6 +238,283 @@ function Chart({
   const syncAlertLinesRef = useRef(syncAlertLines);
   syncAlertLinesRef.current = syncAlertLines;
 
+  const syncTradeExecutions = useCallback((chartInstance) => {
+    if (typeof executionsRef.current === "function") {
+      executionsRef.current();
+      executionsRef.current = null;
+    }
+    if (!chartInstance) return;
+    const cw = chartInstance._chartWidget;
+    const pw = cw?.paneWidgets?.()?.[0];
+    const wrapper = pw?._div;
+    if (!wrapper || !Array.isArray(trades) || !trades.length) return;
+
+    const doc = wrapper.ownerDocument;
+    const win = doc.defaultView || window;
+    let canvas = wrapper.querySelector(".entrack-trade-markers");
+    if (!canvas) {
+      canvas = doc.createElement("canvas");
+      canvas.className = "entrack-trade-markers";
+      canvas.style.position = "absolute";
+      canvas.style.left = "0";
+      canvas.style.top = "0";
+      canvas.style.pointerEvents = "none";
+      canvas.style.zIndex = "5";
+      wrapper.appendChild(canvas);
+    }
+
+    const model = cw.model();
+    const ts = model?.timeScale();
+    const ps = model?.mainSeries()?.priceScale();
+    const bars = model?.mainSeries()?.bars();
+    if (!model || !ts || !ps || !bars) return;
+
+    const toSec = (v) => {
+      const n = Number(v);
+      return Number.isFinite(n) && n > 0 ? (n > 1e11 ? Math.floor(n / 1000) : Math.floor(n)) : null;
+    };
+
+    const findBarIndex = (sec) => {
+      if (bars.isEmpty?.()) return null;
+      let low = bars.firstIndex(), high = bars.lastIndex(), best = null;
+      while (low <= high) {
+        const mid = (low + high) >> 1;
+        const b = bars.valueAt(mid);
+        if (!b) break;
+        if (b[0] <= sec) { best = mid; low = mid + 1; }
+        else { high = mid - 1; }
+      }
+      return best;
+    };
+
+    let minT = Infinity, maxT = -Infinity;
+    trades.forEach((t) => {
+      const en = toSec(t.entryTime);
+      const ex = toSec(t.exitTime);
+      if (en) { minT = Math.min(minT, en); maxT = Math.max(maxT, en); }
+      if (ex) { minT = Math.min(minT, ex); maxT = Math.max(maxT, ex); }
+    });
+
+    if (minT !== Infinity && maxT !== -Infinity && typeof chartInstance.setVisibleRange === "function") {
+      const span = Math.max(maxT - minT, 1800);
+      try { chartInstance.setVisibleRange({ from: minT - span, to: maxT + span }); } catch {}
+    }
+
+    let mousePoint = null;
+    const render = () => {
+      if (!canvas || !canvas.parentNode) return;
+      const rect = wrapper.getBoundingClientRect();
+      const dpr = win.devicePixelRatio || 1;
+      const targetW = Math.round(rect.width * dpr);
+      const targetH = Math.round(rect.height * dpr);
+      if (canvas.width !== targetW || canvas.height !== targetH) {
+        canvas.width = targetW;
+        canvas.height = targetH;
+        canvas.style.width = `${rect.width}px`;
+        canvas.style.height = `${rect.height}px`;
+      }
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const points = [];
+      const pairs = [];
+      trades.forEach((t) => {
+        const isShort = t.tradeType === "short";
+        const enSec = toSec(t.entryTime);
+        const enPrice = Number(t.entryPrice);
+        const exSec = toSec(t.exitTime);
+        const exPrice = Number(t.exitPrice);
+        const enIdx = enSec != null ? findBarIndex(enSec) : null;
+        const exIdx = exSec != null ? findBarIndex(exSec) : null;
+        const sameCandle = enIdx != null && exIdx != null && enIdx === exIdx;
+
+        let entryPt = null, exitPt = null;
+        if (enIdx != null && Number.isFinite(enPrice)) {
+          const rawX = ts.indexToCoordinate(enIdx);
+          const rawY = ps.priceToCoordinate(enPrice);
+          if (rawX != null && rawY != null) {
+            entryPt = {
+              x: rawX + (sameCandle ? -12 : 0),
+              y: rawY,
+              color: isShort ? "#f23645" : "#089981",
+              direction: isShort ? "down" : "up",
+              price: enPrice,
+            };
+            points.push(entryPt);
+          }
+        }
+        if (exIdx != null && Number.isFinite(exPrice)) {
+          const rawX = ts.indexToCoordinate(exIdx);
+          const rawY = ps.priceToCoordinate(exPrice);
+          if (rawX != null && rawY != null) {
+            exitPt = {
+              x: rawX + (sameCandle ? 12 : 0),
+              y: rawY,
+              color: "#2962ff",
+              direction: isShort ? "up" : "down",
+              price: exPrice,
+            };
+            points.push(exitPt);
+          }
+        }
+        if (entryPt && exitPt) pairs.push({ entry: entryPt, exit: exitPt });
+      });
+
+      if (pairs.length > 0) {
+        ctx.save();
+        ctx.setLineDash([4 * dpr, 3 * dpr]);
+        ctx.strokeStyle = "rgba(148, 163, 184, 0.6)";
+        ctx.lineWidth = 1.2 * dpr;
+        pairs.forEach(({ entry, exit }) => {
+          ctx.beginPath();
+          ctx.moveTo(entry.x * dpr, entry.y * dpr);
+          ctx.lineTo(exit.x * dpr, exit.y * dpr);
+          ctx.stroke();
+        });
+        ctx.restore();
+      }
+
+      const r = 9 * dpr;
+      let hovered = null;
+      points.forEach((p) => {
+        const px = p.x * dpr;
+        const py = p.y * dpr;
+        if (mousePoint && Math.hypot(mousePoint.x * dpr - px, mousePoint.y * dpr - py) <= r + 6 * dpr) {
+          hovered = { ...p, px, py };
+        }
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(px, py, r, 0, Math.PI * 2);
+        ctx.fillStyle = p.color;
+        ctx.shadowColor = "rgba(0, 0, 0, 0.4)";
+        ctx.shadowBlur = 4 * dpr;
+        ctx.shadowOffsetY = 1 * dpr;
+        ctx.fill();
+        ctx.lineWidth = 1.5 * dpr;
+        ctx.strokeStyle = "#ffffff";
+        ctx.stroke();
+        ctx.restore();
+
+        const arrowSize = r * 0.45;
+        ctx.beginPath();
+        ctx.fillStyle = "#ffffff";
+        if (p.direction === "up") {
+          ctx.moveTo(px, py - arrowSize);
+          ctx.lineTo(px + arrowSize * 0.75, py + arrowSize * 0.55);
+          ctx.lineTo(px - arrowSize * 0.75, py + arrowSize * 0.55);
+        } else {
+          ctx.moveTo(px, py + arrowSize);
+          ctx.lineTo(px + arrowSize * 0.75, py - arrowSize * 0.55);
+          ctx.lineTo(px - arrowSize * 0.75, py - arrowSize * 0.55);
+        }
+        ctx.closePath();
+        ctx.fill();
+      });
+
+      if (hovered && hovered.price != null) {
+        const text = `@ ${hovered.price}`;
+        ctx.font = `600 ${11 * dpr}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+        const textMetrics = ctx.measureText(text);
+        const padX = 8 * dpr, padY = 4 * dpr;
+        const boxW = textMetrics.width + padX * 2;
+        const boxH = 18 * dpr + padY * 2;
+        const caretH = 5 * dpr;
+        let boxY = hovered.py - r - boxH - caretH - 2 * dpr;
+        let caretDown = true;
+        if (boxY < 5 * dpr) {
+          boxY = hovered.py + r + caretH + 2 * dpr;
+          caretDown = false;
+        }
+        const boxX = Math.max(5 * dpr, Math.min(canvas.width - boxW - 5 * dpr, hovered.px - boxW / 2));
+        const caretX = Math.max(boxX + 6 * dpr, Math.min(boxX + boxW - 6 * dpr, hovered.px));
+
+        ctx.save();
+        ctx.shadowColor = "rgba(0, 0, 0, 0.4)";
+        ctx.shadowBlur = 6 * dpr;
+        ctx.shadowOffsetY = 2 * dpr;
+        ctx.beginPath();
+        if (typeof ctx.roundRect === "function") {
+          ctx.roundRect(boxX, boxY, boxW, boxH, 4 * dpr);
+        } else {
+          ctx.rect(boxX, boxY, boxW, boxH);
+        }
+        ctx.fillStyle = "#1e222d";
+        ctx.fill();
+        ctx.shadowColor = "transparent";
+        ctx.lineWidth = 1.5 * dpr;
+        ctx.strokeStyle = hovered.color;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.fillStyle = "#1e222d";
+        ctx.strokeStyle = hovered.color;
+        ctx.lineWidth = 1.5 * dpr;
+        if (caretDown) {
+          const top = boxY + boxH;
+          ctx.moveTo(caretX - 4 * dpr, top - 1 * dpr);
+          ctx.lineTo(caretX, top + caretH);
+          ctx.lineTo(caretX + 4 * dpr, top - 1 * dpr);
+        } else {
+          ctx.moveTo(caretX - 4 * dpr, boxY + 1 * dpr);
+          ctx.lineTo(caretX, boxY - caretH);
+          ctx.lineTo(caretX + 4 * dpr, boxY + 1 * dpr);
+        }
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = "#ffffff";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(text, boxX + boxW / 2, boxY + boxH / 2);
+        ctx.restore();
+      }
+    };
+
+    const unsubs = [];
+    const sub = (target) => {
+      try {
+        target?.subscribe?.(null, render);
+        unsubs.push(() => { try { target?.unsubscribe?.(null, render); } catch {} });
+      } catch {}
+    };
+    sub(ts?.visibleBarsStrictRangeChanged());
+    sub(ts?.barSpacingChanged());
+    sub(ts?.rightOffsetChanged());
+    sub(ps?.priceRangeChanged());
+    sub(chartInstance?.onVisibleRangeChanged());
+
+    const onMouseMove = (e) => {
+      const rect = wrapper.getBoundingClientRect();
+      mousePoint = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      render();
+    };
+    const onMouseLeave = () => {
+      mousePoint = null;
+      render();
+    };
+    wrapper.addEventListener("mousemove", onMouseMove);
+    wrapper.addEventListener("mouseleave", onMouseLeave);
+
+    let ro = null;
+    if (typeof ResizeObserver !== "undefined") {
+      ro = new ResizeObserver(() => render());
+      ro.observe(wrapper);
+    }
+
+    render();
+
+    executionsRef.current = () => {
+      unsubs.forEach((u) => u());
+      ro?.disconnect();
+      wrapper.removeEventListener("mousemove", onMouseMove);
+      wrapper.removeEventListener("mouseleave", onMouseLeave);
+      canvas.remove();
+    };
+  }, [trades]);
+
+  const syncTradeExecutionsRef = useRef(syncTradeExecutions);
+  syncTradeExecutionsRef.current = syncTradeExecutions;
+
   useEffect(() => {
     let timer = null;
     let destroyed = false;
@@ -244,6 +523,10 @@ function Chart({
       if (destroyed || !containerRef.current || !window.TradingView?.widget) return;
       try {
         if (widgetRef.current) {
+          if (typeof executionsRef.current === "function") {
+            executionsRef.current();
+            executionsRef.current = null;
+          }
           try { widgetRef.current.remove(); } catch {}
           widgetRef.current = null;
           readyRef.current = false;
@@ -299,6 +582,8 @@ function Chart({
           ],
           overrides: {
             "scalesProperties.fontSize": 12,
+            "tradingProperties.showExecutions": true,
+            "tradingProperties.showExecutionsLabels": true,
           },
         });
 
@@ -306,6 +591,12 @@ function Chart({
           if (destroyed) return;
           readyRef.current = true;
           const chartInstance = widget.chart();
+          try {
+            chartInstance.applyOverrides({
+              "tradingProperties.showExecutions": true,
+              "tradingProperties.showExecutionsLabels": true,
+            });
+          } catch {}
           const target = currentSymbolRef.current ?? normalizedSymbol;
           lastLoadedSymbolRef.current = target;
           const hasLocalLineTools = initialSavedData?.charts?.[0]?.panes?.[0]?.sources?.some((s) => String(s?.type ?? "").startsWith("LineTool"));
@@ -336,6 +627,7 @@ function Chart({
               currentSymbolRef.current = clean;
               onSymbolChange?.(clean);
               syncAlertLinesRef.current?.(chartInstance);
+              syncTradeExecutionsRef.current?.(chartInstance);
             }
           });
 
@@ -406,6 +698,7 @@ function Chart({
 
           const runSyncAlerts = () => {
             try { syncAlertLinesRef.current?.(chartInstance); } catch {}
+            try { syncTradeExecutionsRef.current?.(chartInstance); } catch {}
           };
           runSyncAlerts();
           if (typeof chartInstance.dataReady === "function") chartInstance.dataReady(runSyncAlerts);
@@ -431,6 +724,10 @@ function Chart({
       if (timer) clearInterval(timer);
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
       if (widgetRef.current) {
+        if (typeof executionsRef.current === "function") {
+          executionsRef.current();
+          executionsRef.current = null;
+        }
         try { widgetRef.current.remove(); } catch {}
         widgetRef.current = null;
         readyRef.current = false;
@@ -485,6 +782,13 @@ function Chart({
       syncAlertLines(widgetRef.current.chart());
     } catch {}
   }, [alerts, syncAlertLines]);
+
+  useEffect(() => {
+    if (!readyRef.current || !widgetRef.current) return;
+    try {
+      syncTradeExecutions(widgetRef.current.chart());
+    } catch {}
+  }, [trades, syncTradeExecutions]);
 
   const handleDragOver = (e) => {
     e.preventDefault();

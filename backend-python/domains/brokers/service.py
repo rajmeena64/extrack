@@ -168,12 +168,13 @@ async def create_user_connection(user_id: int, payload: dict) -> dict:
     if not integration_id or not account_name:
         raise AppError(ERROR_MESSAGES["BROKER"]["VALIDATION_FAILED"])
     meta = payload["metadata"] if payload.get("metadata") is not None else {}
+    curr = str(payload.get("accountCurrency") or payload.get("currency") or "USD").upper().strip()
     row = await pool.fetchrow("""
         INSERT INTO broker_connections.user_broker_connections (
-          user_id, integration_id, external_account_id, account_name, status, metadata, created_at, updated_at
-        ) VALUES ($1, $2, $3, $4, 'pending', $5::jsonb, NOW(), NOW())
+          user_id, integration_id, external_account_id, account_name, account_currency, status, metadata, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, 'pending', $6::jsonb, NOW(), NOW())
         RETURNING id
-    """, user_id, uuid.UUID(str(integration_id)), payload.get("externalAccountId"), str(account_name).strip(), json.dumps(meta))
+    """, user_id, uuid.UUID(str(integration_id)), payload.get("externalAccountId"), str(account_name).strip(), curr, json.dumps(meta))
     return await get_user_connection(user_id, str(row["id"]))
 
 async def update_user_connection(user_id: int, connection_id: str, payload: dict) -> dict:
@@ -183,6 +184,11 @@ async def update_user_connection(user_id: int, connection_id: str, payload: dict
     if "accountName" in payload and payload["accountName"]:
         params.append(str(payload["accountName"]).strip())
         sets.append(f"account_name = ${len(params)}")
+    if "accountCurrency" in payload or "currency" in payload:
+        c_val = str(payload.get("accountCurrency") or payload.get("currency") or "").upper().strip()
+        if c_val:
+            params.append(c_val)
+            sets.append(f"account_currency = ${len(params)}")
     if "metadata" in payload:
         params.append(json.dumps(payload["metadata"]))
         sets.append(f"metadata = ${len(params)}::jsonb")

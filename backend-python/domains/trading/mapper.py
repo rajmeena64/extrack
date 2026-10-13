@@ -3,7 +3,7 @@ import uuid
 import asyncpg
 from core.errors.app_error import AppError
 from core.errors.messages import ERROR_MESSAGES
-from domains.instruments.registry import ensure_loaded
+from domains.instruments.registry import ensure_loaded, normalize_symbol
 
 CANONICAL_FIELDS = (
     "unique_id", "symbol", "side", "status", "quantity", "entry_price", "exit_price",
@@ -89,7 +89,8 @@ def map_manual_trade(raw: dict) -> dict:
 
 async def get_broker_trade_mapping(pool: asyncpg.Pool, user_id: int, connection_id: uuid.UUID, trade_method: str = "file_upload") -> dict:
     row = await pool.fetchrow("""
-        SELECT COALESCE(target.trade_mapping, integration.trade_mapping, '{}'::jsonb) AS trade_mapping
+        SELECT COALESCE(target.trade_mapping, integration.trade_mapping, '{}'::jsonb) AS trade_mapping,
+               connection.account_currency AS account_currency
         FROM broker_connections.user_broker_connections connection
         JOIN trading_catalog.broker_integrations integration ON integration.id = connection.integration_id
         LEFT JOIN trading_catalog.brokers broker ON broker.id = integration.broker_id
@@ -100,7 +101,12 @@ async def get_broker_trade_mapping(pool: asyncpg.Pool, user_id: int, connection_
     if not row or not row["trade_mapping"]:
         return {}
     m = row["trade_mapping"]
-    return json.loads(m) if isinstance(m, str) else dict(m)
+    cfg = json.loads(m) if isinstance(m, str) else dict(m)
+    if row.get("account_currency"):
+        cfg.setdefault("defaults", {})
+        cfg["defaults"]["pnl_currency"] = row["account_currency"]
+        cfg["defaults"]["currency"] = row["account_currency"]
+    return cfg
 
 def map_broker_trade(raw: dict, mapping_config: dict, source: str = "file") -> dict:
     fm = mapping_config["fieldMapping"] if mapping_config.get("fieldMapping") is not None else {}
@@ -149,9 +155,11 @@ def map_broker_trade(raw: dict, mapping_config: dict, source: str = "file") -> d
     if not b_pnl_curr:
         b_pnl_curr = b_curr
     status = str(_read("status")) if _read("status") is not None else ("closed" if exit_p is not None else "open")
+    raw_s = str(_read("symbol") if _read("symbol") is not None else "").strip()
+    norm_s = normalize_symbol(raw_s) if raw_s else ""
     return {
         "unique_id": str(_read("unique_id") if _read("unique_id") is not None else uuid.uuid4()),
-        "symbol": str(_read("symbol") if _read("symbol") is not None else "").strip().upper(),
+        "symbol": (norm_s or raw_s).upper(),
         "side": side,
         "status": status,
         "quantity": qty_val,

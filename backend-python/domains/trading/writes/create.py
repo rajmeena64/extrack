@@ -90,8 +90,9 @@ async def prepare_row_params(pool: asyncpg.Pool, t: dict, user_id: int, parsed_c
     calc_qty = closed_qty if (exit_p is not None and closed_qty is not None and 0.0 < closed_qty < qty) else qty
     if exit_p is not None and closed_qty is not None and 0.0 < closed_qty < qty:
         status = "partially_closed"
-    curr = str(t.get("currency") or t.get("pnl_currency") or "USD").upper().strip()
-    pnl_curr = str(t.get("pnl_currency") or curr).upper().strip()
+    conn_curr = await pool.fetchval("SELECT account_currency FROM broker_connections.user_broker_connections WHERE id = $1 AND user_id = $2", parsed_conn_id, user_id) if parsed_conn_id else None
+    curr = str(conn_curr or t.get("currency") or t.get("pnl_currency") or "USD").upper().strip()
+    pnl_curr = str(conn_curr or t.get("pnl_currency") or curr).upper().strip()
     gross, net, pct = calculate_trade_pnl(
         entry_p=entry_p, exit_p=exit_p, qty=calc_qty, mult=mult, side=side, charges=charges,
         category=cat, conversion_rate=1.0,

@@ -461,7 +461,10 @@ export default function SyncAccounts({ accounts = [] }) {
                 </div>
                 <div className="flex flex-col gap-0.5">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Balance</span>
-                  <strong className="text-xs font-bold text-[var(--heading)]">{formatBalance(connection.accountBalance, connection.accountCurrency)}</strong>
+                  <strong className="text-xs font-bold text-[var(--heading)]">
+                    {formatBalance(connection.accountBalance, connection.accountCurrency)}
+                    {!Number.isFinite(Number(connection.accountBalance)) && connection.accountCurrency ? ` (${connection.accountCurrency})` : ''}
+                  </strong>
                 </div>
                 <div className="flex flex-col gap-0.5">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Last sync</span>

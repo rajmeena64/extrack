@@ -189,7 +189,7 @@ class TestBackendTradingCalculations(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(d1["hasBadge"])
 
     def test_currency_usc_cents_conversion(self):
-        usd_val = convert_trade_pnl(15000.0, "USC", "USD", 1.0)
+        usd_val = convert_trade_pnl(15000.0, "USC", "USD", 0.01)
         self.assertEqual(usd_val, 150.0)
 
     def test_currency_fx_rate_conversion(self):

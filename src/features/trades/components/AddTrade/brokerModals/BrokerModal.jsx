@@ -52,6 +52,9 @@ export default function BrokerModal({
             <span className="text-[11px] text-[var(--text-muted)]">{brokerName}{selected.accountEnvironment ? ` · ${selected.accountEnvironment}` : ''} account</span>
             <div className="flex items-center gap-2 flex-wrap">
               <strong className="text-base font-bold text-[var(--heading)]">{selected.accountName || brokerName}</strong>
+              {selected.accountCurrency ? (
+                <span className="text-xs text-[var(--text-secondary)]">Currency <b className="text-[var(--heading)]">{selected.accountCurrency}</b></span>
+              ) : null}
               {isConnected && selected.accountBalance !== undefined && (
                 <span className="text-xs text-[var(--text-secondary)]">Balance <b className="text-[var(--heading)]">{formatBalance ? formatBalance(selected.accountBalance, selected.accountCurrency) : `${selected.accountBalance} ${selected.accountCurrency || ''}`}</b></span>
               )}

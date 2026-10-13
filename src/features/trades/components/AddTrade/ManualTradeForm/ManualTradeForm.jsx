@@ -3,7 +3,21 @@ import ManualEntryForm from '../ManualEntryForm/ManualEntryForm';
 import FileUploadForm from '../FileUploadForm/FileUploadForm';
 import api from '@/utils/common/serve';
 import { useAppDialog } from '@/context/AppDialogContext';
-import { Button } from "@/components/ui";
+import { Button, DropdownSelect as CustomSelect } from "@/components/ui";
+
+const CURRENCY_OPTIONS = [
+  { value: 'USD', label: 'USD ($)' },
+  { value: 'USC', label: 'USC (¢ Cents)' },
+  { value: 'INR', label: 'INR (₹)' },
+  { value: 'EUR', label: 'EUR (€)' },
+  { value: 'GBP', label: 'GBP (£)' },
+  { value: 'JPY', label: 'JPY (¥)' },
+  { value: 'AED', label: 'AED' },
+  { value: 'AUD', label: 'AUD (A$)' },
+  { value: 'CAD', label: 'CAD (C$)' },
+  { value: 'CHF', label: 'CHF (Fr)' },
+  { value: 'SGD', label: 'SGD (S$)' },
+];
 
 function BrokerMark({ broker, className = '' }) {
   const [failedLogoPath, setFailedLogoPath] = useState(null);
@@ -18,13 +32,14 @@ function BrokerMark({ broker, className = '' }) {
 const connectionToBroker = (c) => ({
   id: c.id, brokerConnectionId: c.id, accountName: c.accountName, catalogId: c.brokerId,
   name: c.brokerName, slug: c.brokerSlug, logoPath: c.brokerLogoPath, tradeMethod: c.tradeMethod,
-  status: c.status, metadata: c.metadata,
+  status: c.status, metadata: c.metadata, accountCurrency: c.accountCurrency,
 });
 
 export default function ManualTradeForm({ fileData, setFileData, entryMode = 'accounts', brokers, selectedBrokerId, setSelectedBrokerId, setBrokers, onOpenEntryMethods, onOpenManualEntry, currencyCode, onCurrencyChange }) {
   const { confirm, notify, prompt: requestInput } = useAppDialog();
   const [showAddBroker, setShowAddBroker] = useState(false);
   const [accountName, setAccountName] = useState('');
+  const [accountCurrency, setAccountCurrency] = useState('USD');
   const [brokerCatalog, setBrokerCatalog] = useState([]);
   const [brokerSearch, setBrokerSearch] = useState('');
   const [debouncedBrokerSearch, setDebouncedBrokerSearch] = useState('');
@@ -93,11 +108,12 @@ export default function ManualTradeForm({ fileData, setFileData, entryMode = 'ac
       const available = (Array.isArray(intData?.integrations) ? intData.integrations : Array.isArray(intData) ? intData : []).filter((i) => i.isActive !== false);
       const integration = available.sort((a, b) => pref.indexOf(a.tradeMethod) - pref.indexOf(b.tradeMethod))[0];
       if (!integration) throw new Error('No supported account method');
-      const { data } = await api.post('/broker-connections', { integrationId: integration.id, accountName: account, metadata: {} });
+      const { data } = await api.post('/broker-connections', { integrationId: integration.id, accountName: account, accountCurrency, metadata: {} });
       const broker = connectionToBroker(data.connection);
       setBrokers((curr) => [...curr.filter((item) => item.id !== broker.id), broker]);
       setSelectedBrokerId(broker.id);
       setAccountName('');
+      setAccountCurrency('USD');
       setBrokerSearch('');
       setSelectedCatalogBrokerId('');
       setShowAddBroker(false);
@@ -173,6 +189,7 @@ export default function ManualTradeForm({ fileData, setFileData, entryMode = 'ac
                     <span className="flex flex-col gap-0.5 min-w-0">
                       <span className="flex items-center gap-2 min-w-0">
                         <strong className="text-sm font-bold text-[var(--heading)] truncate">{displayName}</strong>
+                        {broker.accountCurrency ? <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-500 border border-blue-500/20">{broker.accountCurrency}</span> : null}
                         {broker.status === 'connected' && broker.metadata?.environment ? <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${broker.metadata.environment === 'demo' ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' : 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'}`}>{broker.metadata.environment === 'demo' ? 'Demo' : 'Real'}</span> : null}
                         {broker.status === 'pending' ? <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">Connection required</span> : null}
                       </span>
@@ -238,10 +255,16 @@ export default function ManualTradeForm({ fileData, setFileData, entryMode = 'ac
               <span className="text-xs text-[var(--text-muted)]">Selected broker:</span>
               <strong className="text-xs font-bold text-[var(--heading)]">{selectedCatalogBroker.name}</strong>
             </div>
-            <label className="flex flex-col gap-1.5 max-w-md">
-              <span className="text-xs font-bold text-[var(--heading)]">Account Name <span className="text-rose-500">*</span></span>
-              <input className="w-full min-h-[40px] px-3 py-2 text-xs rounded-xl border border-[var(--divider-strong)] bg-[var(--bg-card)] text-[var(--heading)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--button-bg)] shadow-xs" value={accountName} onChange={(e) => setAccountName(e.target.value)} placeholder="e.g. Main Futures" required />
-            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg">
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-bold text-[var(--heading)]">Account Name <span className="text-rose-500">*</span></span>
+                <input className="w-full min-h-[40px] px-3 py-2 text-xs rounded-xl border border-[var(--divider-strong)] bg-[var(--bg-card)] text-[var(--heading)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--button-bg)] shadow-xs" value={accountName} onChange={(e) => setAccountName(e.target.value)} placeholder="e.g. Main Futures" required />
+              </label>
+              <div className="flex flex-col gap-1.5">
+                <span className="text-xs font-bold text-[var(--heading)]">Account Currency <span className="text-rose-500">*</span></span>
+                <CustomSelect ariaLabel="Account Currency" value={accountCurrency} onChange={(e) => setAccountCurrency(e.target.value)} options={CURRENCY_OPTIONS} />
+              </div>
+            </div>
             <div className="flex justify-start">
               <Button color="primary" size="md" type="submit" isDisabled={!accountName.trim() || accountBusy} isLoading={accountBusy}>
                 {accountBusy ? 'Saving...' : 'Save Account'}

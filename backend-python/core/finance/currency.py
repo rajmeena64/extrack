@@ -28,8 +28,7 @@ def convert_trade_pnl(raw_pnl: float, pnl_currency: str | None, target_currency:
     curr = pnl_currency.upper().strip() if pnl_currency else target_currency.upper().strip()
     tgt = target_currency.upper().strip()
     if curr == tgt: return round(raw_pnl, 2)
-    val = raw_pnl * 0.01 if curr == "USC" else raw_pnl
-    return round(val * rate, 2)
+    return round(raw_pnl * rate, 2)
 
 async def refresh_fx_cache():
     global _fx_cache, _fx_dates
