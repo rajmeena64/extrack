@@ -54,19 +54,20 @@ async def prepare_row_params(pool: asyncpg.Pool, t: dict, user_id: int, parsed_c
         raise AppError(ERROR_MESSAGES["TRADING"]["INVALID_SIDE"])
     sl = float(t["stop_loss"]) if t.get("stop_loss") is not None else None
     tp = float(t["take_profit"]) if t.get("take_profit") is not None else None
-    is_existing = bool(t.get("id")) or bool(t.get("is_update")) or bool(t.get("created_at"))
-    if entry_p is not None:
+    src = str(t["source"] if t.get("source") is not None else "manual").lower().strip()
+    is_initial_manual = not (t.get("id") or t.get("is_update") or t.get("created_at") or exit_p is not None or src in ("file", "sync"))
+    if entry_p is not None and is_initial_manual:
         if side == "long":
             if sl is not None and tp is not None and sl >= tp:
                 raise AppError(ERROR_MESSAGES["TRADING"]["SL_ABOVE_TP_LONG"])
-            if not is_existing and sl is not None and sl > entry_p:
+            if sl is not None and sl > entry_p:
                 raise AppError(ERROR_MESSAGES["TRADING"]["SL_ABOVE_ENTRY_LONG"])
             if tp is not None and tp <= entry_p:
                 raise AppError(ERROR_MESSAGES["TRADING"]["TP_BELOW_ENTRY_LONG"])
         elif side == "short":
             if sl is not None and tp is not None and sl <= tp:
                 raise AppError(ERROR_MESSAGES["TRADING"]["SL_BELOW_TP_SHORT"])
-            if not is_existing and sl is not None and sl < entry_p:
+            if sl is not None and sl < entry_p:
                 raise AppError(ERROR_MESSAGES["TRADING"]["SL_BELOW_ENTRY_SHORT"])
             if tp is not None and tp >= entry_p:
                 raise AppError(ERROR_MESSAGES["TRADING"]["TP_ABOVE_ENTRY_SHORT"])
