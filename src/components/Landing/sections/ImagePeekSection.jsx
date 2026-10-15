@@ -37,9 +37,6 @@ export function ImagePeekSection() {
         <h2 className="text-4xl sm:text-5xl lg:text-[72px] font-bold tracking-tight text-[#ececec] leading-[1.08]">
           Master Trading Strategies with Market Replay Simulator
         </h2>
-        <p className="mt-6 text-base sm:text-lg text-slate-300 max-w-2xl leading-relaxed">
-          Entrack lets you practice in an environment that mirrors your real trading terminal. By customizing your workspace, you bring the comfort of your daily trading experience to every backtest session.
-        </p>
       </div>
       <div 
         className="group relative z-20 flex items-center justify-center w-full max-w-[1568px] min-h-[520px] lg:min-h-[660px] mx-auto select-none cursor-pointer pt-12 pb-20 mt-4"

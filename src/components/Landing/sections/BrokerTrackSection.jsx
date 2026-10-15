@@ -48,12 +48,26 @@ function ScrollVelocityRow({ items, direction = -1, baseSpeed = 28, velocityRef 
         {[0, 1, 2, 3].map((copy) => (
           <div key={copy} ref={copy === 0 ? blockRef : null} className="flex shrink-0 items-center">
             {items.map((broker, idx) => (
-              <span
+              <div
                 key={`${broker.name}-${copy}-${idx}`}
-                className="inline-block text-4xl md:text-7xl md:leading-[5rem] font-bold tracking-[-0.02em] text-white drop-shadow-sm mr-12 select-none"
+                className="inline-flex items-center gap-3.5 px-6 py-3 rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-md mr-5 select-none transition-all duration-300 hover:border-white/20 hover:bg-white/[0.05]"
               >
-                {broker.name}
-              </span>
+                {broker.image ? (
+                  <img
+                    src={broker.image}
+                    alt={broker.name}
+                    className="h-6 w-auto max-w-[110px] object-contain opacity-75 hover:opacity-100 transition-opacity"
+                    loading="lazy"
+                  />
+                ) : (
+                  <span className="text-xs font-mono font-bold text-slate-400 bg-white/5 px-2 py-0.5 rounded">
+                    {broker.mark || broker.name.slice(0, 2).toUpperCase()}
+                  </span>
+                )}
+                <span className="text-base md:text-lg font-bold tracking-tight text-white/90 whitespace-nowrap">
+                  {broker.name}
+                </span>
+              </div>
             ))}
           </div>
         ))}

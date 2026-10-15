@@ -10,6 +10,7 @@ const getFallbackLetters = (symbol) =>
 const getAssetIconPath = (asset, inst) => {
   if (!asset) return null;
   const k = String(asset).trim().toLowerCase();
+  if (inst?.assetClass === "index") return `/assets/indices/${inst?.icon?.toLowerCase() || `idx_${k}`}.svg`;
   if (inst?.assetClass === "metal" || (inst?.category === "cfd" && inst?.assetClass !== "crypto")) {
     return `/assets/commodities/${inst?.icon?.toLowerCase() || k}.svg`;
   }

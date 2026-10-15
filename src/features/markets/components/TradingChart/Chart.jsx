@@ -10,6 +10,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { API_URL } from "@/utils/common/constants";
 import { Bell, ArrowUpRight, ArrowDownRight, ChartLine } from "@/icons/lucideIcons";
 import { formatTradePrice } from "@/utils/trading/tradeCalculations";
+import { createTvBrokerAdapter } from "./brokerAdapter";
 
 const readCssVar = (name) => {
   if (typeof window === "undefined") return "";
@@ -73,6 +74,8 @@ function Chart({
   uniqueId,
   className = "",
   trades = [],
+  disableSymbolChange = false,
+  showAccountManager = false,
 }) {
   const queryClient = useQueryClient();
   const targetSymbol = chart?.symbol ?? directSymbol;
@@ -315,6 +318,8 @@ function Chart({
       }
       const ctx = canvas.getContext("2d");
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const activeSym = chartInstance.symbol?.();
+      if (activeSym && normalizeStoredSymbol(activeSym) !== normalizedSymbol) return;
 
       const points = [];
       const pairs = [];
@@ -482,6 +487,7 @@ function Chart({
     sub(ts?.rightOffsetChanged());
     sub(ps?.priceRangeChanged());
     sub(chartInstance?.onVisibleRangeChanged());
+    sub(chartInstance?.onSymbolChanged?.());
 
     const onMouseMove = (e) => {
       const rect = wrapper.getBoundingClientRect();
@@ -547,6 +553,7 @@ function Chart({
           auto_save_delay: 2,
           saved_data: initialSavedData || undefined,
           custom_font_family: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+          ...(showAccountManager ? { brokerFactory: () => createTvBrokerAdapter() } : {}),
           settings_adapter: {
             initialSettings: chartSettingsRef.current || {},
             setValue: (k, v) => {
@@ -563,14 +570,14 @@ function Chart({
           disabled_features: [
             "widgetbar",
             "right_toolbar",
-            "bottom_widgetbar",
-            "footer_widget",
-            "trading_account_manager",
+            ...(!showAccountManager ? ["bottom_widgetbar", "footer_widget", "trading_account_manager"] : []),
             "chart_event_hint",
             "study_market_minimized",
+            ...(disableSymbolChange ? ["header_symbol_search", "symbol_search_hot_key", "compare_symbol"] : []),
           ],
           enabled_features: [
-            "header_symbol_search",
+            ...(!disableSymbolChange ? ["header_symbol_search"] : []),
+            ...(showAccountManager ? ["trading_account_manager", "open_account_manager"] : []),
             "chart_crosshair_menu",
             "side_toolbar_in_fullscreen_mode",
             "items_favoriting",

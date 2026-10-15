@@ -168,6 +168,7 @@ export default function ThatTrade({ trades = [], currencyCode }) {
         symbol={trade.symbol} uniqueId={trade.unique_id} timeframe={getDurationTimeframe(chartTrades)}
         live={false} priceDigits={trade.instrumentDigits} anchorTime={anchorTime}
         trades={chartTrades} onCandleData={handleCandleData} onReplayChange={handleReplayChange}
+        disableSymbolChange
       />
     </Card>
   );

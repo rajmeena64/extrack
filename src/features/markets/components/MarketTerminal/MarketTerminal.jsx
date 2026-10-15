@@ -560,6 +560,7 @@ function MarketTerminal({ pageActive = true }) {
                             }}
                             onSymbolChange={(sym) => replaceChartSymbol(item.id, sym)}
                             onQuote={handleQuote}
+                            showAccountManager={item.id === activeChartId}
                           />
                         </div>
                       );

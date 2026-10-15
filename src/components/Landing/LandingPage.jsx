@@ -142,8 +142,8 @@ const analyticsFeatureVisuals = {
 
 function PageShell({ title = "Entrack", homeHref = "/", navLinks = [], children, ariaLabel = "Entrack home" }) {
   return (
-    <div className="min-h-screen bg-[#010204] text-[#f8fafc] relative font-sans">
-      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(101,99,240,0.14),transparent_60%),radial-gradient(circle_at_85%_65%,rgba(231,61,138,0.07),transparent_50%),linear-gradient(180deg,rgba(3,3,5,0.1),#030305_90%)]" aria-hidden="true" />
+    <div className="min-h-screen bg-[#000000] text-[#f8fafc] relative font-sans antialiased selection:bg-[#2563eb]/30 selection:text-white">
+      <div className="pointer-events-none fixed inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" aria-hidden="true" />
       <header className="w-full max-w-[1480px] mx-auto px-6 sm:px-10 min-h-[86px] flex items-center justify-between border-b border-white/[0.08] relative z-10">
         <a href={homeHref} className="flex items-center gap-3 text-white font-bold text-lg hover:opacity-90 transition-opacity" aria-label={ariaLabel}>
           <span className="w-8 h-8 rounded-xl bg-white/[0.06] border border-white/10 flex items-center justify-center p-1.5" aria-hidden="true">
@@ -366,7 +366,7 @@ const demoSections = [
     slug: 'news',
     title: 'Market news',
     eyebrow: 'News',
-    image: null,
+    image: '/assets/landing/economic-calendar.png',
     description: 'Track market headlines as trading context without letting news noise take over the review.',
     features: ['Headline context', 'Market awareness', 'Trade review notes'],
     details: [
@@ -392,7 +392,7 @@ const demoSections = [
     slug: 'ai-analysis',
     title: 'AI analysis',
     eyebrow: 'AI Review',
-    image: '/assets/landing/ai-analysis.png',
+    image: '/assets/landing/ai-assistant.png',
     description: 'Use AI to summarize trading behavior, repeated mistakes and improvement ideas from your records.',
     features: ['Behavior summary', 'Mistake patterns', 'Review prompts'],
     details: [
@@ -458,7 +458,7 @@ const featureSections = [
     slug: 'brokers',
     eyebrow: 'Brokers',
     title: 'Broker coverage without switching tabs.',
-    image: null,
+    image: '/assets/landing/performance-preview.png',
     description: 'Broker pages organize trading sources, supported accounts and coverage notes in one clean view.',
     points: ['Supported broker list', 'Account source context', 'Market coverage preview']
   },
@@ -474,7 +474,7 @@ const featureSections = [
     slug: 'replay',
     eyebrow: 'Replay',
     title: 'Practice markets before risking capital.',
-    image: null,
+    image: '/assets/landing/market-terminal.png',
     description: 'Replay helps traders test entries, exits and risk rules against historical market movement.',
     points: ['Historical candle replay', 'Virtual execution practice', 'Strategy confidence building']
   }
@@ -484,18 +484,24 @@ const brokerGalleryItems = [
   { slug: 'exness', name: 'Exness', type: 'Forex broker', coverage: 'Trade import ready', image: '/assets/broker/exness%20image.svg', mark: 'EX', description: 'Track Exness account activity with journal context, screenshots and broker-specific review notes.' },
   { slug: 'vantage', name: 'Vantage', type: 'CFD broker', coverage: 'Account coverage', image: '/assets/broker/vantage.svg', mark: 'VA', description: 'Keep Vantage trades grouped with performance stats so broker behavior is easier to compare.' },
   { slug: 'xm', name: 'XM', type: 'Forex broker', coverage: 'Broker directory', image: '/assets/broker/xm.svg', mark: 'XM', description: 'Add XM into the broker workspace and review markets, accounts and execution patterns cleanly.' },
-  { slug: 'binance', name: 'Binance', type: 'Crypto exchange', coverage: 'Crypto journal', mark: 'BN', description: 'Keep crypto trades beside forex and CFD activity without losing the source of each decision.' },
+  { slug: 'binance', name: 'Binance', type: 'Crypto exchange', coverage: 'Crypto journal', image: '/assets/broker/binance.svg', mark: 'BN', description: 'Keep crypto trades beside forex and CFD activity without losing the source of each decision.' },
+  { slug: 'interactive-brokers', name: 'Interactive Brokers', type: 'Global broker', coverage: 'Multi-asset', image: '/assets/broker/interactive-brokers.svg', mark: 'IB', description: 'Track multi-asset activity from Interactive Brokers with a consistent review structure.' },
+  { slug: 'metatrader-5', name: 'MetaTrader 5', type: 'Multi-asset platform', coverage: 'EA & manual import', image: '/assets/broker/metatrader5.svg', mark: 'MT5', description: 'Review MetaTrader 5 execution data with journal context and trade screenshot attachments.' },
+  { slug: 'ninjatrader', name: 'NinjaTrader', type: 'Futures broker', coverage: 'Futures replay ready', image: '/assets/broker/ninjatrader.svg', mark: 'NT', description: 'Track futures order flow and execution habits from NinjaTrader directly in Entrack.' },
+  { slug: 'ctrader', name: 'cTrader', type: 'CFD platform', coverage: 'Direct sync support', image: '/assets/broker/ctrader.svg', mark: 'CT', description: 'Analyze cTrader scalping and intraday performance alongside journal notes.' },
+  { slug: 'webull', name: 'Webull', type: 'Stock broker', coverage: 'Stock & options', image: '/assets/broker/webull.svg', mark: 'WB', description: 'Keep Webull stock and options trades organized with detailed P&L metrics.' },
+  { slug: 'robinhood', name: 'Robinhood', type: 'Stock broker', coverage: 'Equities & crypto', image: '/assets/broker/robinhood.svg', mark: 'RH', description: 'Review Robinhood trades and spot behavioral tendencies across your portfolio.' },
+  { slug: 'tradovate', name: 'Tradovate', type: 'Futures broker', coverage: 'Futures coverage', image: '/assets/broker/tradovate.svg', mark: 'TR', description: 'Bring Tradovate futures trades into the same unified journal and backtest setup.' },
+  { slug: 'coinbase', name: 'Coinbase', type: 'Crypto exchange', coverage: 'Spot tracking', image: '/assets/broker/coinbase.svg', mark: 'CB', description: 'Track Coinbase spot activity and connect longer-term crypto decisions with journal notes.' },
   { slug: 'bybit', name: 'Bybit', type: 'Crypto exchange', coverage: 'Crypto journal', mark: 'BY', description: 'Review Bybit trades with symbol, session and risk context attached to each crypto decision.' },
   { slug: 'bitget', name: 'Bitget', type: 'Crypto exchange', coverage: 'Exchange coverage', mark: 'BG', description: 'Keep Bitget activity organized beside other exchanges and compare execution habits cleanly.' },
-  { slug: 'coinbase', name: 'Coinbase', type: 'Crypto exchange', coverage: 'Spot tracking', mark: 'CB', description: 'Track Coinbase spot activity and connect longer-term crypto decisions with journal notes.' },
   { slug: 'okx', name: 'OKX', type: 'Crypto exchange', coverage: 'Exchange coverage', mark: 'OK', description: 'Bring OKX trades into the same review workspace for crypto performance and behavior checks.' },
   { slug: 'zerodha', name: 'Zerodha', type: 'India broker', coverage: 'Equity workflow', mark: 'ZR', description: 'Organize Zerodha trades with market context, account notes and clean review categories.' },
   { slug: 'angel-one', name: 'Angel One', type: 'India broker', coverage: 'Equity workflow', mark: 'AO', description: 'Review Angel One trading activity alongside other accounts without breaking your workflow.' },
   { slug: 'dhan', name: 'Dhan', type: 'India broker', coverage: 'Equity workflow', mark: 'DN', description: 'Keep Dhan trades visible in broker coverage for account-by-account comparison.' },
   { slug: 'upstox', name: 'Upstox', type: 'India broker', coverage: 'Equity workflow', mark: 'UP', description: 'Use Upstox as another source in the trading review loop with notes and performance context.' },
   { slug: 'ic-markets', name: 'IC Markets', type: 'Forex broker', coverage: 'Forex coverage', mark: 'IC', description: 'Compare IC Markets trading behavior with other forex accounts and session performance.' },
-  { slug: 'pepperstone', name: 'Pepperstone', type: 'CFD broker', coverage: 'CFD coverage', mark: 'PP', description: 'Keep Pepperstone trades grouped by broker so execution quality is easier to review.' },
-  { slug: 'interactive-brokers', name: 'Interactive Brokers', type: 'Global broker', coverage: 'Multi-asset', mark: 'IB', description: 'Track multi-asset activity from Interactive Brokers with a consistent review structure.' }
+  { slug: 'pepperstone', name: 'Pepperstone', type: 'CFD broker', coverage: 'CFD coverage', mark: 'PP', description: 'Keep Pepperstone trades grouped by broker so execution quality is easier to review.' }
 ];
 
 const getFeatureSectionFromPath = () => {
@@ -525,13 +531,13 @@ function BrokerDetailPage({ broker }) {
   return (
     <PageShell title="Broker Demo" homeHref="/demo" navLinks={[['/demo', 'Demo'], ['/features/brokers', 'Broker feature']]} ariaLabel="Back to demo">
       <main className="w-full max-w-[1480px] mx-auto px-6 sm:px-10 py-12 flex flex-col gap-10 relative z-10">
-        <section className="flex flex-col md:flex-row justify-between items-start gap-8 pb-10 border-b border-white/10">
+        <section className="flex flex-col md:flex-row justify-between items-start gap-8 p-8 sm:p-12 rounded-[36px] border border-[#1f1f1f] bg-[#090909]">
           <div>
-            <div className="text-xs font-bold uppercase tracking-wider text-[#2E90FA] mb-2">{broker.type}</div>
-            <h1 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight leading-tight">{broker.name}</h1>
-            <p className="mt-4 text-base text-slate-300 leading-relaxed max-w-2xl">{broker.description}</p>
+            <div className="text-xs font-bold uppercase tracking-[2px] text-[#2E90FA] mb-2">{broker.type}</div>
+            <h1 className="text-3xl sm:text-5xl font-bold text-white tracking-[-1.5px] leading-tight">{broker.name}</h1>
+            <p className="mt-4 text-base text-[#cacaca] leading-relaxed max-w-2xl">{broker.description}</p>
           </div>
-          <div className="w-32 h-32 rounded-3xl border border-white/10 bg-white/[0.04] backdrop-blur-xl flex items-center justify-center p-6 flex-shrink-0">
+          <div className="w-32 h-32 rounded-3xl border border-[#1f1f1f] bg-white/[0.04] backdrop-blur-xl flex items-center justify-center p-6 flex-shrink-0">
             {broker.image ? (
               <img className="max-w-full max-h-full object-contain" src={broker.image} alt={`${broker.name} logo`} />
             ) : (
@@ -540,15 +546,15 @@ function BrokerDetailPage({ broker }) {
           </div>
         </section>
         <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <article className="p-6 rounded-3xl border border-white/10 bg-white/[0.03]">
+          <article className="p-8 sm:p-10 rounded-[32px] border border-[#1f1f1f] bg-[#090909]">
             <h2 className="text-xl font-bold text-white mb-4">Broker coverage</h2>
             <div className="flex flex-wrap gap-2">
-              {brokerFeatures.map((f) => <span className="px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white/10 text-slate-200 border border-white/10" key={f}>{f}</span>)}
+              {brokerFeatures.map((f) => <span className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-[#2E90FA]/10 text-[#2E90FA] border border-[#2E90FA]/20" key={f}>{f}</span>)}
             </div>
           </article>
-          <article className="p-6 rounded-3xl border border-white/10 bg-white/[0.03]">
+          <article className="p-8 sm:p-10 rounded-[32px] border border-[#1f1f1f] bg-[#090909]">
             <h2 className="text-xl font-bold text-white mb-4">How it fits in Entrack</h2>
-            <ul className="space-y-3 text-sm text-slate-300 list-disc pl-5 leading-relaxed">
+            <ul className="space-y-3 text-sm text-[#cacaca] list-disc pl-5 leading-relaxed">
               <li>Broker identity stays attached to every trade and review flow.</li>
               <li>Traders can compare behavior across accounts, symbols and markets.</li>
               <li>This page can later hold broker screenshots, connection notes and import steps.</li>
@@ -564,28 +570,28 @@ function DemoDetailPage({ section }) {
   return (
     <PageShell title="Entrack Demo" homeHref="/demo" navLinks={[['/demo', 'Demo'], ['/', 'Landing']]} ariaLabel="Back to demo">
       <main className="w-full max-w-[1480px] mx-auto px-6 sm:px-10 py-12 flex flex-col gap-10 relative z-10">
-        <section className="flex flex-col lg:flex-row justify-between items-start gap-8 pb-10 border-b border-white/10">
+        <section className="flex flex-col lg:flex-row justify-between items-start gap-8 p-8 sm:p-12 rounded-[36px] border border-[#1f1f1f] bg-[#090909]">
           <div className="max-w-xl">
-            <div className="text-xs font-bold uppercase tracking-wider text-[#2E90FA] mb-2">{section.eyebrow}</div>
-            <h1 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight leading-tight">{section.title}</h1>
-            <p className="mt-4 text-base text-slate-300 leading-relaxed">{section.description}</p>
+            <div className="text-xs font-bold uppercase tracking-[2px] text-[#2E90FA] mb-2">{section.eyebrow}</div>
+            <h1 className="text-3xl sm:text-5xl font-bold text-white tracking-[-1.5px] leading-tight">{section.title}</h1>
+            <p className="mt-4 text-base text-[#cacaca] leading-relaxed">{section.description}</p>
           </div>
           {section.image ? (
-            <div className="w-full lg:max-w-xl rounded-2xl border border-white/10 overflow-hidden bg-black/40 shadow-2xl">
+            <div className="w-full lg:max-w-xl rounded-2xl border border-[#1f1f1f] overflow-hidden bg-black/40 shadow-2xl">
               <img className="w-full h-auto object-cover" src={section.image} alt={`${section.title} detail preview`} />
             </div>
           ) : null}
         </section>
         <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <article className="p-6 rounded-3xl border border-white/10 bg-white/[0.03]">
+          <article className="p-8 sm:p-10 rounded-[32px] border border-[#1f1f1f] bg-[#090909]">
             <h2 className="text-xl font-bold text-white mb-4">Feature highlights</h2>
             <div className="flex flex-wrap gap-2">
-              {section.features.map((f) => <span className="px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white/10 text-slate-200 border border-white/10" key={f}>{f}</span>)}
+              {section.features.map((f) => <span className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-[#2E90FA]/10 text-[#2E90FA] border border-[#2E90FA]/20" key={f}>{f}</span>)}
             </div>
           </article>
-          <article className="p-6 rounded-3xl border border-white/10 bg-white/[0.03]">
+          <article className="p-8 sm:p-10 rounded-[32px] border border-[#1f1f1f] bg-[#090909]">
             <h2 className="text-xl font-bold text-white mb-4">How this page helps</h2>
-            <ul className="space-y-3 text-sm text-slate-300 list-disc pl-5 leading-relaxed">
+            <ul className="space-y-3 text-sm text-[#cacaca] list-disc pl-5 leading-relaxed">
               {section.details.map((d) => <li key={d}>{d}</li>)}
             </ul>
           </article>
@@ -599,28 +605,28 @@ function FeatureDetailPage({ section }) {
   return (
     <PageShell navLinks={[['/', 'Landing'], ['/demo', 'Demo']]}>
       <main className="w-full max-w-[1480px] mx-auto px-6 sm:px-10 py-12 flex flex-col gap-10 relative z-10">
-        <section className="flex flex-col lg:flex-row justify-between items-start gap-8 pb-10 border-b border-white/10">
+        <section className="flex flex-col lg:flex-row justify-between items-start gap-8 p-8 sm:p-12 rounded-[36px] border border-[#1f1f1f] bg-[#090909]">
           <div className="max-w-xl">
-            <div className="text-xs font-bold uppercase tracking-wider text-[#2E90FA] mb-2">{section.eyebrow}</div>
-            <h1 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight leading-tight">{section.title}</h1>
-            <p className="mt-4 text-base text-slate-300 leading-relaxed">{section.description}</p>
+            <div className="text-xs font-bold uppercase tracking-[2px] text-[#2E90FA] mb-2">{section.eyebrow}</div>
+            <h1 className="text-3xl sm:text-5xl font-bold text-white tracking-[-1.5px] leading-tight">{section.title}</h1>
+            <p className="mt-4 text-base text-[#cacaca] leading-relaxed">{section.description}</p>
           </div>
           {section.image ? (
-            <div className="w-full lg:max-w-xl rounded-2xl border border-white/10 overflow-hidden bg-black/40 shadow-2xl">
+            <div className="w-full lg:max-w-xl rounded-2xl border border-[#1f1f1f] overflow-hidden bg-black/40 shadow-2xl">
               <img className="w-full h-auto object-cover" src={section.image} alt={`${section.eyebrow} feature preview`} />
             </div>
           ) : null}
         </section>
         <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <article className="p-6 rounded-3xl border border-white/10 bg-white/[0.03]">
+          <article className="p-8 sm:p-10 rounded-[32px] border border-[#1f1f1f] bg-[#090909]">
             <h2 className="text-xl font-bold text-white mb-4">What it includes</h2>
             <div className="flex flex-wrap gap-2">
-              {section.points.map((p) => <span className="px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white/10 text-slate-200 border border-white/10" key={p}>{p}</span>)}
+              {section.points.map((p) => <span className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-[#2E90FA]/10 text-[#2E90FA] border border-[#2E90FA]/20" key={p}>{p}</span>)}
             </div>
           </article>
-          <article className="p-6 rounded-3xl border border-white/10 bg-white/[0.03]">
+          <article className="p-8 sm:p-10 rounded-[32px] border border-[#1f1f1f] bg-[#090909]">
             <h2 className="text-xl font-bold text-white mb-4">Why traders use it</h2>
-            <ul className="space-y-3 text-sm text-slate-300 list-disc pl-5 leading-relaxed">
+            <ul className="space-y-3 text-sm text-[#cacaca] list-disc pl-5 leading-relaxed">
               <li>Keep the review process focused on evidence instead of memory.</li>
               <li>Move from raw activity to clean decisions and repeatable habits.</li>
               <li>Connect this feature with the rest of the Entrack workflow.</li>
@@ -676,30 +682,32 @@ function DemoPage() {
   return (
     <PageShell navLinks={[['/', 'Landing'], ['/documentation/journal', 'Documentation']]} ariaLabel="Demo navigation">
       <main className="w-full max-w-[1480px] mx-auto px-6 sm:px-10 py-12 flex flex-col gap-12 relative z-10">
-        <section className="max-w-3xl">
-          <div className="text-xs font-bold uppercase tracking-wider text-[#2E90FA] mb-2">Product demo</div>
-          <h1 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight leading-tight">See how Entrack pages fit together.</h1>
+        <section className="max-w-[880px] flex flex-col gap-3">
+          <span className="text-xs sm:text-sm font-bold uppercase tracking-[2px] text-[#2E90FA]">Product Demo</span>
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold text-[#ececec] tracking-[-2px] leading-[1.1]">See how Entrack pages fit together.</h1>
+          <p className="text-base sm:text-lg text-[#cacaca] leading-relaxed">Explore interactive workflows from trade journaling to high-level performance analytics and candle replay.</p>
         </section>
         <section className="flex gap-6 overflow-x-auto pb-4 scrollbar-thin" aria-label="Demo screenshots">
           {demoShowcaseSections.map((s) => (
-            <article className="flex-none w-[340px] sm:w-[420px] rounded-2xl border border-white/10 bg-[#09090b] overflow-hidden flex flex-col shadow-xl hover:border-white/20 transition-all" key={s.title}>
+            <article className="flex-none w-[360px] sm:w-[440px] rounded-[32px] sm:rounded-[36px] border border-[#1f1f1f] bg-[#090909] overflow-hidden flex flex-col shadow-2xl hover:border-[#2E90FA]/40 hover:bg-[#0c0d12] transition-all group" key={s.title}>
               <a className="flex flex-col h-full" href={`/demo/${s.slug}`}>
-                <div className="w-full h-52 overflow-hidden bg-[#04060b]">
-                  {s.image ? <img className="w-full h-full object-cover object-top" src={s.image} alt={`${s.title} preview`} loading="lazy" /> : null}
+                <div className="w-full h-56 overflow-hidden bg-[#050608] border-b border-[#1f1f1f] relative">
+                  {s.image ? <img className="w-full h-full object-cover object-top opacity-90 group-hover:scale-105 transition-transform duration-500" src={s.image} alt={`${s.title} preview`} loading="lazy" /> : null}
+                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#090909] via-transparent to-transparent opacity-40" />
                 </div>
-                <div className="p-6 flex flex-col gap-2 flex-grow">
-                  <span className="text-xs font-bold uppercase tracking-wider text-[#2E90FA]">{s.eyebrow}</span>
-                  <h2 className="text-xl font-bold text-white tracking-tight">{s.title}</h2>
-                  <p className="text-sm text-slate-400 leading-relaxed mb-4">{s.description}</p>
+                <div className="p-7 sm:p-8 flex flex-col gap-3 flex-grow">
+                  <span className="w-fit text-xs font-bold uppercase tracking-[1px] text-[#2E90FA] px-3 py-1 rounded-lg bg-[#2E90FA]/[0.12]">{s.eyebrow}</span>
+                  <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">{s.title}</h2>
+                  <p className="text-sm text-[#cacaca] leading-relaxed mb-4">{s.description}</p>
                   <div className="flex flex-wrap gap-1.5 mt-auto">
-                    {s.features.map((f) => <div className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-white/10 text-slate-300" key={f}>{f}</div>)}
+                    {s.features.map((f) => <div className="px-3 py-1 rounded-lg text-xs font-semibold bg-white/[0.04] text-slate-300 border border-white/[0.08]" key={f}>{f}</div>)}
                   </div>
                 </div>
               </a>
             </article>
           ))}
         </section>
-        <section className="relative rounded-3xl border border-white/10 bg-white/[0.02] p-6 sm:p-8 overflow-hidden" ref={hoverShellRef} aria-label="Interactive demo screenshots">
+        <section className="relative rounded-[32px] sm:rounded-[36px] border border-[#1f1f1f] bg-[#090909] p-6 sm:p-10 overflow-hidden" ref={hoverShellRef} aria-label="Interactive demo screenshots">
           <div className="absolute inset-0 pointer-events-none opacity-20" aria-hidden="true">
             {activeDemo.image ? <img className="w-full h-full object-cover" src={activeDemo.image} alt="" /> : null}
           </div>
@@ -707,7 +715,7 @@ function DemoPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 relative z-10">
             {demoSections.map((s, index) => (
               <button
-                className={`p-5 rounded-2xl border text-left transition-all flex flex-col gap-2 cursor-pointer ${index === activeDemoIndex ? 'border-[#2E90FA]/50 bg-white/[0.08]' : 'border-white/10 bg-white/[0.03] hover:bg-white/[0.06]'}`}
+                className={`p-6 rounded-2xl border text-left transition-all flex flex-col gap-2.5 cursor-pointer ${index === activeDemoIndex ? 'border-[#2E90FA] bg-[#0c0e17] shadow-[0_0_25px_rgba(46,144,250,0.15)]' : 'border-[#1f1f1f] bg-[#050608] hover:border-white/20 hover:bg-[#0a0b10]'}`}
                 type="button"
                 key={s.title}
                 ref={(el) => { hoverCardRefs.current[index] = el; }}
@@ -717,15 +725,15 @@ function DemoPage() {
               >
                 <div className="flex items-center justify-between text-xs font-bold text-slate-400">
                   <span>{String(index + 1).padStart(2, '0')}</span>
-                  <small className="uppercase tracking-wider text-[#2E90FA]">{s.eyebrow}</small>
+                  <small className="uppercase tracking-wider text-[#2E90FA] font-bold">{s.eyebrow}</small>
                 </div>
-                <h2 className="text-lg font-bold text-white tracking-tight">{s.title}</h2>
-                <p className="text-xs text-slate-300 leading-relaxed line-clamp-2">{s.description}</p>
-                <div className="w-full h-28 rounded-xl overflow-hidden bg-black/40 mt-2 border border-white/10">
+                <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">{s.title}</h2>
+                <p className="text-xs text-[#cacaca] leading-relaxed line-clamp-2">{s.description}</p>
+                <div className="w-full h-28 rounded-xl overflow-hidden bg-black/40 mt-2 border border-white/[0.08]">
                   {s.image ? <img className="w-full h-full object-cover" src={s.image} alt={`${s.title} preview`} loading="lazy" /> : null}
                 </div>
                 <div className="flex flex-wrap gap-1 mt-2">
-                  {s.features.slice(0, 2).map((f) => <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-white/10 text-slate-300" key={f}>{f}</span>)}
+                  {s.features.slice(0, 2).map((f) => <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-white/[0.05] text-slate-300" key={f}>{f}</span>)}
                 </div>
               </button>
             ))}

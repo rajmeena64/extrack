@@ -95,53 +95,45 @@ export function DashboardPreviewSection({ statCards }) {
             })}
           </div>
 
-          <div className="rounded-[32px] sm:rounded-[40px] border border-[#1f1f1f] bg-[#07070b]/90 backdrop-blur-2xl p-6 sm:p-8 flex flex-col justify-between shadow-2xl relative overflow-hidden" aria-label="Entrack dashboard mockup">
+          <div className="rounded-[32px] sm:rounded-[40px] border border-[#1f1f1f] bg-[#090909] p-6 sm:p-10 flex flex-col justify-between shadow-2xl relative overflow-hidden" aria-label="Entrack dashboard mockup">
             <div className="flex items-center justify-between border-b border-white/[0.06] pb-4 mb-6">
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 rounded-full bg-rose-500/60" />
                 <span className="w-3 h-3 rounded-full bg-amber-500/60" />
                 <span className="w-3 h-3 rounded-full bg-emerald-500/60" />
               </div>
-              <span className="px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-xs font-mono text-slate-400 font-medium">
-                Market Replay Terminal
+              <span className="px-3.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-xs font-mono text-slate-300 font-medium">
+                Live Terminal &amp; Replay Engine
               </span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-              <div className="md:col-span-8 p-6 rounded-2xl bg-[#040407] border border-white/[0.06]">
-                <div className="flex items-center justify-between mb-6">
-                  <span className="text-xs font-mono text-slate-400 font-semibold">XAUUSD Replay (250ms Speed)</span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-[#2E90FA]/15 text-[#2E90FA] text-[11px] font-bold border border-[#2E90FA]/20">
-                    +8.4R this session
-                  </span>
-                </div>
-                <div className="h-0.5 w-full bg-gradient-to-r from-[#2563eb] to-[#60a5fa] mb-6 rounded-full" />
-                <div className="flex items-end justify-between gap-2 h-36 px-2" aria-hidden="true">
-                  {[44, 78, 56, 122, 92, 148, 110, 170, 132, 190, 154, 210].map((height, idx) => (
-                    <span 
-                      className={`w-full max-w-[12px] rounded-t-sm transition-all duration-300 ${idx % 2 === 0 ? 'bg-[#22c55e] shadow-[0_0_10px_rgba(34,197,94,0.3)]' : 'bg-[#2563eb] shadow-[0_0_10px_rgba(37,99,235,0.3)]'}`}
-                      style={{ height: `${height * 0.6}px` }} 
-                      key={idx} 
-                    />
-                  ))}
-                </div>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+              <div className="lg:col-span-8 rounded-2xl sm:rounded-3xl overflow-hidden bg-[#050608] border border-white/[0.08] relative group/preview min-h-[300px] sm:min-h-[380px]">
+                <img
+                  className="w-full h-full object-cover object-top opacity-95 transition-transform duration-500 group-hover/preview:scale-[1.02]"
+                  src="/assets/landing/market-terminal.png"
+                  alt="Market Replay Terminal"
+                  loading="lazy"
+                  decoding="async"
+                />
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#090909] via-transparent to-transparent opacity-60" />
               </div>
 
-              <aside className="md:col-span-4 flex flex-col gap-3">
-                <div className="p-4 rounded-xl bg-[#090909] border border-[#1f1f1f]">
-                  <span className="inline-block px-2 py-0.5 rounded bg-[#2E90FA]/10 text-[#2E90FA] text-[10px] font-bold uppercase tracking-wider mb-1">Speed Control</span>
-                  <strong className="block text-sm font-bold text-white mb-1">1x - 100x Replay</strong>
-                  <p className="text-xs text-slate-400">Tick by tick execution with responsive control.</p>
+              <aside className="lg:col-span-4 flex flex-col gap-4">
+                <div className="p-5 rounded-2xl bg-[#0e0f14] border border-[#1f1f1f] hover:border-[#2E90FA]/30 transition-colors">
+                  <span className="inline-block px-2.5 py-1 rounded-lg bg-[#2E90FA]/10 text-[#2E90FA] text-[11px] font-bold uppercase tracking-wider mb-2">Speed Control</span>
+                  <strong className="block text-base font-bold text-white mb-1">1x - 100x Replay</strong>
+                  <p className="text-xs sm:text-sm text-[#cacaca] leading-relaxed">Tick-by-tick market simulation with granular playback control.</p>
                 </div>
-                <div className="p-4 rounded-xl bg-[#090909] border border-[#1f1f1f]">
-                  <span className="inline-block px-2 py-0.5 rounded bg-[#2E90FA]/10 text-[#2E90FA] text-[10px] font-bold uppercase tracking-wider mb-1">Order Routing</span>
-                  <strong className="block text-sm font-bold text-white mb-1">Level II Tape</strong>
-                  <p className="text-xs text-slate-400">Simulate bids, asks and market orders.</p>
+                <div className="p-5 rounded-2xl bg-[#0e0f14] border border-[#1f1f1f] hover:border-[#2E90FA]/30 transition-colors">
+                  <span className="inline-block px-2.5 py-1 rounded-lg bg-[#2E90FA]/10 text-[#2E90FA] text-[11px] font-bold uppercase tracking-wider mb-2">Order Routing</span>
+                  <strong className="block text-base font-bold text-white mb-1">Simulated Execution</strong>
+                  <p className="text-xs sm:text-sm text-[#cacaca] leading-relaxed">Practice limit and stop orders without risking real capital.</p>
                 </div>
-                <div className="p-4 rounded-xl bg-[#090909] border border-[#1f1f1f]">
-                  <span className="inline-block px-2 py-0.5 rounded bg-[#2E90FA]/10 text-[#2E90FA] text-[10px] font-bold uppercase tracking-wider mb-1">Session Playlists</span>
-                  <strong className="block text-sm font-bold text-white mb-1">Past Setups</strong>
-                  <p className="text-xs text-slate-400">Replay trades to build execution discipline.</p>
+                <div className="p-5 rounded-2xl bg-[#0e0f14] border border-[#1f1f1f] hover:border-[#2E90FA]/30 transition-colors">
+                  <span className="inline-block px-2.5 py-1 rounded-lg bg-[#2E90FA]/10 text-[#2E90FA] text-[11px] font-bold uppercase tracking-wider mb-2">Review Loop</span>
+                  <strong className="block text-base font-bold text-white mb-1">Historical Sessions</strong>
+                  <p className="text-xs sm:text-sm text-[#cacaca] leading-relaxed">Revisit key past setups to build unbreakable trade discipline.</p>
                 </div>
               </aside>
             </div>

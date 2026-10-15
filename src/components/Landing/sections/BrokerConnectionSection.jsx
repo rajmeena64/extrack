@@ -5,11 +5,11 @@ import { Badge } from '@/components/ui';
 import { BookOpenCheck, ChartLine, LayoutDashboard, BadgeCheck, RefreshCw, Grid2x2 } from '@/icons';
 
 const brokers = [
-  { name: 'Zerodha', logo: '/assets/provider-logo/logos/zerodha.png' },
-  { name: 'Binance', logo: '/assets/provider-logo/logos/binance.svg' },
-  { name: 'Bybit', logo: '/assets/provider-logo/logos/bybit.svg' },
-  { name: 'Dhan', logo: '/assets/provider-logo/logos/dhan.svg' },
-  { name: 'Exness', logo: '/assets/provider-logo/logos/exness.svg' },
+  { name: 'Interactive Brokers', logo: '/assets/broker/interactive-brokers.svg' },
+  { name: 'MetaTrader 5', logo: '/assets/broker/metatrader5.svg' },
+  { name: 'Binance', logo: '/assets/broker/binance.svg' },
+  { name: 'cTrader', logo: '/assets/broker/ctrader.svg' },
+  { name: 'NinjaTrader', logo: '/assets/broker/ninjatrader.svg' },
 ];
 
 const outputs = [
@@ -25,7 +25,7 @@ function CircleNode({ innerRef, src, icon: Icon, label, color, hover = 'hover:bo
       className={`group relative z-10 flex size-12 sm:size-14 items-center justify-center rounded-full border border-white/10 bg-[#111116] p-2.5 shadow-xl transition-all duration-300 ${hover} hover:scale-110 hover:shadow-2xl cursor-pointer`}
     >
       {src ? (
-        <img src={src} alt={label} className="w-full h-full object-contain rounded-full" loading="lazy" />
+        <img src={src} alt={label} className="w-full h-full object-contain p-1" loading="lazy" />
       ) : Icon ? (
         <Icon className={`w-5 h-5 sm:w-6 sm:h-6 ${color || 'text-slate-300'} transition-transform group-hover:scale-110`} />
       ) : null}
@@ -128,53 +128,37 @@ export function BrokerConnectionSection() {
               </Badge>
             </div>
 
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight mb-4">
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight mb-8">
               Connect your entire trading ecosystem in seconds.
             </h2>
 
-            <p className="text-sm sm:text-base text-slate-400 leading-relaxed font-medium mb-8">
-              Stop wasting time on manual CSV uploads and broken spreadsheet formulas. Entrack connects directly to your trading accounts to ingest fills, track risk, and journal every execution seamlessly.
-            </p>
-
             <div className="space-y-4">
-              <div className="flex items-start gap-3.5">
-                <div className="size-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center shrink-0 mt-0.5 border border-blue-500/20">
+              <div className="flex items-center gap-3.5">
+                <div className="size-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center shrink-0 border border-blue-500/20">
                   <RefreshCw className="size-4" />
                 </div>
-                <div>
-                  <h4 className="text-sm font-bold text-white leading-snug">Automated Execution Sync</h4>
-                  <p className="text-xs text-slate-400 leading-relaxed mt-0.5">Orders, executions, fees, and timestamps are pulled directly via verified APIs and OAuth feeds without manual intervention.</p>
-                </div>
+                <h4 className="text-sm font-bold text-white leading-snug">Automated Execution Sync</h4>
               </div>
 
-              <div className="flex items-start gap-3.5">
-                <div className="size-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5 border border-emerald-500/20">
+              <div className="flex items-center gap-3.5">
+                <div className="size-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/20">
                   <BadgeCheck className="size-4" />
                 </div>
-                <div>
-                  <h4 className="text-sm font-bold text-white leading-snug">Bank-Grade Read-Only Security</h4>
-                  <p className="text-xs text-slate-400 leading-relaxed mt-0.5">All credentials are encrypted with AES-256 with strict read-only scopes. Zero fund access, zero withdrawal, zero trade-placement permission.</p>
-                </div>
+                <h4 className="text-sm font-bold text-white leading-snug">Bank-Grade Read-Only Security</h4>
               </div>
 
-              <div className="flex items-start gap-3.5">
-                <div className="size-8 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center shrink-0 mt-0.5 border border-purple-500/20">
+              <div className="flex items-center gap-3.5">
+                <div className="size-8 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center shrink-0 border border-purple-500/20">
                   <Grid2x2 className="size-4" />
                 </div>
-                <div>
-                  <h4 className="text-sm font-bold text-white leading-snug">Multi-Broker Unified Engine</h4>
-                  <p className="text-xs text-slate-400 leading-relaxed mt-0.5">Trade across Indian equities, global forex, prop firms, and crypto exchanges while analyzing everything in one single journal.</p>
-                </div>
+                <h4 className="text-sm font-bold text-white leading-snug">Multi-Broker Unified Engine</h4>
               </div>
 
-              <div className="flex items-start gap-3.5">
-                <div className="size-8 rounded-lg bg-sky-500/10 text-sky-400 flex items-center justify-center shrink-0 mt-0.5 border border-sky-500/20">
+              <div className="flex items-center gap-3.5">
+                <div className="size-8 rounded-lg bg-sky-500/10 text-sky-400 flex items-center justify-center shrink-0 border border-sky-500/20">
                   <BookOpenCheck className="size-4" />
                 </div>
-                <div>
-                  <h4 className="text-sm font-bold text-white leading-snug">Automated Round-Trip Grouping</h4>
-                  <p className="text-xs text-slate-400 leading-relaxed mt-0.5">Multi-tier scaling, partial fills, and layered take-profits are automatically structured into clean, audited trades with accurate metrics.</p>
-                </div>
+                <h4 className="text-sm font-bold text-white leading-snug">Automated Round-Trip Grouping</h4>
               </div>
             </div>
           </div>
