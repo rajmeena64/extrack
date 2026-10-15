@@ -4,6 +4,7 @@ from infra.db.postgres import init_db
 from domains.notifications.evaluator import evaluate_alert_condition
 from domains.notifications.providers.telegram import send_telegram_alert
 from domains.notifications.providers.email import send_email_alert
+from domains.notifications.providers.webpush import send_web_push
 from core.logger.logger import logger
 
 _active_alerts: Dict[str, List[Dict[str, Any]]] = {}
@@ -70,6 +71,8 @@ async def trigger_alert(alert: Dict[str, Any], current_price: float, pool: Any =
                 asyncio.create_task(send_email_alert(user_row["email"], sym, cond, target, current_price, note))
         except Exception as e:
             logger.warning("alert.email_dispatch_failed", {"error": str(e)})
+        body_txt = f"{sym} hit {current_price} ({cond} {target})." + (f" {note}" if note else "")
+        asyncio.create_task(send_web_push(int(user_id), f"Price Alert: {sym}", body_txt, "/markets", "price-alert", data={"symbol": sym, "price": current_price}))
     from core.websocket.ws_server import ws_manager
     payload = {"type": "ALERT_TRIGGERED", "alert": {**alert, "status": "TRIGGERED", "triggeredPrice": current_price}}
     asyncio.create_task(ws_manager.send_to_user(str(user_id), payload))
@@ -138,5 +141,18 @@ async def update_user_alert(user_id: int, alert_id: str, target_price: float) ->
 async def clear_triggered_alerts(user_id: int) -> bool:
     pool = await init_db()
     await pool.execute("DELETE FROM app.user_alerts WHERE user_id = $1 AND status = 'TRIGGERED'", user_id)
+    return True
+
+async def save_push_subscription(user_id: int, endpoint: str, p256dh: str, auth: str, user_agent: str = "") -> bool:
+    pool = await init_db()
+    await pool.execute(
+        "INSERT INTO app.push_subscriptions (user_id, endpoint, p256dh_key, auth_key, user_agent) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (endpoint) DO UPDATE SET user_id = $1, p256dh_key = $3, auth_key = $4, user_agent = $5, updated_at = NOW()",
+        user_id, endpoint, p256dh, auth, user_agent
+    )
+    return True
+
+async def remove_push_subscription(user_id: int, endpoint: str) -> bool:
+    pool = await init_db()
+    await pool.execute("DELETE FROM app.push_subscriptions WHERE user_id = $1 AND endpoint = $2", user_id, endpoint)
     return True
 

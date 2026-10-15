@@ -61,6 +61,7 @@ function ScrollVelocityRow({ items, direction = -1, baseSpeed = 28, velocityRef 
                   />
                 ) : (
                   <span className="text-xs font-mono font-bold text-slate-400 bg-white/5 px-2 py-0.5 rounded">
+                    {/* fallback-allow: Intentional display fallback to broker name prefix when broker mark icon is missing */}
                     {broker.mark || broker.name.slice(0, 2).toUpperCase()}
                   </span>
                 )}

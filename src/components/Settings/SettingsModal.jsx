@@ -1,11 +1,12 @@
 import React, { useState, lazy, Suspense } from 'react';
-import { Clock, Globe, LayoutDashboard, Search } from '../../icons/lucideIcons';
+import { Bell, Clock, Globe, LayoutDashboard, Search } from '../../icons/lucideIcons';
 import { TIME_ZONES } from '../../utils/trading/tradeTime';
 import { saveUserSettings } from '../../utils/user/userSettings';
 import { useAppDialog } from '../../context/AppDialogContext';
 import { Modal } from '../ui';
 
 const DashboardSettings = lazy(() => import('../Sidebar/DashboardSettings'));
+const NotificationSettings = lazy(() => import('./NotificationSettings'));
 
 function SettingsModal({ isOpen, onClose, timeZone, setTimeZone }) {
   const [settingsTab, setSettingsTab] = useState('layout');
@@ -32,9 +33,9 @@ function SettingsModal({ isOpen, onClose, timeZone, setTimeZone }) {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Settings" size="lg" bodyClassName="p-0">
+    <Modal isOpen={isOpen} onClose={handleClose} title="Settings" size="xl" className="h-[680px] max-h-[88vh] w-full max-w-[1080px]" bodyClassName="p-0 flex-1 min-h-0 flex flex-col">
       <div className="settings-modal__layout flex flex-col sm:flex-row h-full min-h-0 overflow-hidden">
-        <nav className="settings-modal__sidebar settings-modal__nav w-full sm:w-[200px] shrink-0 border-b sm:border-b-0 sm:border-r border-[var(--border-light)] px-3 py-2 sm:px-2 sm:py-3 flex flex-row sm:flex-col gap-1 sm:gap-[2px] overflow-x-auto overflow-y-hidden sm:overflow-x-hidden sm:overflow-y-auto">
+        <nav className="settings-modal__sidebar settings-modal__nav w-full sm:w-[220px] sm:h-full shrink-0 border-b sm:border-b-0 sm:border-r border-[var(--border-light)] px-3 py-2 sm:px-2 sm:py-3 flex flex-row sm:flex-col gap-1 sm:gap-[2px] overflow-x-auto overflow-y-hidden sm:overflow-x-hidden sm:overflow-y-auto">
           <button type="button" className={`settings-modal__nav-item settings-modal__tab flex items-center gap-2.5 px-3.5 py-2 sm:px-3 sm:py-2.5 border-0 bg-transparent text-xs sm:text-[0.8125rem] font-medium rounded-lg cursor-pointer transition-colors duration-150 text-left w-auto sm:w-full shrink-0 whitespace-nowrap hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] ${settingsTab === 'layout' ? 'settings-modal__nav-item--active bg-[color-mix(in_srgb,var(--accent-ink)_10%,var(--bg-secondary))] text-[var(--text-primary)] font-semibold' : 'text-[var(--text-secondary)]'}`} onClick={() => setSettingsTab('layout')}>
             <LayoutDashboard size={16} />
             <span>Dashboard Layout</span>
@@ -42,6 +43,10 @@ function SettingsModal({ isOpen, onClose, timeZone, setTimeZone }) {
           <button type="button" className={`settings-modal__nav-item settings-modal__tab flex items-center gap-2.5 px-3.5 py-2 sm:px-3 sm:py-2.5 border-0 bg-transparent text-xs sm:text-[0.8125rem] font-medium rounded-lg cursor-pointer transition-colors duration-150 text-left w-auto sm:w-full shrink-0 whitespace-nowrap hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] ${settingsTab === 'timezone' ? 'settings-modal__nav-item--active bg-[color-mix(in_srgb,var(--accent-ink)_10%,var(--bg-secondary))] text-[var(--text-primary)] font-semibold' : 'text-[var(--text-secondary)]'}`} onClick={() => setSettingsTab('timezone')}>
             <Globe size={16} />
             <span>Timezone</span>
+          </button>
+          <button type="button" className={`settings-modal__nav-item settings-modal__tab flex items-center gap-2.5 px-3.5 py-2 sm:px-3 sm:py-2.5 border-0 bg-transparent text-xs sm:text-[0.8125rem] font-medium rounded-lg cursor-pointer transition-colors duration-150 text-left w-auto sm:w-full shrink-0 whitespace-nowrap hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] ${settingsTab === 'notifications' ? 'settings-modal__nav-item--active bg-[color-mix(in_srgb,var(--accent-ink)_10%,var(--bg-secondary))] text-[var(--text-primary)] font-semibold' : 'text-[var(--text-secondary)]'}`} onClick={() => setSettingsTab('notifications')}>
+            <Bell size={16} />
+            <span>Notifications</span>
           </button>
         </nav>
         <div className="settings-modal__content flex-1 p-4 sm:p-6 overflow-y-auto min-w-0">
@@ -80,6 +85,11 @@ function SettingsModal({ isOpen, onClose, timeZone, setTimeZone }) {
                 }
               </div>
             </div>
+          )}
+          {settingsTab === 'notifications' && (
+            <Suspense fallback={null}>
+              <NotificationSettings />
+            </Suspense>
           )}
         </div>
       </div>
