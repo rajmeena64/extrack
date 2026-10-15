@@ -395,6 +395,11 @@ function App() {
             } catch {} finally {
               setTimeout(() => { updatingTrades.current = false; }, 100);
             }
+            return;
+          }
+          if (msg.type === 'DB_CHANGE') {
+            if (msg.change?.table === 'instruments') queryClient.invalidateQueries({ queryKey: ['instruments-catalog'] });
+            else if (msg.change?.table === 'trades') queryClient.invalidateQueries({ queryKey: ['trades', user.ID] });
           }
         };
 

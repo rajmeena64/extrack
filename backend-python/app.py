@@ -22,7 +22,8 @@ from contextlib import asynccontextmanager
 from infra.db.postgres import init_db, close_db
 from infra.db.redis import get_redis, close_redis
 from infra.db.tinybird import close_tinybird
-from domains.instruments.registry import refresh_instrument_cache, run_catalog_listener
+from domains.instruments.registry import refresh_instrument_cache
+from infra.db.listener import run_db_listener
 from core.finance.currency import refresh_fx_cache
 from domains.brokers.service import cleanup_expired_connections
 from integrations.brokers.connectors.ctrader.connector import ctrader_live_sync
@@ -55,9 +56,9 @@ async def lifespan(app: FastAPI):
     fx_worker_task = asyncio.create_task(run_fx_worker())
     drawings_task = asyncio.create_task(run_chart_drawings_worker())
     live_task = asyncio.create_task(ctrader_live_sync.start())
-    catalog_task = asyncio.create_task(run_catalog_listener())
+    db_listener_task = asyncio.create_task(run_db_listener())
     yield
-    catalog_task.cancel()
+    db_listener_task.cancel()
     await ctrader_live_sync.stop()
     live_task.cancel()
     drawings_task.cancel()
