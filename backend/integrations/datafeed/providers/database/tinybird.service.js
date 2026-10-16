@@ -66,7 +66,7 @@ async function queryTinybird(sql) {
       'Content-Type': 'application/x-www-form-urlencoded',
       'Accept-Encoding': 'gzip, deflate',
     },
-    body: `q=${encodeURIComponent(sql.trim() + ' FORMAT JSON')}`,
+    body: `q=${encodeURIComponent(sql.trim() + ' FORMAT JSONCompact')}`,
   });
 
   if (!response.ok) {
@@ -178,7 +178,7 @@ async function fetchCandles({ symbol, timeframe = '1m', startTime, endTime, limi
         LIMIT ${effectiveLimit}
       `;
       const rows = await queryTinybird(sql);
-      return rows.sort((a, b) => Number(a.time) - Number(b.time)).map(mapRow);
+      return sortCandles(rows);
     }
 
     const minAggTime = endSec - Math.max(effectiveLimit * tf.intervalSeconds * 3, 14 * 86400);
@@ -213,10 +213,10 @@ async function fetchCandles({ symbol, timeframe = '1m', startTime, endTime, limi
     `;
     const rows = await queryTinybird(getQuery(true));
     if (rows && rows.length >= Math.min(effectiveLimit, 30)) {
-      return rows.sort((a, b) => Number(a.time) - Number(b.time)).map(mapRow);
+      return sortCandles(rows);
     }
     const fallbackRows = await queryTinybird(getQuery(false));
-    return fallbackRows.sort((a, b) => Number(a.time) - Number(b.time)).map(mapRow);
+    return sortCandles(fallbackRows);
   }
 
   // 3. Only startTime provided (Search forwards from startTime)
@@ -298,7 +298,7 @@ async function fetchCandles({ symbol, timeframe = '1m', startTime, endTime, limi
     `;
     const rows = await queryTinybird(sql);
     if (rows && rows.length >= Math.min(effectiveLimit, 60)) {
-      return rows.sort((a, b) => Number(a.time) - Number(b.time)).map(mapRow);
+      return sortCandles(rows);
     }
     const fallbackSql = `
       SELECT
@@ -315,7 +315,7 @@ async function fetchCandles({ symbol, timeframe = '1m', startTime, endTime, limi
       LIMIT ${effectiveLimit}
     `;
     const fallbackRows = await queryTinybird(fallbackSql);
-    return fallbackRows.sort((a, b) => Number(a.time) - Number(b.time)).map(mapRow);
+    return sortCandles(fallbackRows);
   }
 
   const minAggTime = nowSec - Math.max(effectiveLimit * tf.intervalSeconds * 3, 14 * 86400);
@@ -347,7 +347,7 @@ async function fetchCandles({ symbol, timeframe = '1m', startTime, endTime, limi
   `;
   const rows = await queryTinybird(sql);
   if (rows && rows.length >= Math.min(effectiveLimit, 30)) {
-    return rows.sort((a, b) => Number(a.time) - Number(b.time)).map(mapRow);
+    return sortCandles(rows);
   }
 
   const fallbackSql = `
@@ -376,10 +376,20 @@ async function fetchCandles({ symbol, timeframe = '1m', startTime, endTime, limi
     LIMIT ${effectiveLimit}
   `;
   const fallbackRows = await queryTinybird(fallbackSql);
-  return fallbackRows.sort((a, b) => Number(a.time) - Number(b.time)).map(mapRow);
+  return sortCandles(fallbackRows);
 }
 
 function mapRow(row) {
+  if (Array.isArray(row)) {
+    return {
+      time: Number(row[0]),
+      open: Number(row[1]),
+      high: Number(row[2]),
+      low: Number(row[3]),
+      close: Number(row[4]),
+      volume: Number(row[5] || 0),
+    };
+  }
   return {
     time: Number(row.time),
     open: Number(row.open),
@@ -389,6 +399,8 @@ function mapRow(row) {
     volume: Number(row.volume || 0),
   };
 }
+
+const sortCandles = (rows) => rows.map(mapRow).sort((a, b) => a.time - b.time);
 
 module.exports = {
   fetchCandles,
