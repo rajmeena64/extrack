@@ -82,7 +82,7 @@ class WebSocketServerManager:
             except Exception:
                 self.all_sockets.discard(ws)
 
-    async def process_market_tick(self, symbol: str, price: float, bid: float = 0.0, ask: float = 0.0, timestamp: int | None = None):
+    async def process_market_tick(self, symbol: str, price: float, bid: float = 0.0, ask: float = 0.0, timestamp: int | None = None, open_price: float = 0.0, high_price: float = 0.0, low_price: float = 0.0, candle_time: int | None = None):
         if not symbol or price <= 0:
             return
         inst = find_by_symbol(symbol)
@@ -103,6 +103,10 @@ class WebSocketServerManager:
                 "last": price,
                 "bid": b,
                 "ask": a,
+                "open": open_price if open_price > 0 else price,
+                "high": high_price if high_price > 0 else price,
+                "low": low_price if low_price > 0 else price,
+                "candleTime": candle_time or ts,
                 "timestamp": ts,
                 "serverTime": ts
             }
@@ -122,7 +126,11 @@ class WebSocketServerManager:
         bid = float(tick.get("bid") or 0)
         ask = float(tick.get("ask") or 0)
         price = float(tick.get("price") or ((bid + ask) / 2 if bid and ask else bid or ask))
-        await self.process_market_tick(raw_sym, price, bid=bid, ask=ask, timestamp=tick.get("timestamp"))
+        open_p = float(tick.get("open") or 0)
+        high_p = float(tick.get("high") or 0)
+        low_p = float(tick.get("low") or 0)
+        c_time = tick.get("candleTime")
+        await self.process_market_tick(raw_sym, price, bid=bid, ask=ask, timestamp=tick.get("timestamp"), open_price=open_p, high_price=high_p, low_price=low_p, candle_time=c_time)
 
     def ensure_loops(self):
         if self.ctrader_task is None or self.ctrader_task.done():
