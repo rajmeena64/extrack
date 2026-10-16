@@ -118,8 +118,14 @@ function startBinanceStreams() {
 }
 
 global.__ctraderFeedOnTick = (tick) => {
-  recordTick(tick);
-  broadcastTickToClients(tick);
+  const active = recordTick(tick);
+  broadcastTickToClients(active ? {
+    ...tick,
+    candleTime: active.time,
+    open: active.open,
+    high: active.high,
+    low: active.low,
+  } : tick);
 };
 
 server.on('upgrade', (request, socket, head) => {

@@ -144,12 +144,15 @@ export function createTvDatafeed({ queryClient, uniqueId } = {}) {
             const msTime = rawTime < 1e11 ? rawTime * 1000 : rawTime;
             const barTime = getBarTime(msTime, resolution);
             if (!subState.lastBar || barTime > subState.lastBar.time) {
-              subState.lastBar = { time: barTime, open: price, high: price, low: price, close: price, volume: Number(tick?.volume ?? 0) };
+              const openPrice = Number(tick?.open) > 0 ? Number(tick.open) : price;
+              const highPrice = Number(tick?.high) > 0 ? Math.max(Number(tick.high), price) : price;
+              const lowPrice = Number(tick?.low) > 0 ? Math.min(Number(tick.low), price) : price;
+              subState.lastBar = { time: barTime, open: openPrice, high: highPrice, low: lowPrice, close: price, volume: Number(tick?.volume ?? 0) };
             } else {
               subState.lastBar = {
                 ...subState.lastBar,
-                high: Math.max(subState.lastBar.high, price),
-                low: Math.min(subState.lastBar.low, price),
+                high: Math.max(subState.lastBar.high, price, Number(tick?.high || 0)),
+                low: Math.min(subState.lastBar.low, price, Number(tick?.low || Infinity)),
                 close: price,
                 volume: subState.lastBar.volume + Number(tick?.volume ?? 0),
               };

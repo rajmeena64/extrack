@@ -118,7 +118,7 @@ setInterval(() => {
 }, 1000);
 
 function recordTick(tick) {
-  if (!tick || !Number.isFinite(Number(tick.symbolId))) return;
+  if (!tick || !Number.isFinite(Number(tick.symbolId))) return null;
   totalTicksCount += 1;
   recentTicksCount += 1;
   const now = Date.now();
@@ -131,16 +131,17 @@ function recordTick(tick) {
   const symbolId = Number(tick.symbolId);
   const symInfo = ctraderConfig.symbols.get(symbolId);
   const symbolName = symInfo?.name;
-  if (!symbolName) return;
+  if (!symbolName) return null;
   const timeMs = tickTimeMs(tick);
   const price = getQuotePrice(tick);
-  if (!Number.isFinite(price) || price <= 0) return;
+  if (!Number.isFinite(price) || price <= 0) return null;
   const timeSec = Math.floor(timeMs / 1000);
   const bucketSec = Math.floor(timeSec / 60) * 60;
-  const active = activeCandles.get(symbolName);
+  let active = activeCandles.get(symbolName);
   if (!active) {
-    activeCandles.set(symbolName, { time: bucketSec, open: price, high: price, low: price, close: price, volume: 1 });
-    return;
+    active = { time: bucketSec, open: price, high: price, low: price, close: price, volume: 1 };
+    activeCandles.set(symbolName, active);
+    return active;
   }
   if (active.time === bucketSec) {
     active.high = Math.max(active.high, price);
@@ -149,8 +150,10 @@ function recordTick(tick) {
     active.volume = (active.volume || 0) + 1;
   } else if (bucketSec > active.time) {
     closeActiveCandle(symbolName, active);
-    activeCandles.set(symbolName, { time: bucketSec, open: price, high: price, low: price, close: price, volume: 1 });
+    active = { time: bucketSec, open: price, high: price, low: price, close: price, volume: 1 };
+    activeCandles.set(symbolName, active);
   }
+  return active;
 }
 
 async function getData(symbolName, { limitCandles = 500 } = {}) {
