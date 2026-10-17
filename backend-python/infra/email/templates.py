@@ -31,7 +31,12 @@ FRONTEND_URL = os.getenv("FRONTEND_URL", "").rstrip("/")
 def _asset_path(asset: str, cat: str = "", ac: str = "", icon: str = "") -> str:
     if not asset:
         return ""
+    if icon and (icon.startswith("/") or icon.startswith("http")):
+        return icon
     k = str(asset).strip().lower()
+    if ac == "stock" or cat == "stock":
+        name = icon.lower() if icon else f"stk_{k}"
+        return f"/assets/stocks/{name}.svg"
     if ac == "metal" or (cat == "cfd" and ac != "crypto"):
         return f"/assets/commodities/{icon.lower() if icon else k}.svg"
     if cat == "forex" or k in FLAG_ICONS:
@@ -50,6 +55,10 @@ def resolve_symbol_icon(symbol: str, base_url: str = "") -> dict:
     cat = inst.get("category")
     ac = inst.get("assetClass")
     root = (base_url or FRONTEND_URL).rstrip("/")
+
+    if ac == "stock" or cat == "stock":
+        path = icon if (icon and (icon.startswith("/") or icon.startswith("http"))) else f"/assets/stocks/{icon.lower() if icon else raw.lower()}.svg"
+        return {"type": "single", "url": f"{root}{path}", "title": title}
 
     if ac == "metal" or (cat == "cfd" and ac != "crypto"):
         name = (icon or base or raw).lower()

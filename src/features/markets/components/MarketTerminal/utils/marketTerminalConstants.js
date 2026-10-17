@@ -22,7 +22,6 @@ export const LAYOUTS = [
 export const TERMINAL_LAYOUT_STORAGE_KEY = 'entrack:marketTerminalLayout';
 export const WATCHLIST_SYMBOLS_STORAGE_KEY = 'entrack:marketTerminalWatchlist';
 export const ACTIVE_SYMBOL_STORAGE_KEY = 'entrack:marketTerminalActiveSymbol';
-export const CHART_SYMBOL_DRAG_TYPE = 'application/x-entrack-symbol';
 
 export const DEFAULT_WATCHLIST_SYMBOLS = [
   DEFAULT_SYMBOL,

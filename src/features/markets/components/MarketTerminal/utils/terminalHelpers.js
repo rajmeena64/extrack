@@ -1,6 +1,5 @@
 import {
   ACTIVE_SYMBOL_STORAGE_KEY,
-  CHART_SYMBOL_DRAG_TYPE,
   DEFAULT_SYMBOL,
   DEFAULT_TERMINAL_LAYOUT,
   DEFAULT_WATCHLIST_SYMBOLS,
@@ -15,19 +14,6 @@ import { inferPriceDigits } from './instrumentDigits';
 export const candleChunkCache = new Map();
 
 export const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
-
-export const readDraggedSymbol = (event) => (
-  normalizeStreamSymbol(
-    event.dataTransfer?.getData(CHART_SYMBOL_DRAG_TYPE) ||
-    event.dataTransfer?.getData('text/plain')
-  )
-);
-
-export const getPointerDropTarget = (clientX, clientY) => {
-  if (typeof document === 'undefined') return null;
-  const element = document.elementFromPoint(clientX, clientY);
-  return element?.closest?.('[data-chart-drop-target]');
-};
 
 export const readStoredTerminalLayout = () => {
   if (typeof window === 'undefined') return DEFAULT_TERMINAL_LAYOUT;
@@ -63,7 +49,7 @@ export const readStoredWatchlistSymbols = () => {
     if (raw === null) return DEFAULT_WATCHLIST_SYMBOLS;
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return DEFAULT_WATCHLIST_SYMBOLS;
-    return Array.from(new Set(parsed.map(normalizeStreamSymbol).filter(Boolean)));
+    return Array.from(new Set(parsed.map((s) => (typeof s === 'string' && s.startsWith('SECTION:') ? s : normalizeStreamSymbol(s))).filter(Boolean)));
   } catch {
     return DEFAULT_WATCHLIST_SYMBOLS;
   }
@@ -317,39 +303,64 @@ export const hasUsableQuote = (quote) => {
 
 export const buildWatchlistSections = (symbols = []) => {
   const source = Array.isArray(symbols) && symbols.length > 0 ? symbols : [];
+  const hasUserSections = source.some((item) => item?.isSection);
+
+  if (!hasUserSections) {
+    const seen = new Set();
+    const rows = [];
+    for (const item of source) {
+      if (item?.isSection) continue;
+      const symbol = getDisplaySymbol(item);
+      const requestSymbol = getRequestSymbol(item);
+      const uniqueKey = getItemKey(item);
+      if (!symbol || !uniqueKey || seen.has(uniqueKey)) continue;
+      seen.add(uniqueKey);
+      rows.push({
+        id: item?.id,
+        symbol,
+        requestSymbol,
+        productType: item?.productType,
+        assetClass: item?.assetClass,
+        subtitle: getSymbolSubtitle(item, symbol),
+        hasLiveQuote: item?.hasQuote !== false,
+      });
+    }
+    return rows.length > 0 ? [{ title: '', rows }] : [];
+  }
+
+  const sections = [];
+  let currentTitle = '';
+  let currentRows = [];
   const seen = new Set();
-  const grouped = {
-    'Forex & CFD': [],
-    'Crypto': [],
-    'Stocks & ETFs': [],
-    'Futures': [],
-    'Options': [],
-    'Bonds': [],
-  };
 
   for (const item of source) {
+    if (item?.isSection) {
+      if (currentRows.length > 0 || currentTitle) {
+        sections.push({ title: currentTitle, rows: currentRows });
+      }
+      currentTitle = item.title;
+      currentRows = [];
+      continue;
+    }
     const symbol = getDisplaySymbol(item);
     const requestSymbol = getRequestSymbol(item);
     const uniqueKey = getItemKey(item);
     if (!symbol || !uniqueKey || seen.has(uniqueKey)) continue;
     seen.add(uniqueKey);
-    const section = classifySymbol(String(requestSymbol || symbol).replace(/[^a-z0-9]/gi, '').toUpperCase(), item);
-    if (!grouped[section]) grouped[section] = [];
-    grouped[section].push({
+    currentRows.push({
       id: item?.id,
       symbol,
       requestSymbol,
-      productType: item?.productType || item?.product_type || (section === 'Crypto' ? 'crypto' : section === 'Forex & CFD' ? 'forex_cfd' : 'stock_etf'),
-      assetClass: item?.assetClass || section,
+      productType: item?.productType,
+      assetClass: item?.assetClass,
       subtitle: getSymbolSubtitle(item, symbol),
-      section,
       hasLiveQuote: item?.hasQuote !== false,
     });
   }
-
-  return WATCHLIST_SECTION_ORDER
-    .map((title) => ({ title, rows: (grouped[title] || []).slice(0, 100) }))
-    .filter((section) => section.rows.length > 0);
+  if (currentRows.length > 0 || currentTitle) {
+    sections.push({ title: currentTitle, rows: currentRows });
+  }
+  return sections;
 };
 
 export const findSymbolItem = (symbols, symbolValue) => {
@@ -371,6 +382,10 @@ export const resolveWatchlistSymbols = (symbols, selectedSymbols = []) => {
     : DEFAULT_WATCHLIST_SYMBOLS;
   const seen = new Set();
   return source.reduce((items, symbolValue) => {
+    if (typeof symbolValue === 'string' && symbolValue.startsWith('SECTION:')) {
+      items.push({ isSection: true, title: symbolValue.slice(8) });
+      return items;
+    }
     const targetKey = String(symbolValue || '').trim().toUpperCase();
     if (!targetKey || seen.has(targetKey)) return items;
     seen.add(targetKey);

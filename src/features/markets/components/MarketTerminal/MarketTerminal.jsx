@@ -19,10 +19,10 @@ import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/componen
 import { ACTIVE_SYMBOL_STORAGE_KEY, DEFAULT_SYMBOL, LAYOUTS, MAX_CHARTS, WATCHLIST_SYMBOLS_STORAGE_KEY } from './utils/marketTerminalConstants';
 import { instrumentDigitsCache, readInstrumentDigits } from './utils/instrumentDigits';
 import {
-  buildPrioritizedSymbolOptions, buildWatchlistSections, createChartId,
-  enrichQuoteTodayDirection, getLocalDateKey, getPointerDropTarget,
+  buildPrioritizedSymbolOptions, buildWatchlistSections, classifySymbol, createChartId,
+  enrichQuoteTodayDirection, findSymbolItem, getLocalDateKey,
   getRequestSymbol, normalizeStreamQuote, normalizeStreamSymbol,
-  readDraggedSymbol, readStoredActiveSymbol, readStoredWatchlistSymbols, resolveWatchlistSymbols
+  readStoredActiveSymbol, readStoredWatchlistSymbols, resolveWatchlistSymbols
 } from './utils/terminalHelpers';
 
 import Chart from '../TradingChart/Chart';
@@ -32,6 +32,7 @@ import WatchlistPanel from './components/Watchlist/WatchlistPanel';
 import OrderPanel from './components/OrderPanel/OrderPanel';
 import PositionsPanel from './components/PositionsPanel/PositionsPanel';
 import TerminalSettingsModal from './components/Settings/TerminalSettingsModal';
+import SymbolSearchModal from '@/components/Common/SymbolSearchModal/SymbolSearchModal';
 
 const readBoolStorage = (key, def = false) => {
   try {
@@ -51,10 +52,6 @@ function MarketTerminal({ pageActive = true }) {
   const [fitNonce, setFitNonce] = useState(0);
   const [quotes, setQuotes] = useState({});
   const [quotesLoaded, setQuotesLoaded] = useState(false);
-  const [chartAreaDragActive, setChartAreaDragActive] = useState(false);
-  const [pointerDrag, setPointerDrag] = useState(null);
-  const pointerDragRef = useRef(null);
-  const suppressWatchlistClickRef = useRef(false);
   const [layoutResetKey, setLayoutResetKey] = useState(0);
   const resetSizes = useCallback(() => setLayoutResetKey((k) => k + 1), []);
   const watchlistQuoteBufferRef = useRef({});
@@ -176,7 +173,7 @@ function MarketTerminal({ pageActive = true }) {
 
   useEffect(() => {
     if (userSettings?.watchlistSymbols && Array.isArray(userSettings.watchlistSymbols) && userSettings.watchlistSymbols.length > 0) {
-      setSelectedWatchlistSymbols(Array.from(new Set(userSettings.watchlistSymbols.map(normalizeStreamSymbol).filter(Boolean))));
+      setSelectedWatchlistSymbols(Array.from(new Set(userSettings.watchlistSymbols.map((s) => (typeof s === 'string' && s.startsWith('SECTION:') ? s : normalizeStreamSymbol(s))).filter(Boolean))));
     }
     if (userSettings?.activeSymbol) {
       const dbSymbol = normalizeStreamSymbol(userSettings.activeSymbol);
@@ -196,10 +193,55 @@ function MarketTerminal({ pageActive = true }) {
     setCharts((cur) => cur.map((item) => (item.id === activeChartId ? { ...item, ...patch } : item)));
   }, [activeChartId]);
 
-  const addWatchlistSymbol = useCallback((symbol) => {
+  const addWatchlistSymbol = useCallback((symbol, targetSection = null) => {
     const normalized = normalizeStreamSymbol(symbol);
     if (!normalized) return;
-    setSelectedWatchlistSymbols((cur) => cur.some((item) => normalizeStreamSymbol(item) === normalized) ? cur : [...cur, normalized]);
+    setSelectedWatchlistSymbols((cur) => {
+      const filtered = cur.filter((item) => normalizeStreamSymbol(item) !== normalized);
+      if (!targetSection) return [...filtered, normalized];
+      const sectionKey = `SECTION:${targetSection}`;
+      const idx = filtered.indexOf(sectionKey);
+      if (idx === -1) return [...filtered, normalized];
+      const next = [...filtered];
+      next.splice(idx + 1, 0, normalized);
+      return next;
+    });
+  }, []);
+
+  const handleReorderWatchlist = useCallback((sourceSymbol, targetSection, targetSymbol, position = 'bottom') => {
+    const normSource = normalizeStreamSymbol(sourceSymbol);
+    if (!normSource) return;
+
+    setSelectedWatchlistSymbols((cur) => {
+      const filtered = cur.filter((item) => normalizeStreamSymbol(item) !== normSource);
+
+      if (targetSection === '__unsection') {
+        return [normSource, ...filtered];
+      }
+
+      if (targetSymbol) {
+        const normTarget = normalizeStreamSymbol(targetSymbol);
+        const targetIndex = filtered.findIndex((item) => normalizeStreamSymbol(item) === normTarget);
+        if (targetIndex !== -1) {
+          const insertIndex = position === 'top' ? targetIndex : targetIndex + 1;
+          const next = [...filtered];
+          next.splice(insertIndex, 0, normSource);
+          return next;
+        }
+      }
+
+      if (targetSection) {
+        const sectionKey = `SECTION:${targetSection}`;
+        const sectionIndex = filtered.indexOf(sectionKey);
+        if (sectionIndex !== -1) {
+          const next = [...filtered];
+          next.splice(sectionIndex + 1, 0, normSource);
+          return next;
+        }
+      }
+
+      return [normSource, ...filtered];
+    });
   }, []);
 
   const removeWatchlistSymbol = useCallback((symbol) => {
@@ -209,7 +251,6 @@ function MarketTerminal({ pageActive = true }) {
   }, []);
 
   const handleSelectWatchlistSymbol = useCallback((symbol) => {
-    if (suppressWatchlistClickRef.current) return;
     updateActiveChart({ symbol });
   }, [updateActiveChart]);
 
@@ -240,7 +281,6 @@ function MarketTerminal({ pageActive = true }) {
       window.clearTimeout(watchlistQuoteFlushTimerRef.current);
       watchlistQuoteFlushTimerRef.current = null;
     }
-    pointerDragRef.current = null;
   }, []);
 
   useEffect(() => {
@@ -325,65 +365,69 @@ function MarketTerminal({ pageActive = true }) {
     setCharts((cur) => cur.map((c) => (c.id === chartId ? { ...c, symbol: normalized } : c)));
   }, []);
 
-  const handlePointerDragStart = useCallback((event, symbol, label) => {
-    const normalized = normalizeStreamSymbol(symbol);
-    if (!normalized || pointerDragRef.current) return;
-    const { clientX: startX, clientY: startY } = event;
-    event.currentTarget.setPointerCapture?.(event.pointerId);
-    pointerDragRef.current = { active: false, label: label || normalized, symbol: normalized, startX, startY, x: startX, y: startY };
+  const [symbolSearchOpen, setSymbolSearchOpen] = useState(false);
+  const [symbolSearchTargetChartId, setSymbolSearchTargetChartId] = useState(null);
+  const [symbolSearchTargetSection, setSymbolSearchTargetSection] = useState(null);
+  const selectedWatchlistSet = useMemo(() => (
+    new Set(selectedWatchlistSymbols.filter((s) => !String(s).startsWith('SECTION:')).map(normalizeStreamSymbol))
+  ), [selectedWatchlistSymbols]);
 
-    const handleMove = (e) => {
-      const drag = pointerDragRef.current;
-      if (!drag) return;
-      if (!drag.active && Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY) < 6) return;
-      e.preventDefault?.();
-      const nextDrag = { ...drag, active: true, x: e.clientX, y: e.clientY };
-      pointerDragRef.current = nextDrag;
-      setPointerDrag(nextDrag);
-      setChartAreaDragActive(Boolean(getPointerDropTarget(e.clientX, e.clientY)));
-    };
+  const handleOpenSymbolSearch = useCallback((chartId = null, sectionTitle = null) => {
+    setSymbolSearchTargetChartId(chartId);
+    setSymbolSearchTargetSection(sectionTitle);
+    setSymbolSearchOpen(true);
+  }, []);
 
-    const cleanup = () => {
-      ['pointermove', 'mousemove'].forEach((evt) => window.removeEventListener(evt, handleMove));
-      ['pointerup', 'mouseup'].forEach((evt) => window.removeEventListener(evt, handleUp));
-      ['pointercancel', 'blur'].forEach((evt) => window.removeEventListener(evt, handleCancel));
-    };
-
-    function handleUp(e) {
-      const drag = pointerDragRef.current;
-      pointerDragRef.current = null;
-      cleanup();
-      setPointerDrag(null);
-      setChartAreaDragActive(false);
-      if (!drag?.active) return;
-      suppressWatchlistClickRef.current = true;
-      window.setTimeout(() => { suppressWatchlistClickRef.current = false; }, 0);
-      const target = getPointerDropTarget(e.clientX, e.clientY);
-      if (!target) return;
-      const targetId = target.getAttribute('data-chart-id');
-      if (targetId) replaceChartSymbol(targetId, drag.symbol);
-      else addChart(drag.symbol);
+  const handleModalSelectSymbol = useCallback((symbol) => {
+    if (symbolSearchTargetChartId) {
+      replaceChartSymbol(symbolSearchTargetChartId, symbol);
+    } else {
+      updateActiveChart({ symbol });
     }
+  }, [replaceChartSymbol, symbolSearchTargetChartId, updateActiveChart]);
 
-    function handleCancel() {
-      pointerDragRef.current = null;
-      cleanup();
-      setPointerDrag(null);
-      setChartAreaDragActive(false);
+  const handleModalToggleWatchlist = useCallback((symbol, isCurrentlyInWatchlist) => {
+    if (isCurrentlyInWatchlist) {
+      removeWatchlistSymbol(symbol);
+    } else {
+      addWatchlistSymbol(symbol, symbolSearchTargetSection);
     }
+  }, [addWatchlistSymbol, removeWatchlistSymbol, symbolSearchTargetSection]);
 
-    window.addEventListener('pointermove', handleMove);
-    window.addEventListener('pointerup', handleUp);
-    window.addEventListener('pointercancel', handleCancel);
-  }, [addChart, replaceChartSymbol]);
+  const handleAddWatchlistSection = useCallback((title) => {
+    const cleanTitle = String(title || '').trim();
+    if (!cleanTitle) return;
+    const sectionKey = `SECTION:${cleanTitle}`;
+    setSelectedWatchlistSymbols((cur) => (cur.includes(sectionKey) ? cur : [...cur, sectionKey]));
+  }, []);
 
-  const handleChartAreaDrop = useCallback((e) => {
-    const symbol = readDraggedSymbol(e);
-    if (!symbol) return;
-    e.preventDefault();
-    setChartAreaDragActive(false);
-    addChart(symbol);
-  }, [addChart]);
+  const handleRemoveWatchlistSection = useCallback((title) => {
+    const sectionKey = `SECTION:${title}`;
+    setSelectedWatchlistSymbols((cur) => cur.filter((item) => item !== sectionKey));
+  }, []);
+
+  const handleGroupByMarket = useCallback(() => {
+    const grouped = {};
+    for (const sym of selectedWatchlistSymbols) {
+      if (String(sym).startsWith('SECTION:')) continue;
+      const item = findSymbolItem(allAvailableSymbols, sym);
+      const category = classifySymbol(sym, item);
+      if (!grouped[category]) grouped[category] = [];
+      grouped[category].push(sym);
+    }
+    const next = [];
+    for (const [cat, syms] of Object.entries(grouped)) {
+      if (syms.length > 0) {
+        next.push(`SECTION:${cat}`);
+        next.push(...syms);
+      }
+    }
+    setSelectedWatchlistSymbols(next);
+  }, [allAvailableSymbols, selectedWatchlistSymbols]);
+
+  const handleClearWatchlist = useCallback(() => {
+    setSelectedWatchlistSymbols([]);
+  }, []);
 
   const closeChart = useCallback((chartId) => {
     setCharts((cur) => {
@@ -481,12 +525,17 @@ function MarketTerminal({ pageActive = true }) {
                   availableSymbols={allAvailableSymbols}
                   isLoading={!quotesLoaded || isInstrumentsLoading || allAvailableSymbols.length === 0}
                   onAddSymbol={addWatchlistSymbol}
-                  onPointerDragStart={handlePointerDragStart}
                   onRemoveSymbol={removeWatchlistSymbol}
                   onSelectSymbol={handleSelectWatchlistSymbol}
                   quotes={quotes}
                   sections={watchlistSections}
                   onClose={handleCloseWatchlist}
+                  onOpenSymbolSearch={(sec = null) => handleOpenSymbolSearch(null, typeof sec === 'string' ? sec : null)}
+                  onAddSection={handleAddWatchlistSection}
+                  onRemoveSection={handleRemoveWatchlistSection}
+                  onGroupByMarket={handleGroupByMarket}
+                  onClearWatchlist={handleClearWatchlist}
+                  onReorderWatchlist={handleReorderWatchlist}
                 />
               </ResizablePanel>
               <ResizableHandle className="w-1.5" />
@@ -516,14 +565,7 @@ function MarketTerminal({ pageActive = true }) {
             )}
             <ResizablePanelGroup direction="vertical" className="min-w-0 min-h-0 h-full w-full">
               <ResizablePanel id="market-charts" defaultSize={showPositionsPanel ? "75%" : "100%"} minSize="30%" className="min-w-0 min-h-0 overflow-hidden">
-                <main
-                  className={`w-full h-full min-w-0 min-h-0 overflow-hidden relative flex flex-col bg-transparent ${chartAreaDragActive ? 'ring-2 ring-inset ring-[var(--primary,#2563eb)] bg-[var(--accent-info-soft)]/20' : ''}`}
-                  data-chart-drop-target="area"
-                  onDragEnter={(e) => { if (readDraggedSymbol(e)) setChartAreaDragActive(true); }}
-                  onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setChartAreaDragActive(false); }}
-                  onDragOver={(e) => { if (!readDraggedSymbol(e)) return; e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }}
-                  onDrop={handleChartAreaDrop}
-                >
+                <main className="w-full h-full min-w-0 min-h-0 overflow-hidden relative flex flex-col bg-transparent">
                   <div
                     className="grid gap-1.5 w-full h-full min-w-0 min-h-0 overflow-hidden"
                     style={{
@@ -553,7 +595,6 @@ function MarketTerminal({ pageActive = true }) {
                             pageActive={pageActive && isGridVisible}
                             prioritySymbols={selectedWatchlistSymbols}
                             onActivate={() => setActiveChartId(item.id)}
-                            onDropSymbol={(sym) => replaceChartSymbol(item.id, sym)}
                             onIntervalChange={(interval) => {
                               setActiveChartId(item.id);
                               setCharts((cur) => cur.map((c) => (c.id === item.id ? { ...c, interval } : c)));
@@ -561,6 +602,7 @@ function MarketTerminal({ pageActive = true }) {
                             onSymbolChange={(sym) => replaceChartSymbol(item.id, sym)}
                             onQuote={handleQuote}
                             showAccountManager={item.id === activeChartId}
+                            onOpenSymbolSearch={() => handleOpenSymbolSearch(item.id)}
                           />
                         </div>
                       );
@@ -589,12 +631,6 @@ function MarketTerminal({ pageActive = true }) {
             </>
           )}
         </ResizablePanelGroup>
-        {pointerDrag?.active && (
-          <div className="fixed top-0 left-0 z-[99999] pointer-events-none flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--bg-card)] border border-[var(--border-medium,#94a3b8)] shadow-lg text-xs font-bold text-[var(--text-primary)]" style={{ transform: `translate(${pointerDrag.x + 12}px, ${pointerDrag.y + 12}px)` }}>
-            <SymbolWithIcon symbol={pointerDrag.label} size="md" showLabel={false} />
-            <span>{pointerDrag.label}</span>
-          </div>
-        )}
         <TerminalSettingsModal
           isOpen={showSettingsModal}
           onClose={() => setShowSettingsModal(false)}
@@ -617,6 +653,13 @@ function MarketTerminal({ pageActive = true }) {
           onDeleteAlert={handleDeleteAlert}
           onClearTriggered={handleClearTriggeredAlerts}
           formatPrice={(price, sym) => formatTradePrice(price, readInstrumentDigits(instrumentDigitsBySymbol, sym || activeSymbol))}
+        />
+        <SymbolSearchModal
+          isOpen={symbolSearchOpen}
+          onClose={() => setSymbolSearchOpen(false)}
+          onSelectSymbol={handleModalSelectSymbol}
+          watchlistSet={selectedWatchlistSet}
+          onToggleWatchlist={handleModalToggleWatchlist}
         />
       </div>
     </MainContentWrapper>

@@ -51,7 +51,6 @@ export function useInstrument(symbol) {
 }
 
 export function useInstruments(search = '', filters = {}) {
-  const debouncedSearch = useDebouncedValue(search);
   const query = useAllInstruments();
   const all = query.data || [];
 
@@ -62,7 +61,13 @@ export function useInstruments(search = '', filters = {}) {
       if (c === 'crypto') res = res.filter((i) => i.assetClass === 'crypto' || i.category === 'crypto');
       else if (c === 'forex_cfd') res = res.filter((i) => ['forex', 'cfd'].includes(i.category) || ['forex', 'forex_cfd', 'metal', 'energy'].includes(i.assetClass));
       else if (c === 'future' || c === 'futures') res = res.filter((i) => i.category === 'future' || i.productType === 'future' || i.productType === 'futures');
-      else res = res.filter((i) => i.category?.toLowerCase() === c || i.assetClass?.toLowerCase() === c);
+      else if (['stock', 'stocks', 'equity', 'stock_etf'].includes(c)) {
+        res = res.filter((i) => ['stock', 'equity'].includes(i.category?.toLowerCase()) || ['stock', 'equity'].includes(i.assetClass?.toLowerCase()) || i.productType?.toLowerCase() === 'stock_etf');
+      } else if (['bond', 'bonds'].includes(c)) {
+        res = res.filter((i) => i.category?.toLowerCase() === 'bond' || i.assetClass?.toLowerCase() === 'bond');
+      } else {
+        res = res.filter((i) => i.category?.toLowerCase() === c || i.assetClass?.toLowerCase() === c);
+      }
     }
     if (filters.productType) {
       const pt = String(filters.productType).toLowerCase();
@@ -72,13 +77,19 @@ export function useInstruments(search = '', filters = {}) {
       const pts = filters.productTypes.map((p) => String(p).toLowerCase());
       res = res.filter((i) => pts.includes(i.productType?.toLowerCase()) || pts.includes(i.category?.toLowerCase()));
     }
-    if (debouncedSearch) {
-      const q = debouncedSearch.toLowerCase();
-      res = res.filter((i) => i.symbol?.toLowerCase().includes(q) || i.name?.toLowerCase().includes(q) || i.displayName?.toLowerCase().includes(q));
+    const q = String(search || '').trim().toLowerCase();
+    if (q) {
+      res = res.filter((i) =>
+        i.symbol?.toLowerCase().includes(q) ||
+        i.name?.toLowerCase().includes(q) ||
+        i.displayName?.toLowerCase().includes(q) ||
+        i.subCategory?.toLowerCase().includes(q) ||
+        (Array.isArray(i.searchKeywords) && i.searchKeywords.some((kw) => String(kw).toLowerCase().includes(q)))
+      );
     }
-    const limit = Number(filters.limit) || (filters.category || debouncedSearch ? 50 : 2000);
+    const limit = Number(filters.limit) || (q ? 50 : (filters.category ? 100 : 2000));
     return res.slice(0, limit);
-  }, [all, debouncedSearch, filters.category, filters.productType, filters.productTypes, filters.limit, search]);
+  }, [all, filters.category, filters.productType, filters.productTypes, filters.limit, search]);
 
   return { ...query, data: filtered };
 }

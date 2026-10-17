@@ -40,6 +40,7 @@ from domains.notifications.service import hydrate_memory_alerts
 from domains.notifications.worker import run_alerts_worker
 from core.finance.fx_worker import run_fx_worker
 from domains.settings.chart_drawings import run_chart_drawings_worker, flush_pending_chart_drawings
+from domains.chart.router import run_chart_layouts_worker, flush_pending_chart_layouts
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -55,12 +56,15 @@ async def lifespan(app: FastAPI):
     worker_task = asyncio.create_task(run_alerts_worker())
     fx_worker_task = asyncio.create_task(run_fx_worker())
     drawings_task = asyncio.create_task(run_chart_drawings_worker())
+    layouts_task = asyncio.create_task(run_chart_layouts_worker())
     live_task = asyncio.create_task(ctrader_live_sync.start())
     db_listener_task = asyncio.create_task(run_db_listener())
     yield
     db_listener_task.cancel()
     await ctrader_live_sync.stop()
     live_task.cancel()
+    layouts_task.cancel()
+    await flush_pending_chart_layouts(force=True)
     drawings_task.cancel()
     await flush_pending_chart_drawings()
     fx_worker_task.cancel()

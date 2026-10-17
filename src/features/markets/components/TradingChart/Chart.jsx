@@ -1,11 +1,8 @@
 import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { normalizeStoredSymbol } from "@/utils/trading/symbols";
-import { readDraggedSymbol } from "@/features/markets/components/MarketTerminal/utils/terminalHelpers";
 import { createTvDatafeed } from "./datafeeds/tvDatafeed";
-import chartDrawingsApi from "@/utils/api/chartDrawingsApi";
-import { useUserSettings } from "@/hooks/useUserSettings";
-import { saveUserSettings } from "@/utils/user/userSettings";
+import chartApi from "@/utils/api/chartApi";
 import { useTheme } from "@/context/ThemeContext";
 import { API_URL } from "@/utils/common/constants";
 import { Bell, ArrowUpRight, ArrowDownRight, ChartLine } from "@/icons/lucideIcons";
@@ -31,29 +28,6 @@ const toTvInterval = (tf) => {
   return s;
 };
 
-const sanitizeDrawingState = (st, sym) => {
-  if (!st?.charts?.[0]?.panes?.[0]?.sources) return null;
-  const clone = JSON.parse(JSON.stringify(st));
-  const ms = clone.charts[0].panes[0].sources.find((s) => s?.type === "MainSeries");
-  if (ms?.state && sym) {
-    ms.state.symbol = sym;
-    ms.state.shortName = sym;
-  }
-  return clone;
-};
-
-const readStoredChartState = (sym) => {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = localStorage.getItem("entrack_chart_global_layout");
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      return sanitizeDrawingState(parsed?.state ?? parsed, sym);
-    }
-  } catch {}
-  return null;
-};
-
 function Chart({
   chart,
   datafeed: customDatafeed,
@@ -69,13 +43,13 @@ function Chart({
   onOpenOrderPanel,
   onSymbolChange,
   onIntervalChange,
-  onDropSymbol,
   onActivate,
   uniqueId,
   className = "",
   trades = [],
   disableSymbolChange = false,
   showAccountManager = false,
+  onOpenSymbolSearch,
 }) {
   const queryClient = useQueryClient();
   const targetSymbol = chart?.symbol ?? directSymbol;
@@ -83,7 +57,6 @@ function Chart({
   const normalizedSymbol = useMemo(() => normalizeStoredSymbol(targetSymbol), [targetSymbol]);
 
   const [tf, setTf] = useState(() => targetTimeframe);
-  const [isDragTarget, setIsDragTarget] = useState(false);
   const [plusMenu, setPlusMenu] = useState(null);
   const { darkMode: contextDarkMode } = useTheme() || {};
   const isDark = Boolean(darkMode ?? contextDarkMode ?? (typeof document !== "undefined" && document.documentElement.classList.contains("dark")));
@@ -111,47 +84,30 @@ function Chart({
 
   const currentSymbolRef = useRef(normalizedSymbol);
   useEffect(() => { currentSymbolRef.current = normalizedSymbol; }, [normalizedSymbol]);
-  const { data: userSettings } = useUserSettings();
-  const lastLayoutRef = useRef(null);
+  const currentThemeRef = useRef(isDark ? "Dark" : "Light");
   const chartSettingsRef = useRef({});
   const settingsTimerRef = useRef(null);
-  const pendingSaveRef = useRef(null);
-  const saveTimerRef = useRef(null);
-  const isLoadingRef = useRef(false);
   const isInternalChangeRef = useRef(false);
   const activeResolutionRef = useRef(targetTimeframe);
   const lastLoadedSymbolRef = useRef(normalizedSymbol);
 
   useEffect(() => {
-    const serverSettings = userSettings?.chart_settings;
-    if (serverSettings && typeof serverSettings === "object") {
-      chartSettingsRef.current = { ...chartSettingsRef.current, ...serverSettings };
-    } else {
-      try {
-        const local = localStorage.getItem("entrack_chart_settings");
-        if (local) chartSettingsRef.current = JSON.parse(local);
-      } catch {}
-    }
-  }, [userSettings]);
+    try {
+      const local = localStorage.getItem("entrack_chart_settings");
+      if (local) chartSettingsRef.current = JSON.parse(local);
+    } catch {}
+    chartApi.getSettings().then((res) => {
+      if (res?.settings && typeof res.settings === "object") {
+        chartSettingsRef.current = { ...chartSettingsRef.current, ...res.settings };
+      }
+    }).catch(() => {});
+  }, []);
 
   const scheduleSettingsSave = useCallback(() => {
     if (settingsTimerRef.current) clearTimeout(settingsTimerRef.current);
     settingsTimerRef.current = setTimeout(() => {
-      saveUserSettings({ chart_settings: chartSettingsRef.current }).catch(() => {});
+      chartApi.saveSettings(chartSettingsRef.current).catch(() => {});
     }, 1000);
-  }, []);
-
-  const flushDrawings = useCallback((st) => {
-    if (!st) return;
-    try {
-      fetch(`${API_URL}/api/v1/chart-drawings/__GLOBAL__?flush=true`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ state: st }),
-        keepalive: true,
-      }).catch(() => {});
-    } catch {}
   }, []);
 
   useEffect(() => {
@@ -162,24 +118,6 @@ function Chart({
     window.addEventListener("blur", handleBlur);
     return () => window.removeEventListener("blur", handleBlur);
   }, [onActivate]);
-
-  useEffect(() => {
-    const handleUnload = () => {
-      if (pendingSaveRef.current?.state) {
-        flushDrawings(pendingSaveRef.current.state);
-      }
-    };
-    window.addEventListener("beforeunload", handleUnload);
-    const handleVisibility = () => {
-      if (document.visibilityState === "hidden") handleUnload();
-    };
-    document.addEventListener("visibilitychange", handleVisibility);
-    return () => {
-      window.removeEventListener("beforeunload", handleUnload);
-      document.removeEventListener("visibilitychange", handleVisibility);
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    };
-  }, [flushDrawings]);
 
   const syncAlertLines = useCallback((chartInstance) => {
     if (!chartInstance) return;
@@ -540,7 +478,6 @@ function Chart({
         }
 
         const datafeed = customDatafeed || createTvDatafeed({ queryClient, uniqueId: rawId });
-        const initialSavedData = readStoredChartState(normalizedSymbol);
         const widget = new window.TradingView.widget({
           container: containerId,
           symbol: normalizedSymbol,
@@ -551,7 +488,58 @@ function Chart({
           locale: "en",
           autosize: true,
           auto_save_delay: 2,
-          saved_data: initialSavedData || undefined,
+          load_last_chart: true,
+          save_load_adapter: {
+            getAllCharts: () => {
+              return chartApi.getLayouts().then((res) => {
+                if (Array.isArray(res?.layouts) && res.layouts.length > 0) return res.layouts;
+                try {
+                  const raw = localStorage.getItem("entrack_chart_layouts_list");
+                  if (raw) return JSON.parse(raw);
+                } catch {}
+                return [{ id: "default", name: "Default", symbol: normalizedSymbol, resolution: toTvInterval(tf), timestamp: Math.floor(Date.now() / 1000) }];
+              }).catch(() => {
+                try {
+                  const raw = localStorage.getItem("entrack_chart_layouts_list");
+                  if (raw) return JSON.parse(raw);
+                } catch {}
+                return [{ id: "default", name: "Default", symbol: normalizedSymbol, resolution: toTvInterval(tf), timestamp: Math.floor(Date.now() / 1000) }];
+              });
+            },
+            removeChart: (id) => {
+              try { localStorage.removeItem(`entrack_layout_${id}`); } catch {}
+              return chartApi.deleteLayout(id).catch(() => {});
+            },
+            saveChart: (chartData) => {
+              let cnt = chartData.content;
+              if (cnt && typeof cnt === "object" && cnt.content) cnt = cnt.content;
+              const raw = typeof cnt === "string" ? cnt : JSON.stringify(cnt || {});
+              const tempId = chartData.id || "default";
+              return chartApi.saveLayout({
+                id: chartData.id,
+                name: chartData.name || "Default",
+                symbol: chartData.symbol || normalizedSymbol,
+                resolution: chartData.resolution || toTvInterval(tf),
+                content: raw,
+              }).then((res) => res?.id || tempId).catch(() => tempId);
+            },
+            getChartContent: (id) => {
+              return chartApi.getLayout(id).then((res) => {
+                const layout = res?.layout;
+                if (!layout) return "";
+                let c = layout.content;
+                if (typeof c === "string") {
+                  try {
+                    const p = JSON.parse(c);
+                    if (p && typeof p === "object" && p.content) c = p.content;
+                  } catch {}
+                } else if (c && typeof c === "object" && c.content) {
+                  c = c.content;
+                }
+                return typeof c === "string" ? c : JSON.stringify(c || {});
+              }).catch(() => "");
+            },
+          },
           custom_font_family: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
           ...(showAccountManager ? { brokerFactory: () => createTvBrokerAdapter() } : {}),
           settings_adapter: {
@@ -586,6 +574,8 @@ function Chart({
             "show_chart_property_page",
             "use_localstorage_for_settings",
             "custom_resolutions",
+            "saveload_storage_customization",
+            "header_saveload",
           ],
           overrides: {
             "scalesProperties.fontSize": 12,
@@ -606,23 +596,6 @@ function Chart({
           } catch {}
           const target = currentSymbolRef.current ?? normalizedSymbol;
           lastLoadedSymbolRef.current = target;
-          const hasLocalLineTools = initialSavedData?.charts?.[0]?.panes?.[0]?.sources?.some((s) => String(s?.type ?? "").startsWith("LineTool"));
-          if (!hasLocalLineTools && target) {
-            isLoadingRef.current = true;
-            chartDrawingsApi.getDrawings("__GLOBAL__").then((res) => {
-              if (res?.drawing?.state && (currentSymbolRef.current === target || !currentSymbolRef.current)) {
-                const clean = sanitizeDrawingState(res.drawing.state, target);
-                if (clean) {
-                  try {
-                    localStorage.setItem("entrack_chart_global_layout", JSON.stringify({ state: clean, updated_at: Date.now() }));
-                    widgetRef.current?.load(clean);
-                  } catch {}
-                }
-              }
-            }).catch(() => {}).finally(() => {
-              setTimeout(() => { isLoadingRef.current = false; }, 300);
-            });
-          }
           const rawCurrentTvSymbol = chartInstance.symbol ? chartInstance.symbol() : null;
           const currentTvSymbol = rawCurrentTvSymbol ? normalizeStoredSymbol(rawCurrentTvSymbol.includes(":") ? rawCurrentTvSymbol.split(":")[1] : rawCurrentTvSymbol) : null;
 
@@ -652,6 +625,10 @@ function Chart({
           const iframeEl = containerRef.current?.querySelector("iframe");
           if (iframeEl) {
             try {
+              const win = iframeEl.contentWindow;
+              if (win?.chartWidgetCollection && !win.chartWidgetCollection.metaInfo?.name?.value?.()) {
+                win.chartWidgetCollection.metaInfo?.name?.setValue?.("Default");
+              }
               iframeEl.contentWindow?.addEventListener("pointerdown", () => onActivate?.());
               iframeEl.contentWindow?.addEventListener("mousedown", () => onActivate?.());
               const doc = iframeEl.contentDocument;
@@ -661,28 +638,44 @@ function Chart({
                 styleEl.textContent = "html, body, .chart-page { -webkit-text-size-adjust: 100% !important; text-size-adjust: 100% !important; }";
                 doc.head.appendChild(styleEl);
               }
+              const bg = readCssVar("--bg-card") || (isDark ? "#070707" : "#ffffff");
+              const border = readCssVar("--border-light");
+              if (doc?.documentElement) {
+                if (bg) doc.documentElement.style.setProperty("--tv-color-pane-background", bg);
+                if (border) doc.documentElement.style.setProperty("--tv-color-platform-background", border);
+              }
+              const handleSymbolClick = (e) => {
+                const btn = e.target?.closest?.('[id*="header-toolbar-symbol-search"], [data-name*="header-toolbar-symbol-search"], [class*="symbolSearch"], .button-symbol-search, [data-name="legend-series-item"]');
+                if (btn) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  e.stopImmediatePropagation();
+                  onOpenSymbolSearch?.();
+                }
+              };
+              doc?.addEventListener("click", handleSymbolClick, true);
             } catch {}
           }
 
-          widget.subscribe("onAutoSaveNeeded", () => {
-            if (isLoadingRef.current) return;
+          const triggerSilentSave = () => {
             try {
-              widget.save((state) => {
-                if (!state?.charts?.[0]?.panes || isLoadingRef.current) return;
-                lastLayoutRef.current = state;
-                try {
-                  localStorage.setItem("entrack_chart_global_layout", JSON.stringify({ state, updated_at: Date.now() }));
-                } catch {}
-                pendingSaveRef.current = { state };
-                if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-                saveTimerRef.current = setTimeout(() => {
-                  if (pendingSaveRef.current?.state) {
-                    chartDrawingsApi.saveDrawings("__GLOBAL__", pendingSaveRef.current.state, false).catch(() => {});
-                  }
-                }, 1000);
-              });
+              const win = containerRef.current?.querySelector("iframe")?.contentWindow;
+              win?.saver?.saveChartSilently?.();
             } catch {}
-          });
+          };
+          widget.subscribe("onAutoSaveNeeded", triggerSilentSave);
+          try {
+            const win = iframeEl?.contentWindow;
+            let propSaveTimer = null;
+            const debouncedPropSave = () => {
+              if (propSaveTimer) clearTimeout(propSaveTimer);
+              propSaveTimer = setTimeout(triggerSilentSave, 800);
+            };
+            chartInstance.model?.()?.mainSeries?.()?.properties?.()?.listeners?.()?.subscribe?.(null, debouncedPropSave);
+            win?.chartWidgetCollection?.getChartPropertiesDialogRenderer?.()?._visibility?.subscribe?.(null, (visible) => {
+              if (!visible) triggerSilentSave();
+            });
+          } catch {}
 
           widget.subscribe("onPlusClick", (e) => {
             const clickPrice = Number(e?.price);
@@ -729,7 +722,6 @@ function Chart({
     return () => {
       destroyed = true;
       if (timer) clearInterval(timer);
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
       if (widgetRef.current) {
         if (typeof executionsRef.current === "function") {
           executionsRef.current();
@@ -745,31 +737,39 @@ function Chart({
 
   useEffect(() => {
     if (!readyRef.current || !widgetRef.current) return;
+    const targetTheme = isDark ? "Dark" : "Light";
+    if (currentThemeRef.current === targetTheme) return;
+    currentThemeRef.current = targetTheme;
     try {
-      if (typeof widgetRef.current.changeTheme === "function") {
-        widgetRef.current.changeTheme(isDark ? "Dark" : "Light");
+      const cw = document.getElementById(containerId)?.querySelector("iframe")?.contentWindow;
+      const themes = cw?.tradingViewApi?.themes?.();
+      if (themes && typeof themes.setStdThemeForLayout === "function") {
+        themes.setStdThemeForLayout(targetTheme.toLowerCase());
+      } else if (typeof widgetRef.current.changeTheme === "function") {
+        widgetRef.current.changeTheme(targetTheme);
       }
-      const chartInstance = widgetRef.current.chart();
-      if (chartInstance) {
-        syncAlertLines(chartInstance);
+      const bg = readCssVar("--bg-card") || (isDark ? "#070707" : "#ffffff");
+      const border = readCssVar("--border-light");
+      const doc = cw?.document;
+      if (doc?.documentElement) {
+        if (bg) doc.documentElement.style.setProperty("--tv-color-pane-background", bg);
+        if (border) doc.documentElement.style.setProperty("--tv-color-platform-background", border);
       }
     } catch {}
-  }, [isDark, syncAlertLines]);
+  }, [isDark, containerId]);
 
   useEffect(() => {
     if (!readyRef.current || !widgetRef.current) return;
     const tvTf = toTvInterval(tf);
     const chartInstance = widgetRef.current.chart();
     if (lastLoadedSymbolRef.current !== normalizedSymbol) {
-      if (pendingSaveRef.current?.state) {
-        chartDrawingsApi.saveDrawings("__GLOBAL__", pendingSaveRef.current.state, false).catch(() => {});
-        pendingSaveRef.current = null;
-      }
       lastLoadedSymbolRef.current = normalizedSymbol;
       currentSymbolRef.current = normalizedSymbol;
       activeResolutionRef.current = tvTf;
       try {
-        widgetRef.current.setSymbol(normalizedSymbol, tvTf);
+        const win = containerRef.current?.querySelector("iframe")?.contentWindow;
+        win?.saver?.saveChartSilently?.();
+        widgetRef.current?.setSymbol(normalizedSymbol, tvTf);
       } catch {}
     } else if (activeResolutionRef.current !== tvTf) {
       if (isInternalChangeRef.current) {
@@ -778,6 +778,8 @@ function Chart({
       }
       activeResolutionRef.current = tvTf;
       try {
+        const win = containerRef.current?.querySelector("iframe")?.contentWindow;
+        win?.saver?.saveChartSilently?.();
         chartInstance.setResolution(tvTf);
       } catch {}
     }
@@ -797,39 +799,14 @@ function Chart({
     } catch {}
   }, [trades, syncTradeExecutions]);
 
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "copy";
-    if (!isDragTarget) setIsDragTarget(true);
-  };
-
-  const handleDragLeave = (e) => {
-    if (!e.currentTarget.contains(e.relatedTarget)) {
-      setIsDragTarget(false);
-    }
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    setIsDragTarget(false);
-    const sym = readDraggedSymbol(e);
-    if (sym) {
-      if (onDropSymbol) onDropSymbol(sym);
-      else if (onSymbolChange) onSymbolChange(sym);
-    }
-  };
-
   return (
     <div
       ref={chartShellRef}
       className={`relative flex flex-col h-full w-full select-none bg-[var(--bg-card)] ${
         active ? "ring-1 ring-[var(--primary)]" : ""
-      } ${isDragTarget ? "ring-2 ring-[var(--primary)] bg-[var(--primary)]/5" : ""} ${className}`}
+      } ${className}`}
       onClick={() => onActivate?.()}
       onPointerDown={() => onActivate?.()}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
     >
       <div id={containerId} ref={containerRef} className="w-full h-full min-h-0 relative" />
       {plusMenu && (

@@ -10,6 +10,14 @@ const getFallbackLetters = (symbol) =>
 const getAssetIconPath = (asset, inst) => {
   if (!asset) return null;
   const k = String(asset).trim().toLowerCase();
+  if (k.startsWith("/") || k.startsWith("http")) return asset;
+  if (inst?.icon && (inst.icon.startsWith("/") || inst.icon.startsWith("http"))) {
+    if (asset === inst.icon || asset === inst.symbol || asset === inst.baseAsset) return inst.icon;
+  }
+  if (inst?.assetClass === "stock" || inst?.category === "stock") {
+    const name = inst?.icon?.toLowerCase().replace(/^\/assets\/stocks\//, "").replace(/\.svg$/, "") || `stk_${k}`;
+    return `/assets/stocks/${name}.svg`;
+  }
   if (inst?.assetClass === "index") return `/assets/indices/${inst?.icon?.toLowerCase() || `idx_${k}`}.svg`;
   if (inst?.assetClass === "metal" || (inst?.category === "cfd" && inst?.assetClass !== "crypto")) {
     return `/assets/commodities/${inst?.icon?.toLowerCase() || k}.svg`;
@@ -56,10 +64,11 @@ function SymbolWithIcon({ symbol, size = "md", showLabel = true, preferAssetIcon
   const labelSize = LABEL_SIZE_MAP[size] || 10;
   const pairSize = Math.floor(iconSize * 0.75);
 
-  const baseSrc = getAssetIconPath(inst?.baseAsset, inst);
-  const quoteSrc = getAssetIconPath(inst?.quoteAsset, inst);
-  const isPair = !preferAssetIcon && Boolean(baseSrc && quoteSrc);
-  const singleSrc = isPair ? null : (baseSrc || getAssetIconPath(inst?.icon, inst) || getAssetIconPath(symbol, inst));
+  const isStockOrIndex = inst?.category === "stock" || inst?.assetClass === "stock" || inst?.assetClass === "index";
+  const baseSrc = isStockOrIndex ? null : getAssetIconPath(inst?.baseAsset, inst);
+  const quoteSrc = isStockOrIndex ? null : getAssetIconPath(inst?.quoteAsset, inst);
+  const isPair = !preferAssetIcon && !isStockOrIndex && Boolean(baseSrc && quoteSrc);
+  const singleSrc = isPair ? null : (getAssetIconPath(inst?.icon, inst) || baseSrc || getAssetIconPath(symbol, inst));
 
   const renderIcon = () => {
     if (hasError) return <SymbolFallbackIcon symbol={symbol} iconSize={iconSize} />;

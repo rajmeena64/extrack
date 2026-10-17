@@ -8,6 +8,7 @@ import { useAppDialog } from '@/context/AppDialogContext';
 import { loadCachedUserSettings } from '@/utils/user/userSettings';
 import { normalizeStoredSymbol, normalizeOptionContractInput, parseOptionContractSymbol } from '@/utils/trading/symbols';
 import { useInstruments } from '@/hooks/useInstruments';
+import SymbolWithIcon from '@/components/Common/SymbolWithIcon/SymbolWithIcon';
 import { BROWSER_TIME_ZONE, TIME_ZONE_OPTIONS, parseDateTimeInZone } from '@/utils/trading/tradeTime';
 import { CalendarIcon, Globe, Plus, Trash2 } from '@/icons';
 import { getCurrencyMeta, normalizeCurrencyCode } from '@/utils/user/Currency';
@@ -19,7 +20,7 @@ const PRODUCTS = [['stock', 'Stock / ETF'], ['forex_cfd', 'Forex & CFD'], ['cryp
 const SIDE_OPTIONS = [{ value: 'long', label: 'Long' }, { value: 'short', label: 'Short' }];
 const OPTION_SIDE_OPTIONS = [{ value: 'long:call', label: 'Long Call' }, { value: 'short:call', label: 'Short Call' }, { value: 'long:put', label: 'Long Put' }, { value: 'short:put', label: 'Short Put' }];
 const CANONICAL_PRODUCT = { stock: 'equity', crypto_spot: 'spot', futures: 'future', options: 'option' };
-const REGISTRY_FILTERS = { forex_cfd: { category: 'forex_cfd' }, crypto: { category: 'crypto' }, futures: { category: 'future' } };
+const REGISTRY_FILTERS = { stock: { category: 'stock' }, forex_cfd: { category: 'forex_cfd' }, crypto: { category: 'crypto' }, futures: { category: 'future' }, bond: { category: 'bond' } };
 const nowLocal = () => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 const initial = { productType: 'stock', symbol: '', side: 'long', entryPrice: '', exitPrice: '', quantity: '', closedQuantity: '', entryTime: nowLocal(), exitTime: '', optionType: 'call', strikePrice: '', expiryDate: '', entryPremium: '', exitPremium: '', multiplier: '', entryFees: '', exitFees: '', actualNetPnl: '', strategy: '', notes: '' };
 const PRODUCT_FIELDS = ['symbol', 'entryPrice', 'exitPrice', 'exitTime', 'closedQuantity', 'multiplier', 'optionType', 'strikePrice', 'expiryDate', 'entryPremium', 'exitPremium', 'entryFees', 'exitFees'];
@@ -123,8 +124,8 @@ function DateTimePicker({ label, name, value, onChange, required = false, dateOn
   );
 }
 
-function InstrumentCombobox({ setForm, selected, setSelected, filters }) {
-  const [search, setSearch] = useState('');
+function InstrumentCombobox({ setForm, selected, setSelected, filters, initialSymbol = '' }) {
+  const [search, setSearch] = useState(selected?.symbol || initialSymbol || '');
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
   const { data: instruments = [], isFetching } = useInstruments(search, filters);
@@ -155,13 +156,19 @@ function InstrumentCombobox({ setForm, selected, setSelected, filters }) {
   return (
     <div ref={rootRef} className="relative flex flex-col gap-1.5 min-w-0 text-left">
       <span className="text-[11px] font-bold text-[var(--heading)]">Symbol <span className="text-rose-500">*</span></span>
-      <input className="w-full min-h-[40px] px-3 py-2 text-xs rounded-xl border border-[var(--divider-strong)] bg-[var(--bg-card)] text-[var(--heading)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-brand-solid shadow-xs transition-colors" role="combobox" aria-expanded={open} aria-controls="instrument-options" aria-autocomplete="list" value={search} placeholder="e.g. AAPL or BTCUSDT" autoComplete="off" onFocus={() => setOpen(true)} onChange={handleInputChange} onKeyDown={(e) => { if (e.key === 'Escape') setOpen(false); }} required={!selected} />
+      <input className="w-full min-h-[40px] px-3 py-2 text-xs rounded-xl border border-[var(--divider-strong)] bg-[var(--bg-card)] text-[var(--heading)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-brand-solid shadow-xs transition-colors" role="combobox" aria-expanded={open} aria-controls="instrument-options" aria-autocomplete="list" value={search} placeholder="e.g. AAPL or BTCUSDT" autoComplete="off" onFocus={() => setOpen(true)} onChange={handleInputChange} onKeyDown={(e) => { if (e.key === 'Escape') setOpen(false); }} required={!selected && !search} />
       {open ? (
         <div id="instrument-options" className="absolute top-[calc(100%+6px)] left-0 z-30 w-full max-h-60 overflow-y-auto rounded-xl border border-[var(--divider-strong)] bg-[var(--bg-card)] shadow-xl divide-y divide-[var(--divider-strong)]" role="listbox">
           {instruments.map((inst) => (
-            <button key={inst.id} type="button" role="option" aria-selected={selected?.id === inst.id} className="w-full p-2.5 text-left flex flex-col gap-0.5 hover:bg-[var(--surface-subtle)] focus:outline-none focus:bg-[var(--surface-subtle)] transition-colors cursor-pointer" onClick={() => choose(inst)}>
-              <strong className="text-xs font-bold text-[var(--heading)]">{inst.symbol.toUpperCase()}</strong>
-              <span className="text-[10px] text-[var(--text-muted)] truncate">{inst.displayName}</span>
+            <button key={inst.id} type="button" role="option" aria-selected={selected?.id === inst.id} className="w-full p-2.5 text-left flex items-center gap-2.5 hover:bg-[var(--surface-subtle)] focus:outline-none focus:bg-[var(--surface-subtle)] transition-colors cursor-pointer" onClick={() => choose(inst)}>
+              <SymbolWithIcon symbol={inst.symbol} size="sm" showLabel={false} />
+              <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-1.5">
+                  <strong className="text-xs font-bold text-[var(--heading)]">{inst.symbol.toUpperCase()}</strong>
+                  {inst.marketSource ? <span className="text-[9px] uppercase px-1 py-0.2 rounded bg-[var(--surface-subtle)] text-[var(--text-muted)] font-semibold">{inst.marketSource}</span> : null}
+                </div>
+                <span className="text-[10px] text-[var(--text-muted)] truncate">{inst.displayName}</span>
+              </div>
             </button>
           ))}
           {isFetching ? <p className="p-3 text-xs text-[var(--text-muted)] text-center m-0">Searching instruments…</p> : null}
@@ -341,10 +348,8 @@ export default function ManualEntryForm({ brokers = [], selectedBrokerId, setSel
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
             {form.productType === 'options' ? (
               <Field label="Contract Symbol" name="symbol" value={form.symbol} onChange={changeSymbol} type="text" placeholder="BTC-260724-65000-C" required help="Format: ASSET-YYMMDD-STRIKE-C/P" />
-            ) : registryFilters ? (
-              <InstrumentCombobox key={form.productType} filters={registryFilters} setForm={setForm} selected={selectedInstrument} setSelected={setSelectedInstrument} />
             ) : (
-              <Field label="Symbol" name="symbol" value={form.symbol} onChange={changeSymbol} type="text" placeholder="e.g. AAPL or BTCUSDT" required />
+              <InstrumentCombobox key={form.productType} filters={registryFilters || {}} setForm={setForm} selected={selectedInstrument} setSelected={setSelectedInstrument} initialSymbol={form.symbol} />
             )}
             <Field label="Position" required>
               <CustomSelect name="position" value={positionValue} onChange={changePosition} options={form.productType === 'options' ? positionOptions : SIDE_OPTIONS} ariaLabel="Trade position" />
